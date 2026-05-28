@@ -132,7 +132,6 @@ SPE10/
 
 # Exclude other experiment folders from GitHub repository scope
 BL/
-Bratu/
 Burgers/
 Beltrami_3D/
 examples/

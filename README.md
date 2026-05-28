@@ -18,8 +18,9 @@ This repository contains the implementations of the benchmark problems discussed
 
 1.  **Linear Elasticity** — 2D plane-strain displacement-field solid mechanics solver.
 2.  **Kovasznay Flow** — steady 2D incompressible Navier-Stokes equations.
+3.  **Bratu Equation** — a classical highly nonlinear elliptic boundary value problem modeling thermal combustion.
 
-*Note: Other physics modules from the paper (including the Bratu equation, Burgers' equation, Buckley-Leverett flow, 3D Beltrami flow, and heterogeneous Darcy SPE10 flow) are being uploaded to this repository progressively.*
+*Note: Other physics modules from the paper (including Burgers' equation, Buckley-Leverett flow, 3D Beltrami flow, and heterogeneous Darcy SPE10 flow) are being uploaded to this repository progressively.*
 
 ---
 
@@ -47,7 +48,7 @@ pip install -e .
 
 ## Repository Status
 
-This repository currently includes the fully functional **Linear Elasticity** and **Kovasznay Flow** solvers. Additional physics modules discussed in the manuscript will be uploaded to the repository incrementally.
+This repository currently includes the fully functional **Linear Elasticity**, **Kovasznay Flow**, and **Bratu Equation** solvers. Additional physics modules discussed in the manuscript will be uploaded to the repository incrementally.
 
 ---
 
@@ -64,4 +65,9 @@ To run the comparative sweeps across all four solver formulations (NiL-N, NiL-Q,
     ```bash
     cd Kovasznay
     python run_kovasznay_experiments.py
+    ```
+*   **Bratu Equation**:
+    ```bash
+    cd Bratu
+    python run_bratu_experiments.py
     ```
