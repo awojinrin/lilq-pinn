@@ -1,5 +1,5 @@
 """
-Publication-Quality Plot Styling for JCP Manuscript
+Publication-Quality Plot Styling
 ===================================================
 
 Centralised matplotlib configuration matching the Elsevier 3p Times template.
