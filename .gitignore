@@ -21,11 +21,6 @@ results/
 *_experiments_*/
 burgers_basis_comparison/
 
-# Allow reference results to be committed/tracked
-!reference_results/
-!reference_results/**
-
-
 # Jupyter
 .ipynb_checkpoints/
 
@@ -58,3 +53,10 @@ htmlcov/
 # Scratch scripts
 scratch/
 
+# Allow reference results to be committed/tracked
+!reference_results/
+!reference_results/**
+!reference_results/**/*.png
+reference_results/**/*.pdf
+reference_results/**/*.eps
+reference_results/**/*.svg
