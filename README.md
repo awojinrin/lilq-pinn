@@ -88,6 +88,8 @@ python experiments/run_burgers_basis_comparison.py
 
 ```
 LiL-Q/
+├── .github/workflows/       # Continuous Integration workflows
+│   └── test.yml             # Dry-run validation suite runner
 ├── lilq/                    # Core library
 │   ├── basis.py             # Chebyshev, Fourier, ELM, tensor products (1D/2D/ND)
 │   ├── solvers.py           # Generic NiL-N, NiL-Q, LiL-N, LiL-Q templates
@@ -98,7 +100,7 @@ LiL-Q/
 │   ├── properties.py        # Theorem 2 residual bounds validation
 │   ├── analysis.py          # SVD, condition number studies
 │   ├── plotting.py          # Publication-quality plots
-│   ├── style.py             # CMAME/Elsevier styling
+│   ├── style.py             # JCP/Elsevier styling
 │   └── utils.py             # Seeds, GPU management, checkpointing
 ├── problems/                # Problem-specific physics
 │   ├── bratu.py
@@ -119,10 +121,10 @@ LiL-Q/
 │   ├── run_elasticity.py
 │   ├── run_darcy.py
 │   └── run_burgers_basis_comparison.py
-├── results/                 # Experiment outputs (gitignored)
+├── reference_results/       # Pre-computed paper results (committed)
 │   └── <problem>_experiments_<basis>/
 │       ├── N_<n>/           # Per-N checkpoints + metrics
-│       ├── figures/         # Convergence + solution plots
+│       ├── figures/         # Convergence + solution plots (PNG only)
 │       └── master_results.json
 ├── examples/                # Quick-start scripts + notebook
 │   ├── run_bratu_lilq.py
@@ -134,10 +136,13 @@ LiL-Q/
 ├── data/spe10/              # SPE10 permeability field data
 ├── scripts/
 │   └── generate_permeability.py
-├── pyproject.toml
+├── pyproject.toml           # Package metadata and dynamic install setup
+├── CITATION.cff             # Author citation metadata (full author list)
+├── REPRODUCE.md             # Detailed replication guide
 ├── requirements.txt
 ├── LICENSE
 └── README.md
+
 ```
 
 ## Repository Status
