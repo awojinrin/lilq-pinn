@@ -1,10 +1,11 @@
 """
-Publication-Quality Plot Styling for CMAME Manuscript
-=====================================================
+Publication-Quality Plot Styling for JCP Manuscript
+===================================================
 
 Centralised matplotlib configuration matching the Elsevier 3p Times template.
 Import this module at the top of every experiment runner to ensure consistent
 styling across all figures.
+
 
 Usage::
 

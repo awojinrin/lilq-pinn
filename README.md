@@ -1,12 +1,12 @@
 # A Convex Quasilinearization Method for Solving Nonlinear PDEs with Physics-Informed Neural Networks
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 Codebase for the paper:
 
 > **A Convex Quasilinearization Method for Solving Nonlinear PDEs with Physics-Informed Neural Networks**
-> Gbenga Awojinrin
+> Gbenga T. Awojinrin, Abdul-Akeem Olawoyin, and Rami M. Younis
 > (under review)
 
 ## Overview
@@ -40,14 +40,14 @@ The framework implements four solver variants for systematic comparison:
 ## Installation
 
 ```bash
-git clone https://github.com/gawojinrin/LiL-Q.git
-cd LiL-Q
+git clone https://github.com/awojinrin/lilq-pinn.git
+cd lilq-pinn
 pip install -r requirements.txt
 ```
 
 **Dependencies** (pinned for reproducibility):
-- Python >= 3.9
-- NumPy 2.4.2, SciPy 1.17.0, Matplotlib 3.10.8
+- Python >= 3.10
+- NumPy 2.4.2, SciPy 1.17.0, Matplotlib 3.10.8, Pandas 2.3.0
 - PyTorch 2.10.0 (for NiL-N/NiL-Q baseline comparisons)
 
 ## Quick Start

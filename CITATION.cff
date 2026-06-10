@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Awojinrin"
+    given-names: "Gbenga T."
+    orcid: "https://orcid.org/0000-0003-2760-5408"
+  - family-names: "Olawoyin"
+    given-names: "Abdul-Akeem"
+    orcid: "https://orcid.org/0009-0006-7611-9528"
+  - family-names: "Younis"
+    given-names: "Rami M."
+    orcid: "https://orcid.org/0000-0003-1050-2568"
+
+title: "LiL-Q: A Convex Quasilinearization Method for Solving Nonlinear PDEs with PINNs"
+version: 1.0.0
+date-released: 2026-06-10
+url: "https://github.com/awojinrin/lilq-pinn"

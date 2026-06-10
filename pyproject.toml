@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lilq"
+version = "0.1.0"
+description = "A Convex Quasilinearization Method for Solving Nonlinear PDEs with Physics-Informed Neural Networks"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Gbenga T. Awojinrin", email = "awojinringbengathompson@gmail.com"},
+    {name = "Abdul-Akeem Olawoyin"},
+    {name = "Rami M. Younis"}
+]
+keywords = [
+    "PDE", "neural-network", "quasilinearization", "spectral-methods",
+    "PINN", "physics-informed", "Chebyshev", "Fourier", "Navier-Stokes",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=2.4.2",
+    "scipy>=1.17.0",
+    "torch>=2.10.0",
+    "matplotlib>=3.10.8",
+    "pandas>=2.3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "jupyter"]
+notebook = ["jupyter", "ipywidgets"]
+
+[project.urls]
+Repository = "https://github.com/awojinrin/lilq-pinn"
+
+[tool.setuptools.packages.find]
+include = ["lilq*", "problems*"]

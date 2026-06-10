@@ -19,8 +19,12 @@ venv/
 # Experiment outputs
 results/
 *_experiments_*/
-*.json
 burgers_basis_comparison/
+
+# Allow reference results to be committed/tracked
+!reference_results/
+!reference_results/**
+
 
 # Jupyter
 .ipynb_checkpoints/
@@ -53,3 +57,4 @@ htmlcov/
 
 # Scratch scripts
 scratch/
+
