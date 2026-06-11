@@ -1,0 +1,13 @@
+{
+  "method": "LiL-Q",
+  "solve_time": 23.85387372970581,
+  "training_time": 25.380277633666992,
+  "final_loss": 0.9531948132125273,
+  "fvm_rmse_psi": 0.25715909750392,
+  "fvm_rel_L2": 5.4350735012121974e-05,
+  "n_coefficients": 3169,
+  "mse_Dx_nd": 1.4500735480173002e-05,
+  "mse_Dy_nd": 4.8572974702412696e-05,
+  "mse_CE_nd": 5.758134660994976e-06,
+  "converged": true
+}

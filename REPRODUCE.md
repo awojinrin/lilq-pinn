@@ -53,30 +53,32 @@ The experiment scripts accept a basis mode parameter `--N` (modes per dimension)
   * $N = 25 \rightarrow P = 1250$
 
 * **Beltrami Flow** (3D+time unsteady Navier-Stokes, 4 variables: $u, v, w, p$):
-  For custom Chebyshev-Fourier tensor configurations, see script mapping:
-  * $N_x=N_y=N_z=3, N_t=4 \rightarrow P = 243$
-  * $N_x=N_y=N_z=4, N_t=4 \rightarrow P = 576$
-  * $N_x=N_y=N_z=5, N_t=4 \rightarrow P = 1125$
-  * $N_x=N_y=N_z=6, N_t=4 \rightarrow P = 1944$
-  * $N_x=N_y=N_z=8, N_t=4 \rightarrow P = 4608$
+  Each velocity component uses a 4D tensor product basis with $N_\text{vel}$ modes per dimension;
+  pressure uses $N_p$ modes per dimension. Total DOFs: $P = 3 N_\text{vel}^4 + N_p^4$.
+  * $N_\text{vel}=6, N_p=8 \rightarrow P = 3 \times 1296 + 4096 = 7{,}984$ (manuscript configuration)
 
 ---
 
 ## 3. Experiment Runner Commands
+
+> **Hardware note.** All runtimes below were recorded on an Intel Core Ultra 9 275HX CPU.
+> The dominant cost in each 4-method benchmark is NiL-N (L-BFGS) training; LiL-Q itself
+> completes in seconds. For LiL-Q-only problems (Kovasznay, Beltrami, Elasticity), the
+> runtime is the LiL-Q solver time alone.
 
 ### Table 1 & Figure (Bratu Convergence Sweep)
 Runs NiL-N, NiL-Q, LiL-N, and LiL-Q solvers across basis sizes:
 ```bash
 python experiments/run_bratu.py --basis fourier --N 5 10 15
 ```
-*Expected CPU Runtime*: ~2–5 minutes.
+*Expected CPU Runtime*: ~15–20 minutes. NiL-N and NiL-Q each take ~5–8 min across all 3 sizes (dominated by $P=225$); LiL-N ~3 min; LiL-Q < 1 s total.
 
 ### Table 2 & Figure (Burgers Convergence Sweep)
 Runs all four solvers across basis sizes:
 ```bash
 python experiments/run_burgers.py --N 5 10 15 20 25
 ```
-*Expected CPU Runtime*: ~5–15 minutes.
+*Expected CPU Runtime*: ~55–60 minutes. NiL-N and NiL-Q each take ~22 min total across all 5 sizes (dominated by $N \geq 15$); LiL-N ~13 min; LiL-Q < 2 s total.
 
 ### Table 4 & Table 5 (Buckley-Leverett Sweeps)
 * **Viscous Case (No Gravity)**:
@@ -87,39 +89,43 @@ python experiments/run_burgers.py --N 5 10 15 20 25
   ```bash
   python experiments/run_bl.py --gravity --N 8 16 24 32
   ```
-*Expected CPU Runtime*: ~10–25 minutes per case.
+*Expected CPU Runtime*: ~40–60 minutes per case. At $N=32$ alone, NiL-N takes ~16 min, NiL-Q ~15 min, LiL-N ~5 min, and LiL-Q ~3.5 s. Smaller $N$ values add another ~5–10 minutes total.
 
 ### Table 8 (Kovasznay Navier-Stokes)
-Runs the steady 2D Navier-Stokes solver:
+Runs the LiL-Q steady 2D Navier-Stokes solver:
 ```bash
 python experiments/run_kovasznay.py --N 5 10 15 20 25
 ```
-*Expected CPU Runtime*: ~3–5 minutes.
+*Expected CPU Runtime*: < 1 minute (LiL-Q only; $N=25$ takes ~13 s, total ~20 s for all sizes).
 
 ### Table 10 (Beltrami 3D Flow)
-Runs the unsteady 3D Navier-Stokes solver:
+Runs the LiL-Q unsteady 3D Navier-Stokes solver with the manuscript configuration ($N_\text{vel}=6$, $N_p=8$, $P = 7{,}984$):
 ```bash
-python experiments/run_beltrami.py --N 3 4 5 6 8
+python experiments/run_beltrami.py --N_vel 6 --N_p 8
 ```
-*Expected CPU Runtime*: ~15–30 minutes.
+*Expected CPU Runtime*: ~9 minutes for the single manuscript configuration.
 
 ### Table 11 (Linear Elasticity)
-Runs plane-strain linear elasticity solver:
+Runs the LiL-Q plane-strain linear elasticity solver:
 ```bash
 python experiments/run_elasticity.py --N 5 10 15 20 25
 ```
-*Expected CPU Runtime*: ~2–3 minutes.
+*Expected CPU Runtime*: < 1 minute (LiL-Q only; total ~3 s for all sizes).
 
 ### Table 13 (SPE10 Darcy Flow)
-Runs Darcy flow solver for heterogeneous porous media (layers S1, S2, S3, and the full SPE10 field):
+Runs FVM reference + LiL-Q solver for heterogeneous porous media. Use `--skip-pinn` to omit the NiL-N baseline (which trains for 150 K epochs per field):
 ```bash
+# LiL-Q + FVM only (recommended for quick reproduction)
+python experiments/run_darcy.py --fields S1 S2 S3 SPE10 --order 32 --skip-pinn
+
+# Full run including NiL-N PINN baseline
 python experiments/run_darcy.py --fields S1 S2 S3 SPE10 --order 32
 ```
-*Expected CPU Runtime*: ~8–12 minutes.
+*Expected Runtime*: LiL-Q + FVM only: ~2 minutes for all 4 fields (LiL-Q ~24 s per field, FVM ~0.1 s per field). With NiL-N (default): ~75 minutes on GPU (NiL-N takes 960–1,580 s per field); significantly longer on CPU.
 
 ### Figure (Burgers Basis Comparison Study)
-Runs Burgers equation comparing Chebyshev, Fourier, Legendre, Jacobi, and Hermite bases:
+Runs Burgers equation comparing Chebyshev, Fourier, and ELM bases across basis sizes:
 ```bash
 python experiments/run_burgers_basis_comparison.py
 ```
-*Expected CPU Runtime*: ~5–10 minutes.
+*Expected CPU Runtime*: < 1 minute (LiL-Q only across all basis types).

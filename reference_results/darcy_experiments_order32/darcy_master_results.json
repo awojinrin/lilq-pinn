@@ -1,0 +1,82 @@
+{
+  "config": {
+    "fields": [
+      "S1",
+      "S2",
+      "S3",
+      "SPE10"
+    ],
+    "order": 32,
+    "timestamp": "2026-06-11T17:04:06.120550"
+  },
+  "results": {
+    "S1": {
+      "field": "S1",
+      "order": 32,
+      "LiL-Q": {
+        "method": "LiL-Q",
+        "solve_time": 23.85387372970581,
+        "training_time": 25.380277633666992,
+        "final_loss": 0.9531948132125273,
+        "fvm_rmse_psi": 0.25715909750392,
+        "fvm_rel_L2": 5.4350735012121974e-05,
+        "n_coefficients": 3169,
+        "mse_Dx_nd": 1.4500735480173002e-05,
+        "mse_Dy_nd": 4.8572974702412696e-05,
+        "mse_CE_nd": 5.758134660994976e-06,
+        "converged": true
+      }
+    },
+    "S2": {
+      "field": "S2",
+      "order": 32,
+      "LiL-Q": {
+        "method": "LiL-Q",
+        "solve_time": 24.6894953250885,
+        "training_time": 26.049676179885864,
+        "final_loss": 1.3526639778416008,
+        "fvm_rmse_psi": 0.39228113385038194,
+        "fvm_rel_L2": 8.62639017011321e-05,
+        "n_coefficients": 3169,
+        "mse_Dx_nd": 5.24284849483572e-05,
+        "mse_Dy_nd": 5.955384674322202e-05,
+        "mse_CE_nd": 2.6631292319804308e-05,
+        "converged": true
+      }
+    },
+    "S3": {
+      "field": "S3",
+      "order": 32,
+      "LiL-Q": {
+        "method": "LiL-Q",
+        "solve_time": 24.1804358959198,
+        "training_time": 25.48953104019165,
+        "final_loss": 5.024980284545169,
+        "fvm_rmse_psi": 1.2323197674439095,
+        "fvm_rel_L2": 0.00026329436914152926,
+        "n_coefficients": 3169,
+        "mse_Dx_nd": 7.019615712859214e-05,
+        "mse_Dy_nd": 0.001807549905769183,
+        "mse_CE_nd": 3.5165062864925606e-05,
+        "converged": true
+      }
+    },
+    "SPE10": {
+      "field": "SPE10",
+      "order": 32,
+      "LiL-Q": {
+        "method": "LiL-Q",
+        "solve_time": 24.344271421432495,
+        "training_time": 25.630980253219604,
+        "final_loss": 41.24057714199745,
+        "fvm_rmse_psi": 27.257468338068104,
+        "fvm_rel_L2": 0.00781129467510572,
+        "n_coefficients": 3169,
+        "mse_Dx_nd": 0.01539103706720461,
+        "mse_Dy_nd": 0.11307963170969494,
+        "mse_CE_nd": 0.00037669508711882384,
+        "converged": true
+      }
+    }
+  }
+}
