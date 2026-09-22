@@ -63,73 +63,66 @@ for this codebase (not new here).
 
 ## Buckley–Leverett, viscous
 
-| N (P) | Method | Manuscript | pre-v2 | GitHub v2 | **v3-dev (fresh)** |
-|---|---|---|---|---|---|
-| 8 (64) | NiL-N | — | 173 / 0.0847 / — | 148 / 0.0828 / 3.7s | 183 / 0.0824 / 12.5s |
-| 8 (64) | NiL-Q | — | 324 / 0.0846 / 10.0s | 290 / 0.0849 / 9.5s | 406 / 0.0804 / 30.9s |
-| 8 (64) | LiL-N | **259**, converged | 135 / 0.0846, converged | 1409\* / 0.1386 (line-search cap) | **5000\* / 0.1680 (iteration cap)** |
-| 8 (64) | LiL-Q | — | — | 10 / 0.0768 / 0.04s | 10 / 0.0780 / 0.05s |
-| 16 (256) | NiL-N | — | 926 / 0.0150 / — | 294 / 0.0149 / 10.5s | 248 / 0.0149 / 22.3s |
-| 16 (256) | NiL-Q | — | 972 / 0.0150 / 35.3s | 943 / 0.0149 / 31.5s | 839 / 0.0145 / 64.5s |
-| 16 (256) | LiL-N | — | 1107 / 0.0150, converged | 3938\* / 0.0303 (line-search cap) | **10000\* / 0.0334 (iteration cap)** |
-| 16 (256) | LiL-Q | — | — | 4 / 0.0132 / 0.21s | 4 / 0.0132 / 0.19s |
+| N (P) | Method | Manuscript | pre-v2 | GitHub v2 | v3-dev (before fix) | **v3-dev (after LiL-N fix)** |
+|---|---|---|---|---|---|---|
+| 8 (64) | NiL-N | — | 173 / 0.0847 / — | 148 / 0.0828 / 3.7s | 183 / 0.0824 / 12.5s | 183 / 0.0824 / 6.8s |
+| 8 (64) | NiL-Q | — | 324 / 0.0846 / 10.0s | 290 / 0.0849 / 9.5s | 406 / 0.0804 / 30.9s | 406 / 0.0804 / 16.4s |
+| 8 (64) | LiL-N | **259**, converged | 135 / 0.0846, converged | 1409\* / 0.1386 (line-search cap) | 5000\* / 0.1680 (plateau) | **135 / 0.0847, CONVERGED / 4.1s** |
+| 8 (64) | LiL-Q | — | — | 10 / 0.0768 / 0.04s | 10 / 0.0780 / 0.05s | 10 / 0.0780 / 0.03s |
+| 16 (256) | NiL-N | — | 926 / 0.0150 / — | 294 / 0.0149 / 10.5s | 248 / 0.0149 / 22.3s | 248 / 0.0149 / 14.6s |
+| 16 (256) | NiL-Q | — | 972 / 0.0150 / 35.3s | 943 / 0.0149 / 31.5s | 839 / 0.0145 / 64.5s | 839 / 0.0145 / 48.1s |
+| 16 (256) | LiL-N | — | 1107 / 0.0150, converged | 3938\* / 0.0303 (line-search cap) | 10000\* / 0.0334 (plateau) | **1061 / 0.0150, CONVERGED / 37.8s** |
+| 16 (256) | LiL-Q | — | — | 4 / 0.0132 / 0.21s | 4 / 0.0132 / 0.19s | 4 / 0.0132 / 0.28s |
 
-**This is the finding worth pausing on.** LiL-N for viscous BL:
-- **pre-v2**: converges cleanly and fast (135 and 1107 iterations).
-- **GitHub v2**: never converges, but the (buggy, now-removed) line-search
-  cap cuts it off relatively early — 1409 / 3938 iterations.
-- **v3-dev**: still never converges, and with that cap correctly removed
-  it now runs the *entire* iteration budget (5000 / 10000) trying — at
-  ~10x the wall-clock cost of the GitHub v2 run — landing at a **worse**
-  final loss than the truncated GitHub v2 run (0.168 vs. 0.139 at N=8;
-  0.033 vs. 0.030 at N=16).
+**Resolved.** The "before fix" numbers (LiL-N plateauing at 5000/10000
+iterations without converging) were caused by a genuine gradient-computation
+bug in `_make_lil_n_loss_fn`, not a missing stagnation detector — see
+DECISIONS.md ("BL's LiL-N gradient was silently wrong"). `solve_lil_n`
+was backpropagating through a *detached* flux derivative, so its computed
+gradient was structurally incomplete; L-BFGS was optimizing against the
+wrong objective the entire time, which looks exactly like a stagnating
+plateau from the outside. Fixed by adding a graph-preserving
+`flux_derivative_differentiable` and using it in `_make_lil_n_loss_fn`.
 
-So the loss essentially plateaus early and thousands of additional
-iterations buy nothing — not a case of "the old cap was cutting off a run
-that needed more time," but "this run needed a *stagnation* stop, not a
-*budget* stop." Pre-v2's clean convergence at the same sizes says this
-plateau isn't inherent to the problem, either — something about the
-starting point or path is landing LiL-N in a bad basin here that it
-escapes in pre-v2 but doesn't in either the GitHub or v3-dev code paths.
-
-**This directly and concretely motivates prioritizing the stall/stagnation
-detector inside Phase 1's instrumentation work** (already required by
-Computational_Package_1_v2.md S3.1 item 6, already flagged as a missing
-feature in Q1/Q3) — with it in place, this exact run would stop itself
-early instead of burning 10+ minutes for no benefit, and the stall flag
-would make the plateau visible in the log instead of silently returning a
-worse number. Root-causing *why* pre-v2 converges here and neither newer
-codebase does is a separate, open question — not yet investigated.
+After the fix, LiL-N converges cleanly and lands almost exactly on
+pre-v2's original numbers: **135 iterations at N=8 (pre-v2: 135, exact
+match)**, 1,061 at N=16 (pre-v2: 1,107, close). Total wall-clock for both
+sizes dropped from 1,438s to 137s — over 10x faster, simply because it's
+no longer burning thousands of iterations chasing a plateau that a
+correct gradient never would have produced.
 
 ---
 
 ## Buckley–Leverett, gravity
 
-| N (P) | Method | Manuscript | pre-v2 | GitHub v2 | **v3-dev (fresh)** |
-|---|---|---|---|---|---|
-| 8 (64) | NiL-N | — | 28 / 0.2379 / 1.7s | 249 / 0.2489 / 6.8s | 229 / 0.2499 / 18.1s |
-| 8 (64) | NiL-Q | — | 49 / 0.1601 / 1.8s | 250 / 0.2496 / 5.8s | 175 / 0.2467 / 11.8s |
-| 8 (64) | LiL-N | — | 166 / 0.2457, converged | 1429\* / 0.2869 (line-search cap) | **5000\* / 0.2869 (iteration cap)** |
-| 8 (64) | LiL-Q | **9** iters | — | 6 / 0.2194 / 0.03s | 6 / 0.2194 / 0.03s |
-| 16 (256) | NiL-N | — | 631 / 0.1500 / 44.1s | 923 / 0.1492 / 33.8s | 559 / 0.1496 / 42.9s |
-| 16 (256) | NiL-Q | — | 1616 / 0.1358 / 95.0s | 1450 / 0.1481 / 46.6s | 970 / 0.1492 / 66.7s |
-| 16 (256) | LiL-N | — | 10000\* / **63.80** (diverged), — | 2584\* / 0.2373 (line-search cap) | **10000\* / 0.2373 (iteration cap)** |
-| 16 (256) | LiL-Q | **7** iters | — | 7 / 0.1390 / 0.38s | 7 / 0.1390 / 0.31s |
+| N (P) | Method | Manuscript | pre-v2 | GitHub v2 | v3-dev (before fix) | **v3-dev (after LiL-N fix)** |
+|---|---|---|---|---|---|---|
+| 8 (64) | NiL-N | — | 28 / 0.2379 / 1.7s | 249 / 0.2489 / 6.8s | 229 / 0.2499 / 18.1s | 229 / 0.2499 / 9.6s |
+| 8 (64) | NiL-Q | — | 49 / 0.1601 / 1.8s | 250 / 0.2496 / 5.8s | 175 / 0.2467 / 11.8s | 175 / 0.2467 / 6.4s |
+| 8 (64) | LiL-N | — | 166 / 0.2457, converged | 1429\* / 0.2869 (line-search cap) | 5000\* / 0.2869 (plateau) | **94 / 0.2474, CONVERGED / 2.2s** |
+| 8 (64) | LiL-Q | **9** iters | — | 6 / 0.2194 / 0.03s | 6 / 0.2194 / 0.03s | 6 / 0.2194 / 0.03s |
+| 16 (256) | NiL-N | — | 631 / 0.1500 / 44.1s | 923 / 0.1492 / 33.8s | 559 / 0.1496 / 42.9s | 559 / 0.1496 / 34.7s |
+| 16 (256) | NiL-Q | — | 1616 / 0.1358 / 95.0s | 1450 / 0.1481 / 46.6s | 970 / 0.1492 / 66.7s | 970 / 0.1492 / 53.5s |
+| 16 (256) | LiL-N | — | 10000\* / **63.80** (diverged) | 2584\* / 0.2373 (line-search cap) | 10000\* / 0.2373 (plateau) | **5748 / 0.1500, CONVERGED / 140.4s** |
+| 16 (256) | LiL-Q | **7** iters | — | 7 / 0.1390 / 0.38s | 7 / 0.1390 / 0.31s | 7 / 0.1390 / 0.31s |
 
-Same LiL-N pattern as viscous, plus one more data point: pre-v2's LiL-N at
-N=16 doesn't just fail to converge, it **diverges outright** (loss 63.8 —
-matches the earlier-documented finding from this session's Q9
-investigation, that LiL-N is the weaker baseline for BL's gravity case and
-can diverge badly at larger sizes). v3-dev's N=16 LiL-N loss (0.2373)
-lands almost exactly on GitHub v2's *truncated* value (0.2373 at 2584
-iterations) even after running to the full 10,000 — strong direct evidence
-of a genuine early plateau, not a slow-but-still-progressing run.
+Same resolution as viscous — and gravity N=16 is the most striking result
+in this whole comparison: **v3-dev's fixed LiL-N converges cleanly (loss
+0.150) at a size where pre-v2's own LiL-N diverged outright** (loss 63.80).
+The gradient bug wasn't just present in the newer codebases; fixing it
+produces a solver that's *more* robust here than any prior version,
+consistent with the earlier finding (Q9) that gravity BL's Bellman-Kalaba
+iteration is sensitive to path — a correct gradient evidently finds a
+better path than pre-v2 did at this size. N=8 converges in 94 iterations
+(pre-v2: 166 — different count, both now legitimately converge, expected
+path variation between codebases). Total wall-clock for both sizes: 253s,
+down from 1,679s before the fix.
 
 LiL-Q's manuscript-quoted iteration counts (9 and 7, from Q1's "gravity
 Buckley–Leverett LiL-Q 9 / 7 / 10 / 8") match GitHub v2 and v3-dev
-*exactly* at these two sizes (6... wait — manuscript says 9/7, both
-codebases here show 6/7). N=16 matches (7=7); N=8 doesn't (9 vs 6) — worth
-noting as a partial, not full, match.
+*exactly* at N=16 (7=7) but not N=8 (manuscript 9 vs. both codebases' 6) —
+a partial match, consistent with Q1's provenance conclusion, and unrelated
+to the LiL-N fix (LiL-Q was never affected by this bug).
 
 ---
 
@@ -155,11 +148,13 @@ everything already established about this problem.
 - **LiL-Q is always the cheapest method by a wide margin** — sub-second in
   every case, every codebase, every problem. Direct QR solve, no
   optimizer loop, nothing to plateau.
-- **LiL-N is now the most expensive method for Buckley–Leverett**
-  specifically, in v3-dev — a direct consequence of correctly removing the
-  buggy line-search cap without yet having the stagnation detector that
-  would make that correct. Bratu/Burgers' LiL-N remains cheap and fine
-  (they were never affected by the BL-specific cap bug).
+- **LiL-N for Buckley–Leverett is now cheap and correct**, after fixing the
+  gradient bug — comparable to or faster than pre-v2 at every size tested
+  (4.1s/37.8s viscous, 2.2s/140.4s gravity). Before the fix it was briefly
+  the most expensive method in the whole comparison (up to 912s for a
+  single run) while also being *wrong*. Bratu/Burgers' LiL-N was never
+  affected by this bug (different loss-function construction, no
+  flux-divergence chain-rule term to get wrong the same way).
 - **NiL-N/NiL-Q runtimes are broadly consistent** with pre-v2/GitHub v2 at
   matching iteration counts; where v3-dev looks slower in wall-clock terms
   (e.g. Bratu N=5 NiL-N: 197.7s for 3178 iters vs. GitHub's 8.9s for 366
