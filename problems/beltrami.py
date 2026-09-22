@@ -170,8 +170,28 @@ def _lstsq(A, b, use_gpu=False):
 # Solver
 # ─────────────────────────────────────────────────────────────────────────────
 
-def solve_beltrami(config: BeltramiConfig, verbose=True) -> Dict:
-    """Solve 3D Beltrami flow via multi-field LiL-Q."""
+def solve_beltrami(config: BeltramiConfig, verbose=True,
+                    analyze_conditioning: bool = False) -> Dict:
+    """Solve 3D Beltrami flow via multi-field LiL-Q.
+
+    Parameters
+    ----------
+    analyze_conditioning : bool
+        If True, compute and log the system matrix's condition number
+        (``np.linalg.cond``, a full SVD) every outer iteration. Defaults
+        to False: at this problem's scale (P_total ~ 8000), a full SVD
+        per iteration is expensive enough to roughly double total solve
+        time for a diagnostic nothing currently consumes -- confirmed via
+        a same-machine, same-moment comparison against the pre-GitHub
+        codebase, which gates this identically (``analyze_svd=False`` by
+        default) for the same reason. See DECISIONS.md. The computational
+        package spec (Section 3.1 item 8) also specifies a cheaper,
+        final-iterate-only pivoted-QR conditioning check for Beltrami
+        specifically rather than a full per-iteration SVD -- that's the
+        real replacement for this flag, planned for Phase 1's
+        instrumentation work; this flag is a stopgap that restores
+        correct default performance in the meantime.
+    """
     physics = BeltramiPhysics(config)
     nu = physics.nu
 
@@ -367,7 +387,9 @@ def solve_beltrami(config: BeltramiConfig, verbose=True) -> Dict:
         history['pde_residual'].append(pde_res)
         history['continuity_residual'].append(cont_res)
         history['solve_time'].append(dt_iter)
-        history['cond_number'].append(float(np.linalg.cond(A_sys)))
+        history['cond_number'].append(
+            float(np.linalg.cond(A_sys)) if analyze_conditioning else float('nan')
+        )
 
         if verbose:
             print(f"  Iter {k:3d}: delta={rel_delta:.3e}  "

@@ -17,6 +17,98 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Beltrami's real slowdown cause: unconditional per-iteration SVD, not set_seed
+
+**Phase 1, batch 1.** While verifying the `set_seed` fix below actually
+resolved Beltrami's known slowdown (Q6: paper ~297s, GitHub/v3-dev
+~513-539s), a same-machine, same-moment, three-way controlled comparison
+told a different story than the original Q6 investigation had concluded:
+
+| Run (today, same machine, back to back) | Time |
+|---|---|
+| pre-GitHub codebase, actual code, run fresh | **302.0s** |
+| v3-dev, `set_seed` new default (`deterministic_cuda=False`) | 539.0s |
+| v3-dev, `set_seed` old behavior forced (`deterministic_cuda=True`) | 558.8s |
+
+The `set_seed` fix only accounts for ~20s (539 vs. 559) -- nowhere near
+the ~1.7x originally attributed to it. That original comparison was made
+hours apart in this same session and wasn't a clean, isolated A/B test;
+running pre-GitHub's *actual* code right now (302.0s, matching its
+original ~297s closely) ruled out "the machine is just slower today" and
+confirmed a real, current, code-level gap the `set_seed` fix doesn't explain.
+
+**Real cause, found by reading `problems/beltrami.py`'s solve loop
+directly:** `solve_beltrami` computes `np.linalg.cond(A_sys)` -- a full
+SVD on the system matrix, P_total=7,984 columns -- **unconditionally,
+every outer iteration**, and nothing downstream ever reads the result
+(`history['cond_number']` is appended to and never consumed anywhere).
+Pre-GitHub's `beltrami_core.py` has the identical computation but gates
+it behind `analyze_svd=False` (default off) -- confirmed by reading that
+file directly, not by assumption.
+
+This also isn't just an efficiency gap -- it's the *wrong* algorithm per
+the computational package spec: Section 3.1 item 8 explicitly requires
+full-SVD conditioning only for $P \le 3{,}200$, and prescribes a cheaper
+pivoted-QR check **at the final iterate only** for Beltrami specifically
+(P=7,984, over that threshold), precisely because per-iteration SVD isn't
+practical at this scale. The unconditional call was doing the
+spec-prohibited expensive thing by default.
+
+**Fix (stopgap):** added `analyze_conditioning: bool = False` to
+`solve_beltrami`, matching pre-GitHub's `analyze_svd` pattern exactly --
+gated the `np.linalg.cond` call behind it, logging `nan` when disabled
+rather than silently shortening the history list. Verified:
+`experiments/run_beltrami.py` never requested it, so no caller needed
+updating. Reran at full scale after the fix: **324.0s** -- matching
+pre-GitHub's 302.0s within normal run-to-run variance.
+
+**Not the final fix.** This flag is a stopgap that restores correct
+default performance now. The real, spec-correct replacement -- SVD for
+$P\le3{,}200$, pivoted QR at the final iterate for Beltrami -- belongs to
+Phase 1's `iterations.csv` instrumentation work (Codebase_v3_Proposal.md
+S2.1), where conditioning logging is being built properly for every
+problem anyway. Revisit this flag when that lands; it should likely be
+subsumed rather than kept as a separate toggle.
+
+**Process note, worth keeping in mind for the rest of Phase 1:** the
+original Q6 diagnosis (below) wasn't wrong that a regression existed, but
+it misattributed the *cause* without ever running a controlled, same-
+session A/B test -- it reasoned from plausible mechanism (CUDA context
+init cost) rather than measuring the actual isolated effect. This entry
+exists because re-verifying an old finding before building on it (as
+asked) caught that. Worth treating other not-yet-re-verified claims in
+this log with the same scrutiny before leaning on them.
+
+---
+
+## 2026-09-22 -- set_seed(): CUDA/cuDNN determinism made opt-in (real but smaller effect than Q6 claimed)
+
+**Phase 1, batch 1.** `set_seed()` used to unconditionally call
+`torch.cuda.manual_seed_all()` and force
+`cudnn.deterministic=True`/`benchmark=False`, applied identically at
+every one of its ~19 call sites regardless of whether that particular
+solve path uses CUDA. Q6 (this project's earlier investigation) attributed
+Beltrami's full slowdown to this; re-verified this session with a
+controlled A/B test and found the real effect is much smaller (~20s of
+~540s) -- see the entry above for the actual dominant cause and the
+corrected numbers.
+
+The fix stands on its own merits regardless of the corrected magnitude:
+confirmed via direct grep that no architecture in this codebase has
+Dropout, BatchNorm, or Conv layers (only `nn.Linear` + activation) --
+meaning there is no GPU-side random operation and no convolution for
+cuDNN to benchmark, so CUDA-level determinism has zero observable effect
+on any current result, for a real (if now-modest) cost. Made opt-in via a
+new `deterministic_cuda: bool = False` parameter rather than reclassifying
+all 19 call sites individually -- since nothing currently needs it, no
+call site needed updating, only the shared function's default. `torch.manual_seed`
+(CPU-side, covers this codebase's weight init since parameters are
+constructed before any `.to(device)` call) is unaffected and still always
+set. Pass `deterministic_cuda=True` explicitly if a future addition
+introduces GPU-side randomness or convolutions that need it.
+
+---
+
 ## 2026-09-22 -- BL's LiL-N gradient was silently wrong (root cause of the plateau above)
 
 **This is a real correctness bug, confirmed and fixed, not a hyperparameter

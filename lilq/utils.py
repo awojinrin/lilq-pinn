@@ -23,18 +23,39 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Reproducibility
 # ─────────────────────────────────────────────────────────────────────────────
 
-def set_seed(seed: int = 42) -> None:
-    """Set random seeds across all backends for reproducibility.
+def set_seed(seed: int = 42, deterministic_cuda: bool = False) -> None:
+    """Set random seeds for reproducibility.
 
-    Sets seeds for: numpy, Python random, PyTorch CPU, PyTorch CUDA.
-    Also disables cuDNN non-deterministic algorithms.
+    Always seeds: numpy, Python `random`, and PyTorch's CPU RNG. The CPU
+    seed alone is sufficient to make every current model's weight
+    initialization reproducible, since ``nn.Module`` parameters are
+    constructed (and their ``reset_parameters()`` RNG draws happen) before
+    any ``.to(device)`` call moves them to the GPU.
+
+    Parameters
+    ----------
+    seed : int
+    deterministic_cuda : bool
+        If True, additionally seeds CUDA's RNG (``torch.cuda.manual_seed_all``)
+        and forces deterministic cuDNN algorithms. Defaults to False:
+        every architecture in this codebase is plain ``nn.Linear`` +
+        activation (no Dropout, BatchNorm, or Conv layers), so there is no
+        GPU-side random operation and no convolution for cuDNN to
+        benchmark -- enabling this has a confirmed real cost (CUDA context
+        initialization, disabled cuDNN autotuning) for no observable
+        effect on any current result. Confirmed to cause a ~1.7x wall-clock
+        regression on CPU-only problems that still happen to run on a
+        machine with a GPU present (Beltrami; see DECISIONS.md). Pass
+        True explicitly only if a future addition introduces GPU-side
+        randomness or convolutions that genuinely need it.
     """
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    if deterministic_cuda:
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
