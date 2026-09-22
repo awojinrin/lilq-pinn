@@ -380,17 +380,13 @@ Confirmed against `pre-v2-local-codebase/Bratu/run_bratu_experiments.py`:
 `{5: 5000, 10: 7500, 15: 10000}` there vs. `{5: 5000, 10: 10000, 15: 10000}`
 before this change. N=5 and N=15 were already unchanged; only N=10 reverted.
 
-**Open flag, not yet decided:** while checking this, `MAX_LINE_SEARCHES`
-turned out to *also* differ for Bratu, on every entry --
-`{5: 24000, 10: 30000, 15: 30000}` pre-GitHub vs. the current
-`{5: 15000, 10: 25000, 15: 25000}` -- something Q1's original writeup
-claimed was "unchanged" (true for Burgers, checked and confirmed identical
-in both versions, but evidently not checked carefully enough for Bratu at
-the time). Unlike Buckley-Leverett, Bratu has always had a real,
-deliberately-calibrated line-search cap in both codebases -- this isn't a
-"restore vs. remove" question the way BL's was, it's "which of two
-different deliberate numbers is right." Left as-is (current GitHub values)
-pending an explicit decision on whether to revert these too.
+**Flag raised here, resolved same day:** while checking this,
+`MAX_LINE_SEARCHES` turned out to *also* differ for Bratu, on every entry
+-- something Q1's original writeup claimed was "unchanged" (true for
+Burgers, checked and confirmed identical in both versions, but evidently
+not checked carefully enough for Bratu at the time). See the "Bratu's
+MAX_LINE_SEARCHES" entry above (newer, listed first) for the resolution
+-- reverted to the pre-GitHub values on instruction.
 
 ---
 
