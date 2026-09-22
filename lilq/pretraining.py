@@ -14,6 +14,32 @@ import scipy.linalg
 from typing import Tuple, Callable
 
 
+def nn_pretrain_grid_side(target_dof: int, floor: int) -> int:
+    """Per-dimension fit-grid side length for NN pretraining.
+
+    Restores the pre-GitHub-consolidation behavior of scaling the
+    pretraining fit grid with the problem's own basis DOF count, floored at
+    a per-problem minimum so small configurations still get a usable fit.
+    Each problem's ``(floor, target_dof)`` pair is its own historical value
+    (they differ across Bratu/Burgers/Buckley-Leverett) -- see
+    ``DECISIONS.md`` for the exact numbers and provenance.
+
+    Parameters
+    ----------
+    target_dof : int
+        Nominal total fit-point target, e.g. ``N_x * N_y``.
+    floor : int
+        Minimum total fit-point count.
+
+    Returns
+    -------
+    int
+        Grid points per dimension (a square grid of this side length is
+        used for the fit).
+    """
+    return int(np.sqrt(max(floor, target_dof)))
+
+
 def pretrain_nn(
     model: nn.Module,
     initial_guess_fn: Callable,
@@ -134,7 +160,7 @@ def pretrain_lil(
     initial_guess_fn: Callable,
     x_domain: Tuple[float, float],
     y_domain: Tuple[float, float],
-    n_grid: int = 50,
+    n_grid: int = 100,
     verbose: bool = True,
 ) -> Tuple[np.ndarray, float]:
     """Pre-train LiL basis coefficients via least-squares fitting.
@@ -151,7 +177,11 @@ def pretrain_lil(
     x_domain, y_domain : tuple
         Physical domain (min, max) for each direction.
     n_grid : int
-        Grid resolution per dimension.
+        Minimum total fit-point count (not per-dimension -- the per-
+        dimension side length is ``sqrt(max(n_grid, 2 * n_basis))``).
+        Default 100 matches the historical value used identically across
+        Bratu, Burgers, and Buckley-Leverett pre-consolidation; see
+        ``DECISIONS.md``.
     verbose : bool
         Print progress.
 
@@ -164,7 +194,7 @@ def pretrain_lil(
     """
     n_coefs = basis.n_basis
 
-    n_fit = max(n_grid, int(np.ceil(np.sqrt(2 * n_coefs))))
+    n_fit = nn_pretrain_grid_side(2 * n_coefs, floor=n_grid)
 
     x_fit = np.linspace(x_domain[0], x_domain[1], n_fit, dtype=np.float64)
     y_fit = np.linspace(y_domain[0], y_domain[1], n_fit, dtype=np.float64)
