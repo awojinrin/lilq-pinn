@@ -23,9 +23,14 @@ from .nn import MLP, calculate_hidden_dim
 from .metrics import MetricsTracker, QuasilinearMetrics
 from .utils import set_seed, clear_gpu_memory
 
-
-# Force float64 precision for all solvers
-torch.set_default_dtype(torch.float64)
+# float64 precision is set explicitly at each parameter/tensor construction
+# site (MLP's own dtype=torch.float64 default; explicit dtype= on every
+# bare torch.tensor/linspace/zeros call across problems/*.py) rather than
+# via a process-wide torch.set_default_dtype() call here. That call used
+# to live at this module's import time, silently changing every later
+# nn.Module construction anywhere in the process regardless of which
+# problem or file did the constructing -- fragile and import-order
+# dependent. See DECISIONS.md.
 
 
 # ─────────────────────────────────────────────────────────────────────────────

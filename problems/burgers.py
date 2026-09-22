@@ -296,8 +296,8 @@ def _make_lil_nonlinear_loss_fn(A_u, A_ux, A_ut, A_uxx,
 def evaluate_nn_solution(model, config: BurgersConfig, n_eval=200, device=DEVICE):
     """Evaluate NN solution on uniform grid."""
     model.eval()
-    x = torch.linspace(config.x_domain[0], config.x_domain[1], n_eval)
-    t = torch.linspace(0, config.T_final, n_eval)
+    x = torch.linspace(config.x_domain[0], config.x_domain[1], n_eval, dtype=torch.float64)
+    t = torch.linspace(0, config.T_final, n_eval, dtype=torch.float64)
     X, T = torch.meshgrid(x, t, indexing='ij')
     xt = torch.stack([X.flatten(), T.flatten()], dim=1).to(device)
     with torch.no_grad():

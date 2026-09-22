@@ -17,6 +17,66 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- torch.set_default_dtype() import-time side effect removed
+
+**Phase 1, batch 1 (second half).** `lilq/solvers.py` used to call
+`torch.set_default_dtype(torch.float64)` at module import time -- a
+process-wide mutation that silently made every later `nn.Module`
+construction anywhere in the process default to float64, regardless of
+which file did the constructing, based on import order rather than an
+explicit choice. Same class of problem as `set_seed`'s old unconditional
+CUDA touching (previous entries): a shared setup step mutating global
+state instead of taking explicit configuration -- and, per
+`Codebase_v3_Proposal.md` S3, the two were always meant to be fixed
+together.
+
+**Fix:** `MLP` (`lilq/nn.py`) now takes its own `dtype: torch.dtype =
+torch.float64` parameter, passed directly to each `nn.Linear(...)`
+construction. The default preserves every current NiL-N/NiL-Q call
+site's existing behavior with zero call-site changes needed (Bratu,
+Burgers, and BL all construct `MLP(...)` with no explicit dtype and
+correctly keep getting float64). The `torch.set_default_dtype` call
+itself was deleted from `lilq/solvers.py`.
+
+Audited every bare (no explicit dtype) `torch.tensor`/`linspace`/`zeros`/
+`full`/`empty` construction across `problems/`, `lilq/`, and
+`experiments/` (grep, cross-checked against multi-line calls to avoid the
+false negatives a naive single-line grep would give) and made each one
+explicit:
+- `problems/bratu.py`: the IC-loss placeholder and the evaluation-grid
+  `linspace` calls -> `dtype=torch.float64`.
+- `problems/burgers.py`, `problems/buckley_leverett.py`: same
+  evaluation-grid `linspace` pattern -> `dtype=torch.float64`.
+- `problems/darcy.py`: `DarcyPINN`'s three `MLP(...)` calls now pass
+  `dtype=torch.float32` directly instead of constructing at float64 and
+  immediately downcasting via `.float()`.
+
+**Bonus find while auditing Darcy:** `DarcyPINN.xleft`/`.xright` (two
+bare `torch.zeros`/`torch.full` calls) had **no explicit dtype at all**,
+silently inheriting float64 from the global default while every other
+tensor in the same class (`xbot`, `xtop`, `xpde`, etc., all built via an
+explicit-float32 `_t()` helper) was float32 -- a real, if currently
+harmless (no failure observed, likely masked by implicit type promotion
+somewhere downstream), latent inconsistency that would have become a
+silent float32 gap once the global default was removed. Fixed to
+`dtype=torch.float32`, matching the rest of the class's clear intent.
+Darcy's PINN path remains out of scope for this package (Phase 0), but
+since this codebase-wide dtype audit touched it anyway, worth fixing
+while here rather than leaving a known inconsistency for later.
+
+**Verified:**
+- `tests/test_dtype_explicit.py`: importing `lilq.solvers` in a fresh
+  subprocess leaves `torch.get_default_dtype()` unchanged; `MLP()`
+  defaults to float64 even under deliberately hostile global state
+  (`torch.set_default_dtype(torch.float32)` set immediately before
+  construction); `MLP(dtype=torch.float32)` still works for Darcy.
+- End-to-end: ran real NiL-N solves for Bratu, Burgers, and BL and
+  confirmed float64 parameters and float64 evaluation-grid output;
+  constructed a real `DarcyPINN` and confirmed float32 parameters and
+  (now-fixed) float32 `xleft`/`xright`.
+
+---
+
 ## 2026-09-22 -- Beltrami's real slowdown cause: unconditional per-iteration SVD, not set_seed
 
 **Phase 1, batch 1.** While verifying the `set_seed` fix below actually

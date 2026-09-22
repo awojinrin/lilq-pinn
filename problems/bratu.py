@@ -212,7 +212,7 @@ def _make_lil_n_loss_fn(A_u, A_uxx, A_uyy, A_bc, lambda_: float,
         bc_loss = torch.mean(bc_res ** 2)
 
         total = lambda_pde * pde_loss + lambda_bc * bc_loss
-        ic_loss = torch.tensor(0.0)
+        ic_loss = torch.tensor(0.0, dtype=torch.float64)
         return total, pde_loss, ic_loss, bc_loss
 
     return compute_loss
@@ -268,8 +268,8 @@ def _make_lil_nonlinear_loss_fn(A_u, A_uxx, A_uyy, A_bc,
 def evaluate_nn_solution(model, config: BratuConfig, n_eval=200, device=DEVICE):
     """Evaluate NN solution on uniform grid."""
     model.eval()
-    x = torch.linspace(config.x_domain[0], config.x_domain[1], n_eval)
-    y = torch.linspace(config.y_domain[0], config.y_domain[1], n_eval)
+    x = torch.linspace(config.x_domain[0], config.x_domain[1], n_eval, dtype=torch.float64)
+    y = torch.linspace(config.y_domain[0], config.y_domain[1], n_eval, dtype=torch.float64)
     X, Y = torch.meshgrid(x, y, indexing='ij')
     xy = torch.stack([X.flatten(), Y.flatten()], dim=1).to(device)
     with torch.no_grad():

@@ -655,9 +655,9 @@ class DarcyPINN:
         self.device = torch.device(device)
 
         act = nn.SiLU()
-        self.net_P = MLP(2, hidden_dim, 1, num_layers, activation=act).float().to(self.device)
-        self.net_U = MLP(2, hidden_dim, 1, num_layers, activation=act).float().to(self.device)
-        self.net_V = MLP(2, hidden_dim, 1, num_layers, activation=act).float().to(self.device)
+        self.net_P = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=torch.float32).to(self.device)
+        self.net_U = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=torch.float32).to(self.device)
+        self.net_V = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=torch.float32).to(self.device)
 
         # Scaling constants (float32 to match network dtype)
         self.X_SCALE = float(physics.LX / 2.0)
@@ -695,9 +695,9 @@ class DarcyPINN:
 
         self.xbot = _t(x_c); self.ybot = torch.zeros_like(self.xbot, device=self.device)
         self.xtop = _t(x_c); self.ytop = torch.full_like(self.xtop, phy.LY, device=self.device)
-        self.xleft = torch.zeros(cfg.NY_CELLS, 1, device=self.device)
+        self.xleft = torch.zeros(cfg.NY_CELLS, 1, dtype=torch.float32, device=self.device)
         self.yleft = _t(y_c)
-        self.xright = torch.full((cfg.NY_CELLS, 1), phy.LX, device=self.device)
+        self.xright = torch.full((cfg.NY_CELLS, 1), phy.LX, dtype=torch.float32, device=self.device)
         self.yright = _t(y_c)
 
     def _norm_input(self, x, y):

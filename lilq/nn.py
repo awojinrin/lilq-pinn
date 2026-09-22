@@ -73,6 +73,14 @@ class MLP(nn.Module):
         for Darcy/SPE10 problems).
     output_activation : nn.Module or None
         Optional activation after the final linear layer.
+    dtype : torch.dtype
+        Parameter precision (default ``torch.float64``, matching every
+        NiL-N/NiL-Q solver in this codebase). Previously this came from a
+        process-wide ``torch.set_default_dtype(torch.float64)`` call at
+        ``lilq.solvers`` import time; that implicit, order-dependent
+        global mutation is gone (see DECISIONS.md) -- pass
+        ``dtype=torch.float32`` explicitly for a caller that wants single
+        precision (e.g. Darcy's PINN path).
     """
 
     def __init__(
@@ -83,6 +91,7 @@ class MLP(nn.Module):
         num_layers: int = 4,
         activation: nn.Module = None,
         output_activation: nn.Module = None,
+        dtype: torch.dtype = torch.float64,
     ):
         super().__init__()
 
@@ -90,14 +99,14 @@ class MLP(nn.Module):
             activation = nn.Tanh()
 
         layers = []
-        layers.append(nn.Linear(input_dim, hidden_dim))
+        layers.append(nn.Linear(input_dim, hidden_dim, dtype=dtype))
         layers.append(activation)
 
         for _ in range(num_layers - 1):
-            layers.append(nn.Linear(hidden_dim, hidden_dim))
+            layers.append(nn.Linear(hidden_dim, hidden_dim, dtype=dtype))
             layers.append(activation)
 
-        layers.append(nn.Linear(hidden_dim, output_dim))
+        layers.append(nn.Linear(hidden_dim, output_dim, dtype=dtype))
 
         if output_activation is not None:
             layers.append(output_activation)
