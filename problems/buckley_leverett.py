@@ -21,7 +21,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Optional, Tuple
 
 from lilq.basis import create_basis_2d
 from lilq.nn import MLP, calculate_hidden_dim
@@ -68,7 +68,6 @@ class BLConfig:
 class BLOptConfig:
     """Optimization settings for BL experiments."""
     max_iterations: int = 10000
-    max_line_searches: int = 100000
     R_tol: float = 1e-5
     lambda_pde: float = 1.0
     lambda_ic: float = 10.0
@@ -82,6 +81,19 @@ class BLOptConfig:
     # nn_pretrain_grid_side() and DECISIONS.md. 50 is BL's own historical
     # floor (Burgers uses 100 for this path).
     pretrain_grid_floor: int = 50
+    # Line-search evaluation cap: intentionally inert -- see DECISIONS.md.
+    # The pre-GitHub BL implementation had no separate evaluation-based
+    # cap at all; only the per-optimizer.step() max_eval=15 (hardcoded in
+    # lilq.solvers) bounded cost, giving a true worst case of
+    # max_iterations * 15 evaluations for a run that never converges.
+    # Left unset here and resolved to that worst case in __post_init__ so
+    # it can never bind before max_iterations does, regardless of how
+    # max_iterations is configured -- a backstop, not an active limit.
+    max_line_searches: Optional[int] = None
+
+    def __post_init__(self):
+        if self.max_line_searches is None:
+            self.max_line_searches = self.max_iterations * 15
 
 
 # ─────────────────────────────────────────────────────────────────────────────

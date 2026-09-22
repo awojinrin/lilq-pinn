@@ -59,7 +59,9 @@ DEFAULT_PRETRAIN_TOL = 1e-5
 N_HIDDEN_LAYERS = 2
 
 TARGET_LOSSES = {5: 2.5e-1, 10: 1e-4, 15: 2.5e-7}
-MAX_ITERATIONS = {5: 5000, 10: 10000, 15: 10000}
+# N=10 (P=100) reverted 10000 -> 7500 to match the pre-GitHub iteration
+# budget exactly; N=5 and N=15 were already unchanged (DECISIONS.md).
+MAX_ITERATIONS = {5: 5000, 10: 7500, 15: 10000}
 MAX_LINE_SEARCHES = {5: 15000, 10: 25000, 15: 25000}
 MAX_QUASI_ITERS = 25
 MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 400, 15: 400}

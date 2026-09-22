@@ -14,6 +14,48 @@ Format: newest first.
 
 ---
 
+## 2026-09-22 -- Bratu's N=10 iteration cap: reverted 10,000 -> 7,500
+
+`experiments/run_bratu.py`'s `MAX_ITERATIONS` schedule is per-size, not one
+flat number; only the N=10 (P=100) entry changed during the consolidation.
+Confirmed against `pre-v2-local-codebase/Bratu/run_bratu_experiments.py`:
+`{5: 5000, 10: 7500, 15: 10000}` there vs. `{5: 5000, 10: 10000, 15: 10000}`
+before this change. N=5 and N=15 were already unchanged; only N=10 reverted.
+
+**Open flag, not yet decided:** while checking this, `MAX_LINE_SEARCHES`
+turned out to *also* differ for Bratu, on every entry --
+`{5: 24000, 10: 30000, 15: 30000}` pre-GitHub vs. the current
+`{5: 15000, 10: 25000, 15: 25000}` -- something Q1's original writeup
+claimed was "unchanged" (true for Burgers, checked and confirmed identical
+in both versions, but evidently not checked carefully enough for Bratu at
+the time). Unlike Buckley-Leverett, Bratu has always had a real,
+deliberately-calibrated line-search cap in both codebases -- this isn't a
+"restore vs. remove" question the way BL's was, it's "which of two
+different deliberate numbers is right." Left as-is (current GitHub values)
+pending an explicit decision on whether to revert these too.
+
+---
+
+## 2026-09-22 -- Buckley-Leverett's line-search cap: made inert instead of removed
+
+Pre-GitHub BL had no evaluation-based termination condition at all -- a
+pure iteration-count loop, `func_eval_counter` tracked for logging only.
+The consolidation added `max_line_searches=100,000` as a second
+loop-termination condition. Since each `.step()` is separately capped at
+`max_eval=15` (hardcoded in `lilq.solvers`, shared by all problems), the
+true worst-case eval count for a never-converging run was always
+`max_iterations * 15` regardless -- meaning the added 100,000 cap could
+actually cut a run short *before* `max_iterations` did in some
+configurations, which pre-GitHub BL would never have done.
+
+Rather than hardcoding a literal "big enough" number, `BLOptConfig` now
+derives `max_line_searches = max_iterations * 15` in `__post_init__` when
+not explicitly overridden -- it can never bind first by construction,
+including if `max_iterations` is changed later, and an explicit override
+is still honored if anyone wants a genuinely tighter cap for a specific run.
+
+---
+
 ## 2026-09-22 -- NN/LiL pretraining fit-grid density: reverted to pre-GitHub, per-problem formulas
 
 **What changed.** Two separate fixes:
