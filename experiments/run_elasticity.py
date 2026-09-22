@@ -27,7 +27,7 @@ from problems.elasticity import (
 
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
-    save_master_results, save_summary_json,
+    save_master_results, save_summary_json, save_run_provenance,
     plot_solution_panel, print_summary_table,
 )
 
@@ -128,6 +128,7 @@ def main():
     base_dir = experiment_base_dir('elasticity', 'mixed')
     save_master_results(base_dir / 'elasticity_master_results.json', all_results,
                         {'n_values': args.N, 'k_ratio': K_RATIO})
+    save_run_provenance('elasticity', 'mixed')
 
 
 if __name__ == '__main__':

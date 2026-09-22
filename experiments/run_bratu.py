@@ -40,7 +40,7 @@ from problems.bratu import (
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
     save_lil_checkpoint, save_nn_checkpoint, save_metrics_csv,
-    save_master_results, save_summary_json,
+    save_master_results, save_summary_json, save_run_provenance,
     plot_convergence_by_method, plot_convergence_by_size,
     plot_solution_field, print_summary_table,
 )
@@ -244,6 +244,7 @@ def run_all_experiments(N_values, basis_type, lambda_, methods, verbose=True):
     }
     save_master_results(base_dir / 'bratu_master_results.json',
                         all_results, config_info)
+    save_run_provenance('bratu', basis_type)
 
     # Generate convergence plots
     fig_dir = make_figures_dir('bratu', basis_type)

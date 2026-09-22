@@ -28,7 +28,7 @@ from problems.beltrami import (
 
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
-    save_master_results, save_summary_json, save_metrics_csv,
+    save_master_results, save_summary_json, save_metrics_csv, save_run_provenance,
     print_summary_table,
     plot_fields_2d_beltrami, plot_3d_volumes_beltrami,
 )
@@ -168,6 +168,7 @@ def main():
                         {result['label']: result},
                         {'N_vel': args.N_vel, 'N_p': args.N_p,
                          'basis': args.basis})
+    save_run_provenance('beltrami', args.basis)
 
 
 if __name__ == '__main__':

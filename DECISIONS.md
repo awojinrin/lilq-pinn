@@ -17,6 +17,81 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Provenance capture (hardware.json/environment.txt) and multi-seed harness added
+
+**Phase 1, batch 2.** Two new, independent, tested building blocks
+required by Computational_Package_1_v2.md Section 2:
+
+**`lilq/provenance.py`** -- captures everything Section 2 asks for:
+CPU/GPU info (`nvidia-smi` for GPU name/driver/memory, `/proc/cpuinfo` on
+Linux or `platform.processor()` elsewhere for CPU model), the
+`OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS` environment
+variables actually in effect, numpy/scipy/torch versions, verbatim
+`numpy.show_config()`/`scipy.show_config()` text, and the git commit hash
++ branch + any uncommitted diff. Every capture function degrades to
+`None`/`"available": False` on a missing tool rather than raising --
+provenance capture must never be why a multi-hour run crashes.
+
+This directly retires the "which run/code/machine produced this number"
+class of question that most of the earlier Q1/Q2/Q5/Q6 investigation was
+spent answering after the fact (Codebase_v3_Proposal.md S2.5). Confirmed
+live: the first real capture on this machine shows
+`blas_thread_env: {OMP_NUM_THREADS: null, OPENBLAS_NUM_THREADS: null,
+MKL_NUM_THREADS: null}` -- directly, immediately visible confirmation of
+Q5's finding (no thread-pinning is set anywhere), instead of something
+that took code-reading to establish.
+
+Wired into all 8 real experiment scripts (`run_bratu.py`, `run_burgers.py`,
+`run_bl.py`, `run_kovasznay.py`, `run_elasticity.py`, `run_beltrami.py`,
+`run_darcy.py`, `run_burgers_basis_comparison.py`) via a new
+`save_run_provenance()` helper in `exp_utils.py`, called once per script
+invocation right alongside the existing `save_master_results()` call --
+not `run_all_dry.py`, which is a fast pipeline smoke test, not a real
+timed run. Verified end-to-end: a real Kovasznay run now writes
+`hardware.json`/`environment.txt` into its results directory automatically.
+
+**Note, not yet acted on:** the spec says these thread-count variables
+must be *set*, not just recorded -- BLAS reads them at library load time,
+so setting them requires happening before numpy/scipy is first imported
+(the process environment, a SLURM job script, or the very first lines of
+an entry point). This module can only report what's currently in effect.
+Actually setting them is a separate, still-open task.
+
+**`lilq/multiseed.py`** -- implements the spec's "every stochastic method
+runs at seeds {0,1,2} (Component B) / {0-4} (Component A), report
+median/min/max, never a single run" requirement. `run_multiseed(runner,
+config, seeds, *args, **kwargs)` calls a `run_nil_n`/`run_nil_q`-style
+function once per seed via `dataclasses.replace` (never mutates the
+config passed in), collects each run's summary dict (always the last
+element of the returned tuple, true for every `run_*` function in
+`problems/*.py`), and aggregates numeric fields into median/min/max plus
+a convergence *rate* for the boolean `converged` field (a median of
+booleans isn't meaningful; a rate is).
+
+Deliberately scoped to NiL-N/NiL-Q only -- LiL-N/LiL-Q have no random
+initialization of their own (coefficients come from a deterministic
+least-squares pretrain fit) and the spec explicitly exempts them
+("LiL-N from zero is deterministic; one run", Section 3.4); sweeping
+seeds for them would only vary the collocation set, which the spec asks
+to keep fixed at seed 42 instead. The utility itself is runner-agnostic
+and doesn't special-case this -- it's a caller decision which methods to
+sweep.
+
+**Not yet wired into the existing experiment scripts.** Wiring this into
+`run_bratu.py`/`run_burgers.py`/`run_bl.py`'s NiL-N/NiL-Q calls would
+meaningfully change those scripts' output format and roughly triple their
+NiL-method runtime -- a bigger, more disruptive change than provenance
+capture's "add two files, nothing else changes." Since the real target
+for this requirement is Section 3.4's instrumented reruns (which will
+restructure these scripts substantially anyway -- the `iterations.csv`
+logger, stall detection, etc.), wiring it in now and restructuring again
+later would be duplicate work. Verified instead via a real integration
+test: three actual seeds against Bratu's `run_nil_n` at a tiny size,
+confirming genuinely different results per seed (final loss 0.31 / 0.25 /
+0.063) and correct aggregation.
+
+---
+
 ## 2026-09-22 -- torch.set_default_dtype() import-time side effect removed
 
 **Phase 1, batch 1 (second half).** `lilq/solvers.py` used to call

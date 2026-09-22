@@ -30,7 +30,7 @@ from problems.buckley_leverett import (
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
     save_lil_checkpoint, save_nn_checkpoint, save_metrics_csv,
-    save_master_results, save_summary_json,
+    save_master_results, save_summary_json, save_run_provenance,
     plot_convergence_by_method, plot_convergence_by_size,
     plot_solution_field, print_summary_table,
 )
@@ -179,6 +179,7 @@ def main():
     save_master_results(base_dir / f'{tag}_master_results.json', all_results,
                         {'n_values': args.N, 'gravity': args.gravity,
                          'target_losses': tgt})
+    save_run_provenance(tag, args.basis)
 
     fig_dir = make_figures_dir(tag, args.basis)
     try:

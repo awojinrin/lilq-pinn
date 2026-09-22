@@ -30,7 +30,7 @@ from problems.burgers import (
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
     save_lil_checkpoint, save_nn_checkpoint, save_metrics_csv,
-    save_master_results, save_summary_json,
+    save_master_results, save_summary_json, save_run_provenance,
     plot_convergence_by_method, plot_convergence_by_size,
     plot_solution_field, print_summary_table,
 )
@@ -153,6 +153,7 @@ def main():
     save_master_results(base_dir / 'burgers_master_results.json', all_results,
                         {'n_values': args.N, 'basis': args.basis,
                          'target_losses': TARGET_LOSSES})
+    save_run_provenance('burgers', args.basis)
 
     fig_dir = make_figures_dir('burgers', args.basis)
     try:

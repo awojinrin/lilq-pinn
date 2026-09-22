@@ -54,6 +54,18 @@ def experiment_base_dir(problem: str, basis: str, root: Path = None) -> Path:
     return d
 
 
+def save_run_provenance(problem: str, basis: str, root: Path = None) -> None:
+    """Write ``hardware.json``/``environment.txt`` into this run's results
+    directory (Computational_Package_1_v2.md Section 2's provenance
+    requirement -- see ``lilq.provenance`` and DECISIONS.md). Call once
+    per experiment-script invocation, not once per method/size -- the
+    machine, environment, and code version it records don't change
+    between methods within a single run.
+    """
+    from lilq.provenance import save_provenance
+    save_provenance(experiment_base_dir(problem, basis, root))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Checkpoint Save/Load
 # ─────────────────────────────────────────────────────────────────────────────

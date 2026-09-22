@@ -28,7 +28,7 @@ from problems.darcy import (
 
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
-    save_master_results, save_summary_json, plot_solution_field,
+    save_master_results, save_summary_json, save_run_provenance, plot_solution_field,
 )
 
 DEFAULT_FIELDS = ['S3']
@@ -163,6 +163,7 @@ def main():
     base_dir = experiment_base_dir('darcy', f'order{args.order}')
     save_master_results(base_dir / 'darcy_master_results.json', all_results,
                         {'fields': args.fields, 'order': args.order})
+    save_run_provenance('darcy', f'order{args.order}')
 
 
 if __name__ == '__main__':

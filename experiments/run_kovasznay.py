@@ -27,7 +27,7 @@ from problems.kovasznay import (
 
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
-    save_master_results, save_summary_json, save_metrics_csv,
+    save_master_results, save_summary_json, save_metrics_csv, save_run_provenance,
     plot_solution_panel, print_summary_table,
 )
 
@@ -152,6 +152,7 @@ def main():
     base_dir = experiment_base_dir('kovasznay', args.basis)
     save_master_results(base_dir / 'kovasznay_master_results.json', all_results,
                         {'n_values': args.N, 'Re': args.Re, 'basis': args.basis})
+    save_run_provenance('kovasznay', args.basis)
 
 
 if __name__ == '__main__':

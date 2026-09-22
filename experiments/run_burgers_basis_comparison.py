@@ -61,6 +61,7 @@ from lilq.basis import (
     Chebyshev1D, Fourier1D, TensorProductBasis2D,
     ELMBasis2D_Xavier, AugmentedBasis1D,
 )
+from lilq.provenance import save_provenance
 
 
 # =============================================================================
@@ -640,6 +641,7 @@ def main():
         config, basis_keys=args.bases, verbose=True)
     print_summary(results, config)
     save_results(results, config, out)
+    save_provenance(out)
 
     print(f"\nAll outputs: {out}\nDONE.")
 
