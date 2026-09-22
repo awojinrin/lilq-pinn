@@ -151,12 +151,38 @@ class BLPhysics:
         return f_visc - f_grav
 
     def flux_derivative(self, S):
-        """f'(S) via autograd (detached)."""
+        """f'(S) via autograd, detached from S's own graph.
+
+        Correct -- and required -- for the quasilinear solver
+        (_make_lil_q_system_fn), which deliberately freezes this
+        coefficient at the current iterate; every call site outside a
+        quasilinear assembly should use flux_derivative_differentiable
+        instead. See DECISIONS.md.
+        """
         S_t = S.clone().detach().requires_grad_(True) if isinstance(S, torch.Tensor) else \
               torch.tensor(S, dtype=torch.float64, requires_grad=True)
         f = self.flux(S_t)
         df = torch.autograd.grad(f.sum(), S_t, create_graph=False)[0]
         return df.detach()
+
+    def flux_derivative_differentiable(self, S):
+        """f'(S) via autograd, preserving the graph through S.
+
+        Required by any gradient-based solver that differentiates the PDE
+        residual with respect to trainable parameters upstream of S (e.g.
+        LiL-N's solve_lil_n, where S = A_u @ beta) -- backpropagating
+        through f'(S) itself, not just through S, is part of the true
+        gradient of d_x[f(S)] = f'(S)*S_x with respect to those
+        parameters. Using the detached flux_derivative() here silently
+        drops that term and was confirmed (DECISIONS.md) to cause LiL-N to
+        plateau well short of convergence instead of reaching it.
+
+        S must already require grad (not a detached copy) for the
+        backward graph to reach past this function.
+        """
+        f = self.flux(S)
+        df = torch.autograd.grad(f.sum(), S, create_graph=True)[0]
+        return df
 
     def flux_second_derivative(self, S):
         """f''(S) via autograd (detached)."""
@@ -352,7 +378,11 @@ def _make_lil_n_loss_fn(A_u, A_ux, A_ut, A_uxx,
         S_xx = A_uxx_t @ beta
 
         f_vals = physics.flux(S)
-        f_p = physics.flux_derivative(S)
+        # Graph-preserving derivative required here -- solve_lil_n
+        # differentiates this loss w.r.t. beta directly (unlike LiL-Q's
+        # quasilinear assembly, which wants the detached flux_derivative).
+        # See DECISIONS.md.
+        f_p = physics.flux_derivative_differentiable(S)
         f_x = f_p * S_x
 
         res = S_t + f_x + physics.D * S_xx

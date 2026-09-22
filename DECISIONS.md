@@ -13,11 +13,79 @@ investigation behind each entry, and Section 10 (Q1-Q10) of
 Format: newest first.
 
 See also `Phase0_Empirical_Verification.md` for the full pre-v2 / GitHub /
-v3-dev three-way comparison run after all fixes below, including a
-significant open finding (BL's LiL-N plateaus rather than converges in
-both newer codebases, at a cost of ~10x the wall-clock time once the
-buggy line-search cap was correctly removed) that root-causing is still
-pending on.
+v3-dev three-way comparison run.
+
+---
+
+## 2026-09-22 -- BL's LiL-N gradient was silently wrong (root cause of the plateau above)
+
+**This is a real correctness bug, confirmed and fixed, not a hyperparameter
+or config drift like everything else in this log.**
+
+Root cause of the previous entry's open finding: `_make_lil_n_loss_fn`
+computed the PDE residual's flux-divergence term as
+
+```python
+f_p = physics.flux_derivative(S)   # detached from the autograd graph
+f_x = f_p * S_x
+```
+
+`BLPhysics.flux_derivative` deliberately detaches its output -- correct
+and required for `_make_lil_q_system_fn` (LiL-Q), which is quasilinear and
+is *supposed* to freeze this Jacobian coefficient at the current iterate.
+It is not correct for `_make_lil_n_loss_fn`: `solve_lil_n` calls
+`total.backward()` directly on this loss to get the true nonlinear
+gradient w.r.t. `beta`, and the detached path silently drops the
+contribution of `f'(S)`'s own dependence on `beta` through `S = A_u @
+beta`. The computed "gradient" was missing a term -- not numerically
+imprecise, structurally incomplete. L-BFGS, which relies entirely on
+accurate gradients to build its quasi-Newton approximation, then
+converges to a stationary point of the wrong effective objective, or
+simply plateaus.
+
+Confirmed by comparison: the pre-GitHub `BuckleyLeverettPhysics` had two
+parallel implementations for exactly this reason -- `flux_derivative`
+(detached, for the quasilinear solver) and
+`flux_derivative_differentiable` (graph-preserving, for gradient-based
+solvers) -- and `solve_nonlinear_lil` (pre-GitHub's LiL-N) correctly used
+the `_differentiable` one. The June 2026 consolidation's `BLPhysics` only
+kept the detached version, and `_make_lil_n_loss_fn` ended up wired to it.
+This also explains why only LiL-N was affected: `_make_lil_q_system_fn`
+correctly wants the detached coefficient (unaffected), and NiL-N's
+`_compute_pde_residual_nn` computes its derivative a structurally
+different way (autograd directly on `f(S(x,t))` w.r.t. `x,t` with
+`create_graph=True`, never calling this helper at all -- also unaffected).
+
+**Fix:** added `BLPhysics.flux_derivative_differentiable(S)` -- computed
+via `torch.autograd.grad(f.sum(), S, create_graph=True)` on the
+*undetached* `S`, rather than a hand-derived closed-form analytic
+expression (more robust: it can't drift out of sync with `flux()` the way
+two independently-maintained formulas could) -- and switched
+`_make_lil_n_loss_fn` to use it. Every other call site of the detached
+`flux_derivative` (LiL-Q's system assembly, LiL-Q's convergence-check-only
+nonlinear loss, NiL-Q's linearization coefficients) was checked directly
+and confirmed to be a genuinely quasilinear/frozen-coefficient context
+where the detached version remains correct -- left unchanged.
+
+**Verification, in order of rigor:**
+1. `tests/test_bl_lil_n_gradient.py` uses `torch.autograd.gradcheck`
+   (numerical finite-difference gradient checking) on the actual loss
+   function, both gravity and no-gravity. Passes with the fix.
+2. Confirmed the test is meaningful, not a tautology: temporarily reverted
+   the one-line fix and reran the same test -- it fails, with the
+   analytical and numerical gradients disagreeing by up to ~100 in
+   magnitude on individual components (not floating-point noise). Restored
+   the fix immediately after confirming.
+3. Reran BL viscous and gravity at N=8/16 end-to-end (see
+   `Phase0_Empirical_Verification.md` for the before/after numbers) to
+   confirm the practical effect on real training, not just the unit gradient.
+
+This was found by taking the "digging into why" request seriously rather
+than assuming a config/hyperparameter explanation (everything else in
+this log so far) -- worth remembering that not every regression in this
+codebase is a caps/tolerances drift; this one was a genuine math bug
+hiding behind code that runs without error and produces plausible-looking
+(if wrong) numbers.
 
 ---
 
