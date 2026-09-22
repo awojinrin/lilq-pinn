@@ -62,7 +62,12 @@ TARGET_LOSSES = {5: 2.5e-1, 10: 1e-4, 15: 2.5e-7}
 # N=10 (P=100) reverted 10000 -> 7500 to match the pre-GitHub iteration
 # budget exactly; N=5 and N=15 were already unchanged (DECISIONS.md).
 MAX_ITERATIONS = {5: 5000, 10: 7500, 15: 10000}
-MAX_LINE_SEARCHES = {5: 15000, 10: 25000, 15: 25000}
+# Reverted to the pre-GitHub (higher) values on every entry -- the
+# line-search cap has never actually bound for Bratu in stored results in
+# either codebase (iteration cap always binds first, well below this
+# limit), so this is a "prefer the more generous number" choice rather
+# than a correctness fix. See DECISIONS.md.
+MAX_LINE_SEARCHES = {5: 24000, 10: 30000, 15: 30000}
 MAX_QUASI_ITERS = 25
 MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 400, 15: 400}
 

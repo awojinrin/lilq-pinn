@@ -14,6 +14,62 @@ Format: newest first.
 
 ---
 
+## 2026-09-22 -- Empirically: has the line-search cap ever actually ended training?
+
+Checked directly against every stored `*_summary.json` in both
+`reference_results/` (GitHub) and `pre-v2-local-codebase/*/`'s own results,
+for every problem, by comparing `total_iterations` against each run's
+`max_iterations` and `total_line_searches` against its line-search cap:
+
+- **Bratu, both codebases: no.** Every non-converged run has
+  `total_iterations == max_iterations` exactly (the iteration cap bound),
+  with `total_line_searches` comfortably below its cap every time (e.g.
+  GitHub N=15: 19,818-21,282 evals against a 25,000 cap).
+- **Burgers, GitHub (no pre-v2 stored results found to check): no.** Same
+  pattern -- every non-converged run hits its iteration cap with evals well
+  under the line-search cap (e.g. N=25: ~20,800 evals against a 225,000 cap).
+- **Buckley-Leverett LiL-N, GitHub: yes, every time.** Checked
+  `reference_results/bl_experiments_fourier/` and
+  `bl_gravity_experiments_fourier/` at every N (8/16/24/32): LiL-N's
+  `total_iterations` is always well below `max_iterations`, while
+  `total_line_searches` sits at exactly `3 * max_iterations` (e.g. N=16:
+  iterations=3938, line_searches=30001, against max_iterations=10000) --
+  the signature of a cap that bound and cut the run off. NiL-N/NiL-Q at the
+  same sizes converge comfortably within the same budget; only LiL-N needs
+  enough steps to hit it.
+
+**This traces to something the previous BL line-search entry below didn't
+catch: `experiments/run_bl.py` was passing its own explicit
+`max_line_searches=MAX_LBFGS_ITERS.get(N, 10000) * 3` at the call site,
+which bypasses `BLOptConfig`'s `__post_init__`-derived default entirely**
+(the derived value only applies when the field is left `None`; an explicit
+value always wins). The `BLOptConfig` fix made in the previous entry was
+real and correct, but had **no effect on actual experiment runs** through
+`run_bl.py`, since that script never relied on the dataclass default in
+the first place. Confirmed pre-GitHub `run_bl_experiments.py` /
+`run_bl_gravity_experiments.py` never set anything like this (only
+`n_epochs_lbfgs`, a pure iteration count) -- this override is entirely new
+to the GitHub consolidation.
+
+**Fix:** removed the explicit override from `run_bl.py`; it now falls
+through to `BLOptConfig`'s derived worst case (`max_iterations * 15`),
+which is both correct and, per the instruction below, the more generous
+choice anyway.
+
+---
+
+## 2026-09-22 -- Bratu's MAX_LINE_SEARCHES: reverted to the higher (pre-GitHub) values
+
+Every entry differs from pre-GitHub, not just N=10's iteration cap:
+pre-GitHub `{5:24000, 10:30000, 15:30000}` vs. the GitHub values that had
+been in place, `{5:15000, 10:25000, 15:25000}`. Per the empirical check
+above, this cap has never actually bound for Bratu in either codebase, so
+there's no correctness question here -- reverted to the pre-GitHub
+(higher, more generous) numbers on instruction, documented for the record
+rather than because evidence favored one value over the other.
+
+---
+
 ## 2026-09-22 -- Bratu's N=10 iteration cap: reverted 10,000 -> 7,500
 
 `experiments/run_bratu.py`'s `MAX_ITERATIONS` schedule is per-size, not one
@@ -53,6 +109,11 @@ derives `max_line_searches = max_iterations * 15` in `__post_init__` when
 not explicitly overridden -- it can never bind first by construction,
 including if `max_iterations` is changed later, and an explicit override
 is still honored if anyone wants a genuinely tighter cap for a specific run.
+
+**Addendum, same day:** this fix alone turned out to be insufficient --
+see the "Empirically: has the line-search cap ever actually ended
+training?" entry above (newer, listed first) for the follow-up fix this
+one needed in `experiments/run_bl.py` itself.
 
 ---
 

@@ -72,7 +72,12 @@ def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True):
 
     opt = BLOptConfig(
         max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
-        max_line_searches=MAX_LBFGS_ITERS.get(N, 10000) * 3,
+        # max_line_searches intentionally left unset here -- BLOptConfig's
+        # __post_init__ derives it from max_iterations (the true worst
+        # case). This script used to pass an explicit `*3` multiplier,
+        # which the pre-GitHub codebase never had and which was found to
+        # actively truncate LiL-N before convergence at every N, both
+        # viscous and gravity (see DECISIONS.md).
         R_tol=targets.get(N, 1e-3),
         max_quasi_iters_nn=quasi_iters,
         max_inner_iters_nn=inner_per_quasi.get(N, 200),
