@@ -232,3 +232,28 @@ current package calls `run_nil_n_darcy`/`DarcyPINN`. Decision: leave it
 alone; revisit only if a future package brings Darcy's NN comparison into
 scope, at which point the float64-everywhere requirement (Section 2 of the
 package spec) would need to be satisfied there too.
+
+---
+
+## 2026-09-22 -- Bratu's NiL-Q inner-iteration cap: second, separate N=10 revert (found via a real run)
+
+Caught while sanity-checking a fresh v3-dev run against expectations: with
+the N=10 `MAX_ITERATIONS` fix already in place, NiL-N correctly stopped at
+7,500 iterations, but **NiL-Q ran to 10,000** -- the fix hadn't fully taken.
+
+Root cause: NiL-Q's actual iteration budget is `MAX_QUASI_ITERS` (flat, 25
+in both codebases) times `MAX_LBFGS_PER_QUASI_ITER[N]` (a wholly separate
+per-size dict from `MAX_ITERATIONS`, which only governs NiL-N/LiL-N's flat
+loop). This second dict also changed at N=10 during the consolidation:
+pre-GitHub `{5:300, 10:300, 15:400}` vs. the GitHub value that had been in
+place, `{5:300, 10:400, 15:400}` -- worst-case NiL-Q totals of 7,500 vs.
+10,000 at N=10, exactly matching what the fresh run showed. Confirmed
+Burgers' and both Buckley-Leverett variants' equivalent per-quasi-iter
+schedules are genuinely unchanged between codebases (checked directly),
+so this second-knob issue is isolated to Bratu N=10, same as the first.
+
+Reverted `MAX_LBFGS_PER_QUASI_ITER[10]`: 400 -> 300. This is the kind of
+thing the empirical run-and-compare pass this entry belongs to exists to
+catch -- two independently-named constants that both nominally describe
+"Bratu's N=10 iteration cap" but govern different methods, easy to fix one
+and miss the other from source-reading alone.

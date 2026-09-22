@@ -69,7 +69,13 @@ MAX_ITERATIONS = {5: 5000, 10: 7500, 15: 10000}
 # than a correctness fix. See DECISIONS.md.
 MAX_LINE_SEARCHES = {5: 24000, 10: 30000, 15: 30000}
 MAX_QUASI_ITERS = 25
-MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 400, 15: 400}
+# N=10 reverted 400 -> 300 to match the pre-GitHub value exactly. This is
+# NiL-Q's actual iteration budget (MAX_QUASI_ITERS * this value), separate
+# from MAX_ITERATIONS above which only governs NiL-N/LiL-N -- missed on
+# the first pass at reverting Bratu's N=10 cap; caught by comparing a
+# fresh run's NiL-Q iteration count (10000) against pre-GitHub's (7500).
+# See DECISIONS.md.
+MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 300, 15: 400}
 
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 
