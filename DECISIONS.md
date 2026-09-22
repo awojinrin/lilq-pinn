@@ -17,6 +17,71 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Bratu wired end-to-end to Section 3.1 instrumentation; check B2 passes
+
+**Phase 1, sub-batch 3 of the iterations.csv work ("proof of concept":
+wire one real problem all the way through and verify before rolling out
+further).** Two parts:
+
+1. `LilQDiagnosticsTracker`/`solve_lil_q` extended with `n_interior_rows`/
+   `interior_weight` constructor/call parameters to actually compute
+   `norm_R_interior`/`norm_Rlin_interior` (sub-batch 2 left these
+   permanently `NaN`, documented as deferred). Both were `NaN`-by-default
+   and additive, so this needed no new test of the "does this break
+   anything" kind beyond the two new interior-row-specific tests added to
+   `tests/test_lil_q_diagnostics_tracker.py`.
+2. `problems/bratu.py`'s `run_lil_q` gained an optional `iteration_logger`
+   parameter (default `None`, existing behavior unchanged when omitted --
+   confirmed bit-identical coefficients/summary with and without it in
+   `tests/test_bratu_instrumentation.py`). When given, it builds a new
+   `_make_lil_residual_vector_fn` (the vector form of
+   `_make_lil_nonlinear_loss_fn` -- same weighted interior-then-boundary
+   stacking as `_make_lil_q_system_fn`'s `A_stacked`/`b_stacked`, verified
+   by construction: `norm(vector)**2 == total_loss`) and passes
+   `n_interior_rows=n_pde`, `interior_weight=sqrt(lambda_pde/n_pde)`
+   through to `solve_lil_q`, matching the one-scalar-per-block convention
+   confirmed directly in Bratu's own `assemble_system_fn` (documented in
+   `lilq/iteration_log.py`'s `LilQDiagnosticsTracker` docstring).
+
+**Check B2** (Computational_Package_1_v2.md Section 3.1: the logged
+$\|\mathbf{R}^{(k)}\|_h$ must match the nonlinear operator evaluated
+directly at the collocation points, to $10^{-10}$ relative) implemented
+as an automated test
+(`test_check_b2_residual_identity_against_direct_evaluation`), run
+against a real (not synthetic) Bratu solve: reconstructs
+`A_u`/`A_uxx`/`A_uyy`/`A_bc` from scratch via the public
+`create_basis_2d`/`generate_collocation_points_2d`/`basis.evaluate`/
+`basis.derivative` API (same config/seed as `run_lil_q`'s own internal
+setup -> deterministic, same collocation points -- confirmed
+`generate_collocation_points_2d` reseeds `np.random` internally
+regardless of prior RNG state consumed during pretraining), independent
+of any of `problems.bratu`'s private helper functions. Passed at
+`rel_err < 1e-10` (this codebase's own float64 near-machine-precision
+scale, not a loosened tolerance).
+
+Manually inspected two real `iterations.csv` outputs (not committed --
+scratch verification, not fixtures) to sanity-check the full 30-column
+row at scale: a P=100 Bratu solve converging in 1 iteration under the
+default `R_tol=1e-4` (matches the P=100 `final_loss` value already
+recorded in `tests/test_solve_lil_q_instrumentation.py`'s bit-identical
+check), and the same problem forced to run 25 iterations at a much
+tighter `R_tol=1e-12` past its actual round-off floor -- `stall_flag`
+correctly latches `True` once `chi`/`norm_Rlin_h` stop moving, and
+`order_obs` oscillates (sign flips, occasional large magnitudes) once in
+that floor regime, which is the expected behavior of a quadratic-rate
+estimator applied to noise rather than a bug.
+
+Not yet done, deliberately out of scope for this batch (per the
+established "one step at a time" discipline): rolling this same pattern
+out to Burgers/BL-viscous/BL-gravity/Kovasznay (sub-batch 4), and
+deciding whether `experiments/run_bratu.py` itself should be changed to
+always produce `iterations.csv` for real experiment runs -- that changes
+a script's default output and is flagged here rather than assumed, the
+same way the multi-seed harness's non-wiring was flagged rather than
+silently deferred.
+
+---
+
 ## 2026-09-22 -- solve_lil_q's lstsq call: cond=None made explicit as cond=EPS_MACH
 
 **Phase 1, sub-batch 2 of the iterations.csv work.** While wiring the

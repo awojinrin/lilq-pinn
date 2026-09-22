@@ -417,6 +417,8 @@ def solve_lil_q(
     iteration_logger: Optional[IterationLogger] = None,
     compute_residual_vector_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None,
     conditioning_svd_threshold: Optional[int] = None,
+    n_interior_rows: Optional[int] = None,
+    interior_weight: Optional[float] = None,
 ) -> Tuple[np.ndarray, QuasilinearMetrics, Dict]:
     """Quasilinear LiL solver (LiL-Q method).
 
@@ -477,6 +479,15 @@ def solve_lil_q(
         Forwarded to ``LilQDiagnosticsTracker``; defaults to
         ``lilq.instrumentation.DEFAULT_SVD_CONDITIONING_THRESHOLD`` (3200)
         when ``None``.
+    n_interior_rows, interior_weight : int, float, optional
+        Populates ``norm_R_interior``/``norm_Rlin_interior`` when both
+        are given: the caller's interior (PDE) rows are the first
+        ``n_interior_rows`` rows of ``A_stacked``/``b_stacked``, weighted
+        by the single scalar ``interior_weight`` (this codebase's
+        universal $\\sqrt{\\lambda_{\\mathrm{block}}/n_{\\mathrm{block}}}$
+        convention -- confirmed directly in every problem's
+        ``assemble_system_fn``, not assumed). Left NaN if either is
+        omitted.
 
     Returns
     -------
@@ -501,6 +512,10 @@ def solve_lil_q(
         tracker_kwargs = {}
         if conditioning_svd_threshold is not None:
             tracker_kwargs["conditioning_svd_threshold"] = conditioning_svd_threshold
+        if n_interior_rows is not None:
+            tracker_kwargs["n_interior_rows"] = n_interior_rows
+        if interior_weight is not None:
+            tracker_kwargs["interior_weight"] = interior_weight
         tracker = LilQDiagnosticsTracker(
             initial_norm_R_h=float(np.sqrt(total_loss)), **tracker_kwargs,
         )

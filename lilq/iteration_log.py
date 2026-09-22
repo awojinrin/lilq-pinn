@@ -112,16 +112,24 @@ class LilQDiagnosticsTracker:
     iteration.
 
     Several columns require information ``solve_lil_q`` genuinely
-    doesn't have access to and are left ``NaN``/``None`` here rather than
-    guessed at:
+    doesn't have access to unless the caller provides it, and are left
+    ``NaN``/``None`` otherwise:
 
     - ``norm_R_interior``/``norm_Rlin_interior`` need the *unweighted*
-      residual restricted to interior rows; ``solve_lil_q`` only ever
-      sees the already row-weighted stacked system, with no notion of
-      the per-row weight factors a caller used to build it, so it can't
-      correctly un-weight a slice of it. This needs problem-specific
-      wiring (which rows are interior, and how to invert that problem's
-      own weighting), deferred to the per-problem integration.
+      residual restricted to interior (PDE) rows. Every problem in this
+      codebase weights each row block by one scalar,
+      $\\sqrt{\\lambda_{\\mathrm{block}}/n_{\\mathrm{block}}}$ (this
+      module's own docstring notation), and stacks interior rows first
+      -- confirmed directly in Bratu's/Burgers'/BL's ``assemble_system_fn``
+      implementations, not assumed. Given ``n_interior_rows`` (how many
+      leading rows are interior) and ``interior_weight`` (that block's
+      scalar weight), the interior-only unweighted norm is just
+      ``norm(weighted_vector[:n_interior_rows]) / interior_weight`` --
+      exact, not an approximation, since the weighting is a single scalar
+      multiply with no information loss to invert. Left ``NaN`` if either
+      is omitted (a problem whose blocks don't fit this one-scalar-per-
+      block convention would need different handling, not currently
+      needed by anything in this codebase).
     - ``chi``/``order_obs``-dependent ``stall_flag`` need the actual
       nonlinear residual *vector* $\\mathbf{R}^{(k+1)}$ (not just its
       norm) for $\\chi_k$'s vector-difference term -- only available if
@@ -137,12 +145,16 @@ class LilQDiagnosticsTracker:
         self,
         initial_norm_R_h: float,
         conditioning_svd_threshold: int = DEFAULT_SVD_CONDITIONING_THRESHOLD,
+        n_interior_rows: Optional[int] = None,
+        interior_weight: Optional[float] = None,
     ) -> None:
         self._norm_R_h_km1: Optional[float] = None
         self._norm_R_h_k: float = initial_norm_R_h
         self._norm_Rlin_h_km1: Optional[float] = None
         self._conditioning_svd_threshold = conditioning_svd_threshold
         self._t_cum_s: float = 0.0
+        self._n_interior_rows = n_interior_rows
+        self._interior_weight = interior_weight
 
     def step(
         self,
@@ -175,11 +187,18 @@ class LilQDiagnosticsTracker:
         raw_dbeta = float(np.linalg.norm(beta_new - beta_prev))
         rel_dbeta = raw_dbeta / (float(np.linalg.norm(beta_new)) + 1e-30)
 
-        if compute_residual_vector_fn is not None:
-            R_next = compute_residual_vector_fn(beta_new)
-            chi = phase_indicator(R_next, R_lin_k)
-        else:
-            chi = float("nan")
+        R_next = compute_residual_vector_fn(beta_new) if compute_residual_vector_fn is not None else None
+        chi = phase_indicator(R_next, R_lin_k) if R_next is not None else float("nan")
+
+        can_unweight_interior = self._n_interior_rows is not None and self._interior_weight is not None
+        norm_R_interior = float("nan")
+        norm_Rlin_interior = float("nan")
+        if can_unweight_interior:
+            n = self._n_interior_rows
+            w = self._interior_weight
+            norm_Rlin_interior = float(np.linalg.norm(R_lin_k[:n]) / w)
+            if R_next is not None:
+                norm_R_interior = float(np.linalg.norm(R_next[:n]) / w)
 
         order_obs = (
             observed_order(norm_R_h_next, self._norm_R_h_k, self._norm_R_h_km1)
@@ -214,8 +233,8 @@ class LilQDiagnosticsTracker:
         row = dict(
             k=k,
             t_assemble_s=t_assemble_s, t_solve_s=t_solve_s, t_cum_s=self._t_cum_s,
-            norm_R_h=norm_R_h_next, norm_R_interior=float("nan"),
-            norm_Rlin_h=norm_Rlin_h, norm_Rlin_interior=float("nan"),
+            norm_R_h=norm_R_h_next, norm_R_interior=norm_R_interior,
+            norm_Rlin_h=norm_Rlin_h, norm_Rlin_interior=norm_Rlin_interior,
             norm_f_h=norm_f_h,
             norm_dbeta=raw_dbeta, rel_dbeta=rel_dbeta,
             chi=chi, order_obs=order_obs, stall_flag=stall,

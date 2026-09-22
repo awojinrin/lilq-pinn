@@ -231,7 +231,7 @@ def test_num_rank_gelsy_passes_through_the_given_rank():
     assert row["num_rank_gelsy"] == 3
 
 
-def test_interior_norms_are_nan_documented_limitation():
+def test_interior_norms_are_nan_when_not_configured():
     A, b = _synthetic_system()
     beta_new = np.linalg.lstsq(A, b, rcond=None)[0]
     tracker = LilQDiagnosticsTracker(initial_norm_R_h=1.0)
@@ -242,3 +242,63 @@ def test_interior_norms_are_nan_documented_limitation():
     )
     assert math.isnan(row["norm_R_interior"])
     assert math.isnan(row["norm_Rlin_interior"])
+
+
+def test_norm_Rlin_interior_recovers_unweighted_value_when_configured():
+    """norm_Rlin_interior only needs A_stacked/b_stacked (always
+    available), not the residual-vector callback -- must work even
+    without compute_residual_vector_fn."""
+    # 8 interior rows (weight 2.0) + 4 boundary rows (weight 5.0), stacked
+    # interior-first -- matches every problem's actual convention.
+    n_interior, w_interior = 8, 2.0
+    rng = np.random.default_rng(0)
+    A_interior_raw = rng.standard_normal((n_interior, 3))
+    A_boundary_raw = rng.standard_normal((4, 3))
+    A_stacked = np.vstack([w_interior * A_interior_raw, 5.0 * A_boundary_raw])
+    b_stacked = rng.standard_normal(12)
+    beta_new = np.linalg.lstsq(A_stacked, b_stacked, rcond=None)[0]
+
+    tracker = LilQDiagnosticsTracker(
+        initial_norm_R_h=1.0, n_interior_rows=n_interior, interior_weight=w_interior,
+    )
+    row = tracker.step(
+        k=1, A_stacked=A_stacked, b_stacked=b_stacked,
+        beta_prev=np.zeros(3), beta_new=beta_new,
+        total_loss=0.5, rank_gelsy=3, t_assemble_s=0.0, t_solve_s=0.0,
+        is_final_iterate=False,
+    )
+
+    R_lin_weighted_interior = (A_stacked @ beta_new - b_stacked)[:n_interior]
+    expected_unweighted_norm = float(np.linalg.norm(R_lin_weighted_interior) / w_interior)
+    assert row["norm_Rlin_interior"] == pytest.approx(expected_unweighted_norm)
+    # chi/norm_R_interior still NaN -- no residual-vector callback given.
+    assert math.isnan(row["norm_R_interior"])
+
+
+def test_norm_R_interior_recovers_unweighted_value_with_residual_callback():
+    n_interior, w_interior = 8, 2.0
+    rng = np.random.default_rng(0)
+    A_stacked = rng.standard_normal((12, 3))
+    b_stacked = rng.standard_normal(12)
+    beta_new = np.linalg.lstsq(A_stacked, b_stacked, rcond=None)[0]
+
+    # Weighted residual vector a caller's compute_residual_vector_fn
+    # would hand back -- deliberately different from R_lin_k so the test
+    # actually exercises R_next's own interior slice, not R_lin_k's.
+    weighted_R_next = rng.standard_normal(12)
+
+    def fake_residual_vector_fn(beta):
+        return weighted_R_next
+
+    tracker = LilQDiagnosticsTracker(
+        initial_norm_R_h=1.0, n_interior_rows=n_interior, interior_weight=w_interior,
+    )
+    row = tracker.step(
+        k=1, A_stacked=A_stacked, b_stacked=b_stacked,
+        beta_prev=np.zeros(3), beta_new=beta_new,
+        total_loss=0.5, rank_gelsy=3, t_assemble_s=0.0, t_solve_s=0.0,
+        is_final_iterate=False, compute_residual_vector_fn=fake_residual_vector_fn,
+    )
+
+    expected = float(np.linalg.norm(weighted_R_next[:n_interior]) / w_interior)
+    assert row["norm_R_interior"] == pytest.approx(expected)
