@@ -12,6 +12,13 @@ investigation behind each entry, and Section 10 (Q1-Q10) of
 
 Format: newest first.
 
+See also `Phase0_Empirical_Verification.md` for the full pre-v2 / GitHub /
+v3-dev three-way comparison run after all fixes below, including a
+significant open finding (BL's LiL-N plateaus rather than converges in
+both newer codebases, at a cost of ~10x the wall-clock time once the
+buggy line-search cap was correctly removed) that root-causing is still
+pending on.
+
 ---
 
 ## 2026-09-22 -- Empirically: has the line-search cap ever actually ended training?
