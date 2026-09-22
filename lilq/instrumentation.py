@@ -30,11 +30,20 @@ run must never crash because a diagnostic was momentarily undefined
 """
 
 import numpy as np
+import scipy.linalg
 
 # The manuscript states this as "2.2 x 10^-16"; that's IEEE double
 # precision's true machine epsilon to the precision it gives -- use the
 # exact value rather than the rounded literal.
 EPS_MACH = float(np.finfo(np.float64).eps)
+
+# Section 3.1 item 8: full-SVD conditioning every iteration only below
+# this P; above it (Beltrami, P~8000), use conditioning_via_pivoted_qr
+# at the final iterate only -- a full SVD at that scale is expensive
+# enough to dominate total solve time for no benefit (confirmed
+# empirically for Beltrami's *un-gated* per-iteration cond() call; see
+# DECISIONS.md, "Beltrami's real slowdown cause").
+DEFAULT_SVD_CONDITIONING_THRESHOLD = 3200
 
 DEFAULT_TAU_CHI = 0.1
 DEFAULT_TAU_R = 0.1
@@ -171,3 +180,86 @@ def roundoff_comparison(norm_Rlin_k: float, norm_f_k: float, kappa: float) -> tu
     relative_residual = float("nan") if norm_f_k == 0.0 else norm_Rlin_k / norm_f_k
     roundoff_floor = kappa * EPS_MACH
     return relative_residual, roundoff_floor
+
+
+def conditioning_via_svd(A: np.ndarray) -> dict:
+    r"""Full-SVD conditioning: Section 3.1 item 8's default path, for
+    $P \le$ :data:`DEFAULT_SVD_CONDITIONING_THRESHOLD`.
+
+    Numerical rank matches the spec's own definition exactly: the count
+    of singular values strictly above $\max(N,P)\,\sigma_{\max}\,
+    \varepsilon_{\mathrm{mach}}$.
+
+    Parameters
+    ----------
+    A : array, shape (N, P)
+        The weighted system matrix $\mathbf{A}^{(k)}$ (or any matrix --
+        this function has no PDE-specific assumptions).
+
+    Returns
+    -------
+    dict with keys ``kappa``, ``kappa_method`` (always ``"svd"``),
+    ``num_rank_svd``.
+    """
+    N, P = A.shape
+    singular_values = np.linalg.svd(A, compute_uv=False)
+    sigma_max, sigma_min = singular_values[0], singular_values[-1]
+    kappa = float(sigma_max / sigma_min) if sigma_min > 0 else float("inf")
+
+    rank_tol = max(N, P) * sigma_max * EPS_MACH
+    num_rank_svd = int(np.sum(singular_values > rank_tol))
+
+    return {"kappa": kappa, "kappa_method": "svd", "num_rank_svd": num_rank_svd}
+
+
+def conditioning_via_pivoted_qr(A: np.ndarray) -> dict:
+    r"""Pivoted-QR conditioning: Section 3.1 item 8's required path for
+    Beltrami (and any problem past the SVD threshold), computed **only at
+    the final iterate**, not every iteration -- an $O(\min(N,P)^2\max(N,P))$
+    pivoted QR is still real cost, just far cheaper than a full SVD at the
+    same scale, and the spec asks for one number, not a per-iteration
+    history, above the SVD threshold.
+
+    The spec asks for two related quantities: the manuscript reports
+    $\sigma_1/\sigma_{7977} = 1.2\times10^4$ "for the retained part" of a
+    rank-deficient system -- i.e. $|R_{11}|/|R_{PP}|$ computed naively
+    over *all* diagonal entries is not what's wanted (pivoted-out,
+    near-zero trailing entries make that ratio meaningless, potentially
+    infinite); discard those first via the same numerical-rank threshold
+    :func:`conditioning_via_svd` uses, then take the ratio of the first
+    to the last *retained* diagonal entry. Both are returned; ``kappa``
+    (the schema column) is the retained-only ratio, since that's the one
+    actually comparable to :func:`conditioning_via_svd`'s output.
+
+    Parameters
+    ----------
+    A : array, shape (N, P)
+
+    Returns
+    -------
+    dict with keys ``kappa`` (retained-only ratio), ``kappa_method``
+    (always ``"qr_pivoted"``), ``kappa_raw_ratio`` (the naive, all-
+    diagonal-entries ratio -- not a schema column, kept for anyone
+    inspecting conditioning behavior directly), ``num_rank_svd`` (always
+    ``None`` -- this path doesn't compute the SVD-based rank at all,
+    that's the entire point of using it instead).
+    """
+    N, P = A.shape
+    R, _pivots = scipy.linalg.qr(A, mode="r", pivoting=True)
+    diag = np.abs(np.diag(R))
+
+    raw_ratio = float(diag[0] / diag[-1]) if diag[-1] > 0 else float("inf")
+
+    rank_tol = max(N, P) * diag[0] * EPS_MACH
+    retained = diag[diag > rank_tol]
+    if len(retained) == 0 or retained[-1] == 0:
+        kappa = float("inf")
+    else:
+        kappa = float(retained[0] / retained[-1])
+
+    return {
+        "kappa": kappa,
+        "kappa_method": "qr_pivoted",
+        "kappa_raw_ratio": raw_ratio,
+        "num_rank_svd": None,
+    }

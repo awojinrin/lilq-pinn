@@ -1,0 +1,249 @@
+"""
+``iterations.csv`` schema and logger (Component B instrumentation)
+======================================================================
+
+Computational_Package_1_v2.md Section 6 specifies the exact column list
+and order for ``iterations.csv``; this module is the single source of
+truth for that schema, plus a small accumulator class so every problem's
+solver integration writes rows the same way instead of each hand-rolling
+its own CSV writer.
+
+Per the spec's own note: "``chi`` and ``order_obs`` refer to the current
+$k$ and are empty where undefined; residual-MSE benchmarks put the test
+residual in ``eps_u``." Any column a given problem/iteration doesn't
+populate is written as an empty value (``NaN`` for floats, ``None`` for
+everything else) rather than omitted -- every row has every column, so
+the CSV stays uniform across problems that populate different subsets
+(e.g. a scalar-residual benchmark has no ``eps_v``/``eps_p``).
+"""
+
+import csv
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
+
+import numpy as np
+
+from .instrumentation import (
+    DEFAULT_SVD_CONDITIONING_THRESHOLD,
+    EPS_MACH,
+    conditioning_via_pivoted_qr,
+    conditioning_via_svd,
+    observed_order,
+    phase_indicator,
+    roundoff_comparison,
+    stall_flag as _stall_flag,
+)
+
+# Section 6, verbatim order. Do not reorder without updating the spec
+# reference -- downstream tooling (Section 3.5's residual-band figures,
+# any reviewer script) is entitled to assume this exact column order.
+ITERATION_CSV_COLUMNS = (
+    "k",
+    "t_assemble_s", "t_solve_s", "t_cum_s",
+    "norm_R_h", "norm_R_interior",
+    "norm_Rlin_h", "norm_Rlin_interior",
+    "norm_f_h",
+    "norm_dbeta", "rel_dbeta",
+    "chi", "order_obs", "stall_flag",
+    "roundoff_ratio", "kappa_eps",
+    "kappa", "kappa_method",
+    "num_rank_svd", "num_rank_gelsy", "rcond",
+    "eps_u", "eps_v", "eps_p", "eps_p_meanfree",
+    "maxerr_u", "maxerr_v", "maxerr_p",
+    "solver_path", "gpu_mem_peak_bytes",
+)
+
+
+class IterationLogger:
+    """Accumulates one row per outer iteration, matching
+    :data:`ITERATION_CSV_COLUMNS` exactly.
+
+    Usage::
+
+        logger = IterationLogger()
+        for k in range(max_iters):
+            ...
+            logger.record(k=k, norm_R_h=..., chi=..., ...)  # any subset of columns
+        logger.to_csv(run_dir / "iterations.csv")
+    """
+
+    def __init__(self) -> None:
+        self._rows: List[Dict[str, Any]] = []
+
+    def record(self, **fields: Any) -> None:
+        """Append one row. Any column in :data:`ITERATION_CSV_COLUMNS` not
+        passed is filled with ``None`` (written as an empty CSV field).
+        Raises on an unrecognized keyword -- a typo'd column name should
+        fail loudly, not silently produce a 31st column or a dropped value.
+        """
+        unknown = set(fields) - set(ITERATION_CSV_COLUMNS)
+        if unknown:
+            raise ValueError(f"Unknown iterations.csv column(s): {sorted(unknown)}")
+        row = {col: fields.get(col) for col in ITERATION_CSV_COLUMNS}
+        self._rows.append(row)
+
+    def __len__(self) -> int:
+        return len(self._rows)
+
+    @property
+    def rows(self) -> List[Dict[str, Any]]:
+        """Read-only view of the recorded rows, in insertion order."""
+        return list(self._rows)
+
+    def to_csv(self, path: Union[str, Path]) -> None:
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=ITERATION_CSV_COLUMNS)
+            writer.writeheader()
+            for row in self._rows:
+                writer.writerow(_stringify_row(row))
+
+
+class LilQDiagnosticsTracker:
+    """Turns ``solve_lil_q``'s raw per-iteration ingredients into a full
+    :data:`ITERATION_CSV_COLUMNS` row, owning the history a single
+    iteration's ingredients alone can't supply:
+    :func:`~lilq.instrumentation.observed_order` needs
+    $\\|\\mathbf{R}^{(k-1)}\\|_h$, and
+    :func:`~lilq.instrumentation.stall_flag` needs
+    $\\|\\mathbf{R}_{\\mathrm{lin}}^{(k-1)}\\|_h$. One instance per solve;
+    construct once before the outer loop, call :meth:`step` once per
+    iteration.
+
+    Several columns require information ``solve_lil_q`` genuinely
+    doesn't have access to and are left ``NaN``/``None`` here rather than
+    guessed at:
+
+    - ``norm_R_interior``/``norm_Rlin_interior`` need the *unweighted*
+      residual restricted to interior rows; ``solve_lil_q`` only ever
+      sees the already row-weighted stacked system, with no notion of
+      the per-row weight factors a caller used to build it, so it can't
+      correctly un-weight a slice of it. This needs problem-specific
+      wiring (which rows are interior, and how to invert that problem's
+      own weighting), deferred to the per-problem integration.
+    - ``chi``/``order_obs``-dependent ``stall_flag`` need the actual
+      nonlinear residual *vector* $\\mathbf{R}^{(k+1)}$ (not just its
+      norm) for $\\chi_k$'s vector-difference term -- only available if
+      the caller supplies ``compute_residual_vector_fn``.
+    - Test-error columns (``eps_u`` etc.) and GPU-path columns
+      (``solver_path`` beyond the ``"cpu_gelsy"`` default,
+      ``gpu_mem_peak_bytes``) are out of scope for this generic tracker
+      entirely -- problem-specific evaluation and the GPU solve path are
+      later pieces of this work.
+    """
+
+    def __init__(
+        self,
+        initial_norm_R_h: float,
+        conditioning_svd_threshold: int = DEFAULT_SVD_CONDITIONING_THRESHOLD,
+    ) -> None:
+        self._norm_R_h_km1: Optional[float] = None
+        self._norm_R_h_k: float = initial_norm_R_h
+        self._norm_Rlin_h_km1: Optional[float] = None
+        self._conditioning_svd_threshold = conditioning_svd_threshold
+        self._t_cum_s: float = 0.0
+
+    def step(
+        self,
+        k: int,
+        A_stacked: np.ndarray,
+        b_stacked: np.ndarray,
+        beta_prev: np.ndarray,
+        beta_new: np.ndarray,
+        total_loss: float,
+        rank_gelsy: int,
+        t_assemble_s: float,
+        t_solve_s: float,
+        is_final_iterate: bool,
+        compute_residual_vector_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+    ) -> Dict[str, Any]:
+        """Compute one full row. ``A_stacked``/``b_stacked`` are this
+        iteration's *linearized* system (i.e. $\\mathbf{A}^{(k)}$,
+        $\\mathbf{f}^{(k)}$ in the manuscript's notation) -- already
+        row-weighted, matching every solver in this codebase's existing
+        convention. ``total_loss`` is $\\|\\mathbf{R}^{(k+1)}\\|_h^2$ by
+        this codebase's own definition of the weighted total loss.
+        """
+        self._t_cum_s += t_assemble_s + t_solve_s
+
+        R_lin_k = A_stacked @ beta_new - b_stacked
+        norm_Rlin_h = float(np.linalg.norm(R_lin_k))
+        norm_f_h = float(np.linalg.norm(b_stacked))
+
+        norm_R_h_next = float(np.sqrt(total_loss))
+        raw_dbeta = float(np.linalg.norm(beta_new - beta_prev))
+        rel_dbeta = raw_dbeta / (float(np.linalg.norm(beta_new)) + 1e-30)
+
+        if compute_residual_vector_fn is not None:
+            R_next = compute_residual_vector_fn(beta_new)
+            chi = phase_indicator(R_next, R_lin_k)
+        else:
+            chi = float("nan")
+
+        order_obs = (
+            observed_order(norm_R_h_next, self._norm_R_h_k, self._norm_R_h_km1)
+            if self._norm_R_h_km1 is not None
+            else float("nan")
+        )
+
+        stall = (
+            _stall_flag(chi, norm_Rlin_h, self._norm_Rlin_h_km1)
+            if self._norm_Rlin_h_km1 is not None
+            else False
+        )
+
+        roundoff_ratio, kappa_eps = roundoff_comparison(
+            norm_Rlin_h, norm_f_h, kappa=float("nan"),
+        )
+
+        P = A_stacked.shape[1]
+        if P <= self._conditioning_svd_threshold:
+            cond_result = conditioning_via_svd(A_stacked)
+        elif is_final_iterate:
+            cond_result = conditioning_via_pivoted_qr(A_stacked)
+        else:
+            cond_result = {"kappa": float("nan"), "kappa_method": None, "num_rank_svd": None}
+
+        # roundoff_ratio/kappa_eps needed kappa, computed just after --
+        # recompute kappa_eps now that the real kappa is known (the NaN
+        # kappa above was only a placeholder to get roundoff_ratio itself,
+        # which doesn't depend on kappa).
+        _, kappa_eps = roundoff_comparison(norm_Rlin_h, norm_f_h, kappa=cond_result["kappa"])
+
+        row = dict(
+            k=k,
+            t_assemble_s=t_assemble_s, t_solve_s=t_solve_s, t_cum_s=self._t_cum_s,
+            norm_R_h=norm_R_h_next, norm_R_interior=float("nan"),
+            norm_Rlin_h=norm_Rlin_h, norm_Rlin_interior=float("nan"),
+            norm_f_h=norm_f_h,
+            norm_dbeta=raw_dbeta, rel_dbeta=rel_dbeta,
+            chi=chi, order_obs=order_obs, stall_flag=stall,
+            roundoff_ratio=roundoff_ratio, kappa_eps=kappa_eps,
+            kappa=cond_result["kappa"], kappa_method=cond_result["kappa_method"],
+            num_rank_svd=cond_result["num_rank_svd"], num_rank_gelsy=int(rank_gelsy),
+            rcond=EPS_MACH,
+            solver_path="cpu_gelsy", gpu_mem_peak_bytes=None,
+        )
+
+        self._norm_R_h_km1 = self._norm_R_h_k
+        self._norm_R_h_k = norm_R_h_next
+        self._norm_Rlin_h_km1 = norm_Rlin_h
+
+        return row
+
+
+def _stringify_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """NaN and None both write as an empty CSV field (the spec's "empty
+    where undefined"); everything else is passed through as-is for
+    csv.DictWriter to format.
+    """
+    out = {}
+    for k, v in row.items():
+        if v is None:
+            out[k] = ""
+        elif isinstance(v, float) and v != v:  # NaN check without importing math/np here
+            out[k] = ""
+        else:
+            out[k] = v
+    return out

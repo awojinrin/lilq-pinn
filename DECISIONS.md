@@ -17,6 +17,23 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- solve_lil_q's lstsq call: cond=None made explicit as cond=EPS_MACH
+
+**Phase 1, sub-batch 2 of the iterations.csv work.** While wiring the
+new `rcond` log column, noticed `solve_lil_q`'s `scipy.linalg.lstsq`
+call never passed `cond` explicitly (relying on scipy's `cond=None`
+default). Per LAPACK's own `gelsy` convention, `cond=None` maps to
+`RCOND=-1`, which means "use machine precision" -- i.e. already
+numerically identical to explicitly passing `cond=EPS_MACH`. Verified
+directly before changing anything: ran the same `lstsq` call both ways
+on a random matrix and confirmed bit-identical output
+(`np.array_equal(x1, x2) == True`, max diff `0.0`). Made explicit so the
+logged `rcond` value matches what the code actually does rather than
+relying on an unstated LAPACK convention -- a documentation/clarity
+change, confirmed not a numeric one.
+
+---
+
 ## 2026-09-22 -- BLAS thread counts now actually set, not just recorded
 
 **Phase 1, batch 2 follow-up.** The provenance-capture entry below

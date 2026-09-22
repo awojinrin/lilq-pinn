@@ -12,6 +12,7 @@ Each solver accepts callback functions for the problem-specific parts
 (PDE residual, boundary conditions, quasilinearization formula).
 """
 
+import time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -22,6 +23,8 @@ from typing import Tuple, Callable, Dict, Optional
 from .nn import MLP, calculate_hidden_dim
 from .metrics import MetricsTracker, QuasilinearMetrics
 from .utils import set_seed, clear_gpu_memory
+from .instrumentation import EPS_MACH
+from .iteration_log import IterationLogger, LilQDiagnosticsTracker
 
 # float64 precision is set explicitly at each parameter/tensor construction
 # site (MLP's own dtype=torch.float64 default; explicit dtype= on every
@@ -411,6 +414,9 @@ def solve_lil_q(
     R_tol: float = 1e-4,
     verbose: bool = True,
     diagnostics_callback: Optional[Callable] = None,
+    iteration_logger: Optional[IterationLogger] = None,
+    compute_residual_vector_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+    conditioning_svd_threshold: Optional[int] = None,
 ) -> Tuple[np.ndarray, QuasilinearMetrics, Dict]:
     """Quasilinear LiL solver (LiL-Q method).
 
@@ -420,8 +426,11 @@ def solve_lil_q(
         3. Solve via QR (``scipy.linalg.lstsq``).
         4. Check convergence on the full nonlinear loss.
 
-    SVD/condition number analysis is **not** embedded in this solver.
-    Use ``diagnostics_callback`` or ``lilq.analysis`` for opt-in analysis.
+    SVD/condition number analysis is **not** embedded in this solver by
+    default. Use ``diagnostics_callback`` for ad hoc opt-in analysis, or
+    ``iteration_logger`` for full Computational_Package_1_v2.md Section
+    3.1 instrumentation (see ``lilq.iteration_log``) -- the latter is
+    what Component B's reruns use.
 
     Parameters
     ----------
@@ -432,7 +441,9 @@ def solve_lil_q(
     compute_nonlinear_loss_fn : callable
         ``(beta) -> (total_loss, pde_loss, ic_loss, bc_loss)``
         Evaluates the full nonlinear loss for convergence checking.
-        All return values are floats.
+        All return values are floats. ``total_loss`` is treated as
+        $\\|\\mathbf{R}\\|_h^2$ (this codebase's own weighted-total-loss
+        convention) when ``iteration_logger`` is given.
     init_coeffs : np.ndarray
         Initial coefficient vector from pre-training.
     max_quasi_iters : int
@@ -443,8 +454,29 @@ def solve_lil_q(
         Print progress.
     diagnostics_callback : callable, optional
         ``(A_stacked, beta, quasi_iter)`` called at each iteration for
-        opt-in SVD/conditioning analysis. Does NOT affect runtime of
-        the core solver when ``None``.
+        ad hoc opt-in analysis. Independent of ``iteration_logger``;
+        both may be given together. Does NOT affect runtime when ``None``.
+    iteration_logger : IterationLogger, optional
+        When given, a full Section 3.1 row is recorded every iteration
+        (see ``lilq.iteration_log.LilQDiagnosticsTracker`` for exactly
+        which columns are populated from generic solver state alone vs.
+        left for problem-specific wiring -- interior-only norms and test
+        -error columns are NOT populated here). Adds one conditioning
+        computation per iteration (SVD, or pivoted QR at the final
+        iterate only, per ``conditioning_svd_threshold``) -- real cost,
+        opt-in only for this reason.
+    compute_residual_vector_fn : callable, optional
+        ``(beta) -> weighted_residual_vector``, the full nonlinear
+        residual as a vector (not the scalar loss). Only used when
+        ``iteration_logger`` is given, to compute the phase indicator
+        $\\chi_k$ (Section 3.1 item 4), which needs
+        $\\|\\mathbf{R}^{(k+1)} - \\mathbf{R}_{\\mathrm{lin}}^{(k)}\\|_h$ -- a
+        vector-difference norm, not derivable from the two residuals'
+        norms alone. Without it, ``chi``/``stall_flag`` log as NaN/False.
+    conditioning_svd_threshold : int, optional
+        Forwarded to ``LilQDiagnosticsTracker``; defaults to
+        ``lilq.instrumentation.DEFAULT_SVD_CONDITIONING_THRESHOLD`` (3200)
+        when ``None``.
 
     Returns
     -------
@@ -464,15 +496,32 @@ def solve_lil_q(
     if verbose:
         print(f"  Initial loss: {total_loss:.6e}")
 
+    tracker = None
+    if iteration_logger is not None:
+        tracker_kwargs = {}
+        if conditioning_svd_threshold is not None:
+            tracker_kwargs["conditioning_svd_threshold"] = conditioning_svd_threshold
+        tracker = LilQDiagnosticsTracker(
+            initial_norm_R_h=float(np.sqrt(total_loss)), **tracker_kwargs,
+        )
+
     converged = False
     n_quasi_iters = 0
 
     for quasi_iter in range(max_quasi_iters):
         n_quasi_iters = quasi_iter + 1
+        beta_prev = beta
 
         # Assemble and solve linearized system
+        t0 = time.perf_counter()
         A_stacked, b_stacked = assemble_system_fn(beta)
-        beta_new = scipy.linalg.lstsq(A_stacked, b_stacked, lapack_driver='gelsy')[0]
+        t_assemble_s = time.perf_counter() - t0
+
+        t0 = time.perf_counter()
+        beta_new, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
+            A_stacked, b_stacked, cond=EPS_MACH, lapack_driver='gelsy',
+        )
+        t_solve_s = time.perf_counter() - t0
 
         # Opt-in diagnostics (SVD, condition number)
         if diagnostics_callback is not None:
@@ -496,7 +545,22 @@ def solve_lil_q(
             print(f"  Iter {quasi_iter + 1}: loss={total_loss:.6e}, "
                   f"d_beta={update_norm:.3e}")
 
-        if total_loss < R_tol:
+        just_converged = total_loss < R_tol
+        is_final_iterate = just_converged or (quasi_iter == max_quasi_iters - 1)
+
+        if tracker is not None:
+            row = tracker.step(
+                k=quasi_iter + 1,
+                A_stacked=A_stacked, b_stacked=b_stacked,
+                beta_prev=beta_prev, beta_new=beta_new,
+                total_loss=total_loss, rank_gelsy=rank_gelsy,
+                t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
+                is_final_iterate=is_final_iterate,
+                compute_residual_vector_fn=compute_residual_vector_fn,
+            )
+            iteration_logger.record(**row)
+
+        if just_converged:
             if verbose:
                 print(f"  Converged at iteration {quasi_iter + 1}")
             converged = True
