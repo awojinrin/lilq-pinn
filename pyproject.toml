@@ -45,3 +45,6 @@ Repository = "https://github.com/awojinrin/lilq-pinn"
 
 [tool.setuptools.packages.find]
 include = ["lilq*", "problems*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

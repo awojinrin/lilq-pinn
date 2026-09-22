@@ -59,7 +59,7 @@ if _proj not in sys.path:
 
 from lilq.basis import (
     Chebyshev1D, Fourier1D, TensorProductBasis2D,
-    ELMBasis2D, AugmentedBasis1D,
+    ELMBasis2D_Xavier, AugmentedBasis1D,
 )
 
 
@@ -175,7 +175,7 @@ def create_comparison_basis(
 
     Returns
     -------
-    basis : TensorProductBasis2D or ELMBasis2D
+    basis : TensorProductBasis2D or ELMBasis2D_Xavier
     n_coeffs : int
     description : str
     """
@@ -227,11 +227,15 @@ def create_comparison_basis(
         desc = f"cos+sin({N_x})(x) x cos+sin({N_t})(t)"
 
     elif key == 'elm':
+        # Xavier-scaled bound (limit = sqrt(6 / (fan_in + fan_out))), matching
+        # the paper's Table 3/4 ELM row (5.0e-2 at n_hidden=625). The plain
+        # ELMBasis2D subclass uses a fixed +/-1.2247 bound regardless of size
+        # and reproduces a different (much lower) loss -- see Codebase_v3_Proposal.md S1.2.
         n_hidden = N_x * N_t
-        basis = ELMBasis2D(
+        basis = ELMBasis2D_Xavier(
             n_hidden=n_hidden, domain_x=x_domain, domain_y=t_domain,
             activation='tanh', seed=seed)
-        desc = f"ELM(tanh, {n_hidden} neurons)"
+        desc = f"ELM(tanh, {n_hidden} neurons, Xavier-scaled)"
 
     else:
         raise ValueError(f"Unknown basis key: {key}")
