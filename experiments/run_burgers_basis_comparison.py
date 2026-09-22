@@ -42,8 +42,6 @@ Usage::
 
 import sys
 import os
-import numpy as np
-import scipy.linalg
 import time
 import json
 import math
@@ -56,6 +54,10 @@ from typing import Tuple, List, Dict, Optional
 _proj = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _proj not in sys.path:
     sys.path.insert(0, _proj)
+
+import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
+import numpy as np
+import scipy.linalg
 
 from lilq.basis import (
     Chebyshev1D, Fourier1D, TensorProductBasis2D,

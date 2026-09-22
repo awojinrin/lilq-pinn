@@ -17,6 +17,42 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- BLAS thread counts now actually set, not just recorded
+
+**Phase 1, batch 2 follow-up.** The provenance-capture entry below
+noted this as a "not yet acted on" gap -- correctly challenged as having
+no real reason to wait for a later phase, so closed out the same day.
+
+`lilq/blas_threads.py`: sets `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/
+`MKL_NUM_THREADS` (all three, since which one actually governs depends on
+which BLAS backend numpy/scipy link against -- setting the irrelevant
+ones is harmless) as its own import-time side effect -- the one place in
+this codebase where that pattern is the *correct* choice rather than the
+antipattern fixed elsewhere in this log: there is no non-environment-
+variable way to configure a native BLAS library's thread pool before it
+loads, and BLAS reads these at load time, not dynamically. Default value:
+`SLURM_CPUS_PER_TASK` when running under sbatch/salloc (correctly matches
+the actual allocation rather than the whole node's core count on shared
+HPRC nodes), else every logical core on the machine. Never overrides a
+value the environment already set (`os.environ.setdefault`, not
+assignment) -- an explicit shell/job-script choice always wins.
+
+Because of the load-time requirement, `import lilq.blas_threads` has to
+be the first import in every experiment script's entry point, before
+`import numpy`/`import scipy` and before any `from lilq...`/
+`from problems...` that would pull numpy in transitively. Wired into all
+8 real experiment scripts at exactly that position (one script,
+`run_burgers_basis_comparison.py`, had numpy imported *before* its own
+`sys.path` setup -- reordered so blas_threads and numpy both come after).
+
+Verified end-to-end, tying both provenance-capture pieces together: ran
+`run_kovasznay.py` with all three variables explicitly unset in the
+calling shell, and confirmed the resulting `hardware.json` shows them all
+set to this machine's core count (24) -- the two mechanisms working
+together exactly as intended, not just independently unit-tested.
+
+---
+
 ## 2026-09-22 -- Provenance capture (hardware.json/environment.txt) and multi-seed harness added
 
 **Phase 1, batch 2.** Two new, independent, tested building blocks
@@ -50,12 +86,10 @@ not `run_all_dry.py`, which is a fast pipeline smoke test, not a real
 timed run. Verified end-to-end: a real Kovasznay run now writes
 `hardware.json`/`environment.txt` into its results directory automatically.
 
-**Note, not yet acted on:** the spec says these thread-count variables
-must be *set*, not just recorded -- BLAS reads them at library load time,
-so setting them requires happening before numpy/scipy is first imported
-(the process environment, a SLURM job script, or the very first lines of
-an entry point). This module can only report what's currently in effect.
-Actually setting them is a separate, still-open task.
+**Note:** the spec says these thread-count variables must be *set*, not
+just recorded -- this module only ever reported what was already in
+effect. See the "BLAS thread counts now actually set" entry above
+(newer, listed first) for `lilq/blas_threads.py`, which closes that gap.
 
 **`lilq/multiseed.py`** -- implements the spec's "every stochastic method
 runs at seeds {0,1,2} (Component B) / {0-4} (Component A), report

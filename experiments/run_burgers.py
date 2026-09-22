@@ -18,6 +18,7 @@ _proj = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _proj not in sys.path:
     sys.path.insert(0, _proj)
 
+import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
 from lilq.utils import set_seed, clear_gpu_memory, DEVICE
