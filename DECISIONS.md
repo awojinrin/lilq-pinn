@@ -17,6 +17,50 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- BL-gravity: known pathologies (kept as is; for the report)
+
+Decision: the `cos_fourier` basis, retargeted losses and K_max = 20 stay
+as they are. What the runs will show, and why:
+
+1. **LiL-Q at P=64 does not reach its target (0.24) within K_max = 20.**
+   From the zero initial coefficients the loss is 0.951 at iteration 20;
+   it reaches 0.24 at iteration 43 and levels off at 0.2283. It is not a
+   code error: the system matrix matches a finite-difference Jacobian of
+   the residual to 1.7e-10 (a true Gauss-Newton step). The quasilinear
+   iteration is Gauss-Newton on the least-squares loss, which is fast only
+   when the achievable residual is small; at P=64 the basis cannot go
+   below ~0.23, and from zero the iterates wander (loss 0.43-0.72 for
+   dozens of iterations). A monotone backtracking step on the same
+   direction stalls at 0.47 -- the step barely reduces the loss there.
+   Started from LiL-N's solution (loss 0.240), LiL-Q reaches 0.2283 in
+   one iteration, so near the solution it behaves as elsewhere in the
+   paper. LiL-N (L-BFGS with line search) reaches 0.24 in ~80 iterations
+   from the same start.
+2. **The starting point matters, with no uniformly better choice.**
+   Starting LiL-Q from the least-squares fit of the IC profile (the
+   viscous case's start) reaches the targets in 14 / 24 / 21 / 11
+   iterations at P = 64 / 256 / 576 / 1024, against 43 / 12 / 5 / 5 from
+   zero -- better only at P=64, as Q9 found for the `fourier` basis.
+3. **At P=64, `fourier` is the better basis for LiL-Q** (6 iterations,
+   plateau 0.197 vs `cos_fourier`'s 43 and 0.228). `cos_fourier` wins at
+   P >= 256 (plateaus 0.071 / 0.043 / 0.010 vs 0.123 / 0.072 / 0.034) and
+   makes LiL-N converge at every size (with `fourier` it stalls at
+   P = 576 and 1024 under the paper's own targets).
+4. **The test-grid residual (`eps_u`, PDE-only mean square on a uniform
+   201 x 201 grid) does not track the training loss here**: at P=1024
+   LiL-Q scores 3.6 (`cos_fourier`) and 55 (`fourier`) against LiL-N's
+   0.33, although LiL-Q's training loss is lower. Unresolved: candidate
+   causes are residual growth between collocation points near the steep
+   front, the grid's t=0 line (IC slope ~25), and the metric excluding
+   the IC/BC terms the training loss weights. Do not use this column for
+   BL-gravity comparisons until it is understood.
+
+Full comparison (LiL-N and LiL-Q, both bases, both target sets, every
+size) was run 2026-09-23; the numbers are in the conversation record and
+reproduce in ~30 minutes.
+
+---
+
 ## 2026-09-23 -- SLURM job scripts for Component B (`scripts/hprc/`)
 
 Seven jobs chained by `submit_all.sh`: a pre-flight (test suite + smoke
