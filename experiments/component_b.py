@@ -284,6 +284,83 @@ def execute_run(run: Run, root: Path, fresh=False, verbose=True) -> str:
     return 'ok'
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Check B3: GPU-CPU equivalence and same-system solver timing (Section 3.2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+EQUIVALENCE_COLUMNS = (
+    'P', 'N_rows', 'iterations_cpu', 'iterations_gpu',
+    'beta_rel_diff', 'beta_ok', 'rlin_cpu', 'rlin_gpu', 'rlin_rel_diff', 'rlin_ok', 'equivalent',
+    't_gelsy_cpu_s', 't_gels_cpu_s', 't_qr_gpu_s', 'timing_repeats',
+    'gpu_mem_estimate_bytes', 'gpu_mem_peak_bytes', 'gpu_min_diag_ratio', 'gpu_flagged_iterations',
+)
+
+
+def _median_time(fn, repeats, sync=False):
+    import torch
+    fn()  # untimed warm-up
+    times = []
+    for _ in range(repeats):
+        if sync:
+            torch.cuda.synchronize()
+        t0 = time.perf_counter()
+        fn()
+        if sync:
+            torch.cuda.synchronize()
+        times.append(time.perf_counter() - t0)
+    return float(np.median(times))
+
+
+def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Path:
+    """Section 3.2 / check B3, every Kovasznay size: the GPU run against
+    the CPU ``gelsy`` run (``||beta_GPU - beta_CPU|| / ||beta_CPU|| <= 1e-8``,
+    ``||R_lin||_h`` equal to six significant figures), plus the solve time
+    of CPU ``gelsy`` (the paper's), CPU ``gels`` and the GPU QR on the same
+    final-iterate system (median of ``repeats`` after a warm-up; the GPU
+    time includes the host-to-device copy of A)."""
+    import scipy.linalg
+    from experiments.run_kovasznay import DEFAULT_N_VALUES, K_RATIO, MAX_ITER, TOL
+    from lilq.instrumentation import EPS_MACH
+    from problems.kovasznay import (
+        KovasznayConfig, _lstsq_cpu_gels, _lstsq_gpu_qr, solve_kovasznay, verify_gpu_cpu_equivalence,
+    )
+    rows = []
+    for N in (DEFAULT_N_VALUES[:1] if smoke else DEFAULT_N_VALUES):
+        config = KovasznayConfig(N_x=N, N_y=N, k_ratio=K_RATIO, max_iter=MAX_ITER, tol=TOL)
+        eq = verify_gpu_cpu_equivalence(config)
+        system = solve_kovasznay(config, verbose=False, return_final_system=True)
+        A, b = system['A_final'], system['b_final']
+        gpu = eq['gpu_result']['gpu_qr']
+        peak = max(r['gpu_mem_peak_bytes'] or 0 for r in solve_rows(eq['gpu_logger'].rows))
+        rows.append({
+            'P': 3 * N * N, 'N_rows': A.shape[0],
+            'iterations_cpu': eq['cpu_result']['n_outer_iters'],
+            'iterations_gpu': eq['gpu_result']['n_outer_iters'],
+            **{k: eq[k] for k in ('beta_rel_diff', 'beta_ok', 'rlin_cpu', 'rlin_gpu',
+                                  'rlin_rel_diff', 'rlin_ok', 'equivalent')},
+            't_gelsy_cpu_s': _median_time(
+                lambda: scipy.linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy'), repeats),
+            't_gels_cpu_s': _median_time(lambda: _lstsq_cpu_gels(A, b), repeats),
+            't_qr_gpu_s': _median_time(lambda: _lstsq_gpu_qr(A, b), repeats, sync=True),
+            'timing_repeats': repeats,
+            'gpu_mem_estimate_bytes': gpu['mem_estimate_bytes'], 'gpu_mem_peak_bytes': peak,
+            'gpu_min_diag_ratio': gpu['min_diag_ratio'],
+            'gpu_flagged_iterations': json.dumps(gpu['flagged_iterations']),
+        })
+        if verbose:
+            r = rows[-1]
+            verdict = 'equivalent' if r['equivalent'] else 'NOT EQUIVALENT -- stop and report (Section 3.2)'
+            print(f"  P={r['P']}: beta diff {r['beta_rel_diff']:.1e}, R_lin diff {r['rlin_rel_diff']:.1e} "
+                  f"-> {verdict}; gelsy {r['t_gelsy_cpu_s']:.3f}s, gels {r['t_gels_cpu_s']:.3f}s, "
+                  f"GPU QR {r['t_qr_gpu_s']:.3f}s", flush=True)
+    path = root / 'gpu_cpu_equivalence.csv'
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=EQUIVALENCE_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
 INDEX_COLUMNS = ('run', 'benchmark', 'config', 'device', 'pass', 'status', 'iterations',
                  'final_norm_R_h', 't_cum_s', 'wall_total_s', 'first_stall_iteration',
                  'kappa_final', 'kappa_method', 'num_rank_gelsy_final',
@@ -323,9 +400,24 @@ def main():
                         help='Smallest size per benchmark, capped iterations -- a fast end-to-end check.')
     parser.add_argument('--list', action='store_true', help='Print the run plan and exit.')
     parser.add_argument('--fresh', action='store_true', help='Rerun completed runs too.')
+    parser.add_argument('--gpu-equivalence', action='store_true',
+                        help='Run check B3 (Section 3.2) instead of the run plan; needs a CUDA device. '
+                             'Writes gpu_cpu_equivalence.csv; exits non-zero if any size fails.')
     args = parser.parse_args()
 
     import torch
+    if args.gpu_equivalence:
+        if not torch.cuda.is_available():
+            sys.exit("--gpu-equivalence needs a CUDA device.")
+        root = Path(args.out_root) / 'B_instrumentation'
+        root.mkdir(parents=True, exist_ok=True)
+        save_provenance(Path(args.out_root))
+        path = run_gpu_equivalence(root, smoke=args.smoke)
+        with open(path, newline='') as f:
+            failed = [r['P'] for r in csv.DictReader(f) if r['equivalent'] != 'True']
+        print(f"Wrote {path}" + (f" -- NOT EQUIVALENT at P={failed}" if failed else " -- all sizes equivalent"))
+        sys.exit(1 if failed else 0)
+
     devices = args.devices or (['cpu', 'cuda'] if torch.cuda.is_available() else ['cpu'])
     if 'cuda' in devices and not torch.cuda.is_available():
         print("No CUDA device: dropping the Kovasznay GPU runs.")

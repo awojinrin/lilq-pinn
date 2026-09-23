@@ -403,7 +403,8 @@ def make_test_error_fn(physics, basis_u, basis_v, basis_p):
 
 def solve_kovasznay(config: KovasznayConfig, verbose=True,
                      iteration_logger=None, run_json_path=None,
-                     analyze_conditioning: bool = False) -> Dict:
+                     analyze_conditioning: bool = False,
+                     return_final_system: bool = False) -> Dict:
     """Solve Kovasznay flow via multi-field LiL-Q.
 
     Returns a dict containing coefficients, errors, and iteration history.
@@ -527,6 +528,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     theta_v = np.zeros(Pv, dtype=np.float64)
     theta_p = np.zeros(Pp, dtype=np.float64)
 
+    gpu_diag = {'mem_estimate_bytes': None, 'min_diag_ratio': float('inf'), 'flagged_iterations': []}
+
     history = {
         'iteration': [], 'coeff_change': [],
         'pde_residual': [], 'continuity_residual': [],
@@ -626,19 +629,25 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 raise RuntimeError(
                     "config.use_gpu=True but no CUDA device is available."
                 )
+            gpu_diag['mem_estimate_bytes'] = gpu_memory_estimate_bytes(*A_sys.shape)
             if verbose:
-                mem_estimate = gpu_memory_estimate_bytes(*A_sys.shape)
-                print(f"    [GPU] memory estimate: {mem_estimate} bytes "
-                      f"({mem_estimate / 1e6:.1f} MB)")
+                print(f"    [GPU] memory estimate: {gpu_diag['mem_estimate_bytes']} bytes "
+                      f"({gpu_diag['mem_estimate_bytes'] / 1e6:.1f} MB)")
 
+            # Section 2: synchronize before every GPU clock read. The solve
+            # time includes the host-to-device copy of A (assembled on CPU).
+            torch.cuda.synchronize()
             t0 = time.perf_counter()
             theta_new, R_diag, gpu_mem_peak_bytes = _lstsq_gpu_qr(A_sys, b_sys)
+            torch.cuda.synchronize()
             t_solve_s = time.perf_counter() - t0
             solver_path = 'gpu_qr'
             rank_gelsy = None  # the full-rank GPU path has no rank-revealing step
 
             degeneracy_ratio = _qr_degeneracy_ratio(R_diag)
+            gpu_diag['min_diag_ratio'] = min(gpu_diag['min_diag_ratio'], degeneracy_ratio)
             if degeneracy_ratio < 1e-13:
+                gpu_diag['flagged_iterations'].append(k)
                 if verbose:
                     print(f"    [GPU] WARNING: near-rank-deficient "
                           f"(min|R_pp|/max|R_pp|={degeneracy_ratio:.2e} < 1e-13) "
@@ -789,6 +798,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             first_stall_iteration=first_stall_iteration(iteration_logger.rows),
             b2_check=tracker.b2_check,
             kappa_qr_raw_ratio=tracker.kappa_qr_raw_ratio,
+            gpu_qr=(gpu_diag if config.use_gpu else None),
             device='cuda' if config.use_gpu else 'cpu',
             thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
         )
@@ -803,6 +813,10 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         'rel_l2_u': rel_l2_u, 'rel_l2_v': rel_l2_v, 'rel_l2_p': rel_l2_p,
         'pde_mse': pde_res, 'cont_mse': cont_res,
         'history': history,
+        'gpu_qr': gpu_diag if config.use_gpu else None,
+        # The last iteration's weighted system, for timing solvers on an
+        # identical A, b (Section 3.2); only kept on request (it is N x P).
+        **({'A_final': A_sys, 'b_final': b_sys} if return_final_system else {}),
     }
 
 

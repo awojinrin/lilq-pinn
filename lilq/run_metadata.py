@@ -58,6 +58,10 @@ RUN_METADATA_FIELDS = (
     # the retained-part ratio; null when the SVD path was used).
     "b2_check",
     "kappa_qr_raw_ratio",
+    # Section 3.2 (Kovasznay GPU path): the 3*8NP memory estimate, the
+    # smallest min|R_pp|/max|R_pp| seen, and the iterations flagged
+    # below 1e-13 (each also solved on the CPU with gelsy).
+    "gpu_qr",
 )
 
 

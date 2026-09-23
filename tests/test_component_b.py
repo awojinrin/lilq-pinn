@@ -3,7 +3,12 @@
 import csv
 import json
 
+import pytest
+import torch
+
 import experiments.component_b as cb
+
+requires_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="needs a CUDA device")
 
 
 def test_full_plan_matches_section_3_3():
@@ -69,3 +74,29 @@ def test_failure_writes_traceback_and_is_retried(tmp_path):
     assert len(calls) == 2
     with open(cb.write_index(root), newline='') as f:
         assert list(csv.DictReader(f))[0]['status'] == 'failed'
+
+
+
+@requires_cuda
+def test_gpu_equivalence_smoke(tmp_path):
+    path = cb.run_gpu_equivalence(tmp_path, smoke=True, repeats=1, verbose=False)
+    with open(path, newline='') as f:
+        (row,) = list(csv.DictReader(f))
+    assert set(row) == set(cb.EQUIVALENCE_COLUMNS)
+    assert row['P'] == '75' and row['equivalent'] == 'True'
+    assert float(row['beta_rel_diff']) <= 1e-8
+    assert all(float(row[c]) > 0 for c in ('t_gelsy_cpu_s', 't_gels_cpu_s', 't_qr_gpu_s'))
+    assert int(row['gpu_mem_peak_bytes']) > 0 and int(row['gpu_mem_estimate_bytes']) > 0
+
+
+@requires_cuda
+def test_kovasznay_gpu_run_json_records_section_3_2_diagnostics(tmp_path):
+    from lilq.iteration_log import IterationLogger
+    from problems.kovasznay import KovasznayConfig, solve_kovasznay, gpu_memory_estimate_bytes
+    logger = IterationLogger()
+    solve_kovasznay(KovasznayConfig(N_x=5, N_y=5, max_iter=5, use_gpu=True), verbose=False,
+                    iteration_logger=logger, run_json_path=tmp_path / 'run.json')
+    gpu = json.loads((tmp_path / 'run.json').read_text())['gpu_qr']
+    assert gpu['mem_estimate_bytes'] == gpu_memory_estimate_bytes(json.loads(
+        (tmp_path / 'run.json').read_text())['N_total'], 75)
+    assert 0 < gpu['min_diag_ratio'] <= 1 and gpu['flagged_iterations'] == []

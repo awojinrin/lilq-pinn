@@ -17,6 +17,28 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Check B3 and the rest of Section 3.2
+
+`experiments/component_b.py --gpu-equivalence` runs check B3 at every
+Kovasznay size and writes `gpu_cpu_equivalence.csv`: the GPU run against
+the CPU `gelsy` run (`||beta_GPU - beta_CPU|| / ||beta_CPU|| <= 1e-8`,
+`||R_lin||_h` to six significant figures), plus the solve time of CPU
+`gelsy` (the paper's driver), CPU `gels` (the same algorithm as the GPU
+QR -- `_lstsq_cpu_gels` existed but was never called) and the GPU QR, all
+on the same final-iterate system, median of 3 after a warm-up. It exits
+non-zero if any size fails ("if it fails, stop and report"). Also:
+- The Kovasznay GPU path now synchronizes before both clock reads around
+  the solve (Section 2); previously only the result copy synchronized
+  implicitly. The GPU solve time includes the host-to-device copy of A,
+  which is assembled on the CPU.
+- `run.json` gains `gpu_qr`: the $3\times8NP$ memory estimate (previously
+  only printed), the smallest $\min|R_{pp}|/\max|R_{pp}|$ seen, and the
+  iterations flagged below $10^{-13}$ (previously printed, not recorded).
+- `solve_kovasznay(..., return_final_system=True)` returns the last
+  weighted system for the same-system timing.
+
+---
+
 ## 2026-09-23 -- Component B driver (`experiments/component_b.py`)
 
 The Section 3.3 logged reruns had instrumentation but no script that ran
