@@ -23,9 +23,10 @@ a block system and solved via QR at each quasilinear iteration.
 import numpy as np
 import os
 import scipy.linalg
+import scipy.linalg.lapack as lapack
 import time
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace as dataclasses_replace
 from typing import Tuple, Dict, Optional
 
 from lilq.basis import (
@@ -37,6 +38,12 @@ from lilq.instrumentation import EPS_MACH
 from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+
+try:
+    import torch
+    HAS_TORCH_CUDA = torch.cuda.is_available()
+except ImportError:
+    HAS_TORCH_CUDA = False
 
 pi = np.pi
 
@@ -61,6 +68,7 @@ class KovasznayConfig:
     lambda_mom: float = 1.0
     lambda_cont: float = 1.0
     lambda_bc: float = 10.0
+    use_gpu: bool = False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -238,6 +246,131 @@ def _make_kovasznay_residual_vector_fn(
     return compute_residual_vector
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Section 3.2: GPU solve path (Kovasznay only)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray):
+    """Full-rank GPU least-squares solve, float64:
+    ``torch.linalg.qr(A, mode='reduced')`` + ``solve_triangular`` (the
+    spec's first-listed option -- chosen over
+    ``torch.linalg.lstsq(driver='gels')`` because it needs R's diagonal
+    for the rank-degeneracy flag anyway, which the QR factorization
+    already produces as a byproduct).
+
+    No rank-revealing step: this assumes ``A`` has full column rank, the
+    same assumption LAPACK's ``gels`` makes -- the spec explicitly does
+    not require a rank-revealing GPU path in this package. A
+    rank-revealing GPU path would need a pivoted or randomized QR (no
+    ``torch.linalg`` primitive currently exposes column pivoting) or a
+    GPU SVD (``torch.linalg.svd`` exists but is far more expensive per
+    call than this problem's iteration budget can absorb, the same
+    per-iteration-SVD cost concern already documented for Beltrami's
+    ``analyze_conditioning``) -- noted here for the report, not
+    implemented.
+
+    Returns ``(x, R_diag, peak_mem_bytes)``: ``R_diag`` feeds
+    :func:`_qr_degeneracy_ratio`; ``peak_mem_bytes`` is
+    ``torch.cuda.max_memory_allocated()`` read immediately after the
+    factorization (peak stats reset just before it, so this reflects
+    this solve's own footprint on top of the already-resident A/b).
+    """
+    At = torch.as_tensor(A, dtype=torch.float64, device='cuda')
+    bt = torch.as_tensor(b, dtype=torch.float64, device='cuda')
+    torch.cuda.reset_peak_memory_stats()
+    Q, R = torch.linalg.qr(At, mode='reduced')
+    y = Q.transpose(0, 1) @ bt
+    x = torch.linalg.solve_triangular(R, y.unsqueeze(1), upper=True).squeeze(1)
+    peak_mem_bytes = int(torch.cuda.max_memory_allocated())
+    R_diag = R.diagonal().detach().cpu().numpy()
+    return x.detach().cpu().numpy(), R_diag, peak_mem_bytes
+
+
+def _qr_degeneracy_ratio(R_diag: np.ndarray) -> float:
+    """$\\min_p|R_{pp}|/\\max_p|R_{pp}|$ -- Section 3.2's rank-degeneracy
+    flag threshold check is ``< 1e-13`` on this ratio."""
+    abs_diag = np.abs(R_diag)
+    max_diag = float(abs_diag.max()) if abs_diag.size else 0.0
+    if max_diag == 0.0:
+        return 0.0
+    return float(abs_diag.min()) / max_diag
+
+
+def gpu_memory_estimate_bytes(N: int, P: int) -> int:
+    """$3 \\times 8NP$ bytes -- Section 3.2's pre-solve memory estimate
+    (roughly A plus Q plus R, each an N-by-P or P-by-P float64 buffer;
+    logged before each GPU solve, not measured -- the actual measured
+    peak is ``torch.cuda.max_memory_allocated()``, returned separately
+    by :func:`_lstsq_gpu_qr`)."""
+    return 3 * 8 * N * P
+
+
+def _lstsq_cpu_gels(A: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """CPU LAPACK ``gels`` (the real routine, via
+    ``scipy.linalg.lapack.dgels`` -- not scipy's high-level ``lstsq``
+    wrapper, which only exposes the ``gelsd``/``gelsy``/``gelss``
+    drivers) -- for timing ``gels`` against ``gelsy`` on the same
+    device, and against the GPU QR path using the same underlying
+    algorithm (Section 3.2: "time both gelsy... and gels so that GPU and
+    CPU can be compared with the same algorithm"). Full-rank assumption,
+    same as the GPU path; verified against ``gelsy`` to near machine
+    precision on a real overdetermined system before being trusted (see
+    DECISIONS.md).
+    """
+    A_f = np.asfortranarray(A, dtype=np.float64)
+    b_f = np.asfortranarray(b.reshape(-1, 1), dtype=np.float64)
+    _lqr, x_out, info = lapack.dgels(A_f, b_f)
+    if info != 0:
+        raise RuntimeError(f"LAPACK dgels failed with info={info}")
+    n = A.shape[1]
+    return x_out[:n, 0].copy()
+
+
+def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -> Dict:
+    """Section 3.2's per-size equivalence check: run the same config once
+    on GPU and once on CPU (``gelsy``, the paper's own driver), then
+    check ``||beta_GPU - beta_CPU||_2 / ||beta_CPU||_2 <= 1e-8`` and that
+    the final ``||R_lin||_h`` agree to six significant figures. Returns a
+    dict with both raw results and the pass/fail verdicts; does **not**
+    raise on failure itself -- "if it fails, stop and report" is the
+    caller's decision (the experiment-script layer), not something a
+    reusable comparison function should hard-code as an exception.
+    """
+    if not HAS_TORCH_CUDA:
+        raise RuntimeError("verify_gpu_cpu_equivalence requires a CUDA device.")
+
+    cpu_config = dataclasses_replace(config, use_gpu=False)
+    gpu_config = dataclasses_replace(config, use_gpu=True)
+
+    cpu_logger = IterationLogger()
+    gpu_logger = IterationLogger()
+    cpu_result = solve_kovasznay(cpu_config, verbose=verbose, iteration_logger=cpu_logger)
+    gpu_result = solve_kovasznay(gpu_config, verbose=verbose, iteration_logger=gpu_logger)
+
+    beta_cpu = np.concatenate([cpu_result['theta_u'], cpu_result['theta_v'], cpu_result['theta_p']])
+    beta_gpu = np.concatenate([gpu_result['theta_u'], gpu_result['theta_v'], gpu_result['theta_p']])
+    beta_rel_diff = float(np.linalg.norm(beta_gpu - beta_cpu) / (np.linalg.norm(beta_cpu) + 1e-30))
+
+    rlin_cpu = cpu_logger.rows[-1]['norm_Rlin_h']
+    rlin_gpu = gpu_logger.rows[-1]['norm_Rlin_h']
+    # "Equal to six significant figures": relative difference below 5e-7
+    # (half a unit in the 6th significant digit) is the standard meaning
+    # of that phrase, not literal string-formatting comparison.
+    rlin_rel_diff = abs(rlin_gpu - rlin_cpu) / (abs(rlin_cpu) + 1e-30)
+
+    beta_ok = beta_rel_diff <= 1e-8
+    rlin_ok = rlin_rel_diff <= 5e-7
+
+    return {
+        'beta_rel_diff': beta_rel_diff, 'beta_ok': beta_ok,
+        'rlin_cpu': rlin_cpu, 'rlin_gpu': rlin_gpu,
+        'rlin_rel_diff': rlin_rel_diff, 'rlin_ok': rlin_ok,
+        'equivalent': beta_ok and rlin_ok,
+        'cpu_result': cpu_result, 'gpu_result': gpu_result,
+        'cpu_logger': cpu_logger, 'gpu_logger': gpu_logger,
+    }
+
+
 def solve_kovasznay(config: KovasznayConfig, verbose=True,
                      iteration_logger=None, run_json_path=None) -> Dict:
     """Solve Kovasznay flow via multi-field LiL-Q.
@@ -262,6 +395,21 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         When given, writes the Section 3.1 "once per run" ``run.json``
         metadata file for this solve (see ``lilq.run_metadata``).
         Requires ``iteration_logger`` -- raises ``ValueError`` otherwise.
+
+    ``config.use_gpu`` (Section 3.2, Kovasznay-only): when True, every
+    outer iteration's linear solve runs on GPU via a full-rank QR
+    factorization (``torch.linalg.qr`` + ``solve_triangular``, float64)
+    instead of CPU ``gelsy`` -- see :func:`_lstsq_gpu_qr`. Raises
+    ``RuntimeError`` if no CUDA device is available. Logged
+    ``solver_path`` becomes ``"gpu_qr"`` and ``gpu_mem_peak_bytes`` is
+    populated (both empty/``"cpu_gelsy"`` otherwise); ``num_rank_gelsy``
+    is left empty unless the rank-degeneracy flag
+    (min|R_pp|/max|R_pp| < 1e-13) fires, in which case a real CPU
+    ``gelsy`` solve is also run for that iteration purely to get a rank
+    estimate -- the GPU iterate itself still drives the quasilinearization
+    forward. See :func:`verify_gpu_cpu_equivalence` for the spec's
+    required per-size GPU/CPU agreement check, and :func:`_lstsq_cpu_gels`
+    for the same-algorithm CPU timing comparison.
     """
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
@@ -430,11 +578,43 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         b_sys = np.concatenate(b_rows)
         t_assemble_s = time.perf_counter() - t0
 
-        t0 = time.perf_counter()
-        theta_new, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
-            A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy',
-        )
-        t_solve_s = time.perf_counter() - t0
+        solver_path = 'cpu_gelsy'
+        gpu_mem_peak_bytes = None
+        if config.use_gpu:
+            if not HAS_TORCH_CUDA:
+                raise RuntimeError(
+                    "config.use_gpu=True but no CUDA device is available."
+                )
+            if verbose:
+                mem_estimate = gpu_memory_estimate_bytes(*A_sys.shape)
+                print(f"    [GPU] memory estimate: {mem_estimate} bytes "
+                      f"({mem_estimate / 1e6:.1f} MB)")
+
+            t0 = time.perf_counter()
+            theta_new, R_diag, gpu_mem_peak_bytes = _lstsq_gpu_qr(A_sys, b_sys)
+            t_solve_s = time.perf_counter() - t0
+            solver_path = 'gpu_qr'
+            rank_gelsy = None  # the full-rank GPU path has no rank-revealing step
+
+            degeneracy_ratio = _qr_degeneracy_ratio(R_diag)
+            if degeneracy_ratio < 1e-13:
+                if verbose:
+                    print(f"    [GPU] WARNING: near-rank-deficient "
+                          f"(min|R_pp|/max|R_pp|={degeneracy_ratio:.2e} < 1e-13) "
+                          f"-- cross-checking with CPU gelsy")
+                _theta_cpu_check, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
+                    A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy',
+                )
+                # Flagged and cross-checked (rank_gelsy now real), per
+                # Section 3.2 -- the GPU iterate itself still drives the
+                # quasilinearization forward; substituting the CPU result
+                # here would silently change what "the GPU run" measures.
+        else:
+            t0 = time.perf_counter()
+            theta_new, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
+                A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy',
+            )
+            t_solve_s = time.perf_counter() - t0
         dt = time.time() - t_iter
 
         theta_u_new = theta_new[:Pu]
@@ -486,6 +666,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
                 is_final_iterate=is_final_iterate,
                 compute_residual_vector_fn=residual_vector_fn,
+                solver_path=solver_path, gpu_mem_peak_bytes=gpu_mem_peak_bytes,
             )
             iteration_logger.record(**row)
 
@@ -555,12 +736,12 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 'p': {'modes_x': config.N_x, 'modes_y': config.N_y, 'total': int(Pp)},
             },
             initial_coefficients='zero',
-            solver_driver='gelsy', rcond=EPS_MACH,
+            solver_driver='gpu_qr' if config.use_gpu else 'gelsy', rcond=EPS_MACH,
             stopping_rule={'type': 'rel_coeff_change', 'tolerance': config.tol},
             K_max=config.max_iter,
             stopping_reason='target' if final_rel_delta < config.tol else 'iteration_cap',
             first_stall_iteration=first_stall_iteration(iteration_logger.rows),
-            device='cpu',
+            device='cuda' if config.use_gpu else 'cpu',
             thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
         )
         write_run_json(run_json_path, metadata)

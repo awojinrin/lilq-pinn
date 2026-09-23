@@ -164,11 +164,13 @@ class LilQDiagnosticsTracker:
         beta_prev: np.ndarray,
         beta_new: np.ndarray,
         total_loss: float,
-        rank_gelsy: int,
+        rank_gelsy: Optional[int],
         t_assemble_s: float,
         t_solve_s: float,
         is_final_iterate: bool,
         compute_residual_vector_fn: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        solver_path: str = "cpu_gelsy",
+        gpu_mem_peak_bytes: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Compute one full row. ``A_stacked``/``b_stacked`` are this
         iteration's *linearized* system (i.e. $\\mathbf{A}^{(k)}$,
@@ -176,6 +178,15 @@ class LilQDiagnosticsTracker:
         row-weighted, matching every solver in this codebase's existing
         convention. ``total_loss`` is $\\|\\mathbf{R}^{(k+1)}\\|_h^2$ by
         this codebase's own definition of the weighted total loss.
+
+        ``rank_gelsy`` may be ``None`` -- the Section 3.2 GPU path
+        (``torch.linalg.qr`` + ``solve_triangular``, a full-rank solve
+        with no rank-revealing step) genuinely doesn't produce one;
+        logged as empty rather than a fabricated value. ``solver_path``/
+        ``gpu_mem_peak_bytes`` default to the CPU-only values every
+        caller before Section 3.2's GPU path used implicitly; a caller
+        running on GPU passes ``solver_path="gpu_qr"`` and the measured
+        ``torch.cuda.max_memory_allocated()``.
         """
         self._t_cum_s += t_assemble_s + t_solve_s
 
@@ -240,9 +251,10 @@ class LilQDiagnosticsTracker:
             chi=chi, order_obs=order_obs, stall_flag=stall,
             roundoff_ratio=roundoff_ratio, kappa_eps=kappa_eps,
             kappa=cond_result["kappa"], kappa_method=cond_result["kappa_method"],
-            num_rank_svd=cond_result["num_rank_svd"], num_rank_gelsy=int(rank_gelsy),
+            num_rank_svd=cond_result["num_rank_svd"],
+            num_rank_gelsy=int(rank_gelsy) if rank_gelsy is not None else None,
             rcond=EPS_MACH,
-            solver_path="cpu_gelsy", gpu_mem_peak_bytes=None,
+            solver_path=solver_path, gpu_mem_peak_bytes=gpu_mem_peak_bytes,
         )
 
         self._norm_R_h_km1 = self._norm_R_h_k

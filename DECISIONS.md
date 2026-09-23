@@ -17,6 +17,88 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Kovasznay GPU solve path (Section 3.2)
+
+**Phase 1, sub-batch 11 -- the last piece of the Component B
+instrumentation rollout.** Section 3.2's GPU full-rank solve path,
+Kovasznay-only per the spec. This machine has a real CUDA device
+(confirmed directly, `torch.cuda.is_available() == True`), so every
+piece of this batch was verified against a real GPU run, not skipped or
+mocked.
+
+**`problems/kovasznay.py`**: new `config.use_gpu: bool = False` field
+(default off, same backward-compatible pattern as Beltrami's). When
+True, each outer iteration's solve runs via `_lstsq_gpu_qr` --
+`torch.linalg.qr(A, mode='reduced')` + `solve_triangular`, float64 --
+chosen over the spec's other listed option
+(`torch.linalg.lstsq(driver='gels')`) because the QR factorization
+already produces R's diagonal as a byproduct, which the rank-degeneracy
+flag needs anyway. No rank-revealing step (a genuine limitation, not an
+oversight -- the spec explicitly says one isn't required in this
+package; the docstring states what it would take: a pivoted/randomized
+QR, since no `torch.linalg` primitive currently exposes column
+pivoting, or a GPU SVD, which would reintroduce the same per-iteration
+cost problem already documented for Beltrami's `analyze_conditioning`).
+
+Before each GPU solve, `gpu_memory_estimate_bytes(N, P)` ($3 \times 8NP$)
+is printed when `verbose=True` -- this is a prospective estimate, not a
+new `iterations.csv` column (the schema is fixed since sub-batch 1;
+`gpu_mem_peak_bytes`, the *measured* value, already had a column,
+unused by every problem until now). After each solve,
+`torch.cuda.max_memory_allocated()` is read (peak stats reset
+immediately beforehand, so this is the factorization's own footprint,
+not accumulated across the whole run) and logged into that column.
+
+Rank-degeneracy flag: $\min_p|R_{pp}|/\max_p|R_{pp}| < 10^{-13}$ triggers
+a real CPU `gelsy` solve for that iteration, purely to get a rank
+estimate for the log (`num_rank_gelsy` is otherwise left empty on the
+GPU path -- an honest "not computed", not a fabricated value). The GPU
+iterate itself still drives the quasilinearization forward when this
+fires; substituting the CPU result would silently change what "the GPU
+run" actually measures, which the spec doesn't ask for. Verified via a
+monkeypatch that forces a near-singular R diagonal on one call and
+confirms the fallback rank appears in that row's log, without needing a
+genuinely ill-conditioned physical config to hit naturally
+(`test_degeneracy_flag_triggers_cpu_gelsy_cross_check`).
+
+`_lstsq_cpu_gels` uses the real LAPACK `gels` routine via
+`scipy.linalg.lapack.dgels` directly -- scipy's high-level `lstsq`
+wrapper only exposes `gelsd`/`gelsy`/`gelss`, not `gels` -- for the
+spec's "time both gelsy... and gels" comparison. Verified against
+`gelsy` to ~1e-14 on both a synthetic system and a realistic
+Kovasznay-scale one (P=48, N=2000) before being trusted.
+
+`verify_gpu_cpu_equivalence(config)`: runs the same config once on each
+device and checks `||beta_GPU - beta_CPU||_2/||beta_CPU||_2 <= 1e-8` and
+`||R_lin||_h` agreement to six significant figures (implemented as
+relative difference $\le 5\times10^{-7}$, the standard meaning of "equal
+to six significant figures" -- not a literal string-formatting
+comparison). Returns a dict rather than raising on failure itself --
+"if it fails, stop and report" is an experiment-script-level decision,
+not something a reusable comparison function should hard-code. Run for
+real on an actual small Kovasznay config: `beta_rel_diff ~1.2e-15`,
+`R_lin` relative difference `~1.2e-16` -- both dramatically inside
+tolerance, essentially machine-precision agreement between the two
+algorithms/devices.
+
+**`lilq/iteration_log.py`**: `LilQDiagnosticsTracker.step()` extended
+with optional `solver_path`/`gpu_mem_peak_bytes` parameters (defaulting
+to the CPU-only values every existing caller relied on implicitly --
+`"cpu_gelsy"`/`None` -- so this is additive, not a behavior change for
+Bratu/Burgers/BL/Beltrami/Darcy, all still CPU-only) and `rank_gelsy`
+now accepts `None` (previously `int(rank_gelsy)` would have crashed --
+the GPU path's full-rank solve genuinely has no rank to report most of
+the time). Verified the existing tracker/instrumentation test suite
+still passes unchanged before building anything on top of it.
+
+Verified `config.use_gpu=False` (the default) bit-identical against the
+pre-change implementation loaded from git HEAD, same pattern as every
+earlier solver change in this log.
+
+198/198 tests passing.
+
+---
+
 ## 2026-09-22 -- Four-method tables (Section 3.4), new lilq/four_method_log.py + experiments/four_method_tables.py
 
 **Phase 1, sub-batch 10.** Section 3.4's rerun of NiL-N, NiL-Q, and LiL-N
