@@ -100,3 +100,32 @@ def test_kovasznay_gpu_run_json_records_section_3_2_diagnostics(tmp_path):
     assert gpu['mem_estimate_bytes'] == gpu_memory_estimate_bytes(json.loads(
         (tmp_path / 'run.json').read_text())['N_total'], 75)
     assert 0 < gpu['min_diag_ratio'] <= 1 and gpu['flagged_iterations'] == []
+
+
+def test_reproduction_check_applies_b1_tolerances_and_orders_discrepancies_first(tmp_path):
+    from experiments.paper_values import PAPER_VALUES
+    root = tmp_path / 'B_instrumentation'
+
+    def write(name, **summary):
+        (root / name).mkdir(parents=True)
+        (root / name / 'summary.json').write_text(json.dumps(summary))
+
+    # Bratu P25 (paper: 2 iterations, kappa 1.7e2): equal iterations, kappa within 10x.
+    write('bratu_P25_cpu_paper', iterations=2, t_cum_s=0.001, kappa_final=1.0e3)
+    # Kovasznay P675 (paper E_u 2.0e-5, E_p 8.1e-4): E_u within 2x, E_p 7x off.
+    write('kovasznay_P675_cpu_paper', n_outer_iters=7, t_cum_s=0.6, rel_l2_u=1.5e-5,
+          rel_l2_v=1.3e-4, rel_l2_p=1.1e-4)
+
+    with open(cb.reproduction_check(root), newline='') as f:
+        rows = list(csv.DictReader(f))
+    assert len(rows) == len(PAPER_VALUES)
+    by = {(r['benchmark'], r['config'], r['quantity']): r for r in rows}
+    assert by[('bratu', 'P25', 'LiL-Q iterations')]['status'] == 'ok'
+    assert by[('bratu', 'P25', 'kappa (final iterate)')]['status'] == 'ok'          # 5.9x < 10x
+    assert by[('bratu', 'P25', 'LiL-Q runtime (s)')]['status'] == 'reported'
+    assert by[('kovasznay', 'P675', 'iterations')]['status'] == 'violation'         # 7 != 6
+    assert by[('kovasznay', 'P675', 'E_u')]['status'] == 'ok'
+    assert by[('kovasznay', 'P675', 'E_p')]['status'] == 'violation'
+    assert by[('burgers', 'P25', 'LiL-Q iterations')]['status'] == 'missing'
+    order = {'violation': 0, 'missing': 1, 'reported': 2, 'ok': 3}
+    assert [order[r['status']] for r in rows] == sorted(order[r['status']] for r in rows)

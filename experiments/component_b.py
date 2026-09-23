@@ -361,6 +361,51 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
     return path
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Check B1: reproduction of every LiL-Q table entry (Section 3.3)
+# ─────────────────────────────────────────────────────────────────────────────
+
+REPRODUCTION_COLUMNS = ('status', 'benchmark', 'config', 'quantity', 'paper_value', 'rerun_value',
+                        'ratio', 'kind', 'tolerance', 'source', 'note')
+_STATUS_ORDER = {'violation': 0, 'missing': 1, 'reported': 2, 'ok': 3}
+
+
+def reproduction_check(root: Path) -> Path:
+    """Compare every manuscript LiL-Q entry (``experiments/paper_values.py``)
+    with the CPU paper-pass rerun; write ``reproduction_check.csv`` with the
+    discrepancies first. Violations are reported, never fixed (Section 3.3)."""
+    from experiments.paper_values import NOTES, PAPER_VALUES, TOLERANCE_FACTOR
+    rows = []
+    for pv in PAPER_VALUES:
+        summary_path = root / f'{pv.benchmark}_{pv.config}_cpu_paper' / 'summary.json'
+        row = {'benchmark': pv.benchmark, 'config': pv.config, 'quantity': pv.quantity,
+               'paper_value': pv.value, 'kind': pv.kind, 'source': pv.source,
+               'note': '; '.join(n for n in (pv.note, NOTES.get(pv.benchmark, '')) if n)}
+        if not summary_path.exists():
+            rows.append({**row, 'status': 'missing', 'tolerance': ''})
+            continue
+        value = pv.rerun(json.loads(summary_path.read_text(encoding='utf-8')))
+        ratio = value / pv.value if value is not None and pv.value else None
+        if pv.kind in ('iterations', 'rank'):
+            tolerance, ok = 'equal', value == pv.value
+        elif pv.kind == 'time':
+            tolerance, ok = 'none (report only)', None
+        else:
+            factor = TOLERANCE_FACTOR[pv.kind]
+            tolerance = f'factor {factor:g}'
+            ok = value is not None and value > 0 and 1 / factor <= ratio <= factor
+        status = 'reported' if ok is None else ('ok' if ok else 'violation')
+        rows.append({**row, 'status': status, 'rerun_value': value, 'ratio': ratio, 'tolerance': tolerance})
+    rows.sort(key=lambda r: _STATUS_ORDER[r['status']])
+    path = root / 'reproduction_check.csv'
+    with open(path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=REPRODUCTION_COLUMNS)
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({k: ('' if r.get(k) is None else r.get(k)) for k in REPRODUCTION_COLUMNS})
+    return path
+
+
 INDEX_COLUMNS = ('run', 'benchmark', 'config', 'device', 'pass', 'status', 'iterations',
                  'final_norm_R_h', 't_cum_s', 'wall_total_s', 'first_stall_iteration',
                  'kappa_final', 'kappa_method', 'num_rank_gelsy_final',
@@ -403,7 +448,18 @@ def main():
     parser.add_argument('--gpu-equivalence', action='store_true',
                         help='Run check B3 (Section 3.2) instead of the run plan; needs a CUDA device. '
                              'Writes gpu_cpu_equivalence.csv; exits non-zero if any size fails.')
+    parser.add_argument('--reproduction-check', action='store_true',
+                        help='Check B1 from the completed runs under --out-root (no solving): '
+                             'writes reproduction_check.csv, discrepancies first.')
     args = parser.parse_args()
+
+    if args.reproduction_check:
+        root = Path(args.out_root) / 'B_instrumentation'
+        path = reproduction_check(root)
+        with open(path, newline='') as f:
+            status = [r['status'] for r in csv.DictReader(f)]
+        print(f"Wrote {path}: " + ", ".join(f"{s}={status.count(s)}" for s in _STATUS_ORDER))
+        return
 
     import torch
     if args.gpu_equivalence:

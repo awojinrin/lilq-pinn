@@ -17,6 +17,30 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Check B1 (`reproduction_check.csv`)
+
+`experiments/paper_values.py` transcribes every LiL-Q entry of the
+manuscript's tables from `Post-JCP/main.pdf` (Tables 2, 3, 5, 6, 7, 9, 11,
+14, 15 in that document's numbering -- one ahead of the package's for
+some tables), each tagged with its comparison rule: iterations and ranks
+equal, errors and residuals within a factor of 2, condition numbers
+within 10, timings reported without tolerance (hardware and load differ).
+`component_b.py --reproduction-check` compares them with the CPU
+paper-pass reruns and writes `reproduction_check.csv`, discrepancies
+first. Two transcription notes: Table 5's "8 x 10^-2" target at P=64 is
+the code's 8.5e-2 rounded (the pre-v2 code and the reference runs both
+used 8.5e-2 -- unchanged); Table 14's residuals are the code's
+physical-unit `mse_*_phys` (SPE10 matches to every digit).
+
+On a full validation pass (all but Beltrami, this machine, not a record
+run) the violations were: Bratu P=225 4 iterations vs 3 (Q2); BL P=64
+10 vs 11 (Q1's off-by-one); Kovasznay P=300 9 vs 10 and its pressure
+errors 2.6-7x *better* than Table 9 (see the Kovasznay entry); Darcy S3
+Darcy-x MSE 3.0e-3 vs 1.97e-1 (66x; S1, S2, SPE10 match); BL P=1024
+numerical rank 936 vs 934; and BL-gravity throughout, by design.
+
+---
+
 ## 2026-09-23 -- Check B3 and the rest of Section 3.2
 
 `experiments/component_b.py --gpu-equivalence` runs check B3 at every
