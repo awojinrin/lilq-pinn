@@ -177,3 +177,33 @@ def test_interior_norms_nan_when_lambda_mom_and_cont_differ():
 
     assert all(math.isnan(row["norm_Rlin_interior"]) for row in logger.rows)
     assert all(math.isnan(row["norm_R_interior"]) for row in logger.rows)
+
+
+def test_run_json_requires_iteration_logger():
+    config = _small_config(max_iter=2)
+    with pytest.raises(ValueError):
+        solve_kovasznay(config, verbose=False, run_json_path="unused.json")
+
+
+def test_run_json_written_and_self_consistent(tmp_path):
+    config = _small_config()
+    logger = IterationLogger()
+    out_path = tmp_path / "run.json"
+
+    result = solve_kovasznay(config, verbose=False, iteration_logger=logger,
+                             run_json_path=out_path)
+
+    import json
+    with open(out_path) as f:
+        meta = json.load(f)
+
+    assert meta["N_total"] == sum(meta["N_composition"].values())
+    assert meta["P_total"] == result['n_params']
+    assert meta["P_total"] == sum(v['total'] for v in meta["basis_description"].values() if isinstance(v, dict))
+    assert meta["K_max"] == config.max_iter
+    assert meta["solver_driver"] == "gelsy"
+    assert meta["device"] == "cpu"
+    assert meta["initial_coefficients"] == "zero"
+    assert meta["stopping_reason"] in ("target", "iteration_cap")
+    from lilq.run_metadata import first_stall_iteration
+    assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)

@@ -148,3 +148,33 @@ def test_csv_round_trip(tmp_path):
         csv_rows = list(csv.DictReader(f))
     assert len(csv_rows) == len(logger.rows)
     assert len(csv_rows) == summary["total_iterations"]
+
+
+def test_run_json_requires_iteration_logger():
+    config, opt = _small_config(gravity=False)
+    with pytest.raises(ValueError):
+        run_lil_q(config, opt, verbose=False, run_json_path="unused.json")
+
+
+def test_run_json_initial_coefficients_distinguishes_viscous_and_gravity(tmp_path):
+    import json
+    from lilq.run_metadata import first_stall_iteration
+
+    for gravity, expected_substring in [(False, 'fitted'), (True, 'zero')]:
+        config, opt = _small_config(gravity=gravity)
+        logger = IterationLogger()
+        out_path = tmp_path / f"run_{gravity}.json"
+
+        basis, coefficients, metrics, summary = run_lil_q(
+            config, opt, verbose=False, iteration_logger=logger, run_json_path=out_path,
+        )
+
+        with open(out_path) as f:
+            meta = json.load(f)
+
+        assert meta["N_total"] == sum(meta["N_composition"].values())
+        assert meta["P_total"] == len(coefficients)
+        assert meta["K_max"] == opt.max_quasi_iters_lil
+        assert meta["solver_driver"] == "gelsy"
+        assert expected_substring in meta["initial_coefficients"]
+        assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)

@@ -152,3 +152,33 @@ def test_check_b2_residual_identity_against_direct_evaluation():
     # actually returned (the tracker's last row and the returned
     # coefficients must describe the same solve state).
     assert norm_R_logged == pytest.approx(float(np.sqrt(summary["final_loss"])), rel=1e-10)
+
+
+def test_run_json_requires_iteration_logger():
+    config, opt = _small_config()
+    with pytest.raises(ValueError):
+        run_lil_q(config, opt, verbose=False, run_json_path="unused.json")
+
+
+def test_run_json_written_and_self_consistent(tmp_path):
+    config, opt = _small_config()
+    logger = IterationLogger()
+    out_path = tmp_path / "run.json"
+
+    basis, coefficients, metrics, summary = run_lil_q(
+        config, opt, verbose=False, iteration_logger=logger, run_json_path=out_path,
+    )
+
+    import json
+    with open(out_path) as f:
+        meta = json.load(f)
+
+    assert meta["N_total"] == sum(meta["N_composition"].values())
+    assert meta["P_total"] == len(coefficients)
+    assert meta["K_max"] == opt.max_quasi_iters_lil
+    assert meta["solver_driver"] == "gelsy"
+    assert meta["device"] == "cpu"
+    assert meta["initial_coefficients"] == "zero"
+    assert meta["stopping_reason"] in ("target", "iteration_cap")
+    from lilq.run_metadata import first_stall_iteration
+    assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)

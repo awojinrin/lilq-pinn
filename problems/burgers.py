@@ -14,6 +14,7 @@ Bellman–Kalaba quasilinearization of u·u_x:
 This module defines ONLY the Burgers-specific physics.
 """
 
+import os
 import numpy as np
 import torch
 import torch.nn as nn
@@ -26,6 +27,9 @@ from lilq.collocation import generate_collocation_points_2d, collocation_to_torc
 from lilq.pretraining import pretrain_nn, pretrain_lil, nn_pretrain_grid_side
 from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q
 from lilq.utils import set_seed, DEVICE
+from lilq.instrumentation import EPS_MACH
+from lilq.provenance import capture_blas_thread_env
+from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -514,7 +518,7 @@ def run_lil_n(config: BurgersConfig, opt: BurgersOptConfig,
 
 def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
               verbose=True, diagnostics_callback=None,
-              iteration_logger=None):
+              iteration_logger=None, run_json_path=None):
     """Run LiL-Q for Burgers.
 
     ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
@@ -524,7 +528,13 @@ def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
         ``interior_weight=w_pde``) and the residual-vector function needed
         for ``chi``/``stall_flag`` automatically. Omitted (``None``, the
         default), behavior is unchanged from before this parameter existed.
+    run_json_path : str or Path, optional
+        When given, writes the Section 3.1 "once per run" ``run.json``
+        metadata file for this solve (see ``lilq.run_metadata``).
+        Requires ``iteration_logger`` -- raises ``ValueError`` otherwise.
     """
+    if run_json_path is not None and iteration_logger is None:
+        raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
     set_seed(config.seed)
     physics = BurgersPhysics(config)
 
@@ -597,4 +607,38 @@ def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
         **solve_kwargs,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
+
+    if run_json_path is not None:
+        thread_env = capture_blas_thread_env()
+        metadata = build_run_metadata(
+            N_total=n_pde + n_ic + n_bc_l + n_bc_r,
+            N_composition={'pde': n_pde, 'ic': n_ic, 'bc_left': n_bc_l, 'bc_right': n_bc_r},
+            P_total=int(len(coefficients)),
+            P_composition={'u': int(len(coefficients))},
+            row_weights={
+                'pde': float(np.sqrt(opt.lambda_pde / n_pde)),
+                'ic': float(np.sqrt(opt.lambda_ic / n_ic)),
+                'bc_left': float(np.sqrt(opt.lambda_bc / n_bc_l)),
+                'bc_right': float(np.sqrt(opt.lambda_bc / n_bc_r)),
+            },
+            collocation_construction={
+                'method': 'random-tensor' if config.sampling == 'random' else config.sampling,
+                'seed': config.seed,
+                'N_x': config.N_x, 'N_t': config.N_t, 'k_ratio': config.k_ratio,
+            },
+            basis_description={
+                'family': config.basis_type,
+                'u': {'modes_x': config.N_x, 'modes_t': config.N_t},
+            },
+            initial_coefficients='zero',
+            solver_driver='gelsy', rcond=EPS_MACH,
+            stopping_rule={'type': 'loss_target', 'value': opt.R_tol},
+            K_max=opt.max_quasi_iters_lil,
+            stopping_reason='target' if summary['converged'] else 'iteration_cap',
+            first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            device='cpu',
+            thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
+        )
+        write_run_json(run_json_path, metadata)
+
     return basis, coefficients, metrics, summary

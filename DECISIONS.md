@@ -17,6 +17,65 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- run.json retrofitted onto Bratu/Burgers/BL/Kovasznay
+
+**Phase 1, sub-batch 9.** Sub-batch 6 built `lilq/run_metadata.py` and
+wired `run.json` into Beltrami/Darcy only, deliberately excluding the
+other four problems and flagging the retrofit as separate, unscoped
+work. This closes that out: `run_json_path` (optional, requires
+`iteration_logger`, raises `ValueError` otherwise -- same contract as
+Beltrami/Darcy) added to `problems.bratu.run_lil_q`,
+`problems.burgers.run_lil_q`, `problems.buckley_leverett.run_lil_q`
+(covers both viscous and gravity), and `problems.kovasznay.solve_kovasznay`.
+
+Field values are genuinely derived per problem, not copy-pasted with the
+names changed:
+
+- **`initial_coefficients`** actually differs by problem, checked
+  against each `initial_guess`/`_ic_no_gravity` function's real source
+  rather than assumed: Bratu and Burgers are `"zero"` (confirmed
+  `initial_guess` returns `zeros_like` unconditionally in both); BL is
+  `"zero"` for gravity but `"fitted initial profile (least-squares
+  pretrain of exp(-10*x))"` for viscous -- `BLPhysics.initial_guess`
+  dispatches on `self._has_gravity`, and the non-gravity branch returns
+  `exp(-10*x)`, not zero. This is exactly the spec's own callout
+  ("zero, or the fitted initial profile for viscous Buckley-Leverett")
+  verified against the actual code, not taken on faith; locked in by
+  `test_run_json_initial_coefficients_distinguishes_viscous_and_gravity`.
+  Kovasznay is `"zero"` (no pretraining step exists at all --
+  `theta_u`/`theta_v`/`theta_p` are literally `np.zeros(...)`).
+- **`N_composition`**/**`row_weights`** match each problem's actual row
+  blocks: Bratu (pde, bc), Burgers/BL (pde, ic, bc_left, bc_right),
+  Kovasznay (x/y-momentum, continuity, bc_u, bc_v, pressure_pin) --
+  reusing the exact same weighted-block structure each problem's
+  `_make_lil_q_system_fn`/assembly loop already uses (confirmed
+  directly, not re-derived independently), so `N_total` sums to exactly
+  what each problem's `A_stacked`/`A_sys` actually has.
+- **`collocation_construction`** reports `"random-tensor"` for Bratu/
+  Burgers/BL (all three pass `sampling='random'` through
+  `generate_collocation_points_2d`, which places points via
+  `np.random.uniform`) and `"equispaced tensor grid"` for Kovasznay
+  (`_generate_collocation` calls `np.random.seed` but actually builds
+  points via `np.linspace`/`meshgrid` -- the seed call is vestigial for
+  this problem, confirmed by re-reading the function rather than
+  assumed from its name).
+- **`stopping_reason`** derives from each problem's own convergence
+  signal: Bratu/Burgers/BL from `summary['converged']` (already computed
+  by the shared `solve_lil_q`); Kovasznay has no such field in its
+  return dict, so this reads `history['coeff_change'][-1] < config.tol`
+  directly, matching `solve_kovasznay`'s own loop-exit condition exactly.
+
+Verified bit-identical (two calls without `run_json_path`, matching the
+established pattern) for all four; each also smoke-tested with a real
+small solve and its `run.json` inspected by hand (N_total/P_total sums
+checked against `N_composition`/`P_composition`, BL's viscous vs.
+gravity `initial_coefficients` value both printed and confirmed
+correct) before writing the automated tests.
+
+164/164 tests passing.
+
+---
+
 ## 2026-09-22 -- Multi-seed harness wired into run_bratu.py/run_burgers.py/run_bl.py
 
 **Phase 1, sub-batch 8.** `lilq.multiseed.run_multiseed` was built (and

@@ -21,6 +21,7 @@ a block system and solved via QR at each quasilinear iteration.
 """
 
 import numpy as np
+import os
 import scipy.linalg
 import time
 import math
@@ -34,6 +35,8 @@ from lilq.basis import (
 from lilq.analysis import svd_analysis
 from lilq.instrumentation import EPS_MACH
 from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
+from lilq.provenance import capture_blas_thread_env
+from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
 
 pi = np.pi
 
@@ -236,7 +239,7 @@ def _make_kovasznay_residual_vector_fn(
 
 
 def solve_kovasznay(config: KovasznayConfig, verbose=True,
-                     iteration_logger=None) -> Dict:
+                     iteration_logger=None, run_json_path=None) -> Dict:
     """Solve Kovasznay flow via multi-field LiL-Q.
 
     Returns a dict containing coefficients, errors, and iteration history.
@@ -255,7 +258,13 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         weight when those two match (true by default). Omitted (``None``,
         the default), behavior -- including ``history`` -- is unchanged
         from before this parameter existed.
+    run_json_path : str or Path, optional
+        When given, writes the Section 3.1 "once per run" ``run.json``
+        metadata file for this solve (see ``lilq.run_metadata``).
+        Requires ``iteration_logger`` -- raises ``ValueError`` otherwise.
     """
+    if run_json_path is not None and iteration_logger is None:
+        raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
     physics = KovasznayPhysics(config)
     nu = physics.nu
 
@@ -510,6 +519,51 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     if verbose:
         print(f"\n  Total time: {total_time:.4f}s")
         print(f"  Final rel L2 errors:  u={rel_l2_u:.3e}  v={rel_l2_v:.3e}  p={rel_l2_p:.3e}")
+
+    if run_json_path is not None:
+        n_bc_edge = bc_blocks['bot']['n']  # all four edges share one count (_generate_collocation)
+        w_mom = float(np.sqrt(config.lambda_mom / n_pde))
+        w_cont = float(np.sqrt(config.lambda_cont / n_pde))
+        w_bc = float(np.sqrt(config.lambda_bc / n_bc_edge))
+        w_pin = float(np.sqrt(config.lambda_bc))
+        thread_env = capture_blas_thread_env()
+        final_rel_delta = history['coeff_change'][-1]
+        metadata = build_run_metadata(
+            N_total=3 * n_pde + 2 * 4 * n_bc_edge + 1,
+            N_composition={
+                'x_momentum': n_pde, 'y_momentum': n_pde, 'continuity': n_pde,
+                'bc_u': 4 * n_bc_edge, 'bc_v': 4 * n_bc_edge,
+                'pressure_pin': 1,
+            },
+            P_total=int(P_total),
+            P_composition={'u': int(Pu), 'v': int(Pv), 'p': int(Pp)},
+            row_weights={
+                'momentum': w_mom, 'continuity': w_cont,
+                'bc': {edge: float(np.sqrt(config.lambda_bc / blk['n']))
+                       for edge, blk in bc_blocks.items()},
+                'pressure_pin': w_pin,
+            },
+            collocation_construction={
+                'method': 'equispaced tensor grid',
+                'N_x': config.N_x, 'N_y': config.N_y, 'k_ratio': config.k_ratio,
+                'collocation_ratios': list(config.collocation_ratios),
+            },
+            basis_description={
+                'family': config.basis_type,
+                'u': {'modes_x': config.N_x, 'modes_y': config.N_y, 'total': int(Pu)},
+                'v': {'modes_x': config.N_x, 'modes_y': config.N_y, 'total': int(Pv)},
+                'p': {'modes_x': config.N_x, 'modes_y': config.N_y, 'total': int(Pp)},
+            },
+            initial_coefficients='zero',
+            solver_driver='gelsy', rcond=EPS_MACH,
+            stopping_rule={'type': 'rel_coeff_change', 'tolerance': config.tol},
+            K_max=config.max_iter,
+            stopping_reason='target' if final_rel_delta < config.tol else 'iteration_cap',
+            first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            device='cpu',
+            thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
+        )
+        write_run_json(run_json_path, metadata)
 
     return {
         'basis_u': basis_u, 'basis_v': basis_v, 'basis_p': basis_p,
