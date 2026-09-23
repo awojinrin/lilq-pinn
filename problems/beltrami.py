@@ -65,6 +65,11 @@ class BeltramiConfig:
     N_ic: int = 8
     seed: int = 42
     basis_type: str = 'chebyshev'
+    # Section 3.7: number of temporal levels at which pressure is pinned
+    # (Chebyshev-Gauss-Lobatto nodes in t_domain). 1 (default) reproduces
+    # the original single-pin-at-t=0 behavior exactly -- see
+    # _cgl_temporal_pin_nodes and DECISIONS.md.
+    n_pressure_pin_levels: int = 1
     # Solver
     max_iter: int = 20
     tol: float = 1e-9
@@ -158,6 +163,23 @@ def _generate_collocation(config: BeltramiConfig, physics: BeltramiPhysics, P_to
     }
 
 
+def _cgl_temporal_pin_nodes(n_pin, t_domain):
+    """Section 3.7: ``n_pin`` pressure-pin times in ``t_domain``.
+
+    ``n_pin == 1`` (the pre-3.7 default) returns exactly ``[t_domain[0]]``,
+    bit-identical to the original single-pin-at-t0 behavior -- no
+    Chebyshev machinery involved, by construction. ``n_pin >= 2`` returns
+    the standard Chebyshev-Gauss-Lobatto nodes ``cos(j*pi/(n_pin-1))``,
+    ``j=0..n_pin-1``, affinely mapped from ``[-1,1]`` onto ``t_domain``.
+    """
+    if n_pin == 1:
+        return np.array([t_domain[0]])
+    j = np.arange(n_pin)
+    xi = np.cos(j * np.pi / (n_pin - 1))
+    a, b = t_domain
+    return 0.5 * (b - a) * (xi + 1.0) + a
+
+
 def _lstsq(A, b, use_gpu=False):
     if use_gpu and HAS_TORCH_CUDA:
         At = torch.as_tensor(A, dtype=torch.float64, device='cuda')
@@ -223,14 +245,18 @@ def _make_beltrami_nonlinear_loss_fn(
             + float(np.mean((ic_block['Phi_w'] @ tw - ic_block['w_ex']) ** 2))
         )
 
-        pin_res = float((Phi_p_pin @ tp - p_pin_val)[0])
+        # Mean-of-squares over all n_pin pin rows (Section 3.7 generalizes
+        # a single pin to n_pin>=1 Chebyshev-Gauss-Lobatto temporal
+        # levels). At n_pin=1 this is exactly pin_res**2 for the one row,
+        # bit-identical to the pre-3.7 scalar form.
+        pin_mse = float(np.mean((Phi_p_pin @ tp - p_pin_val) ** 2))
 
         total = (
             lambda_mom * (float(np.mean(r1 ** 2)) + float(np.mean(r2 ** 2)) + float(np.mean(r3 ** 2)))
             + lambda_cont * float(np.mean(r4 ** 2))
             + lambda_bc * bc_mse
             + lambda_ic * ic_mse
-            + lambda_bc * pin_res ** 2
+            + lambda_bc * pin_mse
         )
         return total
 
@@ -255,7 +281,9 @@ def _make_beltrami_residual_vector_fn(
     """
     w_mom = np.sqrt(lambda_mom / n_pde)
     w_cont = np.sqrt(lambda_cont / n_pde)
-    w_pin = np.sqrt(lambda_bc)
+    # "One-scalar-per-block" convention generalized to n_pin>=1 pin rows
+    # (sqrt(lambda_bc/n_pin)) -- reduces to sqrt(lambda_bc) at n_pin=1.
+    w_pin = np.sqrt(lambda_bc / Phi_p_pin.shape[0])
 
     def compute_residual_vector(theta):
         tu = theta[:Pu]
@@ -425,13 +453,16 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         'n': len(xi),
     }
 
-    # Pressure pin
-    x0 = np.array([physics.x_domain[0]])
-    y0 = np.array([physics.y_domain[0]])
-    z0 = np.array([physics.z_domain[0]])
-    t0_ = np.array([physics.t_domain[0]])
-    Phi_p_pin = basis_p.evaluate(x0, y0, z0, t0_)
-    p_pin_val = physics.exact_p(x0[0], y0[0], z0[0], t0_[0])
+    # Pressure pin (Section 3.7: n_pressure_pin_levels temporal levels at
+    # the fixed spatial corner (x0,y0,z0), n_pressure_pin_levels=1 gives
+    # back exactly the original single pin at t=t_domain[0])
+    n_pin = config.n_pressure_pin_levels
+    t_pin = _cgl_temporal_pin_nodes(n_pin, physics.t_domain)
+    x0 = np.full(n_pin, physics.x_domain[0])
+    y0 = np.full(n_pin, physics.y_domain[0])
+    z0 = np.full(n_pin, physics.z_domain[0])
+    Phi_p_pin = basis_p.evaluate(x0, y0, z0, t_pin)
+    p_pin_val = physics.exact_p(x0, y0, z0, t_pin)
 
     # Initialize
     theta_u = np.zeros(Pu); theta_v = np.zeros(Pv)
@@ -539,12 +570,12 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         ])
         b_rows.extend([wi*ic_block['u_ex'], wi*ic_block['v_ex'], wi*ic_block['w_ex']])
 
-        # Pressure pin
-        wp = np.sqrt(config.lambda_bc)
-        pin = np.zeros((1, P_total))
-        pin[0, Pu+Pv+Pw:] = Phi_p_pin
+        # Pressure pin (n_pin rows -- see Section 3.7 note above)
+        wp = np.sqrt(config.lambda_bc / n_pin)
+        pin = np.zeros((n_pin, P_total))
+        pin[:, Pu+Pv+Pw:] = Phi_p_pin
         A_rows.append(wp * pin)
-        b_rows.append(wp * np.array([p_pin_val]))
+        b_rows.append(wp * p_pin_val)
 
         A_sys = np.vstack(A_rows)
         b_sys = np.concatenate(b_rows)
@@ -629,7 +660,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         wm = float(np.sqrt(config.lambda_mom / n_pde))
         wc = float(np.sqrt(config.lambda_cont / n_pde))
         wi = float(np.sqrt(config.lambda_ic / n_ic_total))
-        wp_pin = float(np.sqrt(config.lambda_bc))
+        wp_pin = float(np.sqrt(config.lambda_bc / n_pin))
         thread_env = capture_blas_thread_env()
         final_rel_delta = history['coeff_change'][-1]
         metadata = build_run_metadata(
@@ -639,7 +670,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
                 'continuity': n_pde,
                 'bc_u': n_bc_edge_total, 'bc_v': n_bc_edge_total, 'bc_w': n_bc_edge_total,
                 'ic_u': n_ic_total, 'ic_v': n_ic_total, 'ic_w': n_ic_total,
-                'pressure_pin': 1,
+                'pressure_pin': n_pin,
             },
             P_total=int(P_total),
             P_composition={'u': int(Pu), 'v': int(Pv), 'w': int(Pw), 'p': int(Pp)},

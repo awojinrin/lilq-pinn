@@ -42,6 +42,7 @@ Usage::
 
 import sys
 import os
+import csv
 import time
 import json
 import math
@@ -64,6 +65,9 @@ from lilq.basis import (
     ELMBasis2D_Xavier, AugmentedBasis1D,
 )
 from lilq.provenance import save_provenance
+from lilq.instrumentation import EPS_MACH
+from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
+from lilq.run_metadata import first_stall_iteration
 
 
 # =============================================================================
@@ -94,6 +98,10 @@ class ComparisonConfig:
     max_quasi_iters: int = 50
     stagnation_window: int = 5
     stagnation_rtol: float = 1e-3
+    # Section 3.6: run every configuration to max_quasi_iters unconditionally
+    # (R_tol and the stagnation-window early break both disabled) so each
+    # row's value is a stagnation *level*, not a stopping value.
+    disable_stopping_rule: bool = False
 
     # Output
     output_dir: str = "results/burgers_basis_comparison"
@@ -154,6 +162,12 @@ BASIS_CONFIGS = {
         'short_label': 'ELM',
         'color': '#6A0572',    # purple  (same as Bratu ELM)
         'marker': 'v',
+    },
+    'sin_fourier': {
+        'label': r'Sin$(x)$ $\times$ \{Cos,Sin\}$(t)$',
+        'short_label': 'Sin x {Cos,Sin}',
+        'color': '#8C564B',    # brown -- distinct from every other entry
+        'marker': '*',
     },
 }
 
@@ -228,6 +242,17 @@ def create_comparison_basis(
             Fourier1D(n_modes=N_x, domain=x_domain, mode='both'),
             Fourier1D(n_modes=N_t, domain=t_domain, mode='both'))
         desc = f"cos+sin({N_x})(x) x cos+sin({N_t})(t)"
+
+    elif key == 'sin_fourier':
+        # Section 3.6's "Sin x {cos,sin}" addition to Table 2/3 -- full
+        # Fourier (both cos and sin modes) in t, pure sin in x. This is
+        # the actual production default for Burgers elsewhere in this
+        # codebase (problems/burgers.py's DEFAULT_BASIS='sin_fourier'),
+        # oddly absent from this comparison study until now.
+        basis = TensorProductBasis2D(
+            Fourier1D(n_modes=N_x, domain=x_domain, mode='sin'),
+            Fourier1D(n_modes=N_t, domain=t_domain, mode='both'))
+        desc = f"sin(1..{N_x})(x) x cos+sin({N_t})(t)"
 
     elif key == 'elm':
         # Xavier-scaled bound (limit = sqrt(6 / (fan_in + fan_out))), matching
@@ -304,6 +329,7 @@ def solve_lilq_burgers_comparison(
     config: ComparisonConfig,
     pts: Dict,
     verbose: bool = True,
+    iteration_logger=None,
 ) -> Dict:
     """
     Solve the Burgers equation via LiL-Q with an arbitrary basis.
@@ -311,6 +337,19 @@ def solve_lilq_burgers_comparison(
     Quasilinearisation of  u_t + u u_x - nu u_xx = 0  gives:
         u_t + u_prev u_x + u_x_prev u - nu u_xx = u_prev u_x_prev
     which is linear in the new u.
+
+    ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
+        When given, a full Section 3.1 ``iterations.csv`` row is recorded
+        every quasilinear iteration -- Section 3.6's per-row diagnostics
+        (final ``||R||_h^2``, first stall iteration, kappa, numerical
+        rank) all come from this rather than a separate ad hoc
+        computation. Omitted (``None``, the default), behavior is
+        unchanged from before this parameter existed.
+    ``config.disable_stopping_rule`` : Section 3.6 -- when True, both the
+        ``R_tol`` convergence check and the stagnation-window early break
+        are skipped, so the loop always runs the full
+        ``config.max_quasi_iters`` and each row's final value is a
+        stagnation *level*, not a stopping value.
 
     Returns
     -------
@@ -387,6 +426,28 @@ def solve_lilq_burgers_comparison(
         print(f"  Iter   0: total={tot:.6e}  pde={pde_m:.6e}  "
               f"ic={ic_m:.6e}  bc={bc_m:.6e}")
 
+    def residual_vector(b):
+        # Weighted vector form, stacked in the exact same order as
+        # A_stack/b_stack below (pde, bc_left, bc_right, ic) -- computed
+        # independently of the scalar `record()` above (mean-of-squares
+        # vs vector-norm) so check B2 is a real cross-check.
+        wp = np.sqrt(lp / n_pde)
+        wi = np.sqrt(li / n_ic)
+        wb = np.sqrt(lb / n_bc)
+        pde_res = nonlinear_residual(b)
+        bl_res = A_bcL @ b
+        br_res = A_bcR @ b
+        ic_res = A_ic @ b - ic_target
+        return np.concatenate([wp * pde_res, wb * bl_res, wb * br_res, wi * ic_res])
+
+    tracker = None
+    if iteration_logger is not None:
+        tracker = LilQDiagnosticsTracker(
+            initial_norm_R_h=float(np.sqrt(tot)),
+            n_interior_rows=n_pde,
+            interior_weight=float(np.sqrt(lp / n_pde)),
+        )
+
     converged, stagnated = False, False
     best_loss, no_improve = tot, 0
     it = 0
@@ -394,7 +455,9 @@ def solve_lilq_burgers_comparison(
     # ---- quasilinearization loop ----
     for qi in range(config.max_quasi_iters):
         it = qi + 1
+        beta_prev = beta
 
+        t0a = time.perf_counter()
         u_prev  = A_u  @ beta
         ux_prev = A_ux @ beta
 
@@ -415,17 +478,35 @@ def solve_lilq_burgers_comparison(
                                   wb * np.zeros(n_bc),
                                   wb * np.zeros(n_bc),
                                   wi * ic_target])
+        t_assemble_s = time.perf_counter() - t0a
 
         # QR solve via least squares
-        beta, _, _, _ = scipy.linalg.lstsq(
-            A_stack, b_stack, lapack_driver='gelsy')
+        t0s = time.perf_counter()
+        beta, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
+            A_stack, b_stack, cond=EPS_MACH, lapack_driver='gelsy')
         beta = beta.astype(np.float64)
+        t_solve_s = time.perf_counter() - t0s
 
         tot, pde_m, ic_m, bc_m = record(it, beta)
 
         if verbose and (it <= 10 or it % 5 == 0):
             print(f"  Iter {it:3d}: total={tot:.6e}  pde={pde_m:.6e}  "
                   f"ic={ic_m:.6e}  bc={bc_m:.6e}")
+
+        if tracker is not None:
+            is_final_iterate = (qi == config.max_quasi_iters - 1)
+            row = tracker.step(
+                k=it, A_stacked=A_stack, b_stacked=b_stack,
+                beta_prev=beta_prev, beta_new=beta,
+                total_loss=tot, rank_gelsy=rank_gelsy,
+                t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
+                is_final_iterate=is_final_iterate,
+                compute_residual_vector_fn=residual_vector,
+            )
+            iteration_logger.record(**row)
+
+        if config.disable_stopping_rule:
+            continue
 
         # Convergence check
         if tot < config.R_tol:
@@ -538,6 +619,105 @@ def run_all_bases(
 
 
 # =============================================================================
+# SECTION 3.6: TABLE 3 (BURGERS BASIS STUDY) COMPLETION
+# =============================================================================
+
+def run_table3_study(
+    config: Optional[ComparisonConfig] = None,
+    basis_keys: Optional[List[str]] = None,
+    verbose: bool = True,
+) -> Dict[str, Dict]:
+    """Section 3.6: run every basis configuration on the study's own grid
+    (73x73 interior / 313 IC / 313 BC, equispaced, P=625 -- already what
+    ``config.N_x=config.N_t=25`` with the default k_ratio/collocation_ratios
+    produces, confirmed directly, no grid change needed) with the
+    stopping rule disabled to K_max=50, full Section 3.1 instrumentation
+    on every row.
+
+    Returns ``{basis_key: {'logger': IterationLogger, 'n_coefficients': int}}``
+    for every basis that ran successfully (a failed basis is omitted, not
+    included as None -- unlike ``run_all_bases``, since a per-row CSV has
+    no natural "failed" row).
+    """
+    if config is None:
+        config = ComparisonConfig(N_x=25, N_t=25, disable_stopping_rule=True,
+                                  max_quasi_iters=50)
+    elif not config.disable_stopping_rule:
+        raise ValueError(
+            "run_table3_study requires disable_stopping_rule=True -- "
+            "otherwise a row's value would be a stopping value, not the "
+            "stagnation level Section 3.6 asks for. (max_quasi_iters "
+            "defaults to 50, the paper's own K_max, but isn't otherwise "
+            "enforced here -- pass a smaller value for a fast smoke test.)"
+        )
+    if basis_keys is None:
+        basis_keys = list(BASIS_CONFIGS.keys())
+
+    pts = generate_collocation(config)
+    if verbose:
+        print("=" * 70)
+        print("SECTION 3.6: TABLE 3 (BURGERS BASIS STUDY) COMPLETION")
+        print("=" * 70)
+        print(f"  P={config.N_x * config.N_t}, PDE={pts['n_pde']}, "
+              f"IC={pts['n_ic']}, BC={pts['n_bc']}, K_max={config.max_quasi_iters}")
+
+    t_dom = (0.0, config.T_final)
+    results = {}
+    for bk in basis_keys:
+        try:
+            basis, nc, desc = create_comparison_basis(
+                bk, config.N_x, config.N_t, config.x_domain, t_dom, config.seed)
+            if verbose:
+                print(f"\n  Running: {desc}  ({nc} coefficients)")
+            logger = IterationLogger()
+            solve_lilq_burgers_comparison(bk, basis, config, pts, verbose=False,
+                                          iteration_logger=logger)
+            results[bk] = {'logger': logger, 'n_coefficients': nc}
+            if verbose:
+                last = logger.rows[-1]
+                print(f"    final ||R||_h^2={last['norm_R_h']**2:.6e}  "
+                      f"kappa={last['kappa']}  rank_svd={last['num_rank_svd']}")
+        except Exception as e:
+            print(f"\n  !! {bk} FAILED: {e}")
+            import traceback
+            traceback.print_exc()
+    return results
+
+
+def write_table3_csv(results: Dict[str, Dict], out_path) -> None:
+    """One CSV, one row per basis: final ||R||_h^2 (the table's MSE), the
+    iteration of the first stall flag, kappa_2, and numerical rank --
+    exactly Section 3.6's requested columns, plus enough identifying
+    context (basis key/label/P) to be self-contained. ``results`` is
+    ``run_table3_study``'s own return shape.
+    """
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = ['basis_key', 'basis_label', 'P', 'K_max',
+                 'final_R_h_squared', 'first_stall_iteration',
+                 'kappa', 'kappa_method', 'num_rank_svd', 'num_rank_gelsy']
+    with open(out_path, 'w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for bk, entry in results.items():
+            rows = entry['logger'].rows
+            last = rows[-1]
+            writer.writerow({
+                'basis_key': bk,
+                'basis_label': BASIS_CONFIGS[bk]['short_label'],
+                'P': entry['n_coefficients'],
+                'K_max': len(rows),
+                'final_R_h_squared': last['norm_R_h'] ** 2,
+                'first_stall_iteration': first_stall_iteration(rows),
+                'kappa': last['kappa'],
+                'kappa_method': last['kappa_method'],
+                'num_rank_svd': last['num_rank_svd'],
+                'num_rank_gelsy': last['num_rank_gelsy'],
+            })
+    print(f"\nTable 3 CSV written: {out_path}")
+
+
+# =============================================================================
 # SAVE / LOAD
 # =============================================================================
 
@@ -624,7 +804,28 @@ def main():
                     help='Output directory (default: results/burgers_basis_comparison)')
     ap.add_argument('--bases', type=str, nargs='+', default=None,
                     help='Subset of bases to run (default: all)')
+    ap.add_argument('--table3', action='store_true',
+                    help='Section 3.6 protocol instead of the default study: '
+                         'stopping rule disabled, K_max=50, full Section 3.1 '
+                         'instrumentation, writes table3_basis_study.csv. '
+                         'Ignores --R-tol/--max-iters (fixed by the protocol).')
     args = ap.parse_args()
+
+    out = Path(args.output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    if args.table3:
+        config = ComparisonConfig(
+            viscosity=args.viscosity, T_final=args.T,
+            N_x=args.N, N_t=args.N,
+            disable_stopping_rule=True, max_quasi_iters=50,
+            output_dir=args.output_dir,
+        )
+        results = run_table3_study(config, basis_keys=args.bases, verbose=True)
+        write_table3_csv(results, out / 'table3_basis_study.csv')
+        save_provenance(out)
+        print(f"\nAll outputs: {out}\nDONE.")
+        return
 
     config = ComparisonConfig(
         viscosity=args.viscosity,
@@ -635,9 +836,6 @@ def main():
         max_quasi_iters=args.max_iters,
         output_dir=args.output_dir,
     )
-
-    out = Path(config.output_dir)
-    out.mkdir(parents=True, exist_ok=True)
 
     results, pts = run_all_bases(
         config, basis_keys=args.bases, verbose=True)

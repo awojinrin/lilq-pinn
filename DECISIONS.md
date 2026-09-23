@@ -17,6 +17,184 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Section 3.7 (Beltrami pressure pinned at every temporal level) completed
+
+**Same "pulled forward from HPRC, run locally" batch as Section 3.6 above.**
+Section 6.9.1 / Section 3.7 of the spec: the Beltrami linear system has
+an exact null space (the pressure temporal modes $T_j(t)\cdot 1$, $j=0..N_p-1$,
+enter the momentum/continuity residuals only through their *gradient* in
+x/y/z -- which is identically zero for a spatially-constant mode -- so
+they're constrained only by the single pin row at $t=t_{\mathrm{domain}[0]}$,
+leaving $N_p-1$ free directions). Spec asks for a rerun with the pin
+generalized to one pin row per temporal collocation level ($N_p=8$ rows
+instead of 1), expecting: full column rank, a meaningful $\kappa$ from
+the pivoted QR, and a smaller $t=1$ pressure error than the paper's
+published 0.752%.
+
+**Implementation** (`problems/beltrami.py`): added
+`BeltramiConfig.n_pressure_pin_levels` (default `1`, bit-identical to
+the pre-3.7 single pin -- verified both by a direct pre/post-change
+bit-identical rerun and by every existing Beltrami test still passing
+unmodified). The `n_pin` pin times are Chebyshev-Gauss-Lobatto nodes in
+`t_domain` (`_cgl_temporal_pin_nodes`) -- the natural collocation set for
+an $N_p$-term (degree $0..N_p-1$) Chebyshev temporal expansion, matching
+the null-space argument exactly (`n_pin == N_p` removes exactly enough
+directions to leave none free). The pin block's weight generalizes the
+existing one-scalar-per-block convention: `sqrt(lambda_bc / n_pin)`
+(reduces to the existing `sqrt(lambda_bc)` at `n_pin=1`). Both the
+scalar-loss and residual-vector Section 3.1 instrumentation closures
+were generalized the same way (mean-of-squares / weighted-vector over
+`n_pin` rows instead of the single hardcoded row).
+
+**Verified the null-space claim empirically before the real run**, at a
+small config (`N_vel=N_p=3`, so 2 free null-space directions expected):
+measured SVD rank directly at `n_pin=1,2,3` and got `P_total-2`,
+`P_total-1`, `P_total` respectively -- an exact match to the "$n$ pin
+rows close $n$ null-space dimensions, up to $N_p-1$" claim, not just a
+plausible-sounding result.
+
+**Real run** (`experiments/run_beltrami_pinned.py`, paper config
+$N_{\mathrm{vel}}=6$, $N_p=8$, `chebyshev` basis, $P_{\mathrm{total}}=7984$,
+matching the manuscript exactly): converged in 4 iterations, 531s
+wall-clock (spec estimated "about ten minutes" -- came in under that).
+
+| | Result |
+|---|---|
+| Full column rank | **True** -- `num_rank_gelsy=7984/7984` every iteration (the SVD-based rank isn't computed at this $P$ -- above `DEFAULT_SVD_CONDITIONING_THRESHOLD`, uses pivoted QR instead, by design) |
+| $\kappa$ (pivoted QR, final iterate) | 18166.1 -- finite, real, not NaN |
+| $t=1$ pressure error | 0.7515% vs. paper's published 0.752% |
+
+**Honest characterization of the last row**: technically confirms the
+spec's expectation ("a smaller pressure error at $t=1$") but the margin
+is razor-thin -- 0.0005 percentage points, about 0.07% relative, not a
+dramatic drop. Resolving the null space to full rank clearly delivers
+the two structural guarantees (full rank, meaningful $\kappa$) cleanly,
+but apparently wasn't the dominant source of the paper's 0.752% error to
+begin with -- most of that error is presumably ordinary Chebyshev
+approximation error at $N_p=8$, not null-space ambiguity. Reporting this
+as-is rather than as a bigger win than it is.
+
+Five-snapshot table ($t=0,0.25,0.5,0.75,1.0$; $u=v=w$ errors identical
+by the problem's own symmetry):
+
+| t | u=v=w | p |
+|---|---|---|
+| 0.00 | 1.356e-4 | 1.463e-3 |
+| 0.25 | 4.141e-4 | 2.822e-3 |
+| 0.50 | 3.737e-4 | 3.153e-3 |
+| 0.75 | 3.819e-4 | 4.511e-3 |
+| 1.00 | 3.430e-4 | 7.515e-3 |
+
+Output: `results/beltrami_pinned/{run.json,iterations.csv,report.json,hardware.json,environment.txt}`.
+
+8 new tests added to `tests/test_beltrami_instrumentation.py` (CGL node
+generation incl. the `n_pin=1` backward-compat case, the null-space
+rank-closure claim at small scale, pin-row weight formula via a real
+`run.json` readback, `N_composition`/Check-B2 residual identity at
+`n_pin>1`). Full suite (218 tests, including these and the Section 3.6
+tests below): all passing.
+
+---
+
+## 2026-09-23 -- Section 3.6 (Table 3 Burgers basis study) completed
+
+**Not the full Package 1 spec rerun -- these two items (3.6 and 3.7) were
+pulled forward and run locally rather than deferred to the HPRC pass,
+since both are short enough to run outside that budget** (Section 3.6:
+one ~625-coefficient study per basis, 9 bases; Section 3.7: one ~10-minute
+Beltrami solve, per the spec's own note that it "is included here rather
+than in Package 2 for that reason").
+
+`experiments/run_burgers_basis_comparison.py`'s existing 8-basis study
+(pre-existing script, independent of the other 6 problems' shared
+`solve_lil_q`/instrumentation wiring) was missing: (a) the "Sin x
+{Cos,Sin}" basis row from Table 2/3 -- oddly absent even though it's
+`problems/burgers.py`'s actual production `DEFAULT_BASIS`, (b) a protocol
+run with the stopping rule disabled to `K_max=50` so each row reports a
+stagnation *level* rather than a stopping value, (c) the Section 3.1
+instrumentation columns (`kappa`, numerical rank, first stall iteration)
+the spec's Table 3 asks for.
+
+**Added:**
+- `'sin_fourier'` basis key (`sin(1..N_x)(x) x cos+sin(N_t)(t)`) to
+  `BASIS_CONFIGS`/`create_comparison_basis`.
+- `ComparisonConfig.disable_stopping_rule` (default `False`, unchanged
+  behavior) -- when `True`, both the `R_tol` check and the
+  stagnation-window early break are skipped inside
+  `solve_lilq_burgers_comparison`'s loop, so every basis always runs the
+  full `max_quasi_iters` budget.
+- `LilQDiagnosticsTracker`/`IterationLogger` wiring inside
+  `solve_lilq_burgers_comparison` (an `iteration_logger` parameter,
+  optional, `None` by default -- omitted, behavior is unchanged), via an
+  independently-coded `residual_vector(b)` closure (not shared code with
+  the existing scalar loss tracking, so the cross-check is real) and the
+  same `cond=EPS_MACH` explicit LAPACK `gelsy` pattern used everywhere
+  else in this codebase, now also capturing `rank_gelsy` here.
+- `run_table3_study()` (defaults: `N_x=N_t=25`, `disable_stopping_rule=True`,
+  `max_quasi_iters=50`, all 9 basis keys -- the study's own grid, matching
+  the spec's `73x73` interior / 313 IC / 313 BC exactly, confirmed
+  directly, no grid change needed) and `write_table3_csv()`, plus a new
+  `--table3` CLI flag writing `table3_basis_study.csv` to the script's
+  existing `results/burgers_basis_comparison/` output directory (its
+  `save_provenance` call included, same as the script's default path).
+
+**Verified before running at full scale:** a small-scale smoke test
+(`N_x=N_t=6`, `max_quasi_iters=10`) confirmed real, sensible
+per-iteration `chi`/`stall_flag`/`order_obs`/`kappa` values (not NaN or
+placeholder), and that `stall_flag` correctly flips to `True` once `chi`
+drops below its threshold -- confirming the new `residual_vector_fn`
+wiring is correctly connected end-to-end, not just executing without
+crashing.
+
+**Full-scale run** (`N_x=N_t=25`, `K_max=50`, all 9 bases, the study's own
+grid: 5329 interior collocation points at this density, 313 IC, 313 BC --
+`results/burgers_basis_comparison/table3_basis_study.csv`):
+
+| basis | final $\|R\|_h^2$ | $\kappa$ | rank (svd / gelsy) |
+|---|---|---|---|
+| Cheb x Cheb | 7.82e-05 | 2.5e3 | 625 / 625 |
+| Sin x Cheb | 4.91e-09 | 3.4e2 | 625 / 625 |
+| Sin x Sin | 4.98 | 5.5e1 | 625 / 625 |
+| Cos x Cheb | 1.71e-01 | 3.4e2 | 625 / 625 |
+| AugSin x Cheb | 3.14e-08 | 5.2e2 | 625 / 625 |
+| Fourier x Cheb | 1.27e-05 | 4.3e9 | 625 / 625 |
+| Fourier x Fourier | 1.27e-05 | 1.3e16 | 610 / 624 |
+| ELM | 4.95e-02 | 1.3e18 | 43 / 70 |
+| **Sin x {Cos,Sin} (new)** | 4.91e-09 | 9.6e8 | 625 / 625 |
+
+All consistent with what's already understood about these bases from
+earlier in this engagement: Sin x Sin fails outright (4.98 -- a sine
+temporal factor vanishes at $t=0$, structurally unable to represent the
+nonzero IC, same degeneracy documented for `cheb_sin`/`sin_cheb`-family
+bases elsewhere); Cos x Cheb is poor (cos(0)=1 can't satisfy the
+homogeneous Dirichlet BC exactly); ELM is both inaccurate and severely
+rank-deficient (43/625 -- most of its 625 random features are
+numerically redundant at this collocation density) with the worst
+conditioning by 14 orders of magnitude. The new Sin x {Cos,Sin} row
+tracks Sin x Cheb almost exactly (4.9085e-09 vs 4.9085e-09) -- both pair
+a sin-in-x factor (satisfies the BC) with a *complete* temporal basis
+(full Fourier vs. Chebyshev), so both can represent the IC; matches the
+production default's (`problems/burgers.py`) good behavior elsewhere in
+this codebase.
+
+Noted but not investigated further (out of scope for this item): SVD
+rank and gelsy rank disagree at the two worst-conditioned bases
+(Fourier x Fourier: 610 vs 624; ELM: 43 vs 70) -- expected when singular
+values decay gradually near the rank cutoff, since the two methods
+threshold differently (SVD's direct singular-value cutoff vs. gelsy's
+pivoted-QR diagonal-decay heuristic); not a bug, just a reminder that
+"numerical rank" is method-dependent exactly where it matters least
+(these bases are unusable regardless of which rank number is trusted).
+
+9 new tests added to `tests/test_burgers_basis_comparison.py` covering:
+the new basis key's structure, `disable_stopping_rule` actually
+overriding both the `R_tol` and stagnation checks (not just one),
+`run_table3_study`'s config-validation guard, its default 9-basis
+coverage, and `write_table3_csv`'s CSV roundtrip. Full suite (218 tests,
+including these and the Section 3.7 tests below): all passing.
+
+---
+
 ## 2026-09-23 -- BL-gravity `GRAVITY_TARGET_LOSSES` retargeted to LiL-Q's actual floor
 
 **Follow-up to the `cos_fourier` basis entry immediately below, same

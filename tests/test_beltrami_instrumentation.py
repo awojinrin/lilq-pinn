@@ -18,6 +18,7 @@ from lilq.iteration_log import IterationLogger
 from problems.beltrami import (
     BeltramiConfig, BeltramiPhysics, solve_beltrami,
     _generate_collocation, _make_beltrami_residual_vector_fn,
+    _cgl_temporal_pin_nodes,
 )
 from lilq.basis import create_basis_nd
 
@@ -91,10 +92,12 @@ def _rebuild_matrices(config):
         'n': len(xi),
     }
 
-    x0 = np.array([physics.x_domain[0]]); y0 = np.array([physics.y_domain[0]])
-    z0 = np.array([physics.z_domain[0]]); t0_ = np.array([physics.t_domain[0]])
-    Phi_p_pin = basis_p.evaluate(x0, y0, z0, t0_)
-    p_pin_val = physics.exact_p(x0[0], y0[0], z0[0], t0_[0])
+    n_pin = config.n_pressure_pin_levels
+    t_pin = _cgl_temporal_pin_nodes(n_pin, physics.t_domain)
+    x0 = np.full(n_pin, physics.x_domain[0]); y0 = np.full(n_pin, physics.y_domain[0])
+    z0 = np.full(n_pin, physics.z_domain[0])
+    Phi_p_pin = basis_p.evaluate(x0, y0, z0, t_pin)
+    p_pin_val = physics.exact_p(x0, y0, z0, t_pin)
 
     return dict(Mu=Mu, Mv=Mv, Mw=Mw, Mp=Mp, bc_blocks=bc_blocks, ic_block=ic_block,
                 Phi_p_pin=Phi_p_pin, p_pin_val=p_pin_val, nu=nu,
@@ -238,3 +241,128 @@ def test_run_json_written_and_self_consistent(tmp_path):
     # first_stall_iteration must match an independent scan of the logger.
     from lilq.run_metadata import first_stall_iteration
     assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)
+
+
+# =============================================================================
+# Section 3.7: pressure pinned at every temporal level
+# =============================================================================
+
+def test_cgl_temporal_pin_nodes_n1_is_t_domain_start():
+    """n_pressure_pin_levels=1 (the default) must reduce to exactly the
+    pre-3.7 single pin at t_domain[0] -- no Chebyshev machinery involved."""
+    nodes = _cgl_temporal_pin_nodes(1, (0.3, 1.7))
+    assert nodes.shape == (1,)
+    assert nodes[0] == 0.3
+
+
+def test_cgl_temporal_pin_nodes_endpoints_and_count():
+    nodes = _cgl_temporal_pin_nodes(8, (0.0, 1.0))
+    assert nodes.shape == (8,)
+    assert nodes.max() == pytest.approx(1.0)
+    assert nodes.min() == pytest.approx(0.0)
+    assert len(set(np.round(nodes, 12))) == 8  # all distinct
+
+
+def test_default_n_pressure_pin_levels_is_one():
+    config = _small_config()
+    assert config.n_pressure_pin_levels == 1
+
+
+def test_n_pressure_pin_levels_one_is_bit_identical_to_pre_3_7_default():
+    """Explicitly passing n_pressure_pin_levels=1 must be bit-identical to
+    omitting it -- both exercise the same single-pin-at-t0 code path."""
+    config_implicit = _small_config()
+    config_explicit = _small_config(n_pressure_pin_levels=1)
+
+    result_implicit = solve_beltrami(config_implicit, verbose=False)
+    result_explicit = solve_beltrami(config_explicit, verbose=False)
+
+    for key in ('theta_u', 'theta_v', 'theta_w', 'theta_p'):
+        assert np.array_equal(result_implicit[key], result_explicit[key])
+
+
+def test_more_pin_levels_progressively_close_the_null_space():
+    """Section 3.7 / Section 6.9.1's claim: the pressure block has an
+    exact null space (the pressure temporal modes T_j(t)*1 enter only the
+    pin rows) that a single pin cannot fully resolve. At this small
+    config (N_p=3), the null space is exactly N_p-1=2 -- each additional
+    pin row (up to N_p) should close it by exactly one dimension,
+    confirmed by direct SVD-rank measurement rather than assumed."""
+    base = dict(N_vel=3, N_p=3, N_x=4, N_y=4, N_z=4, N_t=4,
+                N_bc=3, N_t_bc=3, N_ic=3, max_iter=2)
+    ranks = {}
+    for n_pin in (1, 2, 3):
+        config = BeltramiConfig(n_pressure_pin_levels=n_pin, **base)
+        logger = IterationLogger()
+        result = solve_beltrami(config, verbose=False, iteration_logger=logger)
+        ranks[n_pin] = logger.rows[-1]["num_rank_svd"]
+        assert logger.rows[-1]["num_rank_svd"] == logger.rows[-1]["num_rank_gelsy"]
+        if n_pin == 1:
+            P_total = result['n_params']
+
+    assert ranks[1] == P_total - 2
+    assert ranks[2] == P_total - 1
+    assert ranks[3] == P_total  # n_pin == N_p: full column rank
+
+
+def test_pin_row_weighting_matches_one_scalar_per_block_convention(tmp_path):
+    """w_pin = sqrt(lambda_bc / n_pin) -- generalizes the existing
+    sqrt(lambda_bc) formula (n_pin=1) to n_pin pin rows, confirmed via
+    run.json's logged row_weights rather than re-deriving the formula."""
+    import json
+    config = _small_config(n_pressure_pin_levels=1, max_iter=2)
+    logger = IterationLogger()
+    out_path = tmp_path / "run.json"
+    solve_beltrami(config, verbose=False, iteration_logger=logger,
+                    run_json_path=out_path)
+    with open(out_path) as f:
+        meta = json.load(f)
+    assert meta["row_weights"]["pressure_pin"] == pytest.approx(
+        math.sqrt(config.lambda_bc / 1))
+
+
+def test_run_json_pressure_pin_composition_reflects_n_pin(tmp_path):
+    config = _small_config(n_pressure_pin_levels=3, max_iter=2)
+    logger = IterationLogger()
+    out_path = tmp_path / "run.json"
+
+    solve_beltrami(config, verbose=False, iteration_logger=logger,
+                    run_json_path=out_path)
+
+    import json
+    with open(out_path) as f:
+        meta = json.load(f)
+    assert meta["N_composition"]["pressure_pin"] == 3
+    assert meta["N_total"] == sum(meta["N_composition"].values())
+    assert meta["row_weights"]["pressure_pin"] == pytest.approx(
+        math.sqrt(config.lambda_bc / 3))
+
+
+def test_check_b2_residual_identity_with_multiple_pin_levels():
+    """Same Check B2 cross-check as
+    test_check_b2_residual_identity_against_direct_evaluation, but with
+    n_pressure_pin_levels=3 -- confirms _make_beltrami_residual_vector_fn's
+    generalized w_pin/Phi_p_pin handling (n_pin derived from
+    Phi_p_pin.shape[0]) stays consistent with the tracker's own internal
+    computation at n_pin>1, not just at the n_pin=1 default."""
+    config = _small_config(max_iter=15, tol=1e-13, n_pressure_pin_levels=3)
+    logger = IterationLogger()
+
+    result = solve_beltrami(config, verbose=False, iteration_logger=logger)
+
+    mats = _rebuild_matrices(config)
+    residual_vector_fn = _make_beltrami_residual_vector_fn(
+        mats['Mu'], mats['Mv'], mats['Mw'], mats['Mp'],
+        mats['bc_blocks'], mats['ic_block'], mats['Phi_p_pin'], mats['p_pin_val'],
+        mats['nu'], mats['Pu'], mats['Pv'], mats['Pw'], mats['Pp'], mats['n_pde'],
+        config.lambda_mom, config.lambda_cont, config.lambda_bc, config.lambda_ic,
+    )
+    assert mats['Phi_p_pin'].shape[0] == 3
+
+    theta_final = np.concatenate([result['theta_u'], result['theta_v'],
+                                   result['theta_w'], result['theta_p']])
+    norm_R_direct = float(np.linalg.norm(residual_vector_fn(theta_final)))
+    norm_R_logged = logger.rows[-1]["norm_R_h"]
+
+    rel_err = abs(norm_R_direct - norm_R_logged) / (abs(norm_R_direct) + 1e-30)
+    assert rel_err < 1e-10
