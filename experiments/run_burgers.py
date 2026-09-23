@@ -34,6 +34,7 @@ from experiments.exp_utils import (
     save_master_results, save_summary_json, save_run_provenance,
     plot_convergence_by_method, plot_convergence_by_size,
     plot_solution_field, print_summary_table,
+    run_stochastic_with_seeds,
 )
 
 # ── Config matching Current Codebase/Burgers/run_burgers_experiments.py ──
@@ -54,7 +55,12 @@ MAX_LBFGS_PER_QUASI = {5: 100, 10: 250, 15: 375, 20: 500, 25: 750}
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 
 
-def run_experiment_for_N(N, basis_type, methods, verbose=True):
+def run_experiment_for_N(N, basis_type, methods, verbose=True, seeds=None):
+    """``seeds``, when given, runs NiL-N/NiL-Q across every seed in it
+    (Section 2/3.4: seeds 0, 1, 2) via ``run_stochastic_with_seeds``
+    instead of once at ``config.seed``. LiL-N/LiL-Q always run once
+    regardless. Omitted (``None``, the default), behavior is unchanged.
+    """
     config = BurgersConfig(
         N_x=N, N_t=N, viscosity=VISCOSITY, T_final=T_FINAL,
         basis_type=basis_type, k_ratio=K_RATIO,
@@ -98,8 +104,8 @@ def run_experiment_for_N(N, basis_type, methods, verbose=True):
                                    fig_dir, f'burgers_{tag}_N{N}_solution',
                                    xlabel='t', ylabel='x', clabel='u(x,t)')
             else:
-                model, metrics, summary = runners[method](
-                    config, opt, device=DEVICE, verbose=verbose)
+                model, metrics, summary = run_stochastic_with_seeds(
+                    runners[method], config, opt, seeds, DEVICE, verbose)
                 save_nn_checkpoint(n_dir / f'{tag}_checkpoint.pt',
                                    model, {'N': N})
                 X, T, U = evaluate_nn_solution(model, config, n_eval=200)
@@ -132,6 +138,11 @@ def main():
     parser.add_argument('--N', type=int, nargs='+', default=DEFAULT_N_VALUES)
     parser.add_argument('--basis', type=str, default=DEFAULT_BASIS)
     parser.add_argument('--lil-q-only', action='store_true')
+    parser.add_argument('--seeds', type=int, nargs='+', default=None,
+                        help='Seeds for NiL-N/NiL-Q (Section 3.4: 0 1 2 for '
+                             'the paper reruns). LiL-N/LiL-Q always run once '
+                             'regardless. Omitted: single run, unchanged '
+                             'default behavior.')
     parser.add_argument('--quiet', action='store_true')
     args = parser.parse_args()
 
@@ -140,12 +151,14 @@ def main():
 
     print(f"Burgers Experiments | Device: {DEVICE}")
     print(f"N values: {args.N}, basis: {args.basis}, Methods: {methods}")
+    if args.seeds:
+        print(f"NiL-N/NiL-Q seeds: {args.seeds}")
 
     all_results = {}
     t0 = time.time()
     for N in args.N:
         set_seed(42)
-        all_results[N] = run_experiment_for_N(N, args.basis, methods, verbose)
+        all_results[N] = run_experiment_for_N(N, args.basis, methods, verbose, seeds=args.seeds)
 
     print_summary_table(all_results, args.N, methods, 'Burgers')
     print(f"\nTotal: {time.time()-t0:.1f}s")
@@ -153,7 +166,8 @@ def main():
     base_dir = experiment_base_dir('burgers', args.basis)
     save_master_results(base_dir / 'burgers_master_results.json', all_results,
                         {'n_values': args.N, 'basis': args.basis,
-                         'target_losses': TARGET_LOSSES})
+                         'target_losses': TARGET_LOSSES,
+                         'seeds': list(args.seeds) if args.seeds else None})
     save_run_provenance('burgers', args.basis)
 
     fig_dir = make_figures_dir('burgers', args.basis)

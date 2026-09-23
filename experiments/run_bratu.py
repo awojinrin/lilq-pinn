@@ -44,6 +44,7 @@ from experiments.exp_utils import (
     save_master_results, save_summary_json, save_run_provenance,
     plot_convergence_by_method, plot_convergence_by_size,
     plot_solution_field, print_summary_table,
+    run_stochastic_with_seeds,
 )
 
 
@@ -85,8 +86,19 @@ ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 # Single-N Experiment
 # ─────────────────────────────────────────────────────────────────────────────
 
-def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True):
-    """Run specified methods for a single N value. Returns results dict."""
+def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True, seeds=None):
+    """Run specified methods for a single N value. Returns results dict.
+
+    ``seeds``, when given, runs NiL-N/NiL-Q across every seed in it
+    (Computational_Package_1_v2.md Section 2/3.4: "seeds 0, 1, 2 for
+    NiL-N and NiL-Q") via ``run_stochastic_with_seeds`` instead of once
+    at ``config.seed`` -- see that function's docstring for exactly what
+    changes in the returned summary. LiL-N/LiL-Q always run once,
+    regardless of ``seeds`` (the spec's own exemption: deterministic from
+    zero, no random initialization to average over). Omitted (``None``,
+    the default), every method runs exactly as before this parameter
+    existed.
+    """
     config = BratuConfig(
         lambda_=lambda_,
         N_x=N, N_y=N,
@@ -168,8 +180,8 @@ def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True):
                     cmap='RdBu_r', clabel='residual',
                 )
             else:
-                model, metrics, summary = runner(
-                    config, opt, device=DEVICE, verbose=verbose,
+                model, metrics, summary = run_stochastic_with_seeds(
+                    runner, config, opt, seeds, DEVICE, verbose,
                 )
 
                 # Save NN checkpoint
@@ -218,7 +230,7 @@ def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True):
 # Full Experiment Sweep
 # ─────────────────────────────────────────────────────────────────────────────
 
-def run_all_experiments(N_values, basis_type, lambda_, methods, verbose=True):
+def run_all_experiments(N_values, basis_type, lambda_, methods, verbose=True, seeds=None):
     """Run the full experiment matrix and generate plots."""
     all_results = {}
     total_t0 = time.time()
@@ -226,7 +238,7 @@ def run_all_experiments(N_values, basis_type, lambda_, methods, verbose=True):
     for N in N_values:
         set_seed(42)
         all_results[N] = run_experiment_for_N(
-            N, basis_type, lambda_, methods, verbose)
+            N, basis_type, lambda_, methods, verbose, seeds=seeds)
 
     total_elapsed = time.time() - total_t0
 
@@ -242,6 +254,7 @@ def run_all_experiments(N_values, basis_type, lambda_, methods, verbose=True):
         'max_iterations': MAX_ITERATIONS,
         'max_quasi_iters': MAX_QUASI_ITERS,
         'pretrain_epochs': DEFAULT_PRETRAIN_EPOCHS,
+        'seeds': list(seeds) if seeds else None,
     }
     save_master_results(base_dir / 'bratu_master_results.json',
                         all_results, config_info)
@@ -273,6 +286,12 @@ def main():
                         dest='lambda_', help='Bratu parameter')
     parser.add_argument('--lil-q-only', action='store_true',
                         help='Run only LiL-Q method')
+    parser.add_argument('--seeds', type=int, nargs='+', default=None,
+                        help='Seeds for NiL-N/NiL-Q (Section 3.4: 0 1 2 for '
+                             'the paper reruns). LiL-N/LiL-Q always run once '
+                             'regardless (deterministic, no random init to '
+                             'average over). Omitted: single run at the '
+                             "config's own seed, unchanged default behavior.")
     parser.add_argument('--quiet', action='store_true')
 
     args = parser.parse_args()
@@ -283,9 +302,11 @@ def main():
     print(f"Bratu Experiments | Device: {DEVICE}")
     print(f"N values: {args.N}, basis: {args.basis}, lambda: {args.lambda_}")
     print(f"Methods: {methods}")
+    if args.seeds:
+        print(f"NiL-N/NiL-Q seeds: {args.seeds}")
     print(f"Results -> results/bratu_experiments_{args.basis}/")
 
-    run_all_experiments(args.N, args.basis, args.lambda_, methods, verbose)
+    run_all_experiments(args.N, args.basis, args.lambda_, methods, verbose, seeds=args.seeds)
 
 
 if __name__ == '__main__':

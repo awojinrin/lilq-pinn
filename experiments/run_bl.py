@@ -34,6 +34,7 @@ from experiments.exp_utils import (
     save_master_results, save_summary_json, save_run_provenance,
     plot_convergence_by_method, plot_convergence_by_size,
     plot_solution_field, print_summary_table,
+    run_stochastic_with_seeds,
 )
 
 # ── Config matching Current Codebase/BL/run_bl_experiments.py ──
@@ -55,7 +56,12 @@ GRAVITY_MAX_LBFGS_PER_QUASI = {8: 30, 16: 200, 24: 400, 32: 500}
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 
 
-def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True):
+def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True, seeds=None):
+    """``seeds``, when given, runs NiL-N/NiL-Q across every seed in it
+    (Section 2/3.4: seeds 0, 1, 2) via ``run_stochastic_with_seeds``
+    instead of once at ``config.seed``. LiL-N/LiL-Q always run once
+    regardless. Omitted (``None``, the default), behavior is unchanged.
+    """
     if gravity:
         config = BLConfig.with_gravity()
         config.N_x = N; config.N_t = N
@@ -118,8 +124,8 @@ def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True):
                     fig_dir, f'{label}_{tag}_N{N}_solution',
                     xlabel='t', ylabel='x', clabel='S(x,t)')
             else:
-                model, metrics, summary = runners[method](
-                    config, opt, device=DEVICE, verbose=verbose)
+                model, metrics, summary = run_stochastic_with_seeds(
+                    runners[method], config, opt, seeds, DEVICE, verbose)
                 save_nn_checkpoint(n_dir / f'{tag}_checkpoint.pt',
                                    model, {'N': N})
                 X, T, U = evaluate_nn_solution(model, config, n_eval=200)
@@ -154,6 +160,11 @@ def main():
     parser.add_argument('--basis', type=str, default=DEFAULT_BASIS)
     parser.add_argument('--gravity', action='store_true')
     parser.add_argument('--lil-q-only', action='store_true')
+    parser.add_argument('--seeds', type=int, nargs='+', default=None,
+                        help='Seeds for NiL-N/NiL-Q (Section 3.4: 0 1 2 for '
+                             'the paper reruns). LiL-N/LiL-Q always run once '
+                             'regardless. Omitted: single run, unchanged '
+                             'default behavior.')
     parser.add_argument('--quiet', action='store_true')
     args = parser.parse_args()
 
@@ -163,13 +174,15 @@ def main():
 
     print(f"{plabel} Experiments | Device: {DEVICE}")
     print(f"N values: {args.N}, Methods: {methods}")
+    if args.seeds:
+        print(f"NiL-N/NiL-Q seeds: {args.seeds}")
 
     all_results = {}
     t0 = time.time()
     for N in args.N:
         set_seed(42)
         all_results[N] = run_experiment_for_N(
-            N, args.basis, args.gravity, methods, verbose)
+            N, args.basis, args.gravity, methods, verbose, seeds=args.seeds)
 
     print_summary_table(all_results, args.N, methods, plabel)
     print(f"\nTotal: {time.time()-t0:.1f}s")
@@ -179,7 +192,8 @@ def main():
     tgt = GRAVITY_TARGET_LOSSES if args.gravity else TARGET_LOSSES
     save_master_results(base_dir / f'{tag}_master_results.json', all_results,
                         {'n_values': args.N, 'gravity': args.gravity,
-                         'target_losses': tgt})
+                         'target_losses': tgt,
+                         'seeds': list(args.seeds) if args.seeds else None})
     save_run_provenance(tag, args.basis)
 
     fig_dir = make_figures_dir(tag, args.basis)

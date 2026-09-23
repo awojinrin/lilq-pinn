@@ -67,6 +67,66 @@ def save_run_provenance(problem: str, basis: str, root: Path = None) -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Multi-seed wiring (NiL-N/NiL-Q only -- see lilq.multiseed)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def run_stochastic_with_seeds(runner, config, opt, seeds, device, verbose=True):
+    """Run a NiL-style ``runner`` (returns ``(model, metrics, summary)``)
+    either once at ``config``'s own seed (``seeds`` falsy -- unchanged
+    default behavior) or across every seed in ``seeds`` via
+    ``lilq.multiseed.run_multiseed`` -- Computational_Package_1_v2.md
+    Section 2/3.4's "seeds 0, 1, 2 for NiL-N and NiL-Q" requirement.
+
+    Either way returns the same ``(model, metrics, summary)`` shape a
+    direct ``runner(config, opt, device=device, verbose=verbose)`` call
+    would, so a caller can swap this in without a separate code path for
+    the multi-seed case. When ``seeds`` is given, the returned
+    ``model``/``metrics`` are the run whose own ``final_loss`` is closest
+    to the across-seed median (the "representative" run used for the
+    existing single-run checkpoint/plotting pipeline -- multi-seed
+    aggregation only changes what's *logged*, not model architecture or
+    training, so there is no principled way to "average" three trained
+    networks into one). ``summary`` additionally carries:
+
+    - ``multiseed_aggregate``: the full ``{field: {median, min, max,
+      values}}`` breakdown from ``lilq.multiseed.aggregate_summaries``
+      (plus a ``converged`` rate entry), covering every seed, not just
+      the representative one.
+    - ``multiseed_seeds``: the seed list actually used.
+    - ``multiseed_representative_seed``: which seed's run was kept as
+      ``model``/``metrics``/the rest of ``summary``.
+
+    LiL-N/LiL-Q are explicitly **not** meant to go through this function
+    at all (call the runner directly for those) -- per
+    ``lilq.multiseed``'s own docstring, they have no random
+    initialization to average over and the spec keeps them at a single
+    deterministic run.
+    """
+    if not seeds:
+        return runner(config, opt, device=device, verbose=verbose)
+
+    from lilq.multiseed import run_multiseed
+
+    result = run_multiseed(runner, config, seeds, opt, device=device, verbose=verbose)
+    aggregate = result["aggregate"]
+    per_seed = result["per_seed"]
+    raw_results = result["raw_results"]
+
+    median_loss = aggregate["final_loss"]["median"]
+    representative_seed = min(
+        per_seed, key=lambda s: abs(per_seed[s]["final_loss"] - median_loss)
+    )
+
+    representative = raw_results[representative_seed]
+    summary = dict(representative[-1])
+    summary["multiseed_aggregate"] = aggregate
+    summary["multiseed_seeds"] = list(seeds)
+    summary["multiseed_representative_seed"] = representative_seed
+
+    return representative[:-1] + (summary,)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Checkpoint Save/Load
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -17,6 +17,66 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Multi-seed harness wired into run_bratu.py/run_burgers.py/run_bl.py
+
+**Phase 1, sub-batch 8.** `lilq.multiseed.run_multiseed` was built (and
+fully unit-tested) back in Phase 1 batch 2, but deliberately left
+unwired into any experiment script at the time -- a decision the user
+explicitly flagged and asked not to be forgotten. This closes that out,
+scoped narrowly to *wiring the harness in* (Section 2/3.4's "seeds 0, 1,
+2 for NiL-N and NiL-Q"), not the full Section 3.4 `four_method_tables.csv`
+logging apparatus (stopping reason, function-evaluation counts, loss
+history every 10 iterations) -- that remains separate, unscoped work.
+
+New `experiments.exp_utils.run_stochastic_with_seeds(runner, config, opt,
+seeds, device, verbose)`: with `seeds` falsy, calls `runner` once exactly
+as before (unchanged default behavior, verified bit-identical against a
+real Bratu NiL-N run at the same seed); with `seeds` given, runs
+`lilq.multiseed.run_multiseed` across all of them and returns the
+**median-`final_loss`-seed's own** `(model, metrics, summary)` tuple --
+not an average of three trained networks, which has no principled
+meaning -- with `summary` additionally carrying the full
+`multiseed_aggregate` (median/min/max per field, convergence rate across
+all seeds, from `lilq.multiseed.aggregate_summaries`), `multiseed_seeds`,
+and `multiseed_representative_seed`. This keeps the *shape* of what every
+downstream consumer (checkpoint saving, solution-field plotting,
+`save_summary_json`) already expects unchanged, so multi-seed mode
+slots into the existing single-run pipeline without touching it.
+
+Wired into all three scripts' `run_experiment_for_N` (Bratu, Burgers,
+BL -- both viscous and gravity share BL's one `run_experiment_for_N`):
+a new `seeds=None` parameter, threaded only into each script's non-LiL
+(NiL-N/NiL-Q) branch via `run_stochastic_with_seeds`; the LiL-N/LiL-Q
+branch is untouched and never goes through it, matching
+`lilq.multiseed`'s own documented exemption (deterministic from zero, no
+random initialization to average over -- confirmed this reasoning
+still holds, not just asserted). Each script gained a `--seeds` CLI flag
+(e.g. `--seeds 0 1 2`); omitted, every method runs exactly as before this
+change -- verified bit-identical against a real Bratu NiL-N run, and
+locked in by a regression test that would fail if a future edit routed
+the LiL branch through `run_stochastic_with_seeds` by mistake or dropped
+it from the NiL branch. `seeds` is also recorded in each script's
+`*_master_results.json` `config_info` for provenance.
+
+Verified with a real (not mocked) 3-seed Bratu NiL-N run
+(`run_stochastic_with_seeds` called directly against the actual
+`run_nil_n`): all three seeds genuinely ran, the representative seed
+selected was the one whose `final_loss` was the true median of the
+three, and the aggregate's median/min/max matched a hand check.
+
+**Not done here, deliberately out of scope**: the four-method-table
+CSV/stopping-reason/function-eval-count logging Section 3.4 also asks
+for; Kovasznay/Beltrami/Darcy don't have NiL-N/NiL-Q at all (Kovasznay
+and Beltrami are LiL-Q only per their own module docstrings, Darcy's
+`DarcyPINN`/`run_nil_n_darcy` is a separate, still-stubbed path per
+earlier DECISIONS.md entries) so they're untouched by this batch, not
+silently included or silently skipped -- there was nothing for this
+harness to wire into there.
+
+140/140 -> 156/156 tests passing.
+
+---
+
 ## 2026-09-22 -- Residual-band figures (Section 3.5), new experiments/residual_band_figures.py
 
 **Phase 1, sub-batch 7 of the iterations.csv work.** The last piece of
