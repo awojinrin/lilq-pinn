@@ -17,6 +17,75 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Residual-band figures (Section 3.5), new experiments/residual_band_figures.py
+
+**Phase 1, sub-batch 7 of the iterations.csv work.** The last piece of
+Component B that consumes the instrumentation built in sub-batches 3-6
+rather than adding more of it: Section 3.5 asks for four figures
+comparing $\|\mathbf{R}_{\mathrm{lin}}^{(k)}\|_h$ and
+$\|\mathbf{R}^{(k+1)}\|_h$ against $k$, one panel per $P$, for Bratu,
+Burgers, and both Buckley-Leverett variants, with the y-axis correctly
+labeled $\|\cdot\|_h$ ("the present figures say MSE, which is wrong" --
+moot here since the repository had no such figures at all, correct or
+not, to begin with).
+
+New `experiments/residual_band_figures.py`. Design choices:
+
+- **Every P/target-loss/quasi-iter-budget value is imported directly**
+  from that problem's own `experiments/run_*.py` (`DEFAULT_N_VALUES`,
+  `TARGET_LOSSES`, `MAX_QUASI_ITERS`, etc.) rather than duplicated as
+  separate constants -- guarantees this script uses the exact same
+  "paper settings" (Section 3.3) already established elsewhere in this
+  codebase, with no risk of silently drifting out of sync with them.
+  `pretrain_epochs` is deliberately *not* imported from any of them:
+  confirmed by re-reading each problem's `run_lil_q` that the shared
+  `pretrain_lil` step (used identically by all three) is a least-squares
+  fit, not an epoch-based optimizer, so that config value has no effect
+  on the LiL-Q path this script exercises.
+- $\chi_k$ goes in **a second row of panels**, not a secondary axis --
+  the spec explicitly offers both; a secondary axis was rejected because
+  $\chi_k$'s own dynamic range (seen directly in the real reruns below:
+  span of 15+ orders of magnitude within a single BL-gravity P) needs
+  its own log-scale axis, and forcing it to share space with two
+  already-log-scale residual curves would be unreadable.
+  `test_plot_residual_bands_produces_pdf_and_png` covers this indirectly
+  via a real run; the panel layout itself was verified by eye against
+  the actual PDFs (see below) before committing, not merely inferred
+  from the code.
+- Each (problem, $P$) run's full `iterations.csv` is saved alongside the
+  figure -- literally "the CSV behind each panel" the spec asks for,
+  reusing `IterationLogger.to_csv` rather than inventing a
+  plot-data-only format; a reader gets the complete Section 3.1 row set
+  for that run, not just the four columns the figure itself plots.
+- `--quick` flag (first 2 $P$ per problem) for fast iteration/testing
+  without committing to the full paper-scale sweep; `main()`'s default
+  (no flag) is the real full sweep matching Section 3.3 exactly.
+
+**Verified against real output, not just "the code runs":** ran the
+full (non-quick) sweep for real -- all 4 figures + 15 CSVs
+(3+5+4+4 = 16 total (problem, $P$) reruns) generated in well under a
+minute total (LiL-Q's direct-solve-per-iteration cost stays cheap even
+at $P=1024$; nothing here resembles Beltrami's cost profile). Visually
+inspected all four PDFs: axis labels, log scaling, and the two-curve
+comparison all match the spec; Bratu/Burgers converge in as few as 2-4
+iterations at their tight paper tolerances (consistent with LiL-Q's
+already-documented fast convergence elsewhere in this project, not a
+bug); Buckley-Leverett (both variants) shows richer 6-10-iteration
+trajectories with a visible transient bump in $\|\mathbf{R}_{\mathrm{lin}}\|_h$
+before it settles, which is real algorithm behavior on the more
+nonlinear problem, not a plotting artifact.
+
+**Not done here, deliberately out of scope**: the generated
+`results/residual_band_figures/` output itself is not committed
+(`results/` is gitignored, matching this repository's existing
+convention of tracking scripts, not their generated artifacts, with
+`reference_results/` the sole documented exception). Re-running this
+script is how a reader reproduces the figures, not a stored copy in git.
+
+140/140 tests passing.
+
+---
+
 ## 2026-09-22 -- Beltrami and Darcy wired to Section 3.1 instrumentation; run.json added
 
 **Phase 1, sub-batch 6 of the iterations.csv work** -- the last two
