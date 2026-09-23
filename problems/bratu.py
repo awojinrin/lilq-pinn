@@ -30,6 +30,7 @@ from lilq.utils import set_seed, nn_init_seed, clear_gpu_memory, DEVICE
 from lilq.instrumentation import EPS_MACH
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import tensor_grid_values
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -498,6 +499,30 @@ def run_lil_n(config: BratuConfig, opt: BratuOptConfig,
     return basis, coefficients, metrics, summary
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Test-grid error (Section 3.1 item 10 / Section 2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+TEST_GRID = (201, 201)  # Section 2: Bratu 201 x 201 uniform, PDE-residual mean square
+
+
+def make_test_error_fn(basis, config: BratuConfig):
+    """``beta -> {'eps_u': mean square of u_xx + u_yy + lambda*exp(u)}`` on the
+    Section 2 test grid (no closed-form solution: the spec's
+    "residual-MSE benchmarks put the test residual in eps_u")."""
+    xs = np.linspace(*config.x_domain, TEST_GRID[0])
+    ys = np.linspace(*config.y_domain, TEST_GRID[1])
+
+    def test_errors(beta):
+        u = tensor_grid_values(basis, beta, [xs, ys])
+        lap = (tensor_grid_values(basis, beta, [xs, ys], [2, 0])
+               + tensor_grid_values(basis, beta, [xs, ys], [0, 2]))
+        return {'eps_u': float(np.mean((lap + config.lambda_ * np.exp(u)) ** 2))}
+
+    return test_errors
+
+
 def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
               verbose=True, diagnostics_callback=None,
               iteration_logger=None, run_json_path=None):
@@ -575,6 +600,7 @@ def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
             compute_residual_vector_fn=residual_vector_fn,
             n_interior_rows=n_pde,
             interior_weight=np.sqrt(opt.lambda_pde / n_pde),
+            test_error_fn=make_test_error_fn(basis, config),
         )
 
     coefficients, metrics, summary = solve_lil_q(

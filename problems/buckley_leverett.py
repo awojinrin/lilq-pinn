@@ -33,6 +33,7 @@ from lilq.utils import set_seed, nn_init_seed, DEVICE
 from lilq.instrumentation import EPS_MACH
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import tensor_grid_values
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -498,6 +499,34 @@ def _prepare_lil_matrices(config: BLConfig, physics: BLPhysics, basis, pts):
             ic_target, bc_l_target, bc_r_target)
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Test-grid error (Section 3.1 item 10)
+# ─────────────────────────────────────────────────────────────────────────────
+
+TEST_GRID = (201, 201)  # not set by the spec for BL; same density as Bratu's
+
+
+def make_test_error_fn(basis, config: BLConfig):
+    """``beta -> {'eps_u': mean square of S_t + f'(S) S_x + D S_xx}`` on a
+    uniform 201 x 201 grid over [x_domain] x [0, T] -- the same residual
+    the solver's own loss uses (a residual-MSE benchmark)."""
+    physics = BLPhysics(config)
+    xs = np.linspace(*config.x_domain, TEST_GRID[0])
+    ts = np.linspace(0.0, config.T_final, TEST_GRID[1])
+
+    def test_errors(beta):
+        S = tensor_grid_values(basis, beta, [xs, ts])
+        S_x = tensor_grid_values(basis, beta, [xs, ts], [1, 0])
+        S_t = tensor_grid_values(basis, beta, [xs, ts], [0, 1])
+        S_xx = tensor_grid_values(basis, beta, [xs, ts], [2, 0])
+        f_p = physics.flux_derivative(torch.tensor(S.ravel(), dtype=torch.float64)).numpy()
+        res = S_t + f_p.reshape(S.shape) * S_x + physics.D * S_xx
+        return {'eps_u': float(np.mean(res ** 2))}
+
+    return test_errors
+
+
 def run_lil_q(config: BLConfig, opt: BLOptConfig,
               verbose=True, diagnostics_callback=None,
               iteration_logger=None, run_json_path=None):
@@ -576,6 +605,7 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,
             compute_residual_vector_fn=residual_vector_fn,
             n_interior_rows=n_pde,
             interior_weight=np.sqrt(opt.lambda_pde / n_pde),
+            test_error_fn=make_test_error_fn(basis, config),
         )
 
     coefficients, metrics, summary = solve_lil_q(

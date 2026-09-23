@@ -39,6 +39,7 @@ from lilq.instrumentation import EPS_MACH
 from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import max_abs, rel_l2, tensor_grid_values
 
 
 # ── Data directory ───────────────────────────────────────────────────────────
@@ -285,6 +286,24 @@ def _create_basis_v(order: int) -> TensorProductBasis2D:
 # LiL-Q Solver
 # ─────────────────────────────────────────────────────────────────────────────
 
+def make_test_error_fn(basis_h_tilde, physics, P_fvm, n_h):
+    """``beta -> eps_p/maxerr_p``: the LiL pressure against the FVM
+    reference at the cell centres (Darcy has no exact solution; the same
+    comparison the solver's own ``fvm_rel_L2``/``fvm_max_err_psi``
+    report). ``beta`` is ``[c_h_tilde; c_u; c_v]``; pressure uses the
+    lifting ``P = (y* + h_tilde*) * DELTA_P + P_BOTTOM``."""
+    cfg = physics.config
+    x_c = (np.arange(cfg.NX_CELLS) + 0.5) / cfg.NX_CELLS
+    y_c = (np.arange(cfg.NY_CELLS) + 0.5) / cfg.NY_CELLS
+
+    def test_errors(beta):
+        h_tilde = tensor_grid_values(basis_h_tilde, beta[:n_h], [x_c, y_c])
+        P = (y_c[None, :] + h_tilde) * physics.DELTA_P + cfg.P_BOTTOM
+        return {'eps_p': rel_l2(P, P_fvm), 'maxerr_p': max_abs(P, P_fvm)}
+
+    return test_errors
+
+
 def solve_lilq_darcy(config: DarcyConfig,
                      physics: DarcyPhysics,
                      verbose: bool = True,
@@ -488,6 +507,7 @@ def solve_lilq_darcy(config: DarcyConfig,
         tracker = LilQDiagnosticsTracker(
             n_interior_rows=A.shape[0],  # every row is a PDE row -- no separate BC block exists
             interior_weight=1.0,         # no lambda-based row weighting in this system
+            test_error_fn=make_test_error_fn(basis_h_tilde, physics, P_fvm, n_h),
         )
         row = tracker.step(
             k=0,

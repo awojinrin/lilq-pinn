@@ -32,6 +32,7 @@ from lilq.instrumentation import EPS_MACH
 from lilq.iteration_log import LilQDiagnosticsTracker
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import max_abs, rel_l2, tensor_grid_values
 
 pi = np.pi
 
@@ -153,6 +154,28 @@ def _generate_collocation(config: ElasticityConfig, physics: ElasticityPhysics, 
 # ─────────────────────────────────────────────────────────────────────────────
 # Solver (single QR solve — linear PDE)
 # ─────────────────────────────────────────────────────────────────────────────
+
+TEST_GRID = (200, 200)  # the paper's elasticity evaluation grid (Section 2 names none)
+
+
+def make_test_error_fn(physics, basis_u, basis_v, config):
+    """``beta -> eps_u/eps_v/maxerr_*`` for the displacements u_x, u_y on a
+    uniform 200 x 200 grid (the grid behind Table 7's errors). ``beta`` is
+    ``[theta_u; theta_v]``."""
+    xs = np.linspace(*config.x_domain, TEST_GRID[0])
+    ys = np.linspace(*config.y_domain, TEST_GRID[1])
+    X, Y = np.meshgrid(xs, ys, indexing='ij')
+    ue, ve = physics.exact_ux(X, Y), physics.exact_uy(X, Y)
+    Pu = basis_u.n_basis
+
+    def test_errors(beta):
+        u = tensor_grid_values(basis_u, beta[:Pu], [xs, ys])
+        v = tensor_grid_values(basis_v, beta[Pu:], [xs, ys])
+        return {'eps_u': rel_l2(u, ue), 'eps_v': rel_l2(v, ve),
+                'maxerr_u': max_abs(u, ue), 'maxerr_v': max_abs(v, ve)}
+
+    return test_errors
+
 
 def solve_elasticity(config: ElasticityConfig, verbose=True,
                      iteration_logger=None, run_json_path=None) -> Dict:
@@ -282,6 +305,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
         residual_vector_fn = lambda beta: A_sys @ beta - b_sys  # noqa: E731 -- linear: this *is* the operator
         tracker = LilQDiagnosticsTracker(
             n_interior_rows=2 * n_pde, interior_weight=float(w_pde),
+            test_error_fn=make_test_error_fn(physics, basis_u, basis_v, config),
         )
         iteration_logger.record(**tracker.step(
             k=0, A_stacked=A_sys, b_stacked=b_sys,

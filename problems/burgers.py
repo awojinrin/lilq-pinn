@@ -30,6 +30,7 @@ from lilq.utils import set_seed, nn_init_seed, DEVICE
 from lilq.instrumentation import EPS_MACH
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import tensor_grid_values
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -517,6 +518,32 @@ def run_lil_n(config: BurgersConfig, opt: BurgersOptConfig,
     return basis, coefficients, metrics, summary
 
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Test-grid error (Section 3.1 item 10)
+# ─────────────────────────────────────────────────────────────────────────────
+
+TEST_GRID = (201, 201)  # not set by the spec for Burgers; same density as Bratu's
+
+
+def make_test_error_fn(basis, config: BurgersConfig):
+    """``beta -> {'eps_u': mean square of u_t + u u_x - nu u_xx}`` on a uniform
+    201 x 201 grid over [x_domain] x [0, T] (a residual-MSE benchmark: the
+    spec puts the test residual in eps_u)."""
+    xs = np.linspace(*config.x_domain, TEST_GRID[0])
+    ts = np.linspace(0.0, config.T_final, TEST_GRID[1])
+
+    def test_errors(beta):
+        u = tensor_grid_values(basis, beta, [xs, ts])
+        u_x = tensor_grid_values(basis, beta, [xs, ts], [1, 0])
+        u_t = tensor_grid_values(basis, beta, [xs, ts], [0, 1])
+        u_xx = tensor_grid_values(basis, beta, [xs, ts], [2, 0])
+        res = u_t + u * u_x - config.viscosity * u_xx
+        return {'eps_u': float(np.mean(res ** 2))}
+
+    return test_errors
+
+
 def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
               verbose=True, diagnostics_callback=None,
               iteration_logger=None, run_json_path=None):
@@ -598,6 +625,7 @@ def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
             compute_residual_vector_fn=residual_vector_fn,
             n_interior_rows=n_pde,
             interior_weight=np.sqrt(opt.lambda_pde / n_pde),
+            test_error_fn=make_test_error_fn(basis, config),
         )
 
     coefficients, metrics, summary = solve_lil_q(

@@ -182,7 +182,16 @@ class LilQDiagnosticsTracker:
         conditioning_svd_threshold: int = DEFAULT_SVD_CONDITIONING_THRESHOLD,
         n_interior_rows: Optional[int] = None,
         interior_weight: Optional[float] = None,
+        test_error_fn: Optional[Callable[[np.ndarray], Dict[str, float]]] = None,
     ) -> None:
+        """``test_error_fn(beta)`` returns the test-error columns
+        (``eps_u``, ``eps_v``, ``eps_p``, ``eps_p_meanfree``, ``maxerr_*``,
+        any subset) of the iterate ``beta`` on the problem's test grid
+        (Section 3.1 item 10: for the log only, never for stopping). Row
+        ``k`` gets them at beta^(k), the terminal row at the returned
+        coefficients. Outside the timed phases."""
+        self._test_error_fn = test_error_fn
+        self._final_beta: Optional[np.ndarray] = None
         self._norm_R_h_km1: Optional[float] = None
         self._norm_Rlin_h_km1: Optional[float] = None
         self._conditioning_svd_threshold = conditioning_svd_threshold
@@ -313,7 +322,10 @@ class LilQDiagnosticsTracker:
             rcond=EPS_MACH,
             solver_path=solver_path, gpu_mem_peak_bytes=gpu_mem_peak_bytes,
         )
+        if self._test_error_fn is not None:
+            row.update(self._test_error_fn(beta_prev))
 
+        self._final_beta = beta_new
         self._norm_R_h_km1 = norm_R_h
         self._norm_Rlin_h_km1 = norm_Rlin_h
         self._final_norm_R_h = norm_R_h_next
@@ -327,11 +339,14 @@ class LilQDiagnosticsTracker:
         interior part when the residual vector is available. No system is
         assembled at $\\boldsymbol\\beta^{(K)}$, so every other column is
         empty."""
-        return dict(
+        row = dict(
             k=k, t_cum_s=self._t_cum_s,
             norm_R_h=self._final_norm_R_h,
             norm_R_interior=self._interior_norm(self._final_R_vector),
         )
+        if self._test_error_fn is not None and self._final_beta is not None:
+            row.update(self._test_error_fn(self._final_beta))
+        return row
 
 
 def _stringify_row(row: Dict[str, Any]) -> Dict[str, Any]:

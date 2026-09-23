@@ -38,6 +38,7 @@ from lilq.instrumentation import EPS_MACH
 from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker, last_solve_row
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import max_abs, rel_l2, tensor_grid_values
 
 try:
     import torch
@@ -371,6 +372,35 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
     }
 
 
+TEST_GRID = (301, 401)  # Section 2: uniform on [-0.5,1] x [-0.5,1.5], never used for collocation
+
+
+def make_test_error_fn(physics, basis_u, basis_v, basis_p):
+    """``beta -> eps_u/eps_v/eps_p/eps_p_meanfree/maxerr_*`` on the Section 2
+    Kovasznay test grid. ``eps_p`` is the paper's gauge (corner pin);
+    ``eps_p_meanfree`` subtracts the test-grid mean from both prediction
+    and exact pressure (the one for comparing with baselines gauged
+    differently). ``beta`` is ``[theta_u; theta_v; theta_p]``."""
+    xs = np.linspace(*physics.x_domain, TEST_GRID[0])
+    ys = np.linspace(*physics.y_domain, TEST_GRID[1])
+    X, Y = np.meshgrid(xs, ys, indexing='ij')
+    ue, ve, pe = physics.exact_u(X, Y), physics.exact_v(X, Y), physics.exact_p(X, Y)
+    pe_mf = pe - pe.mean()
+    Pu, Pv = basis_u.n_basis, basis_v.n_basis
+
+    def test_errors(beta):
+        u = tensor_grid_values(basis_u, beta[:Pu], [xs, ys])
+        v = tensor_grid_values(basis_v, beta[Pu:Pu + Pv], [xs, ys])
+        p = tensor_grid_values(basis_p, beta[Pu + Pv:], [xs, ys])
+        return {
+            'eps_u': rel_l2(u, ue), 'eps_v': rel_l2(v, ve), 'eps_p': rel_l2(p, pe),
+            'eps_p_meanfree': rel_l2(p - p.mean(), pe_mf),
+            'maxerr_u': max_abs(u, ue), 'maxerr_v': max_abs(v, ve), 'maxerr_p': max_abs(p, pe),
+        }
+
+    return test_errors
+
+
 def solve_kovasznay(config: KovasznayConfig, verbose=True,
                      iteration_logger=None, run_json_path=None,
                      analyze_conditioning: bool = False) -> Dict:
@@ -525,7 +555,9 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             tracker_kwargs["n_interior_rows"] = 3 * n_pde
             tracker_kwargs["interior_weight"] = float(np.sqrt(config.lambda_mom / n_pde))
 
-        tracker = LilQDiagnosticsTracker(**tracker_kwargs)
+        tracker = LilQDiagnosticsTracker(
+            test_error_fn=make_test_error_fn(physics, basis_u, basis_v, basis_p), **tracker_kwargs,
+        )
 
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):

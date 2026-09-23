@@ -30,6 +30,7 @@ from lilq.instrumentation import EPS_MACH
 from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import max_abs, rel_l2, tensor_grid_values
 
 try:
     import torch
@@ -326,6 +327,33 @@ def _make_beltrami_residual_vector_fn(
     return compute_residual_vector
 
 
+def make_test_error_fn(physics, basis_u, basis_v, basis_w, basis_p, n_s=21, n_t=11):
+    """``beta -> eps_u/eps_v/eps_p/maxerr_*`` with the paper's own metric
+    (:func:`compute_errors`: an n_s^3 x n_t uniform space-time grid, the
+    pressure shifted to the exact mean at every time level) -- Section 2
+    says "Beltrami as in the paper". The schema has no ``eps_w``; w's
+    error equals u's by the flow's symmetry. ``beta`` is
+    ``[theta_u; theta_v; theta_w; theta_p]``."""
+    axes = [np.linspace(*physics.x_domain, n_s), np.linspace(*physics.y_domain, n_s),
+            np.linspace(*physics.z_domain, n_s), np.linspace(*physics.t_domain, n_t)]
+    X, Y, Z, T = np.meshgrid(*axes, indexing='ij')
+    ue, ve, pe = physics.exact_u(X, Y, Z, T), physics.exact_v(X, Y, Z, T), physics.exact_p(X, Y, Z, T)
+    pe_mean_t = pe.mean(axis=(0, 1, 2))
+    Pu, Pv, Pw = basis_u.n_basis, basis_v.n_basis, basis_w.n_basis
+
+    def test_errors(beta):
+        u = tensor_grid_values(basis_u, beta[:Pu], axes)
+        v = tensor_grid_values(basis_v, beta[Pu:Pu + Pv], axes)
+        p = tensor_grid_values(basis_p, beta[Pu + Pv + Pw:], axes)
+        p = p - p.mean(axis=(0, 1, 2)) + pe_mean_t
+        return {
+            'eps_u': rel_l2(u, ue), 'eps_v': rel_l2(v, ve), 'eps_p': rel_l2(p, pe),
+            'maxerr_u': max_abs(u, ue), 'maxerr_v': max_abs(v, ve), 'maxerr_p': max_abs(p, pe),
+        }
+
+    return test_errors
+
+
 def solve_beltrami(config: BeltramiConfig, verbose=True,
                     analyze_conditioning: bool = False,
                     iteration_logger=None,
@@ -496,7 +524,10 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         # Section 3.1 item 8's Beltrami-specific conditioning method
         # (not a full per-iteration SVD -- see analyze_conditioning above).
 
-        tracker = LilQDiagnosticsTracker(**tracker_kwargs)
+        tracker = LilQDiagnosticsTracker(
+            test_error_fn=make_test_error_fn(physics, basis_u, basis_v, basis_w, basis_p),
+            **tracker_kwargs,
+        )
 
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):
@@ -724,31 +755,28 @@ def _rel_l2(pred, exact):
 
 
 def compute_errors(phys, bu, bv, bw, bp, tu, tv, tw, tp, n_s=21, n_t=11):
-    """Global relative L2 errors with pressure gauge correction."""
-    xs = np.linspace(*phys.x_domain, n_s)
-    ys = np.linspace(*phys.y_domain, n_s)
-    zs = np.linspace(*phys.z_domain, n_s)
-    ts = np.linspace(*phys.t_domain, n_t)
-    X, Y, Z, T = np.meshgrid(xs, ys, zs, ts, indexing='ij')
-    xf, yf, zf, tf = X.ravel(), Y.ravel(), Z.ravel(), T.ravel()
+    """Global relative L2 errors with pressure gauge correction.
 
-    up = bu.evaluate(xf, yf, zf, tf) @ tu
-    vp = bv.evaluate(xf, yf, zf, tf) @ tv
-    wp = bw.evaluate(xf, yf, zf, tf) @ tw
-    pp = bp.evaluate(xf, yf, zf, tf) @ tp
-    ue = phys.exact_u(xf, yf, zf, tf)
-    ve = phys.exact_v(xf, yf, zf, tf)
-    we = phys.exact_w(xf, yf, zf, tf)
-    pe = phys.exact_p(xf, yf, zf, tf)
+    Fields are evaluated on the tensor grid through the 1D factors
+    (:func:`lilq.test_errors.tensor_grid_values`) rather than full basis
+    matrices, which at the paper's P = 7,984 needed a 3.8 GB peak; the
+    errors agree with the full-matrix evaluation to round-off.
+    """
+    axes = [np.linspace(*phys.x_domain, n_s), np.linspace(*phys.y_domain, n_s),
+            np.linspace(*phys.z_domain, n_s), np.linspace(*phys.t_domain, n_t)]
+    X, Y, Z, T = np.meshgrid(*axes, indexing='ij')
+
+    up = tensor_grid_values(bu, tu, axes)
+    vp = tensor_grid_values(bv, tv, axes)
+    wp = tensor_grid_values(bw, tw, axes)
+    pp = tensor_grid_values(bp, tp, axes)
+    ue = phys.exact_u(X, Y, Z, T)
+    ve = phys.exact_v(X, Y, Z, T)
+    we = phys.exact_w(X, Y, Z, T)
+    pe = phys.exact_p(X, Y, Z, T)
 
     # Per-time-step pressure shift
-    n_spatial = n_s ** 3
-    pp_4d = pp.reshape(n_s, n_s, n_s, n_t)
-    pe_4d = pe.reshape(n_s, n_s, n_s, n_t)
-    for it in range(n_t):
-        pp_4d[:,:,:,it] -= np.mean(pp_4d[:,:,:,it])
-        pp_4d[:,:,:,it] += np.mean(pe_4d[:,:,:,it])
-    pp = pp_4d.ravel()
+    pp = pp - pp.mean(axis=(0, 1, 2)) + pe.mean(axis=(0, 1, 2))
 
     return {'rel_l2_u': _rel_l2(up, ue), 'rel_l2_v': _rel_l2(vp, ve),
             'rel_l2_w': _rel_l2(wp, we), 'rel_l2_p': _rel_l2(pp, pe)}
@@ -759,21 +787,18 @@ def compute_time_snapshot_errors(phys, bu, bv, bw, bp, tu, tv, tw, tp,
     """Per-time-step errors, matching NSFnets Table 4 format."""
     snapshots = []
     for t_val in t_vals:
-        xs = np.linspace(*phys.x_domain, n_s)
-        ys = np.linspace(*phys.y_domain, n_s)
-        zs = np.linspace(*phys.z_domain, n_s)
-        X, Y, Z = np.meshgrid(xs, ys, zs, indexing='ij')
-        xf, yf, zf = X.ravel(), Y.ravel(), Z.ravel()
-        tf = np.full_like(xf, t_val)
+        axes = [np.linspace(*phys.x_domain, n_s), np.linspace(*phys.y_domain, n_s),
+                np.linspace(*phys.z_domain, n_s), np.array([t_val], dtype=np.float64)]
+        X, Y, Z, T = np.meshgrid(*axes, indexing='ij')
 
-        up = bu.evaluate(xf, yf, zf, tf) @ tu
-        vp = bv.evaluate(xf, yf, zf, tf) @ tv
-        wp = bw.evaluate(xf, yf, zf, tf) @ tw
-        pp = bp.evaluate(xf, yf, zf, tf) @ tp
-        ue = phys.exact_u(xf, yf, zf, tf)
-        ve = phys.exact_v(xf, yf, zf, tf)
-        we = phys.exact_w(xf, yf, zf, tf)
-        pe = phys.exact_p(xf, yf, zf, tf)
+        up = tensor_grid_values(bu, tu, axes)
+        vp = tensor_grid_values(bv, tv, axes)
+        wp = tensor_grid_values(bw, tw, axes)
+        pp = tensor_grid_values(bp, tp, axes)
+        ue = phys.exact_u(X, Y, Z, T)
+        ve = phys.exact_v(X, Y, Z, T)
+        we = phys.exact_w(X, Y, Z, T)
+        pe = phys.exact_p(X, Y, Z, T)
 
         pp = pp - np.mean(pp) + np.mean(pe)
         snapshots.append({'t': t_val, 'u': _rel_l2(up, ue), 'v': _rel_l2(vp, ve),

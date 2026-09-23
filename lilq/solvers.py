@@ -419,6 +419,7 @@ def solve_lil_q(
     conditioning_svd_threshold: Optional[int] = None,
     n_interior_rows: Optional[int] = None,
     interior_weight: Optional[float] = None,
+    test_error_fn: Optional[Callable[[np.ndarray], Dict[str, float]]] = None,
 ) -> Tuple[np.ndarray, QuasilinearMetrics, Dict]:
     """Quasilinear LiL solver (LiL-Q method).
 
@@ -488,6 +489,9 @@ def solve_lil_q(
         convention -- confirmed directly in every problem's
         ``assemble_system_fn``, not assumed). Left NaN if either is
         omitted.
+    test_error_fn : callable, optional
+        ``(beta) -> {eps_*/maxerr_* column: value}``, forwarded to the
+        tracker (Section 3.1 item 10); only used with ``iteration_logger``.
 
     Returns
     -------
@@ -516,7 +520,7 @@ def solve_lil_q(
             tracker_kwargs["n_interior_rows"] = n_interior_rows
         if interior_weight is not None:
             tracker_kwargs["interior_weight"] = interior_weight
-        tracker = LilQDiagnosticsTracker(**tracker_kwargs)
+        tracker = LilQDiagnosticsTracker(test_error_fn=test_error_fn, **tracker_kwargs)
 
     converged = False
     n_quasi_iters = 0

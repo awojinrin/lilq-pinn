@@ -17,6 +17,41 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Per-iterate test errors in `iterations.csv`; Beltrami's final-error memory spike removed
+
+Section 3.1 item 10 (test errors of every iterate, "for the log only,
+never for stopping") was the last column group left empty. Row `k` now
+carries the errors of $\boldsymbol\beta^{(k)}$ and the terminal row those of
+the returned coefficients, on these test grids (never used for
+collocation):
+
+| Problem | Grid | Columns |
+|---|---|---|
+| Kovasznay | 301 x 401 uniform (Section 2) | `eps_u/v/p`, `eps_p_meanfree`, `maxerr_u/v/p`; `eps_p` in the paper's corner-pin gauge, `eps_p_meanfree` after subtracting the grid mean from both fields (Section 2) |
+| Bratu | 201 x 201 uniform (Section 2) | `eps_u` = mean square of $\Delta u + \lambda e^u$ (no closed form) |
+| Beltrami | 21^3 x 11, the paper's own (Section 2: "as in the paper") | `eps_u/v/p`, `maxerr_*`; pressure shifted to the exact mean per time level, as `compute_errors` does. No `eps_w` column exists; w's error equals u's by symmetry |
+| Burgers, BL | 201 x 201 uniform over space x [0,T] -- **our choice**, Section 2 names none | `eps_u` = mean square of the PDE residual (residual-MSE benchmarks, per the spec's note). At a zero start the Burgers row 0 is exactly 0: u=0 satisfies the interior PDE and misses only the IC |
+| Elasticity | 200 x 200, the grid behind Table 7 -- **our choice**, Section 2 names none | `eps_u` ($u_x$), `eps_v` ($u_y$), `maxerr_*` |
+| Darcy | the 60 x 220 cell centres against the FVM reference | `eps_p`, `maxerr_p` (psi) |
+
+Evaluation goes through the tensor-product structure
+(`lilq.test_errors.tensor_grid_values`: $u=\Phi_x\Theta\Phi_y^\top$ and its
+N-D analogue) instead of full basis matrices -- a few milliseconds per
+iterate even at Kovasznay $P=1{,}875$ and Beltrami $P=7{,}984$, outside the
+timed assembly/solve phases. Tests check it against full evaluation for
+every basis type and derivative order in use, and check every problem's
+terminal-row errors against that problem's own final-error code
+(identical to 1e-10).
+
+**Beltrami's final errors now use the same evaluator.** `compute_errors`
+built full basis matrices on its 101,871-point grid (4,096 pressure
+columns): a 3.8 GB peak and 3.7 s on top of the solve's own memory, just
+to report errors. Now 13 MB and 0.02 s, with identical values (0.0
+relative difference; snapshots 2e-16). This lowers the memory a
+cluster job for Beltrami needs.
+
+---
+
 ## 2026-09-23 -- Elasticity gets Section 3.1 logging
 
 Section 3.3 asks for logged elasticity runs at all five sizes; elasticity
