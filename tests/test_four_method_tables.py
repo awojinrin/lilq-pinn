@@ -37,6 +37,17 @@ def test_bl_runs_viscous_vs_gravity_differ():
     assert gravity[0][1].N_g != 0.0
 
 
+def test_bl_gravity_runs_use_cos_fourier_basis():
+    """DECISIONS.md, 2026-09-23: the gravity IC's monotonic steep step is
+    poorly represented by DEFAULT_BASIS's mode_x='both' split; verified
+    against a real run that 'cos_fourier' takes LiL-N from not converging
+    at N=24/32 to converging in seconds. Viscous is unaffected."""
+    viscous = fmt._bl_runs(gravity=False, quick=True)
+    gravity = fmt._bl_runs(gravity=True, quick=True)
+    assert viscous[0][1].basis_type == 'fourier'
+    assert gravity[0][1].basis_type == 'cos_fourier'
+
+
 def test_bl_runs_never_pass_explicit_max_line_searches():
     """Regression guard mirroring test_bl_experiment_runner_config.py:
     BLOptConfig's derived max_line_searches (max_iterations * 15) is the

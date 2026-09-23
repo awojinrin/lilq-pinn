@@ -17,6 +17,135 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- BL-gravity switched to `cos_fourier` basis (LiL-N convergence)
+
+**Not Phase 1 work -- found during a pre-HPRC validation pass (small
+network-size sanity sweep across all 7 problems, requested to catch
+bugs/check results/gauge timing before committing to full HPRC runs;
+see `experiments/validate_pre_hprc.py`).** That sweep flagged
+Buckley-Leverett-gravity's LiL-N as an outlier: 144s at N=16 versus
+NiL-N/NiL-Q's 24-39s at the same size, where LiL-N is normally the
+*fast* method.
+
+**Investigation.**
+
+1. **`reference_results/bl_gravity_experiments_fourier/` doesn't help as
+   a baseline.** Every stored N (8/16/24/32) shows `converged: False`
+   with `total_line_searches` exactly `3 * max_iterations` -- the exact
+   signature of the `max_line_searches = max_iterations * 3` bug
+   documented in this log's "line-search cap actually binds" entry,
+   found and fixed before this session. These reference runs were cut
+   off by that bug, not by exhausting a correct budget, so they don't
+   establish whether LiL-N converges under the current, fixed codebase.
+
+2. **Real reruns at N=16 and N=24 (current codebase, correct budgets)
+   show a genuine stall, not noise.** N=16: 5,748 of a 10,000-iteration
+   budget, loss trajectory drops fast to ~0.18 by iteration 300 then
+   crawls near-linearly for the remaining ~5,400 iterations to just
+   barely cross the 0.15 target. N=24: hits the full 15,000-iteration
+   cap without converging at all, plateauing at loss≈0.101 against a
+   0.075 target -- the same fast-drop-then-flatline shape, just landing
+   short instead of barely crossing.
+
+3. **Root cause: basis representation, not optimizer or gradient.** The
+   gravity initial condition is a steepness-100 smooth step
+   (`1 - 1/(1+exp(-100(x-0.4)))`), essentially monotonic in $x$.
+   `BLConfig`'s default `basis_type='fourier'` (`mode_x='both'`) splits
+   its $x$-modes evenly between sine and cosine -- confirmed directly
+   (`Fourier1D(N, mode='both').evaluate(...)` has exactly $N$ columns,
+   same as `mode='cos'` alone, i.e. `'both'` gets *half* as many pure
+   cosine modes as a cosine-only basis at the same $N$). Sine modes
+   contribute almost nothing to representing a monotonic profile, so
+   half the spatial resolution is wasted. Direct least-squares fit of
+   the real IC against each basis, independent of the solver entirely:
+
+   | $N$ | `fourier` (current) | `cos_fourier` |
+   |---|---|---|
+   | 16 | 7.46e-2 rel. L2 err | 5.27e-2 |
+   | 24 | 4.29e-2 | 2.31e-2 |
+   | 32 | 2.39e-2 | **9.81e-3** |
+
+   (`cos_fourier`/`cos_cos`/`cheb_cos` all score identically here --
+   the win is specifically "full cosine resolution in $x$", not
+   Chebyshev per se; `cheb_sin`/`sin_cheb`/`cos_sin`/`sin_cos` are
+   degenerate for this check, since a `sin`-mode temporal component
+   vanishes at $t=0$ and can't represent anything at the IC regardless
+   of the spatial basis.) The non-gravity IC (`exp(-10x)`, smooth) fits
+   to 1.3e-5 relative error by $N=16$ under the *same* `fourier` basis
+   currently in use -- confirming the representation gap is specific to
+   gravity's steep IC, not a general problem with the basis choice.
+
+   This creates an irreducible floor in the loss landscape that L-BFGS
+   (LiL-N's optimizer) stalls near -- gradients go small and
+   uninformative approaching a floor the basis genuinely can't get
+   below, producing exactly the observed crawl. LiL-Q isn't exposed the
+   same way because each outer iteration solves the linearized
+   least-squares system exactly (Bellman-Kalaba), not via
+   gradient-descent creeping -- consistent with LiL-Q converging in
+   0.42s at N=16 on the *same* basis where LiL-N needed 144s. NiL-N/
+   NiL-Q are less exposed because a neural network isn't capacity-limited
+   by a fixed truncated Fourier expansion the same way.
+
+4. **`cos_fourier` (full cosine resolution in $x$, unchanged full Fourier
+   in $t$) verified end-to-end with real LiL-N reruns at every paper
+   size:**
+
+   | $N$ | `fourier` (current) | `cos_fourier` |
+   |---|---|---|
+   | 8 | 94 iters, 1.5s, converged | 77 iters, 3.9s, converged |
+   | 16 | 5,748 iters, 144s, converged (barely) | **125 iters, 3.9s** |
+   | 24 | 15,000 iters (capped), 368s, **not converged** (0.101 vs 0.075) | **401 iters, 8.8s**, converged |
+   | 32 | not rerun (extrapolated to fail) | **869 iters, 22.5s**, converged (0.0349 vs 0.035) |
+
+**Decision: `experiments/run_bl.py` gains a `GRAVITY_BASIS = 'cos_fourier'`
+constant**, used as the default basis for every BL-gravity config this
+script builds (CLI `--basis`, left unset by default, now resolves to
+`'cos_fourier'` for `--gravity` and `'fourier'` otherwise; an explicit
+`--basis` always overrides). `experiments/four_method_tables.py`,
+`experiments/residual_band_figures.py`, and
+`experiments/validate_pre_hprc.py` all import `GRAVITY_BASIS` from
+`run_bl.py` (not duplicated) and use it identically, so every
+"real experiment" pathway in this codebase now agrees. Applied to the
+*config* (affects all four methods sharing it), not just LiL-N -- a
+better representation of the same physics should not depend on which
+solver is asked to use it, and the fit-quality numbers above are
+solver-independent. `BLConfig.with_gravity()`'s own dataclass default is
+**not** touched -- every call site that builds a real experiment config
+passes `basis_type` explicitly, so changing the factory's own default
+would not have propagated anyway, and leaving it alone keeps ad hoc/
+example callers (`examples/run_bl_lilq.py`, `experiments/run_all_dry.py`)
+unaffected unless they ask for this basis explicitly.
+
+**This is a methodology decision, not a bug fix** -- `'fourier'` is the
+paper's own established default for BL, both variants; this is a
+deliberate, documented deviation from that for the gravity case only,
+because the evidence shows it removes a stall that otherwise consumes
+disproportionate iteration budget (and, at $N \ge 24$, prevents
+convergence entirely) for a reason unrelated to the physics or the
+gradient (both already verified correct) -- purely a fixed-basis
+representation-capacity limit. Non-gravity BL is untouched; it doesn't
+show this problem (`exp(-10x)` fits the current basis to near machine
+precision already).
+
+**Not done here, worth knowing:** the pre-existing reference results
+never converged either (same non-convergent basis, plus the separate
+line-search-cap bug on top), so there's no clean "does this match the
+published table" comparison available locally -- only the manuscript
+itself would say whether BL-gravity LiL-N's published entries are
+already asterisked (non-converged) at $N=24$/$32$, which this change may
+now turn into converged entries with different (likely lower/better)
+final losses than whatever was previously reported.
+
+Regression tests: `tests/test_bl_experiment_runner_config.py` (the
+`GRAVITY_BASIS` constant, and `run_bl.py --gravity`'s CLI default
+resolution -- verified functionally via a stubbed `main()` run, not
+just source inspection, including that an explicit `--basis` still
+overrides), plus a `basis_type` assertion added to the existing
+viscous-vs-gravity tests in `tests/test_four_method_tables.py` and
+`tests/test_residual_band_figures.py`. 198/198 -> 203/203 tests passing.
+
+---
+
 ## 2026-09-22 -- Kovasznay GPU solve path (Section 3.2)
 
 **Phase 1, sub-batch 11 -- the last piece of the Component B

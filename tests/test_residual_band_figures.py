@@ -42,8 +42,13 @@ def test_bl_runs_viscous_vs_gravity_use_different_configs_and_targets():
     # Gravity configs must actually have gravity on; viscous must not.
     for _P, config, _opt in viscous:
         assert config.N_g == 0.0
+        assert config.basis_type == 'fourier'
     for _P, config, _opt in gravity:
         assert config.N_g != 0.0
+        # DECISIONS.md, 2026-09-23: 'cos_fourier' resolves the gravity
+        # IC's steep monotonic step far better than the default mode_x
+        # ='both' split -- verified against a real run.
+        assert config.basis_type == 'cos_fourier'
 
     # Distinct R_tol schedules (GRAVITY_TARGET_LOSSES != TARGET_LOSSES).
     opt_viscous = {P: opt.R_tol for P, _c, opt in viscous}

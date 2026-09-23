@@ -91,16 +91,17 @@ def _bl_runs(gravity, quick=False):
     from experiments.run_bl import (
         DEFAULT_N_VALUES, TARGET_LOSSES, MAX_QUASI_ITERS,
         GRAVITY_TARGET_LOSSES, GRAVITY_MAX_QUASI_ITERS,
-        DEFAULT_BASIS, K_RATIO,
+        DEFAULT_BASIS, GRAVITY_BASIS, K_RATIO,
     )
     N_values = DEFAULT_N_VALUES[:2] if quick else DEFAULT_N_VALUES
     targets = GRAVITY_TARGET_LOSSES if gravity else TARGET_LOSSES
     quasi_iters = GRAVITY_MAX_QUASI_ITERS if gravity else MAX_QUASI_ITERS
+    basis_type = GRAVITY_BASIS if gravity else DEFAULT_BASIS
     runs = []
     for N in N_values:
         base = BLConfig.with_gravity() if gravity else BLConfig()
         config = dataclasses.replace(base, N_x=N, N_t=N,
-                                      basis_type=DEFAULT_BASIS, k_ratio=K_RATIO)
+                                      basis_type=basis_type, k_ratio=K_RATIO)
         opt = BLOptConfig(R_tol=targets[N], max_quasi_iters_lil=quasi_iters)
         runs.append((N * N, config, opt))
     return runs

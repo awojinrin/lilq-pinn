@@ -52,6 +52,16 @@ MAX_LBFGS_PER_QUASI = {8: 100, 16: 200, 24: 300, 32: 400}
 GRAVITY_TARGET_LOSSES = {8: 2.5e-1, 16: 1.5e-1, 24: 7.5e-2, 32: 3.5e-2}
 GRAVITY_MAX_QUASI_ITERS = 20
 GRAVITY_MAX_LBFGS_PER_QUASI = {8: 30, 16: 200, 24: 400, 32: 500}
+# The gravity IC (a steepness-100 smooth step, essentially monotonic in x)
+# is poorly represented by DEFAULT_BASIS's mode_x='both' split (half the
+# x-modes wasted on sine components that don't help a monotonic profile).
+# 'cos_fourier' (full cosine resolution in x) fits the same IC to ~2-2.4x
+# lower relative error at every paper N, and empirically took LiL-N from
+# not converging at all at N=24/32 (hits the full iteration cap) to
+# converging in under 9s and 23s respectively. Gravity-specific --
+# DEFAULT_BASIS is unchanged for the non-gravity case, which doesn't show
+# this problem. See DECISIONS.md.
+GRAVITY_BASIS = 'cos_fourier'
 
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 
@@ -157,7 +167,10 @@ def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True, seeds=No
 def main():
     parser = argparse.ArgumentParser(description="Buckley-Leverett Experiments")
     parser.add_argument('--N', type=int, nargs='+', default=DEFAULT_N_VALUES)
-    parser.add_argument('--basis', type=str, default=DEFAULT_BASIS)
+    parser.add_argument('--basis', type=str, default=None,
+                        help=f"Basis type. Default: '{DEFAULT_BASIS}' for viscous, "
+                             f"'{GRAVITY_BASIS}' for --gravity (see DECISIONS.md) -- "
+                             "pass explicitly to override either.")
     parser.add_argument('--gravity', action='store_true')
     parser.add_argument('--lil-q-only', action='store_true')
     parser.add_argument('--seeds', type=int, nargs='+', default=None,
@@ -171,8 +184,9 @@ def main():
     methods = ['LiL-Q'] if args.lil_q_only else ALL_METHODS
     verbose = not args.quiet
     plabel = 'BL-gravity' if args.gravity else 'BL'
+    basis = args.basis if args.basis is not None else (GRAVITY_BASIS if args.gravity else DEFAULT_BASIS)
 
-    print(f"{plabel} Experiments | Device: {DEVICE}")
+    print(f"{plabel} Experiments | Device: {DEVICE} | basis: {basis}")
     print(f"N values: {args.N}, Methods: {methods}")
     if args.seeds:
         print(f"NiL-N/NiL-Q seeds: {args.seeds}")
@@ -182,21 +196,21 @@ def main():
     for N in args.N:
         set_seed(42)
         all_results[N] = run_experiment_for_N(
-            N, args.basis, args.gravity, methods, verbose, seeds=args.seeds)
+            N, basis, args.gravity, methods, verbose, seeds=args.seeds)
 
     print_summary_table(all_results, args.N, methods, plabel)
     print(f"\nTotal: {time.time()-t0:.1f}s")
 
     tag = 'bl_gravity' if args.gravity else 'bl'
-    base_dir = experiment_base_dir(tag, args.basis)
+    base_dir = experiment_base_dir(tag, basis)
     tgt = GRAVITY_TARGET_LOSSES if args.gravity else TARGET_LOSSES
     save_master_results(base_dir / f'{tag}_master_results.json', all_results,
-                        {'n_values': args.N, 'gravity': args.gravity,
+                        {'n_values': args.N, 'gravity': args.gravity, 'basis': basis,
                          'target_losses': tgt,
                          'seeds': list(args.seeds) if args.seeds else None})
-    save_run_provenance(tag, args.basis)
+    save_run_provenance(tag, basis)
 
-    fig_dir = make_figures_dir(tag, args.basis)
+    fig_dir = make_figures_dir(tag, basis)
     try:
         plot_convergence_by_method(all_results, args.N, plabel, fig_dir)
         plot_convergence_by_size(all_results, args.N, plabel, fig_dir)

@@ -191,7 +191,7 @@ def validate_bl(records, gravity, n_sizes=2):
         BLConfig, BLOptConfig, run_nil_n, run_nil_q, run_lil_n, run_lil_q,
     )
     from experiments.run_bl import (
-        DEFAULT_N_VALUES, DEFAULT_BASIS, K_RATIO,
+        DEFAULT_N_VALUES, DEFAULT_BASIS, GRAVITY_BASIS, K_RATIO,
         TARGET_LOSSES, MAX_LBFGS_ITERS, MAX_LBFGS_PER_QUASI, MAX_QUASI_ITERS,
         GRAVITY_TARGET_LOSSES, GRAVITY_MAX_QUASI_ITERS, GRAVITY_MAX_LBFGS_PER_QUASI,
     )
@@ -200,9 +200,10 @@ def validate_bl(records, gravity, n_sizes=2):
     targets = GRAVITY_TARGET_LOSSES if gravity else TARGET_LOSSES
     quasi_iters = GRAVITY_MAX_QUASI_ITERS if gravity else MAX_QUASI_ITERS
     inner_per_quasi = GRAVITY_MAX_LBFGS_PER_QUASI if gravity else MAX_LBFGS_PER_QUASI
+    basis_type = GRAVITY_BASIS if gravity else DEFAULT_BASIS
     for N in DEFAULT_N_VALUES[:n_sizes]:
         base = BLConfig.with_gravity() if gravity else BLConfig()
-        config = dataclasses.replace(base, N_x=N, N_t=N, basis_type=DEFAULT_BASIS, k_ratio=K_RATIO)
+        config = dataclasses.replace(base, N_x=N, N_t=N, basis_type=basis_type, k_ratio=K_RATIO)
         # max_line_searches left unset -- BLOptConfig derives it (see
         # tests/test_bl_experiment_runner_config.py / DECISIONS.md).
         opt = BLOptConfig(

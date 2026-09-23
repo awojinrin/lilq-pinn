@@ -123,17 +123,18 @@ def _bl_runs(gravity, quick=False):
     from experiments.run_bl import (
         DEFAULT_N_VALUES, TARGET_LOSSES, MAX_LBFGS_ITERS, MAX_LBFGS_PER_QUASI,
         GRAVITY_TARGET_LOSSES, GRAVITY_MAX_QUASI_ITERS, GRAVITY_MAX_LBFGS_PER_QUASI,
-        MAX_QUASI_ITERS, DEFAULT_BASIS, K_RATIO,
+        MAX_QUASI_ITERS, DEFAULT_BASIS, GRAVITY_BASIS, K_RATIO,
     )
     N_values = DEFAULT_N_VALUES[:1] if quick else DEFAULT_N_VALUES
     targets = GRAVITY_TARGET_LOSSES if gravity else TARGET_LOSSES
     quasi_iters = GRAVITY_MAX_QUASI_ITERS if gravity else MAX_QUASI_ITERS
     inner_per_quasi = GRAVITY_MAX_LBFGS_PER_QUASI if gravity else MAX_LBFGS_PER_QUASI
+    basis_type = GRAVITY_BASIS if gravity else DEFAULT_BASIS
     runs = []
     for N in N_values:
         base = BLConfig.with_gravity() if gravity else BLConfig()
         config = dataclasses.replace(base, N_x=N, N_t=N,
-                                      basis_type=DEFAULT_BASIS, k_ratio=K_RATIO)
+                                      basis_type=basis_type, k_ratio=K_RATIO)
         # max_line_searches intentionally left unset -- BLOptConfig derives
         # it from max_iterations (see tests/test_bl_experiment_runner_config.py
         # and DECISIONS.md: an explicit override here previously truncated
