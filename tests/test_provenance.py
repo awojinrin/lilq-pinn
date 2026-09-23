@@ -84,6 +84,10 @@ def test_real_bundle_extracts_with_correct_provenance(tmp_path):
         assert "lilq-pinn/tests/test_provenance.py" in names
         assert not any(n.startswith("lilq-pinn/reference_results/") for n in names)
         assert not any(n.startswith("lilq-pinn/.git/") for n in names)
+        # No carriage returns in text files (bash on the cluster rejects them).
+        for n in names:
+            if n.endswith((".py", ".sh", ".slurm", ".md", ".toml", ".txt")):
+                assert b"\r\n" not in tar.extractfile(n).read(), n
         tar.extractall(tmp_path / "x", filter="data")
 
     extracted = tmp_path / "x" / "lilq-pinn"

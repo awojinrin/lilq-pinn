@@ -323,6 +323,25 @@ def run_problem(benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn, logger,
                          csv_path=csv_path, skip_keys=skip_keys)
 
 
+def merge_csvs(paths, out_path):
+    """Combine per-job CSVs (split runs of this script) into one; a run
+    key appearing in two inputs is an error -- the jobs overlapped."""
+    merged = FourMethodLogger()
+    seen = set()
+    for path in paths:
+        if not Path(path).exists():
+            print(f"  merge: no CSV at {path} (that job produced nothing) -- skipped")
+            continue
+        for row in FourMethodLogger.from_csv(path, drop_failures=False).rows:
+            key = row_key(row)
+            if key in seen:
+                raise ValueError(f"run {key} appears in more than one input ({path})")
+            seen.add(key)
+            merged.record(**row)
+    merged.to_csv(out_path)
+    return merged
+
+
 def main():
     parser = argparse.ArgumentParser(description="Section 3.4 four-method tables")
     parser.add_argument('--quick', action='store_true',
@@ -347,11 +366,19 @@ def main():
                              "'cpu': extra CPU run at the largest size per benchmark.")
     parser.add_argument('--fresh', action='store_true',
                         help='Ignore an existing CSV in --out-dir instead of resuming from it.')
+    parser.add_argument('--merge-from', type=str, nargs='+', default=None,
+                        help='Instead of running: combine the four_method_tables.csv of these '
+                             'job directories into --out-dir (failure rows kept).')
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir) if args.out_dir else RESULTS_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / 'four_method_tables.csv'
+
+    if args.merge_from:
+        merged = merge_csvs([Path(d) / 'four_method_tables.csv' for d in args.merge_from], out_path)
+        print(f"Merged {len(merged)} rows from {len(args.merge_from)} job directories into {out_path}")
+        return
     save_provenance(out_dir)
 
     problems = PROBLEMS

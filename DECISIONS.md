@@ -17,6 +17,30 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- SLURM job scripts for Component B (`scripts/hprc/`)
+
+Seven jobs chained by `submit_all.sh`: a pre-flight (test suite + smoke
+run of everything on the cluster's own library versions; everything else
+waits for it to pass), the Section 3.3 CPU runs, the Kovasznay GPU runs
+plus check B3, the four-method sweep as two arrays of four (GPU pass per
+benchmark; CPU pass at the largest sizes on a CPU node rather than idling
+a GPU), Sections 3.6/3.7, and a finalize job (merge the four-method CSVs,
+check B1, Section 3.5 figures). Every job: one task, `--cpus-per-task`
+cores and exactly that many threads (24 for timed CPU work = the paper's
+count), A100s for float64 GPU work (T4 only for the pre-flight),
+resumable after a walltime kill. `--exclusive` is left commented out in
+the timed CPU jobs (Section 2's "nothing else runs" vs. being charged for
+a whole node) -- the user's call; `scripts/hprc/README.md` explains it.
+
+Supporting changes: `four_method_tables.py --merge-from` combines the
+per-job CSVs (a run appearing in two inputs is an error; a job directory
+without a CSV is reported and skipped); `run_beltrami_pinned.py
+--out-dir`; the upload bundle now writes text files with LF endings (a
+Windows checkout has CRLF, which bash on the cluster rejects -- 360 of the
+tracked files had it) and marks `.sh`/`.slurm` executable.
+
+---
+
 ## 2026-09-23 -- Residual-band figures from the Section 3.3 logs
 
 Section 3.5 asks for the figures "from the LiL-Q logs of 3.3";

@@ -241,3 +241,20 @@ def test_run_problem_selects_sizes_methods_and_passes(monkeypatch):
     # Only the CPU pass, which exists only at the largest size, and only LiL-N.
     assert seen == [('LiL-N', 'cpu', None)]
     assert logger.rows[0]['P'] == 225
+
+
+def test_merge_combines_job_csvs_and_rejects_overlap(tmp_path):
+    config, opt = _cfg_opt()
+    for job, seeds in (('a', [0, 1]), ('b', [2])):
+        logger = FourMethodLogger()
+        fmt._run_and_log(logger, 'bratu', 9, config, opt, 'NiL-N', _fake_runner_factory([], fail_seeds=(1,)),
+                         seeds=seeds, devices=[torch.device('cpu')], verbose=False,
+                         csv_path=tmp_path / job / 'four_method_tables.csv')
+
+    merged = fmt.merge_csvs([tmp_path / 'a' / 'four_method_tables.csv', tmp_path / 'b' / 'four_method_tables.csv'],
+                            tmp_path / 'four_method_tables.csv')
+    assert sorted(str(r['seed']) for r in merged.rows) == ['0', '1', '2']
+    assert sum(r['stopping_reason'] == 'failure' for r in merged.rows) == 1  # failures kept
+
+    with pytest.raises(ValueError, match="more than one input"):
+        fmt.merge_csvs([tmp_path / 'a' / 'four_method_tables.csv'] * 2, tmp_path / 'dup.csv')

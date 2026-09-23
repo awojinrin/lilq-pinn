@@ -57,19 +57,32 @@ def provenance_record() -> dict:
     }
 
 
+def _add_bytes(tar, arcname, data, mode=0o644):
+    info = tarfile.TarInfo(arcname)
+    info.size = len(data)
+    info.mode = mode
+    info.mtime = int(datetime.datetime.now().timestamp())
+    tar.addfile(info, io.BytesIO(data))
+
+
 def build_bundle(out_path: Path) -> dict:
+    """Text files are written with LF line endings: a Windows checkout
+    (core.autocrlf=true) has CRLF, and bash on the cluster fails on the
+    carriage returns in job scripts. Binary files (any NUL byte) are copied
+    unchanged."""
     record = provenance_record()
     files = tracked_files()
     with tarfile.open(out_path, "w:gz") as tar:
         for rel in files:
             src = REPO_ROOT / rel
-            if src.is_file():
-                tar.add(src, arcname=f"{TOP_LEVEL}/{rel}")
-        payload = json.dumps(record, indent=2).encode()
-        info = tarfile.TarInfo(f"{TOP_LEVEL}/PROVENANCE.json")
-        info.size = len(payload)
-        info.mtime = int(datetime.datetime.now().timestamp())
-        tar.addfile(info, io.BytesIO(payload))
+            if not src.is_file():
+                continue
+            data = src.read_bytes()
+            if b"\0" not in data:
+                data = data.replace(b"\r\n", b"\n")
+            executable = rel.endswith((".sh", ".slurm"))
+            _add_bytes(tar, f"{TOP_LEVEL}/{rel}", data, 0o755 if executable else 0o644)
+        _add_bytes(tar, f"{TOP_LEVEL}/PROVENANCE.json", json.dumps(record, indent=2).encode())
     return {"record": record, "n_files": len(files)}
 
 

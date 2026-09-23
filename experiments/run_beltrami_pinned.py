@@ -47,10 +47,11 @@ N_PRESSURE_PIN_LEVELS = N_P
 # Paper's published Table 11 pressure error at t=1 (Section 3.7 baseline).
 PAPER_T1_PRESSURE_ERROR_PCT = 0.752
 
-OUTPUT_DIR = Path('results/beltrami_pinned')
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / 'results' / 'beltrami_pinned'
 
 
-def run_beltrami_pinned(verbose=True):
+def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR):
+    out_dir = Path(out_dir)
     set_seed(42)
     config = BeltramiConfig(
         N_vel=N_VEL, N_p=N_P, basis_type=DEFAULT_BASIS,
@@ -58,7 +59,7 @@ def run_beltrami_pinned(verbose=True):
         **COLLOC_N6,
     )
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
     logger = IterationLogger()
 
     if verbose:
@@ -72,12 +73,12 @@ def run_beltrami_pinned(verbose=True):
     result = solve_beltrami(
         config, verbose=verbose,
         iteration_logger=logger,
-        run_json_path=OUTPUT_DIR / 'run.json',
+        run_json_path=out_dir / 'run.json',
     )
     wall_clock_s = time.time() - t0
 
-    logger.to_csv(OUTPUT_DIR / 'iterations.csv')
-    save_provenance(OUTPUT_DIR)
+    logger.to_csv(out_dir / 'iterations.csv')
+    save_provenance(out_dir)
 
     last_row = last_solve_row(logger.rows)
     P_total = result['n_params']
@@ -111,7 +112,7 @@ def run_beltrami_pinned(verbose=True):
         'paper_t1_pressure_error_pct': PAPER_T1_PRESSURE_ERROR_PCT,
         'improved_over_paper_baseline': bool(improved),
     }
-    with open(OUTPUT_DIR / 'report.json', 'w') as f:
+    with open(out_dir / 'report.json', 'w') as f:
         json.dump(report, f, indent=2)
 
     if verbose:
@@ -125,10 +126,15 @@ def run_beltrami_pinned(verbose=True):
         print(f"\n  t=1 pressure error: {t1_p_pct:.4f}% "
               f"(paper baseline: {PAPER_T1_PRESSURE_ERROR_PCT:.3f}%, "
               f"improved: {improved})")
-        print(f"\n  Report written to {OUTPUT_DIR / 'report.json'}")
+        print(f"\n  Report written to {out_dir / 'report.json'}")
 
     return report
 
 
 if __name__ == '__main__':
-    run_beltrami_pinned()
+    import argparse
+    parser = argparse.ArgumentParser(description="Section 3.7: Beltrami with the pressure "
+                                                 "pinned at every temporal level")
+    parser.add_argument('--out-dir', type=str, default=str(OUTPUT_DIR),
+                        help='Output directory (default: results/beltrami_pinned/).')
+    run_beltrami_pinned(out_dir=parser.parse_args().out_dir)
