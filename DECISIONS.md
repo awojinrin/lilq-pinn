@@ -17,6 +17,33 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Component B driver (`experiments/component_b.py`)
+
+The Section 3.3 logged reruns had instrumentation but no script that ran
+them. `experiments/component_b.py` is that script: 62 runs --
+Bratu (3 sizes), Burgers (5), BL viscous and gravity (4 each), each in a
+`paper` pass (the paper's stopping rule) and a `kmax` pass (stopping rule
+disabled: a zero loss target / zero coefficient-change tolerance can't be
+met, so the loop runs to K_max); Kovasznay (5 sizes x CPU/GPU x both
+passes); elasticity (5 sizes), Beltrami ($P=7{,}984$), Darcy (S1, S2, S3,
+SPE10), `paper` pass only, as Section 3.3 asks. Each writes
+`B_instrumentation/<benchmark>_<config>_<device>_<pass>/` with `run.json`,
+`iterations.csv`, `summary.json` (the problem's own final metrics plus
+the log's), and that run's `hardware.json`/`environment.txt`;
+`runs_index.csv` summarizes them. Settings come from each problem's
+`experiments/run_*.py` constants (for BL gravity, the `cos_fourier` basis
+and retargeted losses -- a documented deviation, kept by decision).
+
+Same operational behavior as the four-method sweep: a folder with
+`summary.json` is complete and skipped on rerun (resume after a walltime
+kill); an exception writes `error.txt` with the traceback and the run is
+retried next time; one untimed warm-up per device; runs are sequential;
+`--benchmarks/--passes/--devices/--configs` split the plan into jobs,
+`--list` prints it, `--smoke` runs the smallest size of everything in
+seconds.
+
+---
+
 ## 2026-09-23 -- Per-iterate test errors in `iterations.csv`; Beltrami's final-error memory spike removed
 
 Section 3.1 item 10 (test errors of every iterate, "for the log only,
