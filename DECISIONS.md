@@ -17,6 +17,77 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Four-method tables (Section 3.4), new lilq/four_method_log.py + experiments/four_method_tables.py
+
+**Phase 1, sub-batch 10.** Section 3.4's rerun of NiL-N, NiL-Q, and LiL-N
+(LiL-Q already has its own full Section 3.1 log from sub-batches 3-6/9)
+across Bratu/Burgers/BL-viscous/BL-gravity, one CSV row per (benchmark,
+P, method, seed, device), logging iterations, function evaluations,
+wall-clock time, final loss, whether the target was reached, the
+stopping reason, and the loss history every 10 iterations.
+
+New `lilq/four_method_log.py`: `FOUR_METHOD_CSV_COLUMNS` schema +
+`FourMethodLogger` (same reject-unknown-column, fill-omitted-with-None
+contract as `IterationLogger`); `classify_stopping_reason(converged,
+iterations_used, iterations_cap, line_searches_used, line_searches_cap)`
+-- checks `iteration_cap` before `line_search_cap` on a tie, a genuine
+judgment call (the summary dict a completed run returns doesn't preserve
+which cap was hit *first* in wall-clock time, only both final counts),
+made in the direction this codebase's own prior empirical finding
+already points: DECISIONS.md's existing MAX_LINE_SEARCHES entries note
+the line-search cap has never actually bound for Bratu in stored
+results (iteration cap always binds first); `subsample_loss_history`
+takes every 10th recorded row of a `MetricsTracker.to_dict()` (index
+stride, not a re-filter -- `record()` is called once per optimizer step
+with a contiguous per-call iteration counter, so stride 10 *is* "every
+10 iterations", not an approximation) and always keeps the final row so
+the last loss is never missing just because it fell off-stride.
+
+New `experiments/four_method_tables.py`. Reuses every P/target-loss/
+iteration-and-line-search-budget value directly from each problem's own
+`experiments/run_*.py`, same DRY principle as `residual_band_figures.py`
+(sub-batch 7) -- including BL's `max_line_searches` staying
+**unset**, letting `BLOptConfig` derive it, matching the existing
+`test_bl_experiment_runner_config.py` regression guard (an explicit
+override previously truncated LiL-N before convergence). NiL-Q's
+`iterations_cap` is `opt.max_quasi_iters_nn` (its outer-loop budget),
+not `opt.max_iterations`/`total_iterations` -- NiL-Q has no single named
+cap on its inner L-BFGS loop, only the outer quasi-iteration count and
+the global line-search count -- confirmed directly against
+`lilq.solvers.solve_nil_q`'s actual loop structure, not assumed from
+NiL-N's shape; verified with a real run that `iterations_cap` and
+`total_iterations` are genuinely different numbers
+(`test_run_and_log_nil_q_uses_quasi_iter_cap_not_total_iterations`).
+Seeds 0/1/2 for NiL-N/NiL-Q; LiL-N runs once (`seed` logged as empty),
+per the spec's own exemption (same reasoning as `lilq.multiseed`).
+Every benchmark's *largest* P also gets an additional CPU run alongside
+the GPU one (this machine has a real CUDA device, confirmed directly,
+not assumed) -- smaller sizes run on GPU only, matching "as in the
+paper" plus the one-CPU-comparison-size requirement.
+
+`--quick` (1 size, 1 seed, tiny iteration/line-search caps, real
+tolerance `R_tol` left untouched so the run genuinely exercises "hit a
+cap" rather than trivially converging) verified end-to-end for real
+across all four problems -- 24 rows, ~9s total, CPU vs. GPU losses
+matching to ~10 significant figures (real float non-determinism between
+devices, not a bug, consistent with the spec's own GPU/CPU-equivalence
+framing elsewhere being "six significant figures", not exact).
+
+**The full (non-`--quick`) sweep was not run in this batch.** Unlike
+`residual_band_figures.py`'s LiL-Q reruns (direct linear solves, cheap
+even at the paper's largest sizes), this is real L-BFGS training with
+iteration caps up to 10,000-20,000, at up to 3 seeds, across ~15
+(benchmark, P) combinations, plus a duplicate CPU pass for the largest
+size per benchmark -- a substantially larger compute commitment,
+closer in kind to Component A's baseline search (which the spec itself
+says takes "About 19 GPU-hours per family" and is explicitly not
+something to run without deliberate intent). Flagged to the user rather
+than launched automatically.
+
+185/185 tests passing.
+
+---
+
 ## 2026-09-22 -- run.json retrofitted onto Bratu/Burgers/BL/Kovasznay
 
 **Phase 1, sub-batch 9.** Sub-batch 6 built `lilq/run_metadata.py` and
