@@ -20,6 +20,7 @@ quasilinearization iterations needed).
 """
 
 import numpy as np
+import os
 import scipy.linalg
 import time
 import math
@@ -27,6 +28,10 @@ from dataclasses import dataclass
 from typing import Tuple, Dict
 
 from lilq.basis import create_basis_2d, TensorProductBasis2D
+from lilq.instrumentation import EPS_MACH
+from lilq.iteration_log import LilQDiagnosticsTracker
+from lilq.provenance import capture_blas_thread_env
+from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
 
 pi = np.pi
 
@@ -149,8 +154,22 @@ def _generate_collocation(config: ElasticityConfig, physics: ElasticityPhysics, 
 # Solver (single QR solve — linear PDE)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def solve_elasticity(config: ElasticityConfig, verbose=True) -> Dict:
-    """Solve linear elasticity via a single LiL-Q QR solve."""
+def solve_elasticity(config: ElasticityConfig, verbose=True,
+                     iteration_logger=None, run_json_path=None) -> Dict:
+    """Solve linear elasticity via a single LiL-Q QR solve.
+
+    ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
+        When given, the Section 3.1 ``iterations.csv`` rows for this solve
+        are recorded -- the same layout as Darcy's (the other linear
+        problem): ``k=0`` for the single solve, assembled at the zero
+        vector, and the terminal ``k=1`` with the residual at the
+        solution. The PDE rows (both momentum equations) share one weight,
+        so the interior norms are populated.
+    ``run_json_path`` : str or Path, optional
+        Writes the Section 3.1 ``run.json``; requires ``iteration_logger``.
+    """
+    if run_json_path is not None and iteration_logger is None:
+        raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
     physics = ElasticityPhysics(config)
     lam, mu = physics.lam, physics.mu
     C11, C12 = physics.C11, physics.C12
@@ -172,6 +191,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True) -> Dict:
         print("=" * 70)
 
     t_start = time.time()
+    t0 = time.perf_counter()
     pts = _generate_collocation(config, physics, P_total)
     x_pde, y_pde = pts['x_pde'], pts['y_pde']
     n_pde = pts['n_pde']
@@ -249,10 +269,28 @@ def solve_elasticity(config: ElasticityConfig, verbose=True) -> Dict:
 
     A_sys = np.vstack(A_rows)
     b_sys = np.concatenate(b_rows)
+    t_assemble_s = time.perf_counter() - t0
 
     t_solve = time.time()
-    theta, _, rank, _ = scipy.linalg.lstsq(A_sys, b_sys, lapack_driver='gelsy')
+    t0 = time.perf_counter()
+    theta, _, rank, _ = scipy.linalg.lstsq(A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy')
+    t_solve_s = time.perf_counter() - t0
     solve_time = time.time() - t_solve
+
+    tracker = None
+    if iteration_logger is not None:
+        residual_vector_fn = lambda beta: A_sys @ beta - b_sys  # noqa: E731 -- linear: this *is* the operator
+        tracker = LilQDiagnosticsTracker(
+            n_interior_rows=2 * n_pde, interior_weight=float(w_pde),
+        )
+        iteration_logger.record(**tracker.step(
+            k=0, A_stacked=A_sys, b_stacked=b_sys,
+            beta_prev=np.zeros(P_total), beta_new=theta,
+            total_loss=float(np.sum(residual_vector_fn(theta) ** 2)), rank_gelsy=rank,
+            t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
+            is_final_iterate=True, compute_residual_vector_fn=residual_vector_fn,
+        ))
+        iteration_logger.record(**tracker.finish(k=1))
 
     theta_u = theta[:Pu]
     theta_v = theta[Pu:]
@@ -304,6 +342,37 @@ def solve_elasticity(config: ElasticityConfig, verbose=True) -> Dict:
         print(f"  Displacement errors (rel L2): u_x={rel_l2_ux:.6e}, u_y={rel_l2_uy:.6e}")
         print(f"  Stress errors (rel L2): sxx={rel_l2_sxx:.6e}, syy={rel_l2_syy:.6e}, sxy={rel_l2_sxy:.6e}")
         print("=" * 70)
+
+    if run_json_path is not None:
+        n_bc_edge = pts['n_bc_edge']
+        thread_env = capture_blas_thread_env()
+        metadata = build_run_metadata(
+            N_total=int(A_sys.shape[0]),
+            N_composition={'pde_x': n_pde, 'pde_y': n_pde, 'bc': n_bc_total},
+            P_total=int(P_total),
+            P_composition={'u_x': int(Pu), 'u_y': int(Pv)},
+            row_weights={'pde': float(w_pde), 'bc': float(np.sqrt(lb / n_bc_edge))},
+            collocation_construction={
+                'method': 'equispaced tensor grid', 'n_pde': n_pde, 'n_bc_per_edge': n_bc_edge,
+                'k_ratio': config.k_ratio, 'collocation_ratios': list(config.collocation_ratios),
+                'bc_mode': config.bc_mode,
+            },
+            basis_description={
+                'u_x': {'family': config.basis_u, 'modes_x': config.N_x, 'modes_y': config.N_y},
+                'u_y': {'family': config.basis_v, 'modes_x': config.N_x, 'modes_y': config.N_y},
+            },
+            initial_coefficients='n/a (single direct linear solve, no iterative initial guess)',
+            solver_driver='gelsy', rcond=EPS_MACH,
+            stopping_rule={'type': 'single_direct_solve'},
+            K_max=1,
+            stopping_reason='direct_solve',
+            first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            b2_check=tracker.b2_check,
+            kappa_qr_raw_ratio=tracker.kappa_qr_raw_ratio,
+            device='cpu',
+            thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
+        )
+        write_run_json(run_json_path, metadata)
 
     return {
         'basis_u': basis_u, 'basis_v': basis_v,

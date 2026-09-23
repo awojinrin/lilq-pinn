@@ -17,6 +17,20 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Elasticity gets Section 3.1 logging
+
+Section 3.3 asks for logged elasticity runs at all five sizes; elasticity
+was the one problem with no `iteration_logger`/`run_json_path`.
+`solve_elasticity` now takes both and logs the same two-row layout as
+Darcy (the other linear problem): `k=0` for the single solve and the
+terminal `k=1`. Its `lstsq` call now passes `cond=EPS_MACH` explicitly
+like every other solver -- scipy's own default for `gelsy`, confirmed
+bit-identical against the committed solver in both BC modes (a test does
+this against git history; it skips on the cluster copy, which has no
+`.git`, as do the two provenance tests that need git).
+
+---
+
 ## 2026-09-23 -- `iterations.csv` follows the spec's k numbering; check B2 recorded in real runs
 
 **Numbering.** Rows were labeled by solve count (`k = 1..K`), which put

@@ -5,8 +5,19 @@ hardware.json / environment.txt requirement (Codebase_v3_Proposal.md S2.5).
 
 import json
 import subprocess
+from pathlib import Path
+
+import pytest
 
 from lilq import provenance
+
+
+# The cluster upload bundle ships without .git (scripts/make_hprc_bundle.py):
+# tests that read git history skip there instead of failing.
+requires_git_checkout = pytest.mark.skipif(
+    not (Path(__file__).resolve().parent.parent / ".git").exists(),
+    reason="needs a git checkout",
+)
 
 
 def test_run_returns_none_for_missing_executable():
@@ -19,6 +30,7 @@ def test_run_returns_stdout_for_a_real_command():
     assert out == "hello"
 
 
+@requires_git_checkout
 def test_capture_git_info_reports_real_repo_state():
     info = provenance.capture_git_info()
     assert info["available"] is True
@@ -49,6 +61,7 @@ def test_capture_git_info_falls_back_to_bundle_provenance_file(tmp_path):
     assert info["branch"] == "v3-dev"
 
 
+@requires_git_checkout
 def test_real_bundle_extracts_with_correct_provenance(tmp_path):
     """End-to-end: build the actual upload bundle, extract it (no .git),
     and confirm provenance capture inside it reports this repo's HEAD."""
