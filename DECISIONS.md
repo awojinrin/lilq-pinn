@@ -55,9 +55,21 @@ as they are. What the runs will show, and why:
    the IC/BC terms the training loss weights. Do not use this column for
    BL-gravity comparisons until it is understood.
 
-Full comparison (LiL-N and LiL-Q, both bases, both target sets, every
-size) was run 2026-09-23; the numbers are in the conversation record and
-reproduce in ~30 minutes.
+Full comparison, 2026-09-23 (this machine; iterations / seconds / final
+loss; * = target not reached; budgets from `experiments/run_bl.py`):
+
+| Targets | Method, basis | P=64 | P=256 | P=576 | P=1024 |
+|---|---|---|---|---|---|
+| paper | LiL-N `fourier` | 94 / 3.5 / 0.247 | 5,748 / 121 / 0.150 | 15,000* / 338 / 0.101 | 20,000* / 477 / 0.061 |
+| paper | LiL-N `cos_fourier` | 77 / 1.2 / 0.249 | 125 / 2.2 / 0.150 | 401 / 9.2 / 0.075 | 869 / 21 / 0.035 |
+| paper | LiL-Q `fourier` | 6 / 0.0 / 0.219 | 7 / 0.4 / 0.139 | 10 / 2.3 / 0.073 | 8 / 8.3 / 0.035 |
+| paper | LiL-Q `cos_fourier` | 20* / 0.1 / 0.951 | 5 / 0.3 / 0.125 | 4 / 0.9 / 0.074 | 5 / 5.0 / 0.010 |
+| current | LiL-N `fourier` | 96 / 1.6 / 0.234 | 10,000* / 234 / 0.146 | 15,000* / 361 / 0.101 | 20,000* / 467 / 0.061 |
+| current | LiL-N `cos_fourier` | 81 / 1.2 / 0.240 | 859 / 19 / 0.075 | 1,223 / 29 / 0.045 | 20,000* / 448 / 0.013 |
+| current | LiL-Q `fourier` | 6 / 0.0 / 0.219 | 20* / 0.9 / 0.123 | 20* / 4.9 / 0.072 | 20* / 19 / 0.034 |
+| current | LiL-Q `cos_fourier` | 20* / 0.1 / 0.951 | 12 / 0.6 / 0.074 | 5 / 1.2 / 0.043 | 5 / 5.1 / 0.010 |
+
+Paper targets 0.25 / 0.15 / 0.075 / 0.035; current 0.24 / 0.075 / 0.045 / 0.011.
 
 ---
 
