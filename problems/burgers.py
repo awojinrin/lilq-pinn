@@ -289,6 +289,44 @@ def _make_lil_nonlinear_loss_fn(A_u, A_ux, A_ut, A_uxx,
     return compute_loss
 
 
+def _make_lil_residual_vector_fn(A_u, A_ux, A_ut, A_uxx,
+                                  A_ic, A_bc_left, A_bc_right,
+                                  ic_target, nu, lp, li, lb,
+                                  n_pde, n_ic, n_bc_l, n_bc_r):
+    """Weighted nonlinear residual **vector** for Section 3.1's phase
+    indicator (Codebase_v3_Proposal.md S2.1) -- the vector form of what
+    :func:`_make_lil_nonlinear_loss_fn` reduces to scalars. Stacked
+    PDE-then-IC-then-BC-left-then-BC-right and weighted identically to
+    :func:`_make_lil_q_system_fn`'s ``A_stacked``/``b_stacked``, by
+    construction: ``norm(vector)**2 == total`` from the loss function
+    above, exactly (same weighted sum of squares, one pre-reduction and
+    one post).
+
+    Returns ``(beta) -> weighted_residual_vector``.
+    """
+    w_pde = np.sqrt(lp / n_pde)
+    w_ic = np.sqrt(li / n_ic)
+    w_bl = np.sqrt(lb / n_bc_l)
+    w_br = np.sqrt(lb / n_bc_r)
+
+    def compute_residual_vector(beta):
+        u = A_u @ beta
+        u_x = A_ux @ beta
+        u_t = A_ut @ beta
+        u_xx = A_uxx @ beta
+
+        pde_res = u_t + u * u_x - nu * u_xx
+        ic_res = A_ic @ beta - ic_target
+        bl_res = A_bc_left @ beta
+        br_res = A_bc_right @ beta
+
+        return np.concatenate([
+            w_pde * pde_res, w_ic * ic_res, w_bl * bl_res, w_br * br_res,
+        ])
+
+    return compute_residual_vector
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Evaluation
 # ─────────────────────────────────────────────────────────────────────────────
@@ -475,8 +513,18 @@ def run_lil_n(config: BurgersConfig, opt: BurgersOptConfig,
 
 
 def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
-              verbose=True, diagnostics_callback=None):
-    """Run LiL-Q for Burgers."""
+              verbose=True, diagnostics_callback=None,
+              iteration_logger=None):
+    """Run LiL-Q for Burgers.
+
+    ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
+        When given, a full Section 3.1 ``iterations.csv`` row is recorded
+        every outer iteration (see ``lilq.solvers.solve_lil_q``). Burgers
+        supplies the interior-row unweighting (``n_interior_rows=n_pde``,
+        ``interior_weight=w_pde``) and the residual-vector function needed
+        for ``chi``/``stall_flag`` automatically. Omitted (``None``, the
+        default), behavior is unchanged from before this parameter existed.
+    """
     set_seed(config.seed)
     physics = BurgersPhysics(config)
 
@@ -526,11 +574,27 @@ def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
         opt.lambda_pde, opt.lambda_ic, opt.lambda_bc,
     )
 
+    solve_kwargs = {}
+    if iteration_logger is not None:
+        residual_vector_fn = _make_lil_residual_vector_fn(
+            A_u, A_ux, A_ut, A_uxx, A_ic, A_bc_left, A_bc_right,
+            ic_target, config.viscosity,
+            opt.lambda_pde, opt.lambda_ic, opt.lambda_bc,
+            n_pde, n_ic, n_bc_l, n_bc_r,
+        )
+        solve_kwargs.update(
+            iteration_logger=iteration_logger,
+            compute_residual_vector_fn=residual_vector_fn,
+            n_interior_rows=n_pde,
+            interior_weight=np.sqrt(opt.lambda_pde / n_pde),
+        )
+
     coefficients, metrics, summary = solve_lil_q(
         system_fn, loss_fn, init_coeffs,
         max_quasi_iters=opt.max_quasi_iters_lil,
         R_tol=opt.R_tol, verbose=verbose,
         diagnostics_callback=diagnostics_callback,
+        **solve_kwargs,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
     return basis, coefficients, metrics, summary

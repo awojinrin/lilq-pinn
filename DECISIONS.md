@@ -17,6 +17,64 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Burgers and Buckley-Leverett (viscous + gravity) wired to Section 3.1 instrumentation
+
+**Phase 1, sub-batch 4 of the iterations.csv work.** Rolled out the exact
+pattern sub-batch 3 proved on Bratu to the two other problems that share
+`lilq.solvers.solve_lil_q`:
+
+- `problems/burgers.py`: `run_lil_q` gained the same optional
+  `iteration_logger` parameter, plus a new `_make_lil_residual_vector_fn`
+  (vector form of `_make_lil_nonlinear_loss_fn`, stacked
+  PDE-then-IC-then-BC-left-then-BC-right, matching
+  `_make_lil_q_system_fn`'s exact weighting). `n_interior_rows=n_pde`,
+  `interior_weight=sqrt(lambda_pde/n_pde)` -- confirmed by direct
+  derivation that the weighted vector's squared norm equals `total_loss`
+  even though the BC block is itself split across two sub-blocks
+  (`bc_left`/`bc_right`) with independently-computed weights
+  (`w_bl=sqrt(lb/n_bc_l)`, `w_br=sqrt(lb/n_bc_r)`) rather than one shared
+  scalar -- summing their squared contributions still reduces to
+  `lb*(mean_left + mean_right)`, matching `compute_loss`'s `bc` term
+  exactly.
+- `problems/buckley_leverett.py`: same pattern, covering **both**
+  configurations (`BLConfig()` viscous and `BLConfig.with_gravity()`)
+  since they share one `run_lil_q` -- gravity vs. viscous is fully
+  internal to `physics.flux`/`flux_derivative`'s dispatch on `config.N_g`,
+  invisible to the instrumentation wiring. The residual-vector function
+  uses the same detached `physics.flux_derivative` the existing
+  `_make_lil_nonlinear_loss_fn` already used (a forward-only evaluation
+  for logging, not a gradient path) -- not the graph-preserving
+  `flux_derivative_differentiable` needed only for LiL-N's `.backward()`
+  (see the LiL-N gradient fix entry further down this log). BL's BC
+  targets are non-zero (`physics.bc_left`/`bc_right`, unlike Bratu's/
+  Burgers' homogeneous Dirichlet BCs), so the residual vector subtracts
+  them explicitly, matching `_make_lil_q_system_fn`'s `b_stacked`.
+
+Both are backward-compatible (bit-identical coefficients/summary with
+`iteration_logger=None`, the default) and both pass check B2
+(`test_check_b2_*` in the new `tests/test_burgers_instrumentation.py` /
+`tests/test_bl_instrumentation.py`, same independent-reconstruction-via-
+public-API method as Bratu's check) at `rel_err < 1e-10`. 108/108 tests
+passing.
+
+**Kovasznay deliberately excluded from this batch, not silently
+dropped.** Unlike Bratu/Burgers/BL, `problems/kovasznay.py`'s
+`solve_kovasznay` is a wholly self-contained quasilinearization loop --
+it does not call `lilq.solvers.solve_lil_q` at all, has no
+`_make_lil_q_system_fn`/`_make_lil_nonlinear_loss_fn`-style helpers to
+reuse, and already computes its own condition number and test errors
+(`rel_l2_u/v/p`) inline every iteration via a hand-rolled `history` dict
+rather than `IterationLogger`. Wiring it to the shared Section 3.1 schema
+means manually replicating the tracker-calling pattern inside that loop
+(three coupled fields stacked into one system, `eps_p_meanfree` needing a
+real decision for a pressure field pinned at one point rather than the
+scalar problems' single-field error columns) -- structurally different,
+larger work than the three pattern-repeats above. Flagging this now
+rather than assuming it belongs in "sub-batch 4" as originally scoped;
+proposed as its own follow-up sub-batch.
+
+---
+
 ## 2026-09-22 -- Bratu wired end-to-end to Section 3.1 instrumentation; check B2 passes
 
 **Phase 1, sub-batch 3 of the iterations.csv work ("proof of concept":
