@@ -99,3 +99,11 @@ def test_to_csv_empty_field_for_none_and_nan(tmp_path):
         rows = list(csv.DictReader(f))
     assert rows[0]["seed"] == ""
     assert rows[0]["final_loss"] == ""
+
+
+def test_row_key_matches_between_fresh_and_csv_rows():
+    from lilq.four_method_log import row_key
+    fresh = {"benchmark": "bratu", "P": 25, "method": "NiL-N", "seed": 0, "device": "cuda"}
+    from_csv = {"benchmark": "bratu", "P": "25", "method": "NiL-N", "seed": "0", "device": "cuda"}
+    assert row_key(fresh) == row_key(from_csv)
+    assert row_key({**fresh, "seed": None}) == row_key({**from_csv, "seed": ""})

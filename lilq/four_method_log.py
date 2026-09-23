@@ -21,16 +21,33 @@ based summary shape instead.
 
 import csv
 import json
+import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+# ``seed`` is the network-initialization seed (empty for deterministic
+# LiL-N); ``collocation_seed`` is the fixed collocation-set seed.
+# ``training_time_s`` is the optimizer loop only (the solver's own clock);
+# ``wall_total_s`` also covers setup and pretraining. ``error`` holds the
+# traceback of a ``failure`` row.
 FOUR_METHOD_CSV_COLUMNS = (
-    "benchmark", "P", "method", "seed", "device",
-    "total_iterations", "total_line_searches", "training_time_s",
+    "benchmark", "P", "method", "seed", "collocation_seed", "device",
+    "total_iterations", "total_line_searches", "training_time_s", "wall_total_s",
     "final_loss", "converged", "stopping_reason",
     "iterations_cap", "line_searches_cap",
-    "loss_history_every_10",
+    "loss_history_every_10", "error",
 )
+
+RowKey = Tuple[str, int, str, str, str]
+
+
+def row_key(row: Dict[str, Any]) -> RowKey:
+    """Identity of one run -- (benchmark, P, method, seed, device) -- used to
+    skip already-completed runs on resume. Normalized so a row read back
+    from CSV (all strings, ``""`` for no seed) matches a freshly built one."""
+    seed = row.get("seed")
+    return (str(row["benchmark"]), int(row["P"]), str(row["method"]),
+            "" if seed in (None, "") else str(int(seed)), str(row["device"]))
 
 
 def classify_stopping_reason(
@@ -120,13 +137,37 @@ class FourMethodLogger:
         return list(self._rows)
 
     def to_csv(self, path: Union[str, Path]) -> None:
+        """Written to a temporary file and moved into place, so a job
+        killed mid-write (walltime, preemption) leaves the previous
+        complete file rather than a truncated one."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w", newline="") as f:
+        tmp = path.with_name(path.name + ".tmp")
+        with open(tmp, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=FOUR_METHOD_CSV_COLUMNS)
             writer.writeheader()
             for row in self._rows:
                 writer.writerow(_stringify_row(row))
+        os.replace(tmp, path)
+
+    @classmethod
+    def from_csv(cls, path: Union[str, Path], drop_failures: bool = True) -> "FourMethodLogger":
+        """Reload a previously written CSV (values stay strings, except the
+        loss history, which is parsed back so a rewrite doesn't
+        double-encode it). ``drop_failures`` omits ``failure`` rows so a
+        resumed sweep reruns them."""
+        logger = cls()
+        with open(path, newline="") as f:
+            for row in csv.DictReader(f):
+                if drop_failures and row.get("stopping_reason") == "failure":
+                    continue
+                history = row.get("loss_history_every_10")
+                row["loss_history_every_10"] = json.loads(history) if history else None
+                logger._rows.append({col: row.get(col) for col in FOUR_METHOD_CSV_COLUMNS})
+        return logger
+
+    def completed_keys(self) -> set:
+        return {row_key(r) for r in self._rows}
 
 
 def _stringify_row(row: Dict[str, Any]) -> Dict[str, Any]:

@@ -17,6 +17,26 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Four-method sweep: failures logged, incremental writes, resume, warm-up
+
+`experiments/four_method_tables.py` had no exception handling (one
+failing run ended a multi-hour sweep, and Section 3.4's `failure`
+stopping reason could never be recorded) and wrote its CSV only at the
+end (a walltime kill lost every row). Now: each run is wrapped, and an
+exception becomes a `failure` row carrying the traceback (new `error`
+column; Section 9: "log it with the traceback"); the CSV is rewritten
+atomically after every row; rerunning with the same `--out-dir` resumes,
+skipping completed rows and retrying failures (`--fresh` to start over);
+one untimed warm-up per device precedes the timed runs (Section 2);
+`--P`/`--methods`/`--seeds`/`--passes` select a subset so the sweep can
+be split across concurrent jobs, each with its own `--out-dir`;
+`hardware.json`/`environment.txt` are written into the output folder.
+New columns: `collocation_seed` (always the config's 42; `seed` is the
+network-init seed) and `wall_total_s` (setup + pretraining + training;
+`training_time_s` remains the optimizer loop alone).
+
+---
+
 ## 2026-09-23 -- NiL multi-seed runs no longer change the collocation set
 
 `config.seed` set both the NiL network initialization (`set_seed`) and

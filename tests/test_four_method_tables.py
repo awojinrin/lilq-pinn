@@ -140,3 +140,104 @@ def test_csv_output_is_well_formed(tmp_path):
     history = json.loads(rows[0]["loss_history_every_10"])
     assert isinstance(history, list)
     assert all(len(pair) == 2 for pair in history)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Robustness: failures logged not fatal, incremental writes, resume
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _FakeMetrics:
+    def to_dict(self):
+        return {"iteration": [0, 1], "loss": [1.0, 0.5]}
+
+
+def _fake_runner_factory(calls, fail_seeds=()):
+    def runner(config, opt, device=None, verbose=True):
+        calls.append(config.init_seed)
+        if config.init_seed in fail_seeds:
+            raise RuntimeError("boom")
+        return "model", _FakeMetrics(), {
+            "total_iterations": 1, "total_line_searches": 2, "training_time": 0.1,
+            "final_loss": 0.5, "converged": True,
+        }
+    return runner
+
+
+def _cfg_opt():
+    from problems.bratu import BratuConfig, BratuOptConfig
+    return BratuConfig(N_x=3, N_y=3), BratuOptConfig()
+
+
+def test_failure_is_logged_with_traceback_and_sweep_continues(tmp_path):
+    config, opt = _cfg_opt()
+    calls = []
+    logger = FourMethodLogger()
+    csv_path = tmp_path / "fmt.csv"
+    fmt._run_and_log(logger, 'bratu', 9, config, opt, 'NiL-N', _fake_runner_factory(calls, fail_seeds=(0,)),
+                     seeds=[0, 1], devices=[torch.device('cpu')], verbose=False, csv_path=csv_path)
+
+    assert calls == [0, 1]
+    failed, ok = logger.rows
+    assert failed['stopping_reason'] == 'failure'
+    assert 'RuntimeError: boom' in failed['error']
+    assert ok['stopping_reason'] == 'target'
+    assert ok['collocation_seed'] == 42 and ok['seed'] == 1
+    with open(csv_path, newline="") as f:
+        assert len(list(csv.DictReader(f))) == 2
+
+
+def test_csv_written_after_every_row(tmp_path):
+    config, opt = _cfg_opt()
+    csv_path = tmp_path / "fmt.csv"
+    logger = FourMethodLogger()
+    seen_sizes = []
+
+    def runner(config, opt, device=None, verbose=True):
+        seen_sizes.append(len(list(csv.DictReader(open(csv_path)))) if csv_path.exists() else 0)
+        return _fake_runner_factory([])(config, opt, device, verbose)
+
+    fmt._run_and_log(logger, 'bratu', 9, config, opt, 'NiL-N', runner,
+                     seeds=[0, 1, 2], devices=[torch.device('cpu')], verbose=False, csv_path=csv_path)
+    assert seen_sizes == [0, 1, 2]  # each run sees every earlier row already on disk
+
+
+def test_resume_skips_completed_and_reruns_failures(tmp_path):
+    config, opt = _cfg_opt()
+    csv_path = tmp_path / "fmt.csv"
+    first = FourMethodLogger()
+    fmt._run_and_log(first, 'bratu', 9, config, opt, 'NiL-N', _fake_runner_factory([], fail_seeds=(1,)),
+                     seeds=[0, 1, 2], devices=[torch.device('cpu')], verbose=False, csv_path=csv_path)
+
+    resumed = FourMethodLogger.from_csv(csv_path)
+    assert len(resumed) == 2  # the failure is dropped so it gets rerun
+    calls = []
+    fmt._run_and_log(resumed, 'bratu', 9, config, opt, 'NiL-N', _fake_runner_factory(calls),
+                     seeds=[0, 1, 2], devices=[torch.device('cpu')], verbose=False,
+                     csv_path=csv_path, skip_keys=frozenset(resumed.completed_keys()))
+    assert calls == [1]
+    with open(csv_path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert sorted(r['seed'] for r in rows) == ['0', '1', '2']
+    assert all(r['stopping_reason'] == 'target' for r in rows)
+    assert json.loads(rows[0]['loss_history_every_10']) == [[0, 1.0], [1, 0.5]]  # not double-encoded
+
+
+def test_run_problem_selects_sizes_methods_and_passes(monkeypatch):
+    from problems.bratu import BratuConfig, BratuOptConfig
+    monkeypatch.setattr(fmt, 'DEVICE', torch.device('cuda'))
+    monkeypatch.setattr(fmt, 'warm_up', lambda device, verbose=True: None)
+    runs = lambda quick: [(P, BratuConfig(N_x=3, N_y=3), BratuOptConfig()) for P in (25, 100, 225)]
+    seen = []
+
+    def recorder(name):
+        def runner(config, opt, device=None, verbose=True):
+            seen.append((name, str(device), config.init_seed))
+            return _fake_runner_factory([])(config, opt, device, verbose)
+        return runner
+
+    logger = FourMethodLogger()
+    fmt.run_problem('bratu', runs, recorder('NiL-N'), recorder('NiL-Q'), recorder('LiL-N'), logger,
+                    seeds=(0,), verbose=False, P_values=[100, 225], methods=['LiL-N'], passes=['cpu'])
+    # Only the CPU pass, which exists only at the largest size, and only LiL-N.
+    assert seen == [('LiL-N', 'cpu', None)]
+    assert logger.rows[0]['P'] == 225
