@@ -17,6 +17,79 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Kovasznay wired to Section 3.1 instrumentation (own solver, manually driven)
+
+**Phase 1, sub-batch 5 of the iterations.csv work** -- the Kovasznay
+follow-up flagged as out-of-scope for sub-batch 4. Unlike Bratu/Burgers/
+BL, `problems/kovasznay.py`'s `solve_kovasznay` never calls
+`lilq.solvers.solve_lil_q`; it is a self-contained three-field
+(u, v, p) quasilinearization loop with its own hand-rolled `history`
+dict and its own `rel_delta`-based convergence check. Wiring it required
+manually driving a `LilQDiagnosticsTracker` inside that loop rather than
+just adding parameters to a thin `run_lil_q` wrapper.
+
+New pieces:
+
+- `_make_kovasznay_nonlinear_loss_fn` / `_make_kovasznay_residual_vector_fn`
+  (both new -- Kovasznay had no pre-existing loss/residual helpers to
+  extend): the scalar-MSE and weighted-vector forms of the same total
+  residual, generalized to Kovasznay's 12 row-blocks (x-momentum,
+  y-momentum, continuity, BC-u/BC-v for 4 edges, pressure pin) with the
+  same one-scalar-per-block weighting (`w_mom=sqrt(lambda_mom/n_pde)`,
+  `w_cont=sqrt(lambda_cont/n_pde)`, `w_bc=sqrt(lambda_bc/n_edge)` per
+  edge, `w_pin=sqrt(lambda_bc)` for the single pin row -- confirmed by
+  direct derivation that `norm(vector)**2 == total` exactly). Each
+  function independently re-derives the raw nonlinear residuals rather
+  than sharing code with the assembly loop or with each other, so check
+  B2 is a real cross-check.
+- `solve_kovasznay` gained the same optional `iteration_logger` parameter
+  (default `None`, `history` and all existing behavior unchanged when
+  omitted -- verified bit-identical against the pre-change implementation,
+  loaded from git HEAD and run side-by-side, not just asserted).
+- Split `t_assemble_s`/`t_solve_s` timing via `time.perf_counter()`
+  around the existing `A_sys`/`b_sys` build and `lstsq` call respectively
+  (additive -- the pre-existing `time.time()`-based combined `dt` and
+  `history['solve_time']` are untouched). Made the `lstsq` call's `cond`
+  explicit (`cond=EPS_MACH`, same as the `solve_lil_q` change earlier in
+  this log) to capture `rank_gelsy`, which the original code discarded
+  entirely (`...lstsq(...)[0]`) -- verified bit-identical before/after,
+  same LAPACK `gelsy` RCOND=-1 convention as before.
+
+**Interior-row unweighting is conditional, not universal.** Kovasznay's
+leading (PDE) rows are actually two sub-blocks weighted independently --
+momentum (`w_mom`, 2*n_pde rows) and continuity (`w_cont`, n_pde rows) --
+which only collapse to the tracker's required single leading scalar
+weight when `lambda_mom == lambda_cont` (true for `KovasznayConfig`'s
+defaults, and for every config touched so far, but not guaranteed in
+general). `solve_kovasznay` checks this explicitly and only passes
+`n_interior_rows`/`interior_weight` to the tracker when it holds; falls
+back to the tracker's existing documented NaN behavior otherwise --
+locked in by `test_interior_norms_nan_when_lambda_mom_and_cont_differ`
+in the new `tests/test_kovasznay_instrumentation.py`, not left as an
+unverified assumption.
+
+Check B2 verified against a real solve (`rel_err ~1e-16`, both via the
+automated test and manually against the actual returned coefficients).
+Manually inspected a real-scale `iterations.csv` (default config:
+Re=40, chebyshev N_x=N_y=15, P_total=675) -- 7 iterations to
+convergence, `stall_flag` correctly latching `True` once at the
+round-off floor, `num_rank_svd == num_rank_gelsy == P_total` throughout,
+`chi` decreasing then noisy at the floor -- consistent with the pattern
+already seen on Bratu.
+
+Not done here, out of scope: `eps_u`/`eps_v`/`eps_p`/`eps_p_meanfree`
+(per-iteration test error against the known Kovasznay exact solution)
+are left unpopulated, same as Bratu/Burgers/BL -- `solve_kovasznay`
+already computes final-iterate `rel_l2_u/v/p` once at the end, but
+wiring per-iteration error columns (and deciding what `eps_p_meanfree`
+should mean given the pressure pin, rather than a true mean-free
+projection) is a separate piece of work, not assumed as part of this
+batch.
+
+108/108 -> 112/112 tests passing.
+
+---
+
 ## 2026-09-22 -- Burgers and Buckley-Leverett (viscous + gravity) wired to Section 3.1 instrumentation
 
 **Phase 1, sub-batch 4 of the iterations.csv work.** Rolled out the exact

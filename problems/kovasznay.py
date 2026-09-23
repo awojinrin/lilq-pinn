@@ -32,6 +32,8 @@ from lilq.basis import (
     create_chebyshev_basis_2d, create_basis_2d,
 )
 from lilq.analysis import svd_analysis
+from lilq.instrumentation import EPS_MACH
+from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
 
 pi = np.pi
 
@@ -121,10 +123,138 @@ def _generate_collocation(config: KovasznayConfig, P_total):
 # LiL-Q Solver (Multi-field Quasilinearization)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def solve_kovasznay(config: KovasznayConfig, verbose=True) -> Dict:
+def _make_kovasznay_nonlinear_loss_fn(
+    Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
+    Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
+    Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
+    nu, Pu, Pv, Pp, lambda_mom, lambda_cont, lambda_bc,
+):
+    """Scalar total-loss evaluator for Kovasznay's Section 3.1
+    instrumentation -- the MSE-based analogue of
+    Bratu/Burgers/BL's ``_make_lil_nonlinear_loss_fn``, generalized to
+    Kovasznay's momentum/continuity/BC/pin block structure. Not used by
+    ``solve_kovasznay``'s own convergence check (``rel_delta`` on the
+    coefficients, unchanged) -- only feeds ``iterations.csv``'s
+    ``norm_R_h`` when ``iteration_logger`` is given.
+
+    Returns ``(theta) -> total_loss`` where ``theta`` is the concatenated
+    ``[theta_u; theta_v; theta_p]`` coefficient vector.
+    """
+    def compute_loss(theta):
+        theta_u = theta[:Pu]
+        theta_v = theta[Pu:Pu + Pv]
+        theta_p = theta[Pu + Pv:]
+
+        u = Phi_u @ theta_u
+        u_x = Phi_u_x @ theta_u
+        u_y = Phi_u_y @ theta_u
+        v = Phi_v @ theta_v
+        v_x = Phi_v_x @ theta_v
+        v_y = Phi_v_y @ theta_v
+        p_x = Phi_p_x @ theta_p
+        p_y = Phi_p_y @ theta_p
+        lap_u = (Phi_u_xx + Phi_u_yy) @ theta_u
+        lap_v = (Phi_v_xx + Phi_v_yy) @ theta_v
+
+        res_xmom = u * u_x + v * u_y + p_x - nu * lap_u
+        res_ymom = u * v_x + v * v_y + p_y - nu * lap_v
+        res_cont = u_x + v_y
+
+        bc_mse = 0.0
+        for edge in ('bot', 'top', 'left', 'right'):
+            blk = bc_blocks[edge]
+            bc_mse += float(np.mean((blk['Phi_u'] @ theta_u - blk['u_exact']) ** 2))
+            bc_mse += float(np.mean((blk['Phi_v'] @ theta_v - blk['v_exact']) ** 2))
+
+        pin_res = float((Phi_p_pin @ theta_p - p_pin_val)[0])
+
+        total = (
+            lambda_mom * (float(np.mean(res_xmom ** 2)) + float(np.mean(res_ymom ** 2)))
+            + lambda_cont * float(np.mean(res_cont ** 2))
+            + lambda_bc * bc_mse
+            + lambda_bc * pin_res ** 2
+        )
+        return total
+
+    return compute_loss
+
+
+def _make_kovasznay_residual_vector_fn(
+    Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
+    Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
+    Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
+    nu, Pu, Pv, Pp, n_pde, lambda_mom, lambda_cont, lambda_bc,
+):
+    """Weighted nonlinear residual **vector** for Section 3.1's phase
+    indicator -- the vector form of
+    :func:`_make_kovasznay_nonlinear_loss_fn`, stacked and weighted
+    identically to ``solve_kovasznay``'s own ``A_sys``/``b_sys`` assembly
+    (x-momentum, y-momentum, continuity, then BC-u/BC-v per edge, then
+    the pressure pin), by construction: ``norm(vector)**2 == total`` from
+    the loss function above -- independently re-derived here (not shared
+    code with the assembly loop) so check B2 is a real cross-check, not a
+    tautology.
+
+    Returns ``(theta) -> weighted_residual_vector``.
+    """
+    w_mom = np.sqrt(lambda_mom / n_pde)
+    w_cont = np.sqrt(lambda_cont / n_pde)
+    w_pin = np.sqrt(lambda_bc)
+
+    def compute_residual_vector(theta):
+        theta_u = theta[:Pu]
+        theta_v = theta[Pu:Pu + Pv]
+        theta_p = theta[Pu + Pv:]
+
+        u = Phi_u @ theta_u
+        u_x = Phi_u_x @ theta_u
+        u_y = Phi_u_y @ theta_u
+        v = Phi_v @ theta_v
+        v_x = Phi_v_x @ theta_v
+        v_y = Phi_v_y @ theta_v
+        p_x = Phi_p_x @ theta_p
+        p_y = Phi_p_y @ theta_p
+        lap_u = (Phi_u_xx + Phi_u_yy) @ theta_u
+        lap_v = (Phi_v_xx + Phi_v_yy) @ theta_v
+
+        res_xmom = u * u_x + v * u_y + p_x - nu * lap_u
+        res_ymom = u * v_x + v * v_y + p_y - nu * lap_v
+        res_cont = u_x + v_y
+
+        blocks = [w_mom * res_xmom, w_mom * res_ymom, w_cont * res_cont]
+        for edge in ('bot', 'top', 'left', 'right'):
+            blk = bc_blocks[edge]
+            ne = blk['n']
+            w_bc = np.sqrt(lambda_bc / ne)
+            blocks.append(w_bc * (blk['Phi_u'] @ theta_u - blk['u_exact']))
+            blocks.append(w_bc * (blk['Phi_v'] @ theta_v - blk['v_exact']))
+        blocks.append(w_pin * (Phi_p_pin @ theta_p - p_pin_val))
+
+        return np.concatenate(blocks)
+
+    return compute_residual_vector
+
+
+def solve_kovasznay(config: KovasznayConfig, verbose=True,
+                     iteration_logger=None) -> Dict:
     """Solve Kovasznay flow via multi-field LiL-Q.
 
     Returns a dict containing coefficients, errors, and iteration history.
+
+    ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
+        When given, a full Section 3.1 ``iterations.csv`` row is recorded
+        every outer iteration, mirroring ``lilq.solvers.solve_lil_q``'s
+        wiring -- Kovasznay has its own self-contained quasilinearization
+        loop (it does not call ``solve_lil_q``), so this manually drives
+        a ``LilQDiagnosticsTracker`` instead. Interior-row unweighting
+        (``norm_R_interior``/``norm_Rlin_interior``) is only populated
+        when ``config.lambda_mom == config.lambda_cont`` -- the momentum
+        block (2*n_pde rows) and continuity block (n_pde rows) are
+        weighted independently by ``lambda_mom``/``lambda_cont``, so they
+        only collapse to the tracker's required single leading scalar
+        weight when those two match (true by default). Omitted (``None``,
+        the default), behavior -- including ``history`` -- is unchanged
+        from before this parameter existed.
     """
     physics = KovasznayPhysics(config)
     nu = physics.nu
@@ -204,9 +334,37 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True) -> Dict:
         'solve_time': [], 'cond_number': [],
     }
 
+    tracker = None
+    loss_fn = None
+    residual_vector_fn = None
+    if iteration_logger is not None:
+        loss_fn = _make_kovasznay_nonlinear_loss_fn(
+            Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
+            Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
+            Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
+            nu, Pu, Pv, Pp, config.lambda_mom, config.lambda_cont, config.lambda_bc,
+        )
+        residual_vector_fn = _make_kovasznay_residual_vector_fn(
+            Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
+            Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
+            Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
+            nu, Pu, Pv, Pp, n_pde, config.lambda_mom, config.lambda_cont, config.lambda_bc,
+        )
+
+        tracker_kwargs = {}
+        if config.lambda_mom == config.lambda_cont:
+            tracker_kwargs["n_interior_rows"] = 3 * n_pde
+            tracker_kwargs["interior_weight"] = float(np.sqrt(config.lambda_mom / n_pde))
+
+        theta_init = np.concatenate([theta_u, theta_v, theta_p])
+        tracker = LilQDiagnosticsTracker(
+            initial_norm_R_h=float(np.sqrt(loss_fn(theta_init))), **tracker_kwargs,
+        )
+
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):
         t_iter = time.time()
+        t0 = time.perf_counter()
 
         uk = Phi_u @ theta_u
         uk_x = Phi_u_x @ theta_u
@@ -261,8 +419,13 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True) -> Dict:
 
         A_sys = np.vstack(A_rows)
         b_sys = np.concatenate(b_rows)
+        t_assemble_s = time.perf_counter() - t0
 
-        theta_new = scipy.linalg.lstsq(A_sys, b_sys, lapack_driver='gelsy')[0]
+        t0 = time.perf_counter()
+        theta_new, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
+            A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy',
+        )
+        t_solve_s = time.perf_counter() - t0
         dt = time.time() - t_iter
 
         theta_u_new = theta_new[:Pu]
@@ -302,6 +465,20 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True) -> Dict:
         if verbose:
             print(f"  Iter {k:3d}: d_theta={rel_delta:.3e}  "
                   f"PDE={pde_res:.3e}  cont={cont_res:.3e}  QR={dt:.4f}s")
+
+        if tracker is not None:
+            is_final_iterate = (rel_delta < config.tol) or (k == config.max_iter - 1)
+            total_loss = loss_fn(theta_new)
+            row = tracker.step(
+                k=k + 1,
+                A_stacked=A_sys, b_stacked=b_sys,
+                beta_prev=theta_old, beta_new=theta_new,
+                total_loss=total_loss, rank_gelsy=rank_gelsy,
+                t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
+                is_final_iterate=is_final_iterate,
+                compute_residual_vector_fn=residual_vector_fn,
+            )
+            iteration_logger.record(**row)
 
         theta_u, theta_v, theta_p = theta_u_new, theta_v_new, theta_p_new
 
