@@ -379,8 +379,12 @@ plausible-sounding result.
 
 **Real run** (`experiments/run_beltrami_pinned.py`, paper config
 $N_{\mathrm{vel}}=6$, $N_p=8$, `chebyshev` basis, $P_{\mathrm{total}}=7984$,
-matching the manuscript exactly): converged in 4 iterations, 531s
-wall-clock (spec estimated "about ten minutes" -- came in under that).
+matching the manuscript exactly): converged in 4 iterations. Wall-clock
+**363 s** (about 72 s per QR solve), from a later rerun with nothing else
+running on the machine; the 531 s first recorded here was invalid -- that
+run shared the CPU with the Section 3.6 study and the test suite. Every
+other number below is identical between the two runs. (The spec estimated
+"about ten minutes".)
 
 | | Result |
 |---|---|
