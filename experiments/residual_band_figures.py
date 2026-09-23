@@ -27,7 +27,9 @@ Usage::
 
 import sys
 import os
+import csv
 import argparse
+import shutil
 import dataclasses
 from pathlib import Path
 
@@ -38,6 +40,7 @@ if _proj not in sys.path:
 import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 from lilq.iteration_log import IterationLogger, solve_rows
 from problems.bratu import BratuConfig, BratuOptConfig, run_lil_q as run_bratu_lil_q
@@ -140,6 +143,49 @@ def run_and_log(label, runs_fn, run_fn, out_dir, quick=False, verbose=True):
     return loggers
 
 
+class _LoggedRows:
+    """A read-back ``iterations.csv`` with the ``.rows`` interface of
+    ``IterationLogger`` (all that ``plot_residual_bands`` uses)."""
+
+    def __init__(self, rows):
+        self.rows = rows
+
+    def __len__(self):
+        return len(self.rows)
+
+
+def _parse_cell(value):
+    if value == '':
+        return None
+    if value in ('True', 'False'):
+        return value == 'True'
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+
+def read_iterations_csv(path):
+    with open(path, newline='') as f:
+        rows = [{k: _parse_cell(v) for k, v in row.items()} for row in csv.DictReader(f)]
+    for row in rows:
+        row['k'] = int(row['k'])
+    return _LoggedRows(rows)
+
+
+def load_from_logs(label, logs_root, pass_='paper'):
+    """``{P: rows}`` for one problem from the Section 3.3 driver's run
+    folders (``<logs_root>/B_instrumentation/<label>_P<P>_cpu_<pass_>/``)."""
+    loggers = {}
+    prefix = f'{label}_P'
+    for run_dir in sorted((Path(logs_root) / 'B_instrumentation').glob(f'{prefix}*_cpu_{pass_}')):
+        P_label = run_dir.name[len(prefix):].split('_')[0]
+        if not P_label.isdigit() or not (run_dir / 'iterations.csv').exists():
+            continue  # e.g. 'bl_P64' must not pick up 'bl_gravity_P64'
+        loggers[int(P_label)] = read_iterations_csv(run_dir / 'iterations.csv')
+    return loggers
+
+
 def plot_residual_bands(label, title, loggers, out_dir):
     """One figure per problem: top row = ||R_lin^(k)||_h & ||R^(k+1)||_h
     (log scale) vs k, one panel per P; bottom row = chi_k, same columns.
@@ -172,6 +218,8 @@ def plot_residual_bands(label, title, loggers, out_dir):
         ax_bot = axes[1, col]
         ax_bot.semilogy(k, chi, 'd-', ms=3, lw=1.2, color='#6a3d9a')
         ax_bot.set_xlabel('$k$')
+        for ax in (ax_top, ax_bot):
+            ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         ax_bot.grid(True, alpha=0.3, which='both')
         if col == 0:
             ax_bot.set_ylabel(r'$\chi_k$')
@@ -192,6 +240,12 @@ def main():
                         help='Smoke-test sizes (first 2 P per problem) instead of the full paper sweep')
     parser.add_argument('--out-dir', type=str, default=None,
                         help='Output directory (default: results/residual_band_figures/)')
+    parser.add_argument('--from-logs', type=str, default=None,
+                        help="Plot the Section 3.3 logs under this package root (experiments/"
+                             "component_b.py's --out-root) instead of rerunning -- Section 3.5's "
+                             "'from the LiL-Q logs of 3.3'.")
+    parser.add_argument('--pass', dest='pass_', choices=('paper', 'kmax'), default='paper',
+                        help="Which Section 3.3 pass to plot with --from-logs.")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir) if args.out_dir else RESULTS_DIR
@@ -204,7 +258,16 @@ def main():
 
     for label, title, runs_fn, run_fn in PROBLEMS:
         print(f"\n{'=' * 60}\n{title}\n{'=' * 60}")
-        loggers = run_and_log(label, runs_fn, run_fn, out_dir, quick=args.quick)
+        if args.from_logs:
+            loggers = load_from_logs(label, args.from_logs, args.pass_)
+            if not loggers:
+                print(f"  no {args.pass_}-pass logs for {label} under {args.from_logs}; skipping")
+                continue
+            for P in loggers:  # the CSV behind each panel, next to the figure
+                run_dir = Path(args.from_logs) / 'B_instrumentation' / f'{label}_P{P}_cpu_{args.pass_}'
+                shutil.copyfile(run_dir / 'iterations.csv', out_dir / f"{label}_P{P}_iterations.csv")
+        else:
+            loggers = run_and_log(label, runs_fn, run_fn, out_dir, quick=args.quick)
         pdf_path = plot_residual_bands(label, title, loggers, out_dir)
         print(f"  Saved {pdf_path}")
 

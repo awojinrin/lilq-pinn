@@ -17,6 +17,19 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Residual-band figures from the Section 3.3 logs
+
+Section 3.5 asks for the figures "from the LiL-Q logs of 3.3";
+`residual_band_figures.py` reran the solves itself.
+`--from-logs <package root>` now reads the driver's `iterations.csv`
+files instead (`--pass paper|kmax`; the K_max pass shows the plateau)
+and copies each panel's CSV next to the figure. Panels plot
+$\|\mathbf{R}_{\mathrm{lin}}^{(k)}\|_h$ and $\|\mathbf{R}^{(k+1)}\|_h$ at
+integer $k$. Checked on the validation pass: every problem shows the band
+closing within a few iterations and $\chi_k$ falling to round-off.
+
+---
+
 ## 2026-09-23 -- Check B1 (`reproduction_check.csv`)
 
 `experiments/paper_values.py` transcribes every LiL-Q entry of the

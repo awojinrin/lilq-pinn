@@ -107,3 +107,23 @@ def test_end_to_end_quick_bratu_sweep(tmp_path):
 
     for P in (25, 100):
         assert (tmp_path / f"bratu_P{P}_iterations.csv").exists()
+
+
+def test_from_logs_reads_the_section_3_3_run_folders(tmp_path):
+    """--from-logs plots the Component B driver's logs; 'bl' must not pick
+    up 'bl_gravity' folders, and the read-back rows must plot like live ones."""
+    import experiments.component_b as cb
+    runs = cb.build_runs(benchmarks=('bl', 'bl_gravity'), passes=('paper',), devices=('cpu',), smoke=True)
+    for r in runs:
+        assert cb.execute_run(r, tmp_path / 'B_instrumentation', verbose=False) == 'ok'
+
+    loggers = rbf.load_from_logs('bl', tmp_path, 'paper')
+    assert list(loggers) == [64]
+    rows = loggers[64].rows
+    assert [r['k'] for r in rows] == list(range(len(rows)))
+    assert rows[-1]['norm_Rlin_h'] is None and isinstance(rows[0]['norm_Rlin_h'], float)
+    assert list(rbf.load_from_logs('bl_gravity', tmp_path, 'paper')) == [64]
+    assert rbf.load_from_logs('bl', tmp_path, 'kmax') == {}
+
+    pdf = rbf.plot_residual_bands('bl', 'BL', loggers, tmp_path)
+    assert pdf.exists() and pdf.stat().st_size > 0
