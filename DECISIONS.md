@@ -17,6 +17,27 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- NiL multi-seed runs no longer change the collocation set
+
+`config.seed` set both the NiL network initialization (`set_seed`) and
+the random collocation abscissae (`generate_collocation_points_2d(...,
+seed=config.seed)`). The multi-seed harness (`lilq.multiseed`) and
+`experiments/four_method_tables.py` replaced `config.seed` with 0/1/2,
+so NiL-N/NiL-Q seeds 0/1/2 were trained on three different collocation
+grids, none of them the seed-42 grid the spec keeps fixed and the LiL
+methods use (confirmed: Bratu's interior points move by up to 0.35
+between seeds 0 and 42). Their final losses were therefore measured on a
+different point set than the other methods' against the same target.
+
+Fix: `init_seed` on Bratu/Burgers/BL configs (default `None` = `seed`,
+so a default single run is unchanged); `run_nil_n`/`run_nil_q` seed from
+`lilq.utils.nn_init_seed(config)`; the multi-seed paths vary `init_seed`
+only. The LiL runners are untouched (deterministic; `seed` only fixes
+their collocation). Nothing in `results/` from before this change used
+multi-seed runs, so no stored result is affected.
+
+---
+
 ## 2026-09-23 -- Cluster readiness: thread count bounded by the allocation; provenance survives without `.git`
 
 **Thread count.** `lilq/blas_threads.py` defaulted to

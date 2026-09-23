@@ -185,7 +185,7 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
 
     for device in devices:
         for seed in actual_seeds:
-            run_config = dataclasses.replace(config, seed=seed) if seed is not None else config
+            run_config = dataclasses.replace(config, init_seed=seed) if seed is not None else config
 
             t0 = time.perf_counter()
             result = runner(run_config, opt, device=device, verbose=False)

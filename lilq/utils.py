@@ -58,6 +58,17 @@ def set_seed(seed: int = 42, deterministic_cuda: bool = False) -> None:
         torch.backends.cudnn.benchmark = False
 
 
+def nn_init_seed(config) -> int:
+    """Seed for a neural network's random initialization.
+
+    ``config.seed`` also fixes the collocation set, which the spec keeps at
+    42 for every method; ``config.init_seed`` varies only the network
+    initialization (the multi-seed runs, seeds 0/1/2). ``None`` falls back
+    to ``config.seed`` -- a single default run is unchanged.
+    """
+    return config.seed if config.init_seed is None else config.init_seed
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # GPU Memory Management
 # ─────────────────────────────────────────────────────────────────────────────

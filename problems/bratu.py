@@ -26,7 +26,7 @@ from lilq.metrics import MetricsTracker, QuasilinearMetrics
 from lilq.collocation import generate_collocation_points_2d, collocation_to_torch
 from lilq.pretraining import pretrain_nn, pretrain_lil, nn_pretrain_grid_side
 from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q
-from lilq.utils import set_seed, clear_gpu_memory, DEVICE
+from lilq.utils import set_seed, nn_init_seed, clear_gpu_memory, DEVICE
 from lilq.instrumentation import EPS_MACH
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
@@ -45,9 +45,10 @@ class BratuConfig:
     N_x: int = 16
     N_y: int = 16
     k_ratio: int = 10
-    seed: int = 42
+    seed: int = 42  # collocation set (and LiL methods)
     basis_type: str = 'fourier'
     sampling: str = 'random'
+    init_seed: Optional[int] = None  # NiL network init; None = seed (lilq.utils.nn_init_seed)
 
 
 @dataclass
@@ -335,7 +336,7 @@ def evaluate_lil_residual(basis, coefficients, config: BratuConfig, n_eval=200):
 def run_nil_n(config: BratuConfig, opt: BratuOptConfig,
               device=DEVICE, verbose=True):
     """Run NiL-N (Standard PINN) for Bratu."""
-    set_seed(config.seed)
+    set_seed(nn_init_seed(config))
     physics = BratuPhysics(config)
 
     n_hidden = 2
@@ -391,7 +392,7 @@ def run_nil_n(config: BratuConfig, opt: BratuOptConfig,
 def run_nil_q(config: BratuConfig, opt: BratuOptConfig,
               device=DEVICE, verbose=True):
     """Run NiL-Q (Quasilinear PINN) for Bratu."""
-    set_seed(config.seed)
+    set_seed(nn_init_seed(config))
     physics = BratuPhysics(config)
 
     n_hidden = 2

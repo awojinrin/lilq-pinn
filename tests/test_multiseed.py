@@ -5,9 +5,12 @@ single run" requirement.
 """
 
 import dataclasses
+from typing import Optional
 import statistics
 
 import pytest
+
+from lilq.utils import nn_init_seed
 
 from lilq.multiseed import aggregate_summaries, run_multiseed
 
@@ -16,14 +19,15 @@ from lilq.multiseed import aggregate_summaries, run_multiseed
 class _FakeConfig:
     seed: int = 42
     N: int = 10
+    init_seed: Optional[int] = None
 
 
 def test_run_multiseed_threads_seed_into_each_call():
     seen_seeds = []
 
     def fake_runner(config):
-        seen_seeds.append(config.seed)
-        return ({}, {}, {"final_loss": config.seed / 10.0, "converged": True})
+        seen_seeds.append(nn_init_seed(config))
+        return ({}, {}, {"final_loss": nn_init_seed(config) / 10.0, "converged": True})
 
     result = run_multiseed(fake_runner, _FakeConfig(seed=999), seeds=[0, 1, 2])
 
@@ -116,3 +120,17 @@ def test_aggregate_summaries_matches_stdlib_statistics_median_on_even_count():
     per_seed = {i: {"final_loss": float(i)} for i in range(4)}  # 0,1,2,3
     agg = aggregate_summaries(per_seed)
     assert agg["final_loss"]["median"] == statistics.median([0.0, 1.0, 2.0, 3.0])
+
+
+def test_run_multiseed_varies_only_the_init_seed_not_the_collocation_seed():
+    """config.seed also fixes the collocation set, which must stay at the
+    paper's 42 for every seed -- only the network init seed varies."""
+    seen = []
+
+    def fake_runner(config):
+        seen.append((config.seed, config.init_seed))
+        return ({"final_loss": 0.0, "converged": True},)
+
+    run_multiseed(fake_runner, _FakeConfig(seed=42), seeds=[0, 1, 2])
+
+    assert seen == [(42, 0), (42, 1), (42, 2)]

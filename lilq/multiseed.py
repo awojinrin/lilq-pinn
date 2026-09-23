@@ -53,7 +53,11 @@ def run_multiseed(
         return ``(model, metrics, summary)``, LiL methods return
         ``(basis, coefficients, metrics, summary)``).
     config : dataclass instance
-        Must have a ``seed`` field. A per-seed copy is made via
+        Must have an ``init_seed`` field (the network-initialization
+        seed, see ``lilq.utils.nn_init_seed``). Only ``init_seed`` is
+        varied; ``config.seed`` -- which also fixes the collocation set --
+        is left alone, so every seed trains on the same seed-42 points as
+        the LiL methods. A per-seed copy is made via
         ``dataclasses.replace`` -- the object passed in is never mutated,
         so the same ``config`` can be reused across multiple
         ``run_multiseed`` calls (e.g. one per method) safely.
@@ -80,7 +84,7 @@ def run_multiseed(
     raw_results: Dict[int, tuple] = {}
 
     for seed in seeds:
-        seed_config = dataclasses.replace(config, seed=seed)
+        seed_config = dataclasses.replace(config, init_seed=seed)
         result = runner(seed_config, *args, **kwargs)
         summary = result[-1]
         per_seed_summaries[seed] = summary
