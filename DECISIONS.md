@@ -17,6 +17,65 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- BL-gravity `GRAVITY_TARGET_LOSSES` retargeted to LiL-Q's actual floor
+
+**Follow-up to the `cos_fourier` basis entry immediately below, same
+investigation.** Prompted by a direct question: since LiL-Q was
+consistently reaching the shared target early and stopping (`R_tol` is a
+stopping rule, not a ceiling), could it actually do meaningfully better
+than what the target lets it show?
+
+**Measured LiL-Q's true floor** by rerunning with `R_tol` effectively
+disabled (`1e-12`) and `max_quasi_iters_lil=300` (vs. the default 50),
+confirming full plateau (loss identical to 6+ decimal places, `update_norm`
+at floating-point noise) before trusting the number -- N=8 needed the
+extended budget (still visibly descending at iteration 50, settled by
+~100); N=16/24/32 were already exactly flat by iteration 50, so the
+default 50-iteration budget was already sufficient there:
+
+| N | Old target | LiL-Q's actual floor | New target (~5% margin) |
+|---|---|---|---|
+| 8 | 0.25 | 0.2283 | 0.24 |
+| 16 | 0.15 | 0.0706 | 0.075 |
+| 24 | 0.075 | 0.0427 | 0.045 |
+| 32 | 0.035 | 0.0103 | 0.011 |
+
+**Verified the retargeted values against all three other methods**
+(NiL-N, NiL-Q, LiL-N) before finalizing, using their real, unmodified
+iteration/line-search budgets and the `cos_fourier` basis now in place:
+
+- N=8/16/24: all three converge cleanly under the new targets (N=24 in
+  particular lands within 0.00002 of 0.045 for every method -- strong
+  confirmation the ~5% margin was well-chosen, not just for LiL-Q).
+- N=32: **none of the three reach 0.011**, even run to their full
+  existing caps -- NiL-N reaches 0.0296 (20,000-iter cap, 1,464s),
+  NiL-Q reaches 0.0378 (10,000-iter cap, 637s), LiL-N reaches 0.0129
+  (20,000-iter cap, 425s), closest but still short. This isn't a
+  budget shortfall fixable by waiting longer within any reasonable
+  margin -- LiL-Q's quasilinearization is genuinely more powerful than
+  L-BFGS-based optimization at this scale, and a real capability gap
+  opens up between the methods at the largest size that doesn't exist
+  at the smaller three.
+
+**Decision (asked and confirmed): tighten N=32 to 0.011 as well**,
+accepting that NiL-N/NiL-Q/LiL-N will show as non-converged there. The
+alternative (leaving N=32 at its old 0.035, initially proposed as the
+safer default) was explicitly rejected -- the target should track what
+LiL-Q can actually do, not be loosened to keep every method's row
+looking converged. N=32 becomes the size where the four-method
+comparison most clearly shows LiL-Q's advantage, which is presumably
+closer to the point of the comparison than uniform convergence.
+
+`GRAVITY_TARGET_LOSSES` updated in `experiments/run_bl.py`
+(`four_method_tables.py`/`residual_band_figures.py`/`validate_pre_hprc.py`
+all import it from there, so no other file needed a change). No test
+hard-coded the old literal values (checked directly). 203/203 tests
+passing, unchanged from the `cos_fourier` entry -- this is a target-value
+change with no code-path/schema implications, so no new tests were
+needed beyond what already exercises `GRAVITY_TARGET_LOSSES`.
+
+---
+
 ## 2026-09-23 -- BL-gravity switched to `cos_fourier` basis (LiL-N convergence)
 
 **Not Phase 1 work -- found during a pre-HPRC validation pass (small
