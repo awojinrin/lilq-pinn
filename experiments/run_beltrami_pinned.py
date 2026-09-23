@@ -29,7 +29,7 @@ import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
 from lilq.utils import set_seed
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, last_solve_row
 from lilq.provenance import save_provenance
 from problems.beltrami import BeltramiConfig, solve_beltrami
 
@@ -79,7 +79,7 @@ def run_beltrami_pinned(verbose=True):
     logger.to_csv(OUTPUT_DIR / 'iterations.csv')
     save_provenance(OUTPUT_DIR)
 
-    last_row = logger.rows[-1]
+    last_row = last_solve_row(logger.rows)
     P_total = result['n_params']
     # At this P_total (7984), num_rank_svd is always None by design --
     # conditioning_via_pivoted_qr (lilq/instrumentation.py) never computes

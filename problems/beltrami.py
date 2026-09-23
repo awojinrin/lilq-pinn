@@ -496,10 +496,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         # Section 3.1 item 8's Beltrami-specific conditioning method
         # (not a full per-iteration SVD -- see analyze_conditioning above).
 
-        theta_init = np.concatenate([theta_u, theta_v, theta_w, theta_p])
-        tracker = LilQDiagnosticsTracker(
-            initial_norm_R_h=float(np.sqrt(loss_fn(theta_init))), **tracker_kwargs,
-        )
+        tracker = LilQDiagnosticsTracker(**tracker_kwargs)
 
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):
@@ -627,7 +624,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
             is_final_iterate = (rel_delta < config.tol) or (k == config.max_iter - 1)
             total_loss = loss_fn(theta_new)
             row = tracker.step(
-                k=k + 1,
+                k=k,
                 A_stacked=A_sys, b_stacked=b_sys,
                 beta_prev=theta_old, beta_new=theta_new,
                 total_loss=total_loss, rank_gelsy=rank,
@@ -642,6 +639,9 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         if rel_delta < config.tol:
             if verbose: print(f"  Converged at iteration {k}.")
             break
+
+    if tracker is not None:
+        iteration_logger.record(**tracker.finish(k=k + 1))
 
     total_time = time.time() - t_start
     rel_l2 = compute_errors(physics, basis_u, basis_v, basis_w, basis_p,
@@ -698,6 +698,8 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
             K_max=config.max_iter,
             stopping_reason='target' if final_rel_delta < config.tol else 'iteration_cap',
             first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            b2_check=tracker.b2_check,
+            kappa_qr_raw_ratio=tracker.kappa_qr_raw_ratio,
             device='cpu',
             thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
         )

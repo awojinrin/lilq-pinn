@@ -21,7 +21,7 @@ from experiments.run_burgers_basis_comparison import (
     write_table3_csv,
 )
 from lilq.basis import ELMBasis2D_Xavier, Fourier1D, TensorProductBasis2D
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, last_solve_row, solve_rows
 
 
 def test_elm_basis_uses_xavier_scaled_class():
@@ -100,8 +100,8 @@ def test_disable_stopping_rule_runs_full_iteration_budget():
         "sin_cheb", basis, config_runs_full, pts, verbose=False, iteration_logger=logger_full,
     )
 
-    assert len(logger_early.rows) < 5
-    assert len(logger_full.rows) == 5
+    assert len(solve_rows(logger_early.rows)) < 5
+    assert len(solve_rows(logger_full.rows)) == 5
 
 
 def test_run_table3_study_rejects_config_without_disable_stopping_rule():
@@ -121,9 +121,9 @@ def test_run_table3_study_small_scale_populates_real_diagnostics():
     for bk, entry in results.items():
         assert entry["n_coefficients"] == 16
         rows = entry["logger"].rows
-        assert len(rows) == 5  # full budget, stopping rule disabled
-        last = rows[-1]
-        assert math.isfinite(last["norm_R_h"])
+        assert len(solve_rows(rows)) == 5  # full budget, stopping rule disabled
+        assert math.isfinite(rows[-1]["norm_R_h"])  # terminal row: ||R^(K)||_h
+        last = last_solve_row(rows)
         assert math.isfinite(last["kappa"])
         assert last["num_rank_svd"] == 16
         assert last["num_rank_gelsy"] == 16

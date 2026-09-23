@@ -50,6 +50,14 @@ RUN_METADATA_FIELDS = (
     "stopping_reason",
     "first_stall_iteration",
     "device", "thread_count",
+    # Beyond the spec's list: the evidence for check B2 (relative
+    # difference between A^(k) beta^(k) - f^(k) and the nonlinear operator
+    # evaluated directly, at k=1, plus its maximum over the run -- see
+    # LilQDiagnosticsTracker.b2_check), and Section 3.1 item 8's
+    # |R_11|/|R_PP| over *all* pivoted-QR diagonal entries (``kappa`` is
+    # the retained-part ratio; null when the SVD path was used).
+    "b2_check",
+    "kappa_qr_raw_ratio",
 )
 
 

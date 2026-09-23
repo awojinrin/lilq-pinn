@@ -13,7 +13,7 @@ import math
 import numpy as np
 import pytest
 
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, last_solve_row, solve_rows
 from lilq.basis import create_basis_2d
 from lilq.collocation import generate_collocation_points_2d
 from problems.bratu import BratuConfig, BratuOptConfig, run_lil_q
@@ -46,7 +46,7 @@ def test_run_lil_q_with_logger_is_bit_identical_to_without():
     assert np.array_equal(coeffs_plain, coeffs_logged)
     assert summary_plain["total_iterations"] == summary_logged["total_iterations"]
     assert summary_plain["final_loss"] == summary_logged["final_loss"]
-    assert len(logger) == summary_logged["total_iterations"]
+    assert len(solve_rows(logger.rows)) == summary_logged["total_iterations"]
 
 
 def test_run_lil_q_produces_full_iterations_csv(tmp_path):
@@ -58,25 +58,25 @@ def test_run_lil_q_produces_full_iterations_csv(tmp_path):
     )
 
     rows = logger.rows
-    assert len(rows) == summary["total_iterations"]
-    assert [row["k"] for row in rows] == list(range(1, len(rows) + 1))
+    assert len(solve_rows(rows)) == summary["total_iterations"]
+    assert [row["k"] for row in rows] == list(range(len(rows)))
 
     # n_interior_rows/interior_weight were supplied -- interior norms must
     # be real numbers, not the NaN "not configured" default.
-    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in rows)
-    assert all(not math.isnan(row["norm_R_interior"]) for row in rows)
+    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in solve_rows(rows))
+    assert all(not math.isnan(row["norm_R_interior"]) for row in solve_rows(rows))
 
     # compute_residual_vector_fn was supplied -- chi should be a real
     # number at least once the system has a genuine post-solve residual
     # (this problem's PDE block is overdetermined by construction, so
     # R_lin_k is not exactly zero the way the 1x1 Newton synthetic
     # problem in test_solve_lil_q_instrumentation.py is).
-    assert any(not math.isnan(row["chi"]) for row in rows)
+    assert any(not math.isnan(row["chi"]) for row in solve_rows(rows))
 
     # P = 9 <= DEFAULT_SVD_CONDITIONING_THRESHOLD -- every row uses the
     # SVD conditioning path (no pivoted-QR fallback needed at this size).
-    assert all(row["kappa_method"] == "svd" for row in rows)
-    assert all(row["num_rank_svd"] == 9 for row in rows)
+    assert all(row["kappa_method"] == "svd" for row in solve_rows(rows))
+    assert all(row["num_rank_svd"] == 9 for row in solve_rows(rows))
 
     out_path = tmp_path / "iterations.csv"
     logger.to_csv(out_path)
@@ -182,3 +182,5 @@ def test_run_json_written_and_self_consistent(tmp_path):
     assert meta["stopping_reason"] in ("target", "iteration_cap")
     from lilq.run_metadata import first_stall_iteration
     assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)
+    # Check B2, measured on every iteration of this real solve.
+    assert meta["b2_check"]["rel_err"] < 1e-10

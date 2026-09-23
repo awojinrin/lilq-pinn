@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 import torch
 
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, last_solve_row, solve_rows
 from lilq.basis import create_basis_2d
 from lilq.collocation import generate_collocation_points_2d
 from problems.buckley_leverett import BLConfig, BLOptConfig, BLPhysics, run_lil_q
@@ -36,10 +36,10 @@ def _run_and_check_b2(config, opt):
     )
 
     rows = logger.rows
-    assert len(rows) == summary["total_iterations"]
-    assert [row["k"] for row in rows] == list(range(1, len(rows) + 1))
-    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in rows)
-    assert all(not math.isnan(row["norm_R_interior"]) for row in rows)
+    assert len(solve_rows(rows)) == summary["total_iterations"]
+    assert [row["k"] for row in rows] == list(range(len(rows)))
+    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in solve_rows(rows))
+    assert all(not math.isnan(row["norm_R_interior"]) for row in solve_rows(rows))
 
     physics = BLPhysics(config)
     basis_check = create_basis_2d(
@@ -147,7 +147,7 @@ def test_csv_round_trip(tmp_path):
     with open(out_path, newline="") as f:
         csv_rows = list(csv.DictReader(f))
     assert len(csv_rows) == len(logger.rows)
-    assert len(csv_rows) == summary["total_iterations"]
+    assert len(csv_rows) == summary["total_iterations"] + 1  # plus the terminal row
 
 
 def test_run_json_requires_iteration_logger():
@@ -178,3 +178,5 @@ def test_run_json_initial_coefficients_distinguishes_viscous_and_gravity(tmp_pat
         assert meta["solver_driver"] == "gelsy"
         assert expected_substring in meta["initial_coefficients"]
         assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)
+        # Check B2, measured on every iteration of this real solve.
+        assert meta["b2_check"]["rel_err"] < 1e-10

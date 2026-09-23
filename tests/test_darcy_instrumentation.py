@@ -5,8 +5,9 @@ precedent.
 
 Unlike every other problem in this codebase, Darcy's LiL-Q system is
 **linear** (no Bellman-Kalaba quasilinearization loop -- see the module
-docstring in ``problems/darcy.py``), so this produces exactly one logged
-row (k=1) per solve rather than driving an outer iteration loop.
+docstring in ``problems/darcy.py``), so a solve logs two rows: k=0 (the
+single solve, assembled at the zero vector) and the terminal k=1 (the
+residual at the solution) -- the same layout as any one-iteration solve.
 """
 
 import math
@@ -78,7 +79,7 @@ def test_with_logger_is_bit_identical_to_without():
     assert np.array_equal(result_plain['c_u'], result_logged['c_u'])
     assert np.array_equal(result_plain['c_v'], result_logged['c_v'])
     assert result_plain['metrics']['fvm_rel_L2'] == result_logged['metrics']['fvm_rel_L2']
-    assert len(logger) == 1
+    assert [r["k"] for r in logger.rows] == [0, 1]
 
 
 def test_lstsq_solver_method_guard_raises_when_logger_given():
@@ -99,9 +100,10 @@ def test_single_row_reflects_linear_system_structure():
 
     solve_lilq_darcy(config, physics, verbose=False, iteration_logger=logger)
 
-    assert len(logger) == 1
-    row = logger.rows[0]
-    assert row["k"] == 1
+    row, terminal = logger.rows
+    assert row["k"] == 0 and terminal["k"] == 1
+    # R^(0) is the residual at the zero starting vector: ||A 0 - b|| = ||b||.
+    assert row["norm_R_h"] == pytest.approx(row["norm_f_h"], rel=1e-14)
     # No k-1/k-2 history exists for a single-shot solve.
     assert math.isnan(row["order_obs"])
     assert row["stall_flag"] is False
@@ -126,7 +128,7 @@ def test_check_b2_residual_identity_against_direct_evaluation():
 
     coeffs = np.concatenate([result['c_h_tilde'], result['c_u'], result['c_v']])
     norm_R_direct = _independent_residual_norm(config, physics, coeffs)
-    norm_R_logged = logger.rows[0]["norm_R_h"]
+    norm_R_logged = logger.rows[-1]["norm_R_h"]  # terminal row: residual at the solution
 
     rel_err = abs(norm_R_direct - norm_R_logged) / (abs(norm_R_direct) + 1e-30)
     assert rel_err < 1e-10
@@ -144,7 +146,7 @@ def test_csv_round_trip(tmp_path):
     import csv
     with open(out_path, newline="") as f:
         csv_rows = list(csv.DictReader(f))
-    assert len(csv_rows) == 1
+    assert [r["k"] for r in csv_rows] == ["0", "1"]
 
 
 def test_run_json_requires_iteration_logger():
@@ -174,5 +176,7 @@ def test_run_json_written_and_self_consistent(tmp_path):
     assert meta["solver_driver"] == "gelsy"
     assert meta["device"] == "cpu"
     assert meta["stopping_reason"] == "direct_solve"
-    # Darcy's single row (k=1) never stalls -- no k-1 history.
+    # A single solve (k=0) never stalls -- no k-1 history.
     assert meta["first_stall_iteration"] is None
+    # Linear system: the mat-vec residual *is* the operator -- B2 is round-off.
+    assert meta["b2_check"]["rel_err"] < 1e-12

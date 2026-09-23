@@ -17,6 +17,50 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- `iterations.csv` follows the spec's k numbering; check B2 recorded in real runs
+
+**Numbering.** Rows were labeled by solve count (`k = 1..K`), which put
+each row one index off the spec's row k: row "k" held $\|\mathbf{R}_{\mathrm{lin}}^{(k-1)}\|_h$,
+$\chi_{k-1}$, $o_{k-1}$, $\kappa(\mathbf{A}^{(k-1)})$, $\delta\boldsymbol\beta^{(k-1)}$
+next to $\|\mathbf{R}^{(k)}\|_h$ (the post-solve residual). Now row `k`
+(from 0) is outer iteration $k$ exactly as the spec defines it: the system
+assembled at $\boldsymbol\beta^{(k)}$ and solved for $\boldsymbol\beta^{(k+1)}$,
+with `norm_R_h` $=\|\mathbf{R}^{(k)}\|_h$ computed as the spec's one
+mat-vec $\mathbf{A}^{(k)}\boldsymbol\beta^{(k)}-\mathbf{f}^{(k)}$ (and its
+interior part from the same vector), alongside
+$\|\mathbf{R}_{\mathrm{lin}}^{(k)}\|_h$, $\chi_k$, $o_k$, the stall flag,
+$\kappa(\mathbf{A}^{(k)})$, $\delta\boldsymbol\beta^{(k)}$. A terminal row
+`k = K` carries $\|\mathbf{R}^{(K)}\|_h$ at the returned coefficients
+(nothing is assembled there, so its other columns are empty) -- a run of
+$K$ solves has $K+1$ rows. `first_stall_iteration` is therefore in the
+spec's indexing. Helpers `solve_rows`/`last_solve_row` (in
+`lilq.iteration_log`) separate the solve rows from the terminal row;
+the Section 3.5 figures plot $\|\mathbf{R}_{\mathrm{lin}}^{(k)}\|_h$ and
+$\|\mathbf{R}^{(k+1)}\|_h$ (the next row's `norm_R_h`) at $k$. The
+Section 3.6 CSV (`first_stall_iteration`) and the Section 3.7 run use this
+layout once rerun; their existing outputs predate it.
+
+**B2 in real runs.** Until now B2 was checked only in unit tests, and as
+direct-evaluation vs direct-evaluation at the final iterate. The tracker
+now compares, on every iteration, the mat-vec $\mathbf{R}^{(k)}$ with the
+nonlinear operator evaluated directly at $\boldsymbol\beta^{(k)}$ (the
+spec's identity, which only holds if the quasilinearization is right) and
+`run.json` records `b2_check = {k, rel_err, max_rel_err_over_run}` with
+`rel_err` at `k = 1`. Not the run maximum: near convergence
+$\mathbf{R}^{(k)}$ is a small difference of O(1) quantities and
+cancellation dominates the relative difference -- measured on Kovasznay
+$P=1{,}875$: 4.0e-15 at $k=1$, 1.1e-2 at the converged iterate. The
+maximum stays in the record for transparency. Verified across all six
+nonlinear problems before this change (2.4e-14 or better at every
+iterate before convergence; the scratch check is described in the
+pre-HPRC audit).
+
+**Also:** `run.json` gains `kappa_qr_raw_ratio`, the $|R_{11}|/|R_{PP}|$
+over all pivoted-QR diagonal entries that Section 3.1 item 8 asks for
+beside the retained-part ratio (previously computed and discarded).
+
+---
+
 ## 2026-09-23 -- Four-method sweep: failures logged, incremental writes, resume, warm-up
 
 `experiments/four_method_tables.py` had no exception handling (one

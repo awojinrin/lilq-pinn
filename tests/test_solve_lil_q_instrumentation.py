@@ -19,7 +19,7 @@ import math
 import numpy as np
 import pytest
 
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.solvers import solve_lil_q
 
 
@@ -59,17 +59,21 @@ def test_full_instrumentation_end_to_end():
     # didn't perturb the actual solve.
     assert coefficients[0] == pytest.approx(math.sqrt(c), abs=1e-6)
 
-    rows = logger.rows
-    assert len(rows) == summary["total_iterations"]
-    assert len(rows) >= 3  # Newton from x0=1 needs a few steps at this tolerance
+    all_rows = logger.rows
+    K = summary["total_iterations"]
+    # One row per outer iteration k = 0..K-1, then the terminal row k = K.
+    assert [row["k"] for row in all_rows] == list(range(K + 1))
+    assert K >= 3  # Newton from x0=1 needs a few steps at this tolerance
+    rows = solve_rows(all_rows)
+    assert len(rows) == K
 
-    # k values are 1..N in order, matching the outer iteration count.
-    assert [row["k"] for row in rows] == list(range(1, len(rows) + 1))
-
-    # norm_R_h must be monotonically decreasing -- Newton's method on a
-    # convex scalar problem from a sane starting point doesn't oscillate.
-    norms = [row["norm_R_h"] for row in rows]
+    # norm_R_h (R^(0), ..., R^(K)) must be monotonically decreasing --
+    # Newton's method on a convex scalar problem from a sane starting
+    # point doesn't oscillate. Row 0 is the residual at x0=1: |1 - 2| = 1.
+    norms = [row["norm_R_h"] for row in all_rows]
+    assert norms[0] == pytest.approx(1.0)
     assert all(norms[i] > norms[i + 1] for i in range(len(norms) - 1))
+    assert norms[-1] == pytest.approx(math.sqrt(summary["final_loss"]))
 
     # order_obs is undefined (NaN) for the first row, defined after.
     assert math.isnan(rows[0]["order_obs"])
@@ -130,8 +134,8 @@ def test_instrumentation_is_fully_optional_and_backward_compatible():
     assert coeffs_plain[0] == pytest.approx(coeffs_logged[0], abs=0.0)
     assert summary_plain["total_iterations"] == summary_logged["total_iterations"]
     # chi/stall_flag degrade gracefully without the residual-vector callback.
-    assert all(math.isnan(row["chi"]) for row in logger.rows)
-    assert all(row["stall_flag"] is False for row in logger.rows)
+    assert all(math.isnan(row["chi"]) for row in solve_rows(logger.rows))
+    assert all(row["stall_flag"] is False for row in solve_rows(logger.rows))
 
 
 def test_csv_round_trip_for_the_real_solve(tmp_path):

@@ -18,7 +18,7 @@ import math
 import numpy as np
 import pytest
 
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, last_solve_row, solve_rows
 from problems.kovasznay import (
     KovasznayConfig, KovasznayPhysics, solve_kovasznay,
     _generate_collocation, _make_kovasznay_residual_vector_fn,
@@ -110,7 +110,7 @@ def test_with_logger_is_bit_identical_to_without():
     # wall-clock and will legitimately differ run-to-run).
     for key in ('iteration', 'coeff_change', 'pde_residual', 'continuity_residual'):
         assert result_plain['history'][key] == result_logged['history'][key]
-    assert len(logger) == result_logged['n_outer_iters']
+    assert len(solve_rows(logger.rows)) == result_logged['n_outer_iters']
 
 
 def test_produces_full_iterations_csv(tmp_path):
@@ -120,25 +120,25 @@ def test_produces_full_iterations_csv(tmp_path):
     result = solve_kovasznay(config, verbose=False, iteration_logger=logger)
 
     rows = logger.rows
-    assert len(rows) == result['n_outer_iters']
-    assert [row["k"] for row in rows] == list(range(1, len(rows) + 1))
+    assert len(solve_rows(rows)) == result['n_outer_iters']
+    assert [row["k"] for row in rows] == list(range(len(rows)))
 
     # lambda_mom == lambda_cont by default -- interior norms should be real.
     assert config.lambda_mom == config.lambda_cont
-    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in rows)
-    assert all(not math.isnan(row["norm_R_interior"]) for row in rows)
+    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in solve_rows(rows))
+    assert all(not math.isnan(row["norm_R_interior"]) for row in solve_rows(rows))
 
     # compute_residual_vector_fn is always supplied -- chi should be real
     # at least once (this system is overdetermined, not exactly solvable).
-    assert any(not math.isnan(row["chi"]) for row in rows)
+    assert any(not math.isnan(row["chi"]) for row in solve_rows(rows))
 
     P_total = 3 * 16  # Pu=Pv=Pp=16 for N_x=N_y=4 chebyshev
-    assert all(row["kappa_method"] == "svd" for row in rows)
-    assert all(row["num_rank_svd"] == P_total for row in rows)
-    assert all(row["num_rank_gelsy"] == P_total for row in rows)
-    assert all(row["rcond"] > 0 for row in rows)
-    assert all(row["t_assemble_s"] >= 0.0 for row in rows)
-    assert all(row["t_solve_s"] >= 0.0 for row in rows)
+    assert all(row["kappa_method"] == "svd" for row in solve_rows(rows))
+    assert all(row["num_rank_svd"] == P_total for row in solve_rows(rows))
+    assert all(row["num_rank_gelsy"] == P_total for row in solve_rows(rows))
+    assert all(row["rcond"] > 0 for row in solve_rows(rows))
+    assert all(row["t_assemble_s"] >= 0.0 for row in solve_rows(rows))
+    assert all(row["t_solve_s"] >= 0.0 for row in solve_rows(rows))
 
     out_path = tmp_path / "iterations.csv"
     logger.to_csv(out_path)
@@ -175,8 +175,8 @@ def test_interior_norms_nan_when_lambda_mom_and_cont_differ():
 
     solve_kovasznay(config, verbose=False, iteration_logger=logger)
 
-    assert all(math.isnan(row["norm_Rlin_interior"]) for row in logger.rows)
-    assert all(math.isnan(row["norm_R_interior"]) for row in logger.rows)
+    assert all(math.isnan(row["norm_Rlin_interior"]) for row in solve_rows(logger.rows))
+    assert all(math.isnan(row["norm_R_interior"]) for row in solve_rows(logger.rows))
 
 
 def test_run_json_requires_iteration_logger():
@@ -207,3 +207,5 @@ def test_run_json_written_and_self_consistent(tmp_path):
     assert meta["stopping_reason"] in ("target", "iteration_cap")
     from lilq.run_metadata import first_stall_iteration
     assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)
+    # Check B2, measured on every iteration of this real solve.
+    assert meta["b2_check"]["rel_err"] < 1e-10

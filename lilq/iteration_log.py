@@ -100,6 +100,18 @@ class IterationLogger:
                 writer.writerow(_stringify_row(row))
 
 
+def solve_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """The rows of outer iterations that performed a linear solve -- every
+    row except the terminal ``k = K`` row (see :class:`LilQDiagnosticsTracker`)."""
+    return [r for r in rows if r.get("norm_Rlin_h") is not None]
+
+
+def last_solve_row(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """The final linear solve's row: where the final-iterate conditioning
+    (``kappa``, ranks) lives. ``rows[-1]`` is the terminal residual-only row."""
+    return solve_rows(rows)[-1]
+
+
 class LilQDiagnosticsTracker:
     """Turns ``solve_lil_q``'s raw per-iteration ingredients into a full
     :data:`ITERATION_CSV_COLUMNS` row, owning the history a single
@@ -109,7 +121,31 @@ class LilQDiagnosticsTracker:
     :func:`~lilq.instrumentation.stall_flag` needs
     $\\|\\mathbf{R}_{\\mathrm{lin}}^{(k-1)}\\|_h$. One instance per solve;
     construct once before the outer loop, call :meth:`step` once per
-    iteration.
+    iteration, then :meth:`finish` once after it.
+
+    **Row numbering follows the package spec.** Row ``k`` (from 0)
+    describes outer iteration $k$: the system $\\mathbf{A}^{(k)}$,
+    $\\mathbf{f}^{(k)}$ assembled at $\\boldsymbol\\beta^{(k)}$ and solved
+    for $\\boldsymbol\\beta^{(k+1)}$. It holds $\\|\\mathbf{R}^{(k)}\\|_h$
+    (computed as $\\mathbf{A}^{(k)}\\boldsymbol\\beta^{(k)}-\\mathbf{f}^{(k)}$,
+    the spec's one mat-vec), $\\|\\mathbf{R}_{\\mathrm{lin}}^{(k)}\\|_h$,
+    $\\chi_k$, $o_k$, the stall flag, $\\kappa(\\mathbf{A}^{(k)})$ and
+    $\\delta\\boldsymbol\\beta^{(k)}=\\boldsymbol\\beta^{(k+1)}-\\boldsymbol\\beta^{(k)}$.
+    A run of $K$ solves ends with a terminal row ``k = K`` from
+    :meth:`finish`, holding only $\\|\\mathbf{R}^{(K)}\\|_h$ (and its
+    interior part) at the returned coefficients, where no system is
+    assembled -- so a solve's rows number $K+1$.
+
+    **Check B2 is measured on every iteration** when
+    ``compute_residual_vector_fn`` is given: the mat-vec
+    $\\mathbf{R}^{(k)}$ against the nonlinear operator evaluated directly
+    at $\\boldsymbol\\beta^{(k)}$. :attr:`b2_check` reports it at ``k = 1``
+    (the first iterate away from the starting point; the spec asks for one
+    iterate per benchmark), plus the maximum over the run. Near
+    convergence $\\mathbf{R}^{(k)}$ is a small difference of O(1)
+    quantities, so cancellation alone lifts the *relative* difference
+    there far above machine precision -- the maximum is kept for
+    transparency, not as the check.
 
     Several columns require information ``solve_lil_q`` genuinely
     doesn't have access to unless the caller provides it, and are left
@@ -143,18 +179,36 @@ class LilQDiagnosticsTracker:
 
     def __init__(
         self,
-        initial_norm_R_h: float,
         conditioning_svd_threshold: int = DEFAULT_SVD_CONDITIONING_THRESHOLD,
         n_interior_rows: Optional[int] = None,
         interior_weight: Optional[float] = None,
     ) -> None:
         self._norm_R_h_km1: Optional[float] = None
-        self._norm_R_h_k: float = initial_norm_R_h
         self._norm_Rlin_h_km1: Optional[float] = None
         self._conditioning_svd_threshold = conditioning_svd_threshold
         self._t_cum_s: float = 0.0
         self._n_interior_rows = n_interior_rows
         self._interior_weight = interior_weight
+        self._final_norm_R_h: Optional[float] = None
+        self._final_R_vector: Optional[np.ndarray] = None
+        self._b2_rel_err_by_k: Dict[int, float] = {}
+        self.kappa_qr_raw_ratio: Optional[float] = None
+
+    @property
+    def b2_check(self) -> Optional[Dict[str, Any]]:
+        """``{"k", "rel_err", "max_rel_err_over_run"}`` -- ``rel_err`` at
+        ``k = 1`` (``k = 0`` for a single-solve run), or ``None`` without a
+        residual callback."""
+        if not self._b2_rel_err_by_k:
+            return None
+        k = 1 if 1 in self._b2_rel_err_by_k else min(self._b2_rel_err_by_k)
+        return {"k": k, "rel_err": self._b2_rel_err_by_k[k],
+                "max_rel_err_over_run": max(self._b2_rel_err_by_k.values())}
+
+    def _interior_norm(self, vector: Optional[np.ndarray]) -> float:
+        if vector is None or self._n_interior_rows is None or self._interior_weight is None:
+            return float("nan")
+        return float(np.linalg.norm(vector[:self._n_interior_rows]) / self._interior_weight)
 
     def step(
         self,
@@ -172,12 +226,13 @@ class LilQDiagnosticsTracker:
         solver_path: str = "cpu_gelsy",
         gpu_mem_peak_bytes: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Compute one full row. ``A_stacked``/``b_stacked`` are this
-        iteration's *linearized* system (i.e. $\\mathbf{A}^{(k)}$,
-        $\\mathbf{f}^{(k)}$ in the manuscript's notation) -- already
-        row-weighted, matching every solver in this codebase's existing
-        convention. ``total_loss`` is $\\|\\mathbf{R}^{(k+1)}\\|_h^2$ by
-        this codebase's own definition of the weighted total loss.
+        """Compute row ``k`` (0-based outer iteration). ``A_stacked``/
+        ``b_stacked`` are $\\mathbf{A}^{(k)}$, $\\mathbf{f}^{(k)}$ --
+        already row-weighted, matching every solver in this codebase.
+        ``beta_prev`` is $\\boldsymbol\\beta^{(k)}$ (the point the system
+        was assembled at), ``beta_new`` is $\\boldsymbol\\beta^{(k+1)}$
+        (its solution). ``total_loss`` is $\\|\\mathbf{R}^{(k+1)}\\|_h^2$
+        by this codebase's own definition of the weighted total loss.
 
         ``rank_gelsy`` may be ``None`` -- the Section 3.2 GPU path
         (``torch.linalg.qr`` + ``solve_triangular``, a full-rank solve
@@ -190,6 +245,8 @@ class LilQDiagnosticsTracker:
         """
         self._t_cum_s += t_assemble_s + t_solve_s
 
+        R_k = A_stacked @ beta_prev - b_stacked
+        norm_R_h = float(np.linalg.norm(R_k))
         R_lin_k = A_stacked @ beta_new - b_stacked
         norm_Rlin_h = float(np.linalg.norm(R_lin_k))
         norm_f_h = float(np.linalg.norm(b_stacked))
@@ -198,21 +255,20 @@ class LilQDiagnosticsTracker:
         raw_dbeta = float(np.linalg.norm(beta_new - beta_prev))
         rel_dbeta = raw_dbeta / (float(np.linalg.norm(beta_new)) + 1e-30)
 
-        R_next = compute_residual_vector_fn(beta_new) if compute_residual_vector_fn is not None else None
-        chi = phase_indicator(R_next, R_lin_k) if R_next is not None else float("nan")
+        R_next = None
+        chi = float("nan")
+        if compute_residual_vector_fn is not None:
+            R_k_direct = compute_residual_vector_fn(beta_prev)
+            self._b2_rel_err_by_k[k] = float(
+                np.linalg.norm(R_k - R_k_direct) / (np.linalg.norm(R_k_direct) + 1e-300))
+            R_next = compute_residual_vector_fn(beta_new)
+            chi = phase_indicator(R_next, R_lin_k)
 
-        can_unweight_interior = self._n_interior_rows is not None and self._interior_weight is not None
-        norm_R_interior = float("nan")
-        norm_Rlin_interior = float("nan")
-        if can_unweight_interior:
-            n = self._n_interior_rows
-            w = self._interior_weight
-            norm_Rlin_interior = float(np.linalg.norm(R_lin_k[:n]) / w)
-            if R_next is not None:
-                norm_R_interior = float(np.linalg.norm(R_next[:n]) / w)
+        norm_R_interior = self._interior_norm(R_k)
+        norm_Rlin_interior = self._interior_norm(R_lin_k)
 
         order_obs = (
-            observed_order(norm_R_h_next, self._norm_R_h_k, self._norm_R_h_km1)
+            observed_order(norm_R_h_next, norm_R_h, self._norm_R_h_km1)
             if self._norm_R_h_km1 is not None
             else float("nan")
         )
@@ -232,6 +288,7 @@ class LilQDiagnosticsTracker:
             cond_result = conditioning_via_svd(A_stacked)
         elif is_final_iterate:
             cond_result = conditioning_via_pivoted_qr(A_stacked)
+            self.kappa_qr_raw_ratio = cond_result["kappa_raw_ratio"]
         else:
             cond_result = {"kappa": float("nan"), "kappa_method": None, "num_rank_svd": None}
 
@@ -244,7 +301,7 @@ class LilQDiagnosticsTracker:
         row = dict(
             k=k,
             t_assemble_s=t_assemble_s, t_solve_s=t_solve_s, t_cum_s=self._t_cum_s,
-            norm_R_h=norm_R_h_next, norm_R_interior=norm_R_interior,
+            norm_R_h=norm_R_h, norm_R_interior=norm_R_interior,
             norm_Rlin_h=norm_Rlin_h, norm_Rlin_interior=norm_Rlin_interior,
             norm_f_h=norm_f_h,
             norm_dbeta=raw_dbeta, rel_dbeta=rel_dbeta,
@@ -257,11 +314,24 @@ class LilQDiagnosticsTracker:
             solver_path=solver_path, gpu_mem_peak_bytes=gpu_mem_peak_bytes,
         )
 
-        self._norm_R_h_km1 = self._norm_R_h_k
-        self._norm_R_h_k = norm_R_h_next
+        self._norm_R_h_km1 = norm_R_h
         self._norm_Rlin_h_km1 = norm_Rlin_h
+        self._final_norm_R_h = norm_R_h_next
+        self._final_R_vector = R_next
 
         return row
+
+    def finish(self, k: int) -> Dict[str, Any]:
+        """Terminal row ``k = K`` (the number of solves performed):
+        $\\|\\mathbf{R}^{(K)}\\|_h$ at the returned coefficients, plus its
+        interior part when the residual vector is available. No system is
+        assembled at $\\boldsymbol\\beta^{(K)}$, so every other column is
+        empty."""
+        return dict(
+            k=k, t_cum_s=self._t_cum_s,
+            norm_R_h=self._final_norm_R_h,
+            norm_R_interior=self._interior_norm(self._final_R_vector),
+        )
 
 
 def _stringify_row(row: Dict[str, Any]) -> Dict[str, Any]:

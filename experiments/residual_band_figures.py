@@ -39,7 +39,7 @@ import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 import matplotlib.pyplot as plt
 
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, solve_rows
 from problems.bratu import BratuConfig, BratuOptConfig, run_lil_q as run_bratu_lil_q
 from problems.burgers import BurgersConfig, BurgersOptConfig, run_lil_q as run_burgers_lil_q
 from problems.buckley_leverett import BLConfig, BLOptConfig, run_lil_q as run_bl_lil_q
@@ -134,9 +134,9 @@ def run_and_log(label, runs_fn, run_fn, out_dir, quick=False, verbose=True):
         loggers[P] = logger
         logger.to_csv(out_dir / f"{label}_P{P}_iterations.csv")
         if verbose:
-            n_rows = len(logger)
-            final_norm = logger.rows[-1]['norm_R_h'] if n_rows else float('nan')
-            print(f"{n_rows} iterations, final ||R||_h={final_norm:.3e}")
+            n_solves = len(solve_rows(logger.rows))
+            final_norm = logger.rows[-1]['norm_R_h'] if len(logger) else float('nan')
+            print(f"{n_solves} iterations, final ||R||_h={final_norm:.3e}")
     return loggers
 
 
@@ -149,11 +149,14 @@ def plot_residual_bands(label, title, loggers, out_dir):
     fig, axes = plt.subplots(2, n, figsize=(3.6 * max(n, 1), 6), squeeze=False)
 
     for col, P in enumerate(Ps):
+        # Row k holds ||R_lin^(k)||_h and chi_k; ||R^(k+1)||_h is the next
+        # row's norm_R_h (the terminal row supplies ||R^(K)||_h).
         rows = loggers[P].rows
-        k = [r['k'] for r in rows]
-        r_lin = [r['norm_Rlin_h'] for r in rows]
-        r_next = [r['norm_R_h'] for r in rows]
-        chi = [r['chi'] for r in rows]
+        solves = solve_rows(rows)
+        k = [r['k'] for r in solves]
+        r_lin = [r['norm_Rlin_h'] for r in solves]
+        r_next = [rows[i + 1]['norm_R_h'] for i in range(len(solves))]
+        chi = [r['chi'] for r in solves]
 
         ax_top = axes[0, col]
         ax_top.semilogy(k, r_lin, 'o-', ms=3, lw=1.2, color='#457B9D',

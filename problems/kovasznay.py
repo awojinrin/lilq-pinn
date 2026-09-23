@@ -35,7 +35,7 @@ from lilq.basis import (
 )
 from lilq.analysis import svd_analysis
 from lilq.instrumentation import EPS_MACH
-from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
+from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker, last_solve_row
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
 
@@ -351,8 +351,8 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
     beta_gpu = np.concatenate([gpu_result['theta_u'], gpu_result['theta_v'], gpu_result['theta_p']])
     beta_rel_diff = float(np.linalg.norm(beta_gpu - beta_cpu) / (np.linalg.norm(beta_cpu) + 1e-30))
 
-    rlin_cpu = cpu_logger.rows[-1]['norm_Rlin_h']
-    rlin_gpu = gpu_logger.rows[-1]['norm_Rlin_h']
+    rlin_cpu = last_solve_row(cpu_logger.rows)['norm_Rlin_h']
+    rlin_gpu = last_solve_row(gpu_logger.rows)['norm_Rlin_h']
     # "Equal to six significant figures": relative difference below 5e-7
     # (half a unit in the 6th significant digit) is the standard meaning
     # of that phrase, not literal string-formatting comparison.
@@ -525,10 +525,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             tracker_kwargs["n_interior_rows"] = 3 * n_pde
             tracker_kwargs["interior_weight"] = float(np.sqrt(config.lambda_mom / n_pde))
 
-        theta_init = np.concatenate([theta_u, theta_v, theta_p])
-        tracker = LilQDiagnosticsTracker(
-            initial_norm_R_h=float(np.sqrt(loss_fn(theta_init))), **tracker_kwargs,
-        )
+        tracker = LilQDiagnosticsTracker(**tracker_kwargs)
 
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):
@@ -673,7 +670,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             is_final_iterate = (rel_delta < config.tol) or (k == config.max_iter - 1)
             total_loss = loss_fn(theta_new)
             row = tracker.step(
-                k=k + 1,
+                k=k,
                 A_stacked=A_sys, b_stacked=b_sys,
                 beta_prev=theta_old, beta_new=theta_new,
                 total_loss=total_loss, rank_gelsy=rank_gelsy,
@@ -690,6 +687,9 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             if verbose:
                 print(f"  Converged at iteration {k}.")
             break
+
+    if tracker is not None:
+        iteration_logger.record(**tracker.finish(k=k + 1))
 
     total_time = time.time() - t_start
 
@@ -755,6 +755,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             K_max=config.max_iter,
             stopping_reason='target' if final_rel_delta < config.tol else 'iteration_cap',
             first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            b2_check=tracker.b2_check,
+            kappa_qr_raw_ratio=tracker.kappa_qr_raw_ratio,
             device='cuda' if config.use_gpu else 'cpu',
             thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
         )

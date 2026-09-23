@@ -14,7 +14,7 @@ import dataclasses
 import numpy as np
 import pytest
 
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, solve_rows
 from problems.kovasznay import (
     KovasznayConfig, HAS_TORCH_CUDA,
     _lstsq_gpu_qr, _qr_degeneracy_ratio, gpu_memory_estimate_bytes,
@@ -101,7 +101,7 @@ def test_use_gpu_true_produces_real_solve_with_gpu_solver_path():
 
     result = solve_kovasznay(config, verbose=False, iteration_logger=logger)
 
-    rows = logger.rows
+    rows = solve_rows(logger.rows)
     assert len(rows) == result['n_outer_iters']
     assert all(row['solver_path'] == 'gpu_qr' for row in rows)
     assert all(row['gpu_mem_peak_bytes'] is not None and row['gpu_mem_peak_bytes'] > 0

@@ -615,6 +615,8 @@ def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
             first_stall_iteration=first_stall_iteration(iteration_logger.rows),
             device='cpu',
             thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
+            b2_check=summary.get('b2_check'),
+            kappa_qr_raw_ratio=summary.get('kappa_qr_raw_ratio'),
         )
         write_run_json(run_json_path, metadata)
 

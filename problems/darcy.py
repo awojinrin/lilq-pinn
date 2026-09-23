@@ -309,8 +309,8 @@ def solve_lilq_darcy(config: DarcyConfig,
     physics : DarcyPhysics
     verbose : bool
     iteration_logger : ``lilq.iteration_log.IterationLogger``, optional
-        When given, a single Section 3.1 ``iterations.csv`` row (``k=1``)
-        is recorded for this solve. Darcy's LiL-Q system is **linear**
+        When given, Section 3.1 ``iterations.csv`` rows are recorded for
+        this solve: ``k=0`` (the solve) and the terminal ``k=1``. Darcy's LiL-Q system is **linear**
         (Darcy-x/y and continuity are already linear in
         h_tilde*/u*/v*) -- there is no Bellman-Kalaba quasilinearization
         loop here, unlike every other problem in this codebase, so this
@@ -477,24 +477,20 @@ def solve_lilq_darcy(config: DarcyConfig,
     residual = A @ coeffs - b
 
     if iteration_logger is not None:
-        # Single direct linear solve -- one logged row (k=1), no outer
-        # quasi-iteration loop to drive. "beta_prev" is the zero vector
-        # (no pretraining/previous iterate exists for this problem);
-        # initial_norm_R_h is the residual at that zero state, ‖-b‖ = ‖b‖,
-        # matching every other problem's convention of seeding the
-        # tracker from the pre-solve residual.
+        # Single direct linear solve: row k=0 (the solve, "assembled" at
+        # the zero vector -- no previous iterate exists for this problem)
+        # and the terminal row k=1 (the residual at the solution).
         beta_prev = np.zeros(n_total)
         beta_new = coeffs
         residual_vector_fn = lambda beta: A @ beta - b  # noqa: E731 -- linear system: this literally *is* the nonlinear operator
         total_loss = float(np.sum(residual ** 2))
 
         tracker = LilQDiagnosticsTracker(
-            initial_norm_R_h=float(np.linalg.norm(b)),
             n_interior_rows=A.shape[0],  # every row is a PDE row -- no separate BC block exists
             interior_weight=1.0,         # no lambda-based row weighting in this system
         )
         row = tracker.step(
-            k=1,
+            k=0,
             A_stacked=A, b_stacked=b,
             beta_prev=beta_prev, beta_new=beta_new,
             total_loss=total_loss, rank_gelsy=rank_gelsy,
@@ -503,6 +499,7 @@ def solve_lilq_darcy(config: DarcyConfig,
             compute_residual_vector_fn=residual_vector_fn,
         )
         iteration_logger.record(**row)
+        iteration_logger.record(**tracker.finish(k=1))
 
     res_Dx_nd = residual[:n_pde]
     res_Dy_nd = residual[n_pde:2 * n_pde]
@@ -615,6 +612,8 @@ def solve_lilq_darcy(config: DarcyConfig,
             K_max=1,
             stopping_reason='direct_solve',
             first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            b2_check=tracker.b2_check,
+            kappa_qr_raw_ratio=tracker.kappa_qr_raw_ratio,
             device='cpu',
             thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
         )

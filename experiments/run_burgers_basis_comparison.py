@@ -66,7 +66,7 @@ from lilq.basis import (
 )
 from lilq.provenance import save_provenance
 from lilq.instrumentation import EPS_MACH
-from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
+from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker, last_solve_row, solve_rows
 from lilq.run_metadata import first_stall_iteration
 
 
@@ -443,7 +443,6 @@ def solve_lilq_burgers_comparison(
     tracker = None
     if iteration_logger is not None:
         tracker = LilQDiagnosticsTracker(
-            initial_norm_R_h=float(np.sqrt(tot)),
             n_interior_rows=n_pde,
             interior_weight=float(np.sqrt(lp / n_pde)),
         )
@@ -496,7 +495,7 @@ def solve_lilq_burgers_comparison(
         if tracker is not None:
             is_final_iterate = (qi == config.max_quasi_iters - 1)
             row = tracker.step(
-                k=it, A_stacked=A_stack, b_stacked=b_stack,
+                k=qi, A_stacked=A_stack, b_stacked=b_stack,
                 beta_prev=beta_prev, beta_new=beta,
                 total_loss=tot, rank_gelsy=rank_gelsy,
                 t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
@@ -526,6 +525,9 @@ def solve_lilq_burgers_comparison(
                 print(f"  ** Stagnated at iteration {it} "
                       f"(best={best_loss:.6e}) **")
             break
+
+    if tracker is not None:
+        iteration_logger.record(**tracker.finish(k=it))
 
     total_time = time.time() - t_start
     summary = {
@@ -674,9 +676,10 @@ def run_table3_study(
                                           iteration_logger=logger)
             results[bk] = {'logger': logger, 'n_coefficients': nc}
             if verbose:
-                last = logger.rows[-1]
-                print(f"    final ||R||_h^2={last['norm_R_h']**2:.6e}  "
-                      f"kappa={last['kappa']}  rank_svd={last['num_rank_svd']}")
+                final = logger.rows[-1]
+                cond = last_solve_row(logger.rows)
+                print(f"    final ||R||_h^2={final['norm_R_h']**2:.6e}  "
+                      f"kappa={cond['kappa']}  rank_svd={cond['num_rank_svd']}")
         except Exception as e:
             print(f"\n  !! {bk} FAILED: {e}")
             import traceback
@@ -701,13 +704,14 @@ def write_table3_csv(results: Dict[str, Dict], out_path) -> None:
         writer.writeheader()
         for bk, entry in results.items():
             rows = entry['logger'].rows
-            last = rows[-1]
+            final = rows[-1]            # terminal row: ||R^(K)||_h at the returned iterate
+            last = last_solve_row(rows)  # the final solve: conditioning and ranks
             writer.writerow({
                 'basis_key': bk,
                 'basis_label': BASIS_CONFIGS[bk]['short_label'],
                 'P': entry['n_coefficients'],
-                'K_max': len(rows),
-                'final_R_h_squared': last['norm_R_h'] ** 2,
+                'K_max': len(solve_rows(rows)),
+                'final_R_h_squared': final['norm_R_h'] ** 2,
                 'first_stall_iteration': first_stall_iteration(rows),
                 'kappa': last['kappa'],
                 'kappa_method': last['kappa_method'],

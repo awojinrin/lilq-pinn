@@ -516,9 +516,7 @@ def solve_lil_q(
             tracker_kwargs["n_interior_rows"] = n_interior_rows
         if interior_weight is not None:
             tracker_kwargs["interior_weight"] = interior_weight
-        tracker = LilQDiagnosticsTracker(
-            initial_norm_R_h=float(np.sqrt(total_loss)), **tracker_kwargs,
-        )
+        tracker = LilQDiagnosticsTracker(**tracker_kwargs)
 
     converged = False
     n_quasi_iters = 0
@@ -565,7 +563,7 @@ def solve_lil_q(
 
         if tracker is not None:
             row = tracker.step(
-                k=quasi_iter + 1,
+                k=quasi_iter,
                 A_stacked=A_stacked, b_stacked=b_stacked,
                 beta_prev=beta_prev, beta_new=beta_new,
                 total_loss=total_loss, rank_gelsy=rank_gelsy,
@@ -581,6 +579,9 @@ def solve_lil_q(
             converged = True
             break
 
+    if tracker is not None:
+        iteration_logger.record(**tracker.finish(k=n_quasi_iters))
+
     coefficients = beta.astype(np.float64)
     total_time = metrics.data['wall_time'][-1]
 
@@ -594,5 +595,8 @@ def solve_lil_q(
         'n_params': int(n_coefs),
         'converged': bool(converged),
     }
+    if tracker is not None:
+        summary['b2_check'] = tracker.b2_check
+        summary['kappa_qr_raw_ratio'] = tracker.kappa_qr_raw_ratio
 
     return coefficients, metrics, summary

@@ -14,7 +14,7 @@ import math
 import numpy as np
 import pytest
 
-from lilq.iteration_log import IterationLogger
+from lilq.iteration_log import IterationLogger, last_solve_row, solve_rows
 from problems.beltrami import (
     BeltramiConfig, BeltramiPhysics, solve_beltrami,
     _generate_collocation, _make_beltrami_residual_vector_fn,
@@ -118,7 +118,7 @@ def test_with_logger_is_bit_identical_to_without():
     assert result_plain['n_outer_iters'] == result_logged['n_outer_iters']
     for key in ('iteration', 'coeff_change', 'pde_residual', 'continuity_residual'):
         assert result_plain['history'][key] == result_logged['history'][key]
-    assert len(logger) == result_logged['n_outer_iters']
+    assert len(solve_rows(logger.rows)) == result_logged['n_outer_iters']
 
 
 def test_gpu_guard_raises_when_logger_given():
@@ -134,23 +134,23 @@ def test_produces_full_iterations_csv(tmp_path):
     result = solve_beltrami(config, verbose=False, iteration_logger=logger)
 
     rows = logger.rows
-    assert len(rows) == result['n_outer_iters']
-    assert [row["k"] for row in rows] == list(range(1, len(rows) + 1))
+    assert len(solve_rows(rows)) == result['n_outer_iters']
+    assert [row["k"] for row in rows] == list(range(len(rows)))
 
     assert config.lambda_mom == config.lambda_cont
-    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in rows)
-    assert all(not math.isnan(row["norm_R_interior"]) for row in rows)
-    assert any(not math.isnan(row["chi"]) for row in rows)
+    assert all(not math.isnan(row["norm_Rlin_interior"]) for row in solve_rows(rows))
+    assert all(not math.isnan(row["norm_R_interior"]) for row in solve_rows(rows))
+    assert any(not math.isnan(row["chi"]) for row in solve_rows(rows))
 
     # This small config's system is mildly rank-deficient (a smaller-scale
     # analogue of the null space the manuscript documents for the full
     # config -- Section 3.7) -- assert the two rank estimates agree with
     # each other rather than assuming full rank.
     assert result['n_params'] == 3 * 81 + 81  # Pu=Pv=Pw=Pp=3^4=81
-    assert all(row["num_rank_svd"] == row["num_rank_gelsy"] for row in rows)
-    assert all(row["num_rank_svd"] <= result['n_params'] for row in rows)
-    assert all(row["t_assemble_s"] >= 0.0 for row in rows)
-    assert all(row["t_solve_s"] >= 0.0 for row in rows)
+    assert all(row["num_rank_svd"] == row["num_rank_gelsy"] for row in solve_rows(rows))
+    assert all(row["num_rank_svd"] <= result['n_params'] for row in solve_rows(rows))
+    assert all(row["t_assemble_s"] >= 0.0 for row in solve_rows(rows))
+    assert all(row["t_solve_s"] >= 0.0 for row in solve_rows(rows))
 
     out_path = tmp_path / "iterations.csv"
     logger.to_csv(out_path)
@@ -173,10 +173,10 @@ def test_large_P_uses_pivoted_qr_at_final_iterate_only():
     solve_beltrami(config, verbose=False, iteration_logger=logger)
 
     rows = logger.rows
-    assert all(row["kappa_method"] is None for row in rows[:-1])
-    assert all(math.isnan(row["kappa"]) for row in rows[:-1])
-    assert rows[-1]["kappa_method"] == "qr_pivoted"
-    assert not math.isnan(rows[-1]["kappa"])
+    assert all(row["kappa_method"] is None for row in solve_rows(rows)[:-1])
+    assert all(math.isnan(row["kappa"]) for row in solve_rows(rows)[:-1])
+    assert last_solve_row(rows)["kappa_method"] == "qr_pivoted"
+    assert not math.isnan(last_solve_row(rows)["kappa"])
 
 
 def test_check_b2_residual_identity_against_direct_evaluation():
@@ -209,8 +209,8 @@ def test_interior_norms_nan_when_lambda_mom_and_cont_differ():
 
     solve_beltrami(config, verbose=False, iteration_logger=logger)
 
-    assert all(math.isnan(row["norm_Rlin_interior"]) for row in logger.rows)
-    assert all(math.isnan(row["norm_R_interior"]) for row in logger.rows)
+    assert all(math.isnan(row["norm_Rlin_interior"]) for row in solve_rows(logger.rows))
+    assert all(math.isnan(row["norm_R_interior"]) for row in solve_rows(logger.rows))
 
 
 def test_run_json_requires_iteration_logger():
@@ -241,6 +241,8 @@ def test_run_json_written_and_self_consistent(tmp_path):
     # first_stall_iteration must match an independent scan of the logger.
     from lilq.run_metadata import first_stall_iteration
     assert meta["first_stall_iteration"] == first_stall_iteration(logger.rows)
+    # Check B2, measured on every iteration of this real solve.
+    assert meta["b2_check"]["rel_err"] < 1e-10
 
 
 # =============================================================================
@@ -295,8 +297,8 @@ def test_more_pin_levels_progressively_close_the_null_space():
         config = BeltramiConfig(n_pressure_pin_levels=n_pin, **base)
         logger = IterationLogger()
         result = solve_beltrami(config, verbose=False, iteration_logger=logger)
-        ranks[n_pin] = logger.rows[-1]["num_rank_svd"]
-        assert logger.rows[-1]["num_rank_svd"] == logger.rows[-1]["num_rank_gelsy"]
+        ranks[n_pin] = last_solve_row(logger.rows)["num_rank_svd"]
+        assert last_solve_row(logger.rows)["num_rank_svd"] == last_solve_row(logger.rows)["num_rank_gelsy"]
         if n_pin == 1:
             P_total = result['n_params']
 

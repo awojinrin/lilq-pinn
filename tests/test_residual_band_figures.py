@@ -74,7 +74,7 @@ def test_run_and_log_writes_csv_and_populates_logger(tmp_path):
     with open(csv_path, newline="") as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == len(logger)
-    assert rows[0]["k"] == "1"
+    assert rows[0]["k"] == "0"
 
 
 def test_plot_residual_bands_produces_pdf_and_png(tmp_path):
