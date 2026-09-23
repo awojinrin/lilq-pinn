@@ -17,6 +17,110 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-22 -- Beltrami and Darcy wired to Section 3.1 instrumentation; run.json added
+
+**Phase 1, sub-batch 6 of the iterations.csv work** -- the last two
+problems, plus the "once per run" `run.json` metadata file
+(Section 3.1's own list, separate from `iterations.csv`'s per-iteration
+columns) that Sections 3.3 and 6 require alongside it but which no
+problem had until now.
+
+**Beltrami**: same self-contained-loop situation as Kovasznay (sub-batch
+5) -- `solve_beltrami` never calls `solve_lil_q`, so this manually drives
+a `LilQDiagnosticsTracker` again. New `_make_beltrami_nonlinear_loss_fn`/
+`_make_beltrami_residual_vector_fn`, generalizing the one-scalar-per-block
+convention to Beltrami's 26 row-blocks (momentum x3, continuity, BC-u/v/w
+x6 faces, IC-u/v/w, pressure pin) -- same "independently re-derived, not
+shared code with the assembly loop" discipline as every prior residual-
+vector function, so check B2 is a real cross-check (verified `rel_err`
+down to exact `0.0` on one real run). Interior-row unweighting is
+conditional on `lambda_mom == lambda_cont`, same reasoning and same
+guard-with-regression-test discipline as Kovasznay. `iteration_logger` is
+CPU-only (`config.use_gpu=False`) -- raises `NotImplementedError`
+otherwise, since the GPU path uses `torch.linalg.lstsq(driver='gelsd')`,
+not `gelsy`, and a GPU instrumentation path is Section 3.2's concern,
+explicitly Kovasznay-only in the spec. At the manuscript's own Beltrami
+scale (P_total=7,984, confirmed by direct calculation:
+`3*6**4 + 8**4 == 7984`), the tracker automatically uses pivoted-QR at
+the final iterate only (never a full per-iteration SVD) purely because
+P_total exceeds `DEFAULT_SVD_CONDITIONING_THRESHOLD` -- this is Section
+3.1 item 8's Beltrami-specific requirement, already satisfied by the
+generic tracker design from sub-batch 1 with no Beltrami-specific code
+needed; locked in by `test_large_P_uses_pivoted_qr_at_final_iterate_only`.
+Also made the CPU `_lstsq` branch's `cond=EPS_MACH` explicit (was
+`cond=None`, same LAPACK `gelsy` RCOND=-1 convention as every earlier
+instance of this change) to capture `rank_gelsy`, which the original code
+discarded -- verified bit-identical against the pre-change implementation
+loaded from git HEAD.
+
+**Darcy**: a genuinely different case from every other problem in this
+codebase -- `solve_lilq_darcy`'s system (Darcy-x, Darcy-y, continuity) is
+**linear** in h_tilde*/u*/v*, so there is no Bellman-Kalaba
+quasilinearization loop at all, just one direct `lstsq` solve. This
+produces exactly one logged row (`k=1`) rather than driving an iteration
+loop. Consequences, each locked in by
+`test_single_row_reflects_linear_system_structure`: `order_obs` is NaN
+and `stall_flag` is False (no k-1 history, same degenerate case every
+other problem's first row already exercises); `chi` evaluates to exactly
+`0.0`, not NaN -- because the system is linear, the nonlinear residual
+and the linearized residual are literally the same operator
+(`A @ beta - b`), so `compute_residual_vector_fn` needed no separate
+formula, and a chi of 0 is the mathematically correct statement that
+there is no linearization error for a linear problem; `norm_R_interior`
+equals `norm_R_h` exactly, because Darcy's boundary conditions are
+satisfied exactly by construction (the lifting function and augmented
+bases bake them into the basis functions themselves -- see the module
+docstring), so there is no separate BC row block and *every* row is a
+PDE/interior row (`n_interior_rows = A.shape[0]`, `interior_weight=1.0`).
+Darcy also has no `lambda_pde`/`lambda_bc`-style row-weighting scheme at
+all (the only row scaling is the `sqrt(K*)` physics normalization,
+applied per-row rather than as a single block scalar) -- `run.json`'s
+`row_weights` field says this explicitly rather than forcing it into the
+other problems' single-scalar-per-block shape. `iteration_logger` is only
+supported for `config.solver_method == 'qr'` (the `gelsy` driver) --
+raises `NotImplementedError` for `'lstsq'`, which calls
+`numpy.linalg.lstsq` (a different driver; the schema's `num_rank_gelsy`
+column specifically means the scipy `gelsy` rank). Also made the `qr`
+branch's `cond=EPS_MACH` explicit to capture rank, same pattern, verified
+bit-identical.
+
+**`lilq/run_metadata.py` (new module)**: `run.json` schema/writer for
+Section 3.1's "once per run" metadata list (N/P composition, row
+weights, collocation construction, basis description, initial
+coefficients, solver driver/rcond, the stopping rule actually used and
+K_max, stopping reason, first stall iteration, device/thread count).
+Unlike `iterations.csv` (one fixed column schema every problem fills in
+identically), every problem's row/field composition genuinely differs
+(Darcy's 3 unweighted blocks vs. Beltrami's 26 lambda-weighted ones), so
+`N_composition`/`P_composition`/`basis_description`/`row_weights` are
+free-form dicts rather than fixed columns -- only the top-level field
+*names* are fixed (`build_run_metadata` rejects an unrecognized one, same
+"typo should fail loudly" discipline as `IterationLogger.record`).
+`first_stall_iteration(rows)` scans an `IterationLogger.rows` list for
+the first `stall_flag=True` (or `None` if the run never stalled),
+reusable by any problem. Wired into `solve_beltrami`/`solve_lilq_darcy`
+via a new optional `run_json_path` parameter, requiring `iteration_logger`
+be given alongside it (raises `ValueError` otherwise) since
+`first_stall_iteration` needs the logged rows. `thread_count` reads
+`OMP_NUM_THREADS` via the existing `lilq.provenance.capture_blas_thread_env`,
+falling back to `os.cpu_count()` (not `1`) when unset -- an unset BLAS
+thread env var means "use every core available", and reporting `1` would
+have been actively wrong, not just imprecise; caught and fixed before
+committing, not left as a plausible-looking bug.
+
+**Not done here, out of scope, flagged rather than silently assumed**:
+Bratu/Burgers/BL/Kovasznay (sub-batches 3-5) do **not** yet have
+`run.json` wired in -- this sub-batch was explicitly scoped to
+"Beltrami/Darcy + run.json" by the user, and retrofitting the other four
+problems is a separate decision, not assumed as included here. Whether
+`experiments/run_*.py` should be changed to always produce `run.json`
+alongside `iterations.csv` for real experiment runs is also undecided,
+same as the equivalent `iterations.csv` question flagged in sub-batch 3.
+
+123/123 -> 134/134 tests passing.
+
+---
+
 ## 2026-09-22 -- Kovasznay wired to Section 3.1 instrumentation (own solver, manually driven)
 
 **Phase 1, sub-batch 5 of the iterations.csv work** -- the Kovasznay

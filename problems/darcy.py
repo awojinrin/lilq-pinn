@@ -23,6 +23,7 @@ Boundary conditions (satisfied exactly by basis construction):
 """
 
 import numpy as np
+import os
 import torch
 import torch.nn as nn
 from scipy import linalg
@@ -34,6 +35,10 @@ from pathlib import Path
 import time
 
 from lilq.basis import Fourier1D, TensorProductBasis2D, AugmentedBasis1D
+from lilq.instrumentation import EPS_MACH
+from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
+from lilq.provenance import capture_blas_thread_env
+from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
 
 
 # ── Data directory ───────────────────────────────────────────────────────────
@@ -282,7 +287,9 @@ def _create_basis_v(order: int) -> TensorProductBasis2D:
 
 def solve_lilq_darcy(config: DarcyConfig,
                      physics: DarcyPhysics,
-                     verbose: bool = True) -> Dict:
+                     verbose: bool = True,
+                     iteration_logger=None,
+                     run_json_path=None) -> Dict:
     """LiL-Q solver for Darcy flow with lifting function.
 
     Builds and solves the overdetermined collocation system
@@ -301,6 +308,40 @@ def solve_lilq_darcy(config: DarcyConfig,
     config : DarcyConfig
     physics : DarcyPhysics
     verbose : bool
+    iteration_logger : ``lilq.iteration_log.IterationLogger``, optional
+        When given, a single Section 3.1 ``iterations.csv`` row (``k=1``)
+        is recorded for this solve. Darcy's LiL-Q system is **linear**
+        (Darcy-x/y and continuity are already linear in
+        h_tilde*/u*/v*) -- there is no Bellman-Kalaba quasilinearization
+        loop here, unlike every other problem in this codebase, so this
+        is a single direct solve rather than an iterative one.
+        Consequently ``order_obs``/``chi``/``stall_flag`` are degenerate
+        (no k-1/k-2 history exists) -- the tracker's existing NaN/False
+        handling for a lone iterate covers this with no special-casing.
+        Because Darcy has no separate BC row block (boundary conditions
+        are satisfied exactly by the basis construction -- see the
+        module docstring), every row is a "interior" PDE row:
+        ``n_interior_rows`` is the full row count and
+        ``interior_weight=1.0`` (no lambda-based row weighting exists in
+        this system, unlike every other problem). Because the system is
+        linear, the nonlinear residual and the linearized residual
+        coincide exactly (``compute_residual_vector_fn`` is just
+        ``A @ beta - b``, the same operator that defines the system
+        itself) -- so ``chi`` correctly evaluates to ``0.0`` rather than
+        NaN, confirming there is no linearization error to speak of.
+        **Only supported for ``config.solver_method == 'qr'``** (the
+        ``gelsy`` driver) -- raises ``NotImplementedError`` for
+        ``'lstsq'``, which uses ``numpy.linalg.lstsq`` (a different
+        driver entirely; the schema's ``num_rank_gelsy`` column
+        specifically means the scipy ``gelsy`` rank). Omitted (``None``,
+        the default), behavior is unchanged from before this parameter
+        existed.
+    run_json_path : str or Path, optional
+        When given, writes the Section 3.1 "once per run" ``run.json``
+        metadata file for this solve (see ``lilq.run_metadata``).
+        Requires ``iteration_logger`` -- raises ``ValueError`` if given
+        without it. Reports ``stopping_rule={"type": "single_direct_solve"}``
+        and ``K_max=1``: Darcy has no iterative stopping rule to record.
 
     Returns
     -------
@@ -308,6 +349,15 @@ def solve_lilq_darcy(config: DarcyConfig,
         Keys: 'c_h_tilde', 'c_u', 'c_v', 'metrics',
               'basis_h_tilde', 'basis_u', 'basis_v', 'physics'.
     """
+    if iteration_logger is not None and config.solver_method != 'qr':
+        raise NotImplementedError(
+            "iteration_logger is only supported with config.solver_method="
+            "'qr' (scipy's gelsy driver): 'lstsq' uses numpy.linalg.lstsq, "
+            "a different driver, and the schema's num_rank_gelsy column "
+            "specifically means the gelsy rank."
+        )
+    if run_json_path is not None and iteration_logger is None:
+        raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
     cfg = config
     R = physics.R
     DELTA_P = physics.DELTA_P
@@ -357,6 +407,7 @@ def solve_lilq_darcy(config: DarcyConfig,
 
     # ── Build system ─────────────────────────────────────────────────────
     t_start = time.time()
+    t0 = time.perf_counter()
 
     # Basis evaluations
     dh_dx = basis_h_tilde.derivative(x_pde, y_pde, dx=1, dy=0)
@@ -395,17 +446,21 @@ def solve_lilq_darcy(config: DarcyConfig,
     b = np.concatenate([b_Dx, b_Dy, b_CE])
 
     t_build = time.time() - t_start
+    t_assemble_s = time.perf_counter() - t0
 
     if verbose:
         print("System: A shape = %s, build time = %.4fs" % (A.shape, t_build))
 
     # ── Solve ────────────────────────────────────────────────────────────
     t_solve_start = time.time()
+    t0 = time.perf_counter()
     if cfg.solver_method == 'lstsq':
         coeffs, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
+        rank_gelsy = None
     else:
-        coeffs = linalg.lstsq(A, b, lapack_driver='gelsy')[0]
+        coeffs, _, rank_gelsy, _ = linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy')
     t_solve = time.time() - t_solve_start
+    t_solve_s = time.perf_counter() - t0
 
     c_h_tilde = coeffs[:n_h]
     c_u = coeffs[n_h:n_h + n_u]
@@ -420,6 +475,34 @@ def solve_lilq_darcy(config: DarcyConfig,
 
     # ── Residuals ────────────────────────────────────────────────────────
     residual = A @ coeffs - b
+
+    if iteration_logger is not None:
+        # Single direct linear solve -- one logged row (k=1), no outer
+        # quasi-iteration loop to drive. "beta_prev" is the zero vector
+        # (no pretraining/previous iterate exists for this problem);
+        # initial_norm_R_h is the residual at that zero state, ‖-b‖ = ‖b‖,
+        # matching every other problem's convention of seeding the
+        # tracker from the pre-solve residual.
+        beta_prev = np.zeros(n_total)
+        beta_new = coeffs
+        residual_vector_fn = lambda beta: A @ beta - b  # noqa: E731 -- linear system: this literally *is* the nonlinear operator
+        total_loss = float(np.sum(residual ** 2))
+
+        tracker = LilQDiagnosticsTracker(
+            initial_norm_R_h=float(np.linalg.norm(b)),
+            n_interior_rows=A.shape[0],  # every row is a PDE row -- no separate BC block exists
+            interior_weight=1.0,         # no lambda-based row weighting in this system
+        )
+        row = tracker.step(
+            k=1,
+            A_stacked=A, b_stacked=b,
+            beta_prev=beta_prev, beta_new=beta_new,
+            total_loss=total_loss, rank_gelsy=rank_gelsy,
+            t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
+            is_final_iterate=True,
+            compute_residual_vector_fn=residual_vector_fn,
+        )
+        iteration_logger.record(**row)
 
     res_Dx_nd = residual[:n_pde]
     res_Dy_nd = residual[n_pde:2 * n_pde]
@@ -500,6 +583,42 @@ def solve_lilq_darcy(config: DarcyConfig,
         print("  Rel L2:    %.6f" % rel_L2)
         print("  Max Error: %.2f psi" % np.abs(err).max())
         print("=" * 70)
+
+    if run_json_path is not None:
+        thread_env = capture_blas_thread_env()
+        metadata = build_run_metadata(
+            N_total=int(A.shape[0]),
+            N_composition={'darcy_x': n_pde, 'darcy_y': n_pde, 'continuity': n_pde},
+            P_total=int(n_total),
+            P_composition={'h_tilde': int(n_h), 'u': int(n_u), 'v': int(n_v)},
+            row_weights={
+                # Physics normalization (sqrt(K*) at each collocation
+                # point), not a single lambda-based scalar per block like
+                # every other problem in this codebase -- Darcy has no
+                # lambda_pde/lambda_bc scheme at all (see module docstring).
+                'darcy_x': 'per-row sqrt(K*)*R (physics row equilibration, not a block scalar)',
+                'darcy_y': 'per-row sqrt(K*) (physics row equilibration, not a block scalar)',
+                'continuity': 1.0,
+            },
+            collocation_construction={
+                'method': 'cell centers',
+                'NX_CELLS': cfg.NX_CELLS, 'NY_CELLS': cfg.NY_CELLS,
+            },
+            basis_description={
+                'h_tilde': {'family': 'cos(x) x sin(y)', 'modes': cfg.ORDER_H},
+                'u': {'family': 'sin(x) x augmented-cos(y)', 'modes': cfg.ORDER_U},
+                'v': {'family': 'augmented-cos(x) x augmented-cos(y)', 'modes': cfg.ORDER_V},
+            },
+            initial_coefficients='n/a (single direct linear solve, no iterative initial guess)',
+            solver_driver='gelsy', rcond=EPS_MACH,
+            stopping_rule={'type': 'single_direct_solve'},
+            K_max=1,
+            stopping_reason='direct_solve',
+            first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            device='cpu',
+            thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
+        )
+        write_run_json(run_json_path, metadata)
 
     return {
         'c_h_tilde': c_h_tilde,

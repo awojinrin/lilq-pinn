@@ -19,12 +19,17 @@ Multi-field LiL-Q with 4D tensor product bases.
 """
 
 import numpy as np
+import os
 import scipy.linalg
 import time
 from dataclasses import dataclass
 from typing import Tuple, Dict, List
 
 from lilq.basis import TensorProductBasisND, create_basis_nd, Chebyshev1D, Fourier1D
+from lilq.instrumentation import EPS_MACH
+from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
+from lilq.provenance import capture_blas_thread_env
+from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
 
 try:
     import torch
@@ -162,7 +167,7 @@ def _lstsq(A, b, use_gpu=False):
         rank = int(result.rank) if result.rank is not None else At.shape[1]
         return x, rank
     else:
-        x, _, rank, _ = scipy.linalg.lstsq(A, b, lapack_driver='gelsy')
+        x, _, rank, _ = scipy.linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy')
         return x, rank
 
 
@@ -170,8 +175,133 @@ def _lstsq(A, b, use_gpu=False):
 # Solver
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _make_beltrami_nonlinear_loss_fn(
+    Mu, Mv, Mw, Mp, bc_blocks, ic_block, Phi_p_pin, p_pin_val,
+    nu, Pu, Pv, Pw, Pp, lambda_mom, lambda_cont, lambda_bc, lambda_ic,
+):
+    """Scalar total-loss evaluator for Beltrami's Section 3.1
+    instrumentation -- the MSE-based analogue of Kovasznay's
+    ``_make_kovasznay_nonlinear_loss_fn`` (``problems/kovasznay.py``),
+    generalized to Beltrami's 4-field (u,v,w,p), 4D (x,y,z,t)
+    momentum/continuity/BC/IC/pin block structure. Not used by
+    ``solve_beltrami``'s own convergence check (``rel_delta`` on the
+    coefficients, unchanged) -- only feeds ``iterations.csv``'s
+    ``norm_R_h`` when ``iteration_logger`` is given.
+
+    Returns ``(theta) -> total_loss`` where ``theta`` is the concatenated
+    ``[theta_u; theta_v; theta_w; theta_p]`` coefficient vector.
+    """
+    def compute_loss(theta):
+        tu = theta[:Pu]
+        tv = theta[Pu:Pu + Pv]
+        tw = theta[Pu + Pv:Pu + Pv + Pw]
+        tp = theta[Pu + Pv + Pw:]
+
+        u = Mu['val'] @ tu; ux = Mu['dx'] @ tu; uy = Mu['dy'] @ tu; uz = Mu['dz'] @ tu
+        v = Mv['val'] @ tv; vx = Mv['dx'] @ tv; vy = Mv['dy'] @ tv; vz = Mv['dz'] @ tv
+        w = Mw['val'] @ tw; wx = Mw['dx'] @ tw; wy = Mw['dy'] @ tw; wz = Mw['dz'] @ tw
+        ut = Mu['dt'] @ tu; vt = Mv['dt'] @ tv; wt = Mw['dt'] @ tw
+        px = Mp['dx'] @ tp; py = Mp['dy'] @ tp; pz = Mp['dz'] @ tp
+        lap_u = (Mu['dxx'] + Mu['dyy'] + Mu['dzz']) @ tu
+        lap_v = (Mv['dxx'] + Mv['dyy'] + Mv['dzz']) @ tv
+        lap_w = (Mw['dxx'] + Mw['dyy'] + Mw['dzz']) @ tw
+
+        r1 = ut + u * ux + v * uy + w * uz + px - nu * lap_u
+        r2 = vt + u * vx + v * vy + w * vz + py - nu * lap_v
+        r3 = wt + u * wx + v * wy + w * wz + pz - nu * lap_w
+        r4 = ux + vy + wz
+
+        bc_mse = 0.0
+        for blk in bc_blocks.values():
+            bc_mse += float(np.mean((blk['Phi_u'] @ tu - blk['u_ex']) ** 2))
+            bc_mse += float(np.mean((blk['Phi_v'] @ tv - blk['v_ex']) ** 2))
+            bc_mse += float(np.mean((blk['Phi_w'] @ tw - blk['w_ex']) ** 2))
+
+        ic_mse = (
+            float(np.mean((ic_block['Phi_u'] @ tu - ic_block['u_ex']) ** 2))
+            + float(np.mean((ic_block['Phi_v'] @ tv - ic_block['v_ex']) ** 2))
+            + float(np.mean((ic_block['Phi_w'] @ tw - ic_block['w_ex']) ** 2))
+        )
+
+        pin_res = float((Phi_p_pin @ tp - p_pin_val)[0])
+
+        total = (
+            lambda_mom * (float(np.mean(r1 ** 2)) + float(np.mean(r2 ** 2)) + float(np.mean(r3 ** 2)))
+            + lambda_cont * float(np.mean(r4 ** 2))
+            + lambda_bc * bc_mse
+            + lambda_ic * ic_mse
+            + lambda_bc * pin_res ** 2
+        )
+        return total
+
+    return compute_loss
+
+
+def _make_beltrami_residual_vector_fn(
+    Mu, Mv, Mw, Mp, bc_blocks, ic_block, Phi_p_pin, p_pin_val,
+    nu, Pu, Pv, Pw, Pp, n_pde, lambda_mom, lambda_cont, lambda_bc, lambda_ic,
+):
+    """Weighted nonlinear residual **vector** for Section 3.1's phase
+    indicator -- the vector form of
+    :func:`_make_beltrami_nonlinear_loss_fn`, stacked and weighted
+    identically to ``solve_beltrami``'s own ``A_sys``/``b_sys`` assembly
+    (x/y/z-momentum, continuity, then BC-u/v/w per face, then IC-u/v/w,
+    then the pressure pin), by construction: ``norm(vector)**2 == total``
+    from the loss function above -- independently re-derived here (not
+    shared code with the assembly loop or the loss function above) so
+    check B2 is a real cross-check, not a tautology.
+
+    Returns ``(theta) -> weighted_residual_vector``.
+    """
+    w_mom = np.sqrt(lambda_mom / n_pde)
+    w_cont = np.sqrt(lambda_cont / n_pde)
+    w_pin = np.sqrt(lambda_bc)
+
+    def compute_residual_vector(theta):
+        tu = theta[:Pu]
+        tv = theta[Pu:Pu + Pv]
+        tw = theta[Pu + Pv:Pu + Pv + Pw]
+        tp = theta[Pu + Pv + Pw:]
+
+        u = Mu['val'] @ tu; ux = Mu['dx'] @ tu; uy = Mu['dy'] @ tu; uz = Mu['dz'] @ tu
+        v = Mv['val'] @ tv; vx = Mv['dx'] @ tv; vy = Mv['dy'] @ tv; vz = Mv['dz'] @ tv
+        w = Mw['val'] @ tw; wx = Mw['dx'] @ tw; wy = Mw['dy'] @ tw; wz = Mw['dz'] @ tw
+        ut = Mu['dt'] @ tu; vt = Mv['dt'] @ tv; wt = Mw['dt'] @ tw
+        px = Mp['dx'] @ tp; py = Mp['dy'] @ tp; pz = Mp['dz'] @ tp
+        lap_u = (Mu['dxx'] + Mu['dyy'] + Mu['dzz']) @ tu
+        lap_v = (Mv['dxx'] + Mv['dyy'] + Mv['dzz']) @ tv
+        lap_w = (Mw['dxx'] + Mw['dyy'] + Mw['dzz']) @ tw
+
+        r1 = ut + u * ux + v * uy + w * uz + px - nu * lap_u
+        r2 = vt + u * vx + v * vy + w * vz + py - nu * lap_v
+        r3 = wt + u * wx + v * wy + w * wz + pz - nu * lap_w
+        r4 = ux + vy + wz
+
+        blocks = [w_mom * r1, w_mom * r2, w_mom * r3, w_cont * r4]
+        for blk in bc_blocks.values():
+            ne = blk['n']
+            w_bc = np.sqrt(lambda_bc / ne)
+            blocks.append(w_bc * (blk['Phi_u'] @ tu - blk['u_ex']))
+            blocks.append(w_bc * (blk['Phi_v'] @ tv - blk['v_ex']))
+            blocks.append(w_bc * (blk['Phi_w'] @ tw - blk['w_ex']))
+
+        ni = ic_block['n']
+        w_ic = np.sqrt(lambda_ic / ni)
+        blocks.append(w_ic * (ic_block['Phi_u'] @ tu - ic_block['u_ex']))
+        blocks.append(w_ic * (ic_block['Phi_v'] @ tv - ic_block['v_ex']))
+        blocks.append(w_ic * (ic_block['Phi_w'] @ tw - ic_block['w_ex']))
+
+        blocks.append(w_pin * (Phi_p_pin @ tp - p_pin_val))
+
+        return np.concatenate(blocks)
+
+    return compute_residual_vector
+
+
 def solve_beltrami(config: BeltramiConfig, verbose=True,
-                    analyze_conditioning: bool = False) -> Dict:
+                    analyze_conditioning: bool = False,
+                    iteration_logger=None,
+                    run_json_path=None) -> Dict:
     """Solve 3D Beltrami flow via multi-field LiL-Q.
 
     Parameters
@@ -184,14 +314,46 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         time for a diagnostic nothing currently consumes -- confirmed via
         a same-machine, same-moment comparison against the pre-GitHub
         codebase, which gates this identically (``analyze_svd=False`` by
-        default) for the same reason. See DECISIONS.md. The computational
-        package spec (Section 3.1 item 8) also specifies a cheaper,
-        final-iterate-only pivoted-QR conditioning check for Beltrami
-        specifically rather than a full per-iteration SVD -- that's the
-        real replacement for this flag, planned for Phase 1's
-        instrumentation work; this flag is a stopgap that restores
-        correct default performance in the meantime.
+        default) for the same reason. See DECISIONS.md. Independent of
+        ``iteration_logger`` below, which is the real Section 3.1 item 8
+        replacement this flag anticipated -- ``LilQDiagnosticsTracker``
+        already does final-iterate-only pivoted-QR (not a full SVD) for
+        P_total this large, so it doesn't pay this flag's cost.
+    iteration_logger : ``lilq.iteration_log.IterationLogger``, optional
+        When given, a full Section 3.1 ``iterations.csv`` row is recorded
+        every outer iteration, mirroring ``problems.kovasznay``'s manual
+        ``LilQDiagnosticsTracker`` wiring -- Beltrami has its own
+        self-contained quasilinearization loop, same as Kovasznay.
+        Interior-row unweighting is only populated when
+        ``config.lambda_mom == config.lambda_cont`` (true by default),
+        same reasoning as Kovasznay: momentum (3*n_pde rows) and
+        continuity (n_pde rows) are independently weighted and only
+        collapse to the tracker's required single leading scalar weight
+        when the two match. **CPU only** (``config.use_gpu=False``) --
+        raises ``NotImplementedError`` otherwise, since the GPU path here
+        uses a different LAPACK driver (``gelsd`` via
+        ``torch.linalg.lstsq``, not ``gelsy``) and a full GPU
+        instrumentation path is Section 3.2's concern, Kovasznay-only per
+        the spec, not attempted here. Omitted (``None``, the default),
+        behavior -- including ``history`` -- is unchanged from before
+        this parameter existed.
+    run_json_path : str or Path, optional
+        When given, writes the Section 3.1 "once per run" ``run.json``
+        metadata file for this solve (see ``lilq.run_metadata``) after
+        the solve completes. Requires ``iteration_logger`` (its rows
+        supply ``first_stall_iteration``) -- raises ``ValueError`` if
+        given without it.
     """
+    if iteration_logger is not None and config.use_gpu:
+        raise NotImplementedError(
+            "iteration_logger is not supported with config.use_gpu=True: "
+            "the GPU lstsq path uses a different LAPACK driver (gelsd, not "
+            "gelsy) and a GPU instrumentation path is out of scope here "
+            "(Section 3.2 of the package spec is Kovasznay-only). Use the "
+            "CPU path (use_gpu=False) when iteration_logger is given."
+        )
+    if run_json_path is not None and iteration_logger is None:
+        raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
     physics = BeltramiPhysics(config)
     nu = physics.nu
 
@@ -278,9 +440,40 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
     history = {k: [] for k in ['iteration', 'coeff_change', 'pde_residual',
                                 'continuity_residual', 'solve_time', 'cond_number']}
 
+    tracker = None
+    loss_fn = None
+    residual_vector_fn = None
+    if iteration_logger is not None:
+        loss_fn = _make_beltrami_nonlinear_loss_fn(
+            Mu, Mv, Mw, Mp, bc_blocks, ic_block, Phi_p_pin, p_pin_val,
+            nu, Pu, Pv, Pw, Pp,
+            config.lambda_mom, config.lambda_cont, config.lambda_bc, config.lambda_ic,
+        )
+        residual_vector_fn = _make_beltrami_residual_vector_fn(
+            Mu, Mv, Mw, Mp, bc_blocks, ic_block, Phi_p_pin, p_pin_val,
+            nu, Pu, Pv, Pw, Pp, n_pde,
+            config.lambda_mom, config.lambda_cont, config.lambda_bc, config.lambda_ic,
+        )
+
+        tracker_kwargs = {}
+        if config.lambda_mom == config.lambda_cont:
+            tracker_kwargs["n_interior_rows"] = 4 * n_pde
+            tracker_kwargs["interior_weight"] = float(np.sqrt(config.lambda_mom / n_pde))
+        # P_total ~ 8000 for the paper's Beltrami config -- above
+        # DEFAULT_SVD_CONDITIONING_THRESHOLD (3200), so the tracker
+        # already does pivoted-QR-at-final-iterate-only here, matching
+        # Section 3.1 item 8's Beltrami-specific conditioning method
+        # (not a full per-iteration SVD -- see analyze_conditioning above).
+
+        theta_init = np.concatenate([theta_u, theta_v, theta_w, theta_p])
+        tracker = LilQDiagnosticsTracker(
+            initial_norm_R_h=float(np.sqrt(loss_fn(theta_init))), **tracker_kwargs,
+        )
+
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):
         t_iter = time.time()
+        t0 = time.perf_counter()
 
         uk = Mu['val'] @ theta_u; uk_x = Mu['dx'] @ theta_u
         uk_y = Mu['dy'] @ theta_u; uk_z = Mu['dz'] @ theta_u
@@ -355,8 +548,11 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
 
         A_sys = np.vstack(A_rows)
         b_sys = np.concatenate(b_rows)
+        t_assemble_s = time.perf_counter() - t0
 
+        t0 = time.perf_counter()
         theta_new, rank = _lstsq(A_sys, b_sys, use_gpu=config.use_gpu)
+        t_solve_s = time.perf_counter() - t0
         dt_iter = time.time() - t_iter
 
         tu = theta_new[:Pu]
@@ -396,6 +592,20 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
                   f"PDE={pde_res:.3e}  div={cont_res:.3e}  "
                   f"QR={dt_iter:.3f}s  rank={rank}/{P_total}")
 
+        if tracker is not None:
+            is_final_iterate = (rel_delta < config.tol) or (k == config.max_iter - 1)
+            total_loss = loss_fn(theta_new)
+            row = tracker.step(
+                k=k + 1,
+                A_stacked=A_sys, b_stacked=b_sys,
+                beta_prev=theta_old, beta_new=theta_new,
+                total_loss=total_loss, rank_gelsy=rank,
+                t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
+                is_final_iterate=is_final_iterate,
+                compute_residual_vector_fn=residual_vector_fn,
+            )
+            iteration_logger.record(**row)
+
         theta_u, theta_v, theta_w, theta_p = tu, tv, tw, tp_
 
         if rel_delta < config.tol:
@@ -412,6 +622,55 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         print(f"\n  Total time: {total_time:.3f}s,  Iters: {k+1}")
         for key in ['rel_l2_u', 'rel_l2_v', 'rel_l2_w', 'rel_l2_p']:
             print(f"  {key}: {rel_l2[key]:.3e}")
+
+    if run_json_path is not None:
+        n_bc_edge_total = sum(blk['n'] for blk in bc_blocks.values())
+        n_ic_total = ic_block['n']
+        wm = float(np.sqrt(config.lambda_mom / n_pde))
+        wc = float(np.sqrt(config.lambda_cont / n_pde))
+        wi = float(np.sqrt(config.lambda_ic / n_ic_total))
+        wp_pin = float(np.sqrt(config.lambda_bc))
+        thread_env = capture_blas_thread_env()
+        final_rel_delta = history['coeff_change'][-1]
+        metadata = build_run_metadata(
+            N_total=int(A_sys.shape[0]),
+            N_composition={
+                'x_momentum': n_pde, 'y_momentum': n_pde, 'z_momentum': n_pde,
+                'continuity': n_pde,
+                'bc_u': n_bc_edge_total, 'bc_v': n_bc_edge_total, 'bc_w': n_bc_edge_total,
+                'ic_u': n_ic_total, 'ic_v': n_ic_total, 'ic_w': n_ic_total,
+                'pressure_pin': 1,
+            },
+            P_total=int(P_total),
+            P_composition={'u': int(Pu), 'v': int(Pv), 'w': int(Pw), 'p': int(Pp)},
+            row_weights={
+                'momentum': wm, 'continuity': wc,
+                'bc': {face: float(np.sqrt(config.lambda_bc / blk['n']))
+                       for face, blk in bc_blocks.items()},
+                'ic': wi, 'pressure_pin': wp_pin,
+            },
+            collocation_construction={
+                'method': 'equispaced tensor grid',
+                'N_x': config.N_x, 'N_y': config.N_y, 'N_z': config.N_z, 'N_t': config.N_t,
+                'N_bc': config.N_bc, 'N_t_bc': config.N_t_bc, 'N_ic': config.N_ic,
+            },
+            basis_description={
+                'family': config.basis_type,
+                'u': {'modes': config.N_vel, 'dims': 4},
+                'v': {'modes': config.N_vel, 'dims': 4},
+                'w': {'modes': config.N_vel, 'dims': 4},
+                'p': {'modes': config.N_p, 'dims': 4},
+            },
+            initial_coefficients='zero',
+            solver_driver='gelsy', rcond=EPS_MACH,
+            stopping_rule={'type': 'rel_coeff_change', 'tolerance': config.tol},
+            K_max=config.max_iter,
+            stopping_reason='target' if final_rel_delta < config.tol else 'iteration_cap',
+            first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            device='cpu',
+            thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
+        )
+        write_run_json(run_json_path, metadata)
 
     return {
         'theta_u': theta_u, 'theta_v': theta_v, 'theta_w': theta_w, 'theta_p': theta_p,
