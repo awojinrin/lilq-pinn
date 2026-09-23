@@ -39,9 +39,9 @@ squeue -u $USER
 |---|---|---|---|
 | `00_preflight` | test suite + smoke run of everything, on the cluster's libraries | 8 cores, 1 T4 | minutes |
 | `10_logged_reruns_cpu` | Section 3.3, all CPU runs (52) | 24 cores | ~30 min |
-| `11_logged_reruns_gpu` | Section 3.3 Kovasznay GPU runs + check B3 | 8 cores, 1 A100 | minutes |
-| `20_four_method_gpu` | Section 3.4 GPU pass, array of 4 (one per benchmark) | 8 cores, 1 A100 each | hours each |
-| `21_four_method_cpu` | Section 3.4 CPU pass at the largest sizes, array of 4 | 24 cores each | hours each |
+| `11_logged_reruns_gpu` | Section 3.3 Kovasznay GPU runs + check B3 | 8 cores, 1 A30 | minutes |
+| `20_four_method_gpu` | Section 3.4 GPU pass, array of 4 (one per benchmark) | 8 cores, 1 A30 each | 1-4 h each |
+| `21_four_method_cpu` | Section 3.4 CPU pass at the largest sizes, array of 4 | 24 cores each | under 1 h each |
 | `30_basis_study_and_beltrami_pinned` | Sections 3.6 and 3.7 | 24 cores | ~1 h |
 | `40_finalize` | `reference/` and `code/`, merge four-method CSVs, check B1, Section 3.5 figures | 2 cores | under a minute |
 
@@ -64,18 +64,27 @@ index that stopped: `sbatch --array=2 scripts/hprc/20_four_method_gpu.slurm`).
   These solves are moderate in size; if you want to trim, time Kovasznay at
   P = 1,875 with 8/16/24 cores once and keep the smallest count before the
   speed levels off.
-- **GPU type.** Everything runs in float64. A100s run it at full rate; T4s at
-  about 1/32. Only the pre-flight uses a T4.
+- **GPU type.** Everything runs in float64, but the networks are small:
+  each iteration costs a fixed ~20 ms of kernel-launch overhead whatever the
+  GPU (measured on the RTX 5080; the CPU is faster at most sizes). So the
+  GPU jobs ask for an A30 (real FP64, usually free on FASTER), not an A100.
+  Check `gpuavail` before submitting; if A30s are busy, `gpu:t4:1` also
+  works (half the SU rate, slower at the largest BL sizes). The pre-flight
+  uses a T4.
 - **`--exclusive`** (commented out in the timed CPU jobs): Section 2 wants
   nothing else on the machine during timed runs. Uncommenting it reserves
   the whole node -- charged for every core of it, for the job's duration.
   Cheap for the ~30-minute job; your call.
 - **Never run the experiments or the tests on a login node** (limit: 8
   cores, 60 minutes). `salloc` first for anything interactive.
-- **SUs.** Charged for time actually used, not the walltime requested. The
-  four-method GPU array dominates. Grace's A100 surcharge is about half of
-  FASTER's, so for the long GPU jobs change `--account` (and the partition,
-  after checking `sinfo` on Grace) in `20_four_method_gpu.slurm`.
+- **SUs.** Charged for time actually used, not the walltime requested:
+  1 SU per core-hour plus a per-GPU-hour surcharge (FASTER: A100/A40/A30/A10
+  128, T4 64; Grace: A100 72, RTX 6000 48, T4 24). Whole of Component B on
+  FASTER as configured: about 8-12 GPU-hours x (128 + 8) + ~100 SU of CPU
+  jobs, i.e. roughly 1,200-1,700 SU of the 20,000. Grace would cost about
+  half, but its module tree and venv have not been set up or verified yet;
+  to move there, change `--account` to 132698954494 and the `--gres` types
+  (`a100`, `rtx`, `t4`) after checking `module spider PyTorch` and `sinfo`.
 
 ## Cluster vs. the paper's machine
 

@@ -3,13 +3,14 @@
 # check B3 (GPU vs CPU at every size, plus gelsy/gels/GPU-QR timings on the
 # same system). Minutes of work. The job fails (non-zero exit) if B3 fails
 # at any size -- Section 3.2: "if it fails, stop and report".
-# float64 throughout: use an A100 (full-rate FP64), not a T4 (1/32 rate).
+# float64 throughout. An A30 has usable FP64 (half an A100's); these solves
+# are small enough that the A100's extra speed would barely show.
 #SBATCH --job-name=lilq-b33-gpu
 #SBATCH --time=01:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:a30:1
 #SBATCH --partition=gpu
 #SBATCH --account=142698950992
 #SBATCH --output=logs/%x.%j.out

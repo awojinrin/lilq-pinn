@@ -4,13 +4,19 @@
 # (merged by 40_finalize.slurm). The longest part of Component B: hours per
 # task. The CSV is rewritten after every run, so resubmitting the same
 # array index after a walltime kill resumes; failures are logged, retried.
+#
+# GPU type: these networks are small, so each iteration is dominated by fixed
+# per-step overhead, not FP64 arithmetic (measured: CPU beats the laptop GPU
+# at most sizes). An A100 would barely help; an A30 has real FP64 and is
+# usually free on FASTER. A T4 (half the SU rate, 1/32-rate FP64) works too
+# but slows the largest BL sizes.
 #SBATCH --job-name=lilq-b34-gpu
 #SBATCH --array=0-3
 #SBATCH --time=24:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:a30:1
 #SBATCH --partition=gpu
 #SBATCH --account=142698950992
 #SBATCH --output=logs/%x.%A_%a.out
