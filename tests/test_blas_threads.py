@@ -51,8 +51,9 @@ def test_import_sets_all_three_vars_when_unset():
     result = _run_fresh({
         "OMP_NUM_THREADS": None, "OPENBLAS_NUM_THREADS": None,
         "MKL_NUM_THREADS": None, "SLURM_CPUS_PER_TASK": None,
+        "SLURM_CPUS_ON_NODE": None,
     })
-    expected = str(os.cpu_count())
+    expected = str(blas_threads._usable_cpu_count())
     assert result["OMP_NUM_THREADS"] == expected
     assert result["OPENBLAS_NUM_THREADS"] == expected
     assert result["MKL_NUM_THREADS"] == expected
@@ -66,6 +67,29 @@ def test_import_respects_slurm_cpus_per_task():
     assert result["OMP_NUM_THREADS"] == "8"
     assert result["OPENBLAS_NUM_THREADS"] == "8"
     assert result["MKL_NUM_THREADS"] == "8"
+
+
+def test_import_uses_slurm_cpus_on_node_when_cpus_per_task_absent():
+    """--ntasks=4 without --cpus-per-task: SLURM_CPUS_PER_TASK is unset but
+    the job still owns only 4 cores -- must not fall back to the whole
+    node's core count (64 on a FASTER node)."""
+    result = _run_fresh({
+        "OMP_NUM_THREADS": None, "OPENBLAS_NUM_THREADS": None,
+        "MKL_NUM_THREADS": None, "SLURM_CPUS_PER_TASK": None,
+        "SLURM_CPUS_ON_NODE": "4",
+    })
+    assert result["OMP_NUM_THREADS"] == "4"
+    assert result["OPENBLAS_NUM_THREADS"] == "4"
+    assert result["MKL_NUM_THREADS"] == "4"
+
+
+def test_cpus_per_task_takes_precedence_over_cpus_on_node():
+    result = _run_fresh({
+        "OMP_NUM_THREADS": None, "OPENBLAS_NUM_THREADS": None,
+        "MKL_NUM_THREADS": None, "SLURM_CPUS_PER_TASK": "8",
+        "SLURM_CPUS_ON_NODE": "16",
+    })
+    assert result["OMP_NUM_THREADS"] == "8"
 
 
 def test_import_never_overrides_a_preexisting_explicit_value():

@@ -108,7 +108,7 @@ def test_with_logger_is_bit_identical_to_without():
     assert result_plain['n_outer_iters'] == result_logged['n_outer_iters']
     # Deterministic parts of history unchanged (solve_time is real
     # wall-clock and will legitimately differ run-to-run).
-    for key in ('iteration', 'coeff_change', 'pde_residual', 'continuity_residual', 'cond_number'):
+    for key in ('iteration', 'coeff_change', 'pde_residual', 'continuity_residual'):
         assert result_plain['history'][key] == result_logged['history'][key]
     assert len(logger) == result_logged['n_outer_iters']
 

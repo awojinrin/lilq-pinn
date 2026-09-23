@@ -37,6 +37,64 @@ def test_capture_git_info_unavailable_outside_a_repo(tmp_path):
     assert info == {"available": False}
 
 
+def test_capture_git_info_falls_back_to_bundle_provenance_file(tmp_path):
+    record = {"commit": "a" * 40, "branch": "v3-dev", "dirty": False, "diff": None}
+    (tmp_path / provenance.BUNDLE_PROVENANCE_FILE).write_text(json.dumps(record))
+
+    info = provenance.capture_git_info(repo_root=tmp_path)
+
+    assert info["available"] is True
+    assert info["source"] == "bundle"
+    assert info["commit"] == "a" * 40
+    assert info["branch"] == "v3-dev"
+
+
+def test_real_bundle_extracts_with_correct_provenance(tmp_path):
+    """End-to-end: build the actual upload bundle, extract it (no .git),
+    and confirm provenance capture inside it reports this repo's HEAD."""
+    import sys
+    import tarfile
+    from pathlib import Path
+    repo_root = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(repo_root / "scripts"))
+    try:
+        import make_hprc_bundle
+    finally:
+        sys.path.pop(0)
+
+    bundle = tmp_path / "bundle.tar.gz"
+    make_hprc_bundle.build_bundle(bundle)
+    with tarfile.open(bundle) as tar:
+        names = tar.getnames()
+        assert all(n.startswith("lilq-pinn/") for n in names)
+        assert "lilq-pinn/PROVENANCE.json" in names
+        assert "lilq-pinn/tests/test_provenance.py" in names
+        assert not any(n.startswith("lilq-pinn/reference_results/") for n in names)
+        assert not any(n.startswith("lilq-pinn/.git/") for n in names)
+        tar.extractall(tmp_path / "x", filter="data")
+
+    extracted = tmp_path / "x" / "lilq-pinn"
+    info = provenance.capture_git_info(repo_root=extracted)
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_root,
+                          capture_output=True, text=True).stdout.strip()
+    assert info["source"] == "bundle"
+    assert info["commit"] == head
+
+
+def test_capture_scheduler_info_outside_slurm(monkeypatch):
+    monkeypatch.delenv("SLURM_JOB_ID", raising=False)
+    assert provenance.capture_scheduler_info() == {"slurm": False}
+
+
+def test_capture_scheduler_info_inside_slurm(monkeypatch):
+    monkeypatch.setenv("SLURM_JOB_ID", "12345")
+    monkeypatch.setenv("SLURM_CPUS_PER_TASK", "16")
+    info = provenance.capture_scheduler_info()
+    assert info["slurm"] is True
+    assert info["SLURM_JOB_ID"] == "12345"
+    assert info["SLURM_CPUS_PER_TASK"] == "16"
+
+
 def test_capture_blas_thread_env_has_expected_keys():
     env = provenance.capture_blas_thread_env()
     assert set(env.keys()) == {"OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"}
@@ -83,5 +141,5 @@ def test_save_provenance_writes_both_files(tmp_path):
     assert env_path.exists()
 
     hardware = json.loads(hardware_path.read_text())
-    assert set(hardware.keys()) == {"cpu", "gpu", "blas_thread_env", "packages", "git"}
+    assert set(hardware.keys()) == {"cpu", "gpu", "scheduler", "blas_thread_env", "packages", "git"}
     assert env_path.read_text()  # non-empty

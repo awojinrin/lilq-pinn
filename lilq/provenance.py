@@ -62,25 +62,38 @@ def _run(args: list, cwd: Optional[Path] = None, timeout: float = 10.0) -> Optio
     return result.stdout.strip()
 
 
+BUNDLE_PROVENANCE_FILE = "PROVENANCE.json"
+
+
 def capture_git_info(repo_root: Optional[Path] = None) -> dict:
     """Commit hash, branch, and any uncommitted diff.
 
-    Defaults to the repository containing this file. Returns
-    ``{"available": False}`` if git isn't on PATH or this isn't a git
-    checkout (e.g. a bare source copy) -- callers should treat that as
-    "provenance unknown", not an error.
+    Defaults to the repository containing this file. Outside a git
+    checkout (e.g. the source bundle uploaded to a cluster, which ships
+    without ``.git``), falls back to the ``PROVENANCE.json`` that
+    ``scripts/make_hprc_bundle.py`` writes into the bundle, marked
+    ``"source": "bundle"``. Returns ``{"available": False}`` if neither
+    exists -- callers should treat that as "provenance unknown", not an
+    error.
     """
     if repo_root is None:
         repo_root = Path(__file__).resolve().parent.parent
 
     commit = _run(["git", "rev-parse", "HEAD"], cwd=repo_root)
     if commit is None:
-        return {"available": False}
+        bundle_file = Path(repo_root) / BUNDLE_PROVENANCE_FILE
+        try:
+            with open(bundle_file) as f:
+                bundled = json.load(f)
+        except (OSError, ValueError):
+            return {"available": False}
+        return {"available": True, "source": "bundle", **bundled}
 
     branch = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo_root)
     diff = _run(["git", "diff", "HEAD"], cwd=repo_root)
     return {
         "available": True,
+        "source": "git",
         "commit": commit,
         "branch": branch,
         "dirty": bool(diff),
@@ -111,12 +124,35 @@ def _cpu_model_name() -> Optional[str]:
 
 
 def capture_cpu_info() -> dict:
+    """``logical_cores`` is the whole machine; ``usable_cores`` is what this
+    process may actually run on -- they differ inside a scheduler
+    allocation (e.g. 64 vs the job's own cores on a cluster node)."""
+    usable = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else os.cpu_count()
     return {
         "model": _cpu_model_name(),
         "machine": platform.machine(),
         "logical_cores": os.cpu_count(),
+        "usable_cores": usable,
+        "hostname": platform.node(),
         "system": f"{platform.system()} {platform.release()}",
     }
+
+
+_SLURM_ENV_VARS = (
+    "SLURM_JOB_ID", "SLURM_JOB_NAME", "SLURM_JOB_PARTITION", "SLURM_JOB_NODELIST",
+    "SLURM_CPUS_PER_TASK", "SLURM_CPUS_ON_NODE", "SLURM_NTASKS",
+    "SLURM_MEM_PER_NODE", "SLURM_MEM_PER_CPU", "SLURM_JOB_GPUS", "SLURM_GPUS_ON_NODE",
+    "CUDA_VISIBLE_DEVICES",
+)
+
+
+def capture_scheduler_info() -> dict:
+    """The SLURM allocation this run executed under (``{"slurm": False}``
+    on a workstation) -- what a timing on a shared cluster node actually
+    had to work with, which the node's hardware alone doesn't say."""
+    if "SLURM_JOB_ID" not in os.environ:
+        return {"slurm": False}
+    return {"slurm": True, **{k: os.environ.get(k) for k in _SLURM_ENV_VARS}}
 
 
 def capture_gpu_info() -> dict:
@@ -165,6 +201,7 @@ def capture_hardware_json(repo_root: Optional[Path] = None) -> dict:
     return {
         "cpu": capture_cpu_info(),
         "gpu": capture_gpu_info(),
+        "scheduler": capture_scheduler_info(),
         "blas_thread_env": capture_blas_thread_env(),
         "packages": capture_package_versions(),
         "git": capture_git_info(repo_root),

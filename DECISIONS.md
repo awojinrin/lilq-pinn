@@ -17,6 +17,86 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- Cluster readiness: thread count bounded by the allocation; provenance survives without `.git`
+
+**Thread count.** `lilq/blas_threads.py` defaulted to
+`SLURM_CPUS_PER_TASK`, else `os.cpu_count()`. Under an `--ntasks=N`
+request (the form in `HPRC_FASTER_Workflow_Guide.md`) `SLURM_CPUS_PER_TASK`
+is unset, and `os.cpu_count()` reports the whole node (64 on FASTER), so
+BLAS and PyTorch would each start 64 threads on an N-core allocation.
+Now: `SLURM_CPUS_PER_TASK`, else `SLURM_CPUS_ON_NODE` (the job's own
+cores on the node), else the process's CPU affinity
+(`os.sched_getaffinity`, which honors the scheduler's cpuset); only a
+machine with no affinity API falls back to `os.cpu_count()`. On the
+workstation the result is unchanged (all 24 logical cores).
+
+**Provenance.** The cluster copy is uploaded without `.git`, so
+`capture_git_info` would have recorded no commit. New
+`scripts/make_hprc_bundle.py` packs the git-tracked files (minus
+`reference_results/`, plus `tests/`) under a single `lilq-pinn/` folder
+and writes `PROVENANCE.json` (commit, branch, uncommitted diff, time,
+host); `capture_git_info` falls back to it, marked `"source": "bundle"`.
+`hardware.json` also gains `scheduler` (SLURM job id, partition, node,
+CPUs/GPUs/memory actually allocated) and `cpu.usable_cores`/`hostname`,
+since a cluster node's hardware alone doesn't say what the job had.
+
+---
+
+## 2026-09-23 -- Kovasznay: diagnostic SVD gated; current configuration confirmed as the paper's
+
+**Found during the pre-HPRC audit.** `solve_kovasznay` called
+`np.linalg.cond(A_sys)` (a full SVD) on every outer iteration, recording
+it in `history['cond_number']`, which nothing reads. The pre-GitHub code
+gated the same call off by default; the v2 consolidation made it
+unconditional, and the Phase 1 slowdown fix (`319987f`) only gated
+Beltrami's copy. Now opt-in via `analyze_conditioning=False` (same
+pattern as Beltrami). Same machine, warm-up excluded, best of 3:
+
+| P | with SVD (s) | without (s) | manuscript Table 9 (s) |
+|---|---|---|---|
+| 75 | 0.09 | 0.06 | 0.06 |
+| 300 | 0.63 | 0.21 | 0.22 |
+| 675 | 1.72 | 0.68 | 0.67 |
+| 1,200 | 6.52 | 1.92 | 1.87 |
+| 1,875 | 17.07 | 5.49 | 5.58 |
+
+**This, not thread contention, explains the reference run's slower
+Kovasznay timings** (0.07/0.52/2.0/4.5/12.8 s). The Q5 answer in
+`reponse_Package1_v2.md` attributes them to unpinned BLAS threads and says
+there was no Kovasznay code difference between versions; both need
+correcting.
+
+**Configuration.** The manuscript text (Section 6.6) says $n_d =
+\lceil\sqrt{2P}\rceil$, $\lceil P/6\rceil$ points per edge (14,037 rows at
+$P=1{,}875$) and a $10^{-12}$ coefficient-change tolerance. That is
+`k_ratio=10`, ratios (0.6, 0.2, 0.2). `experiments/run_kovasznay.py` uses
+`k_ratio=4` with the same ratios (5,564 rows at $P=1{,}875$) and
+tolerance $10^{-9}$. All three candidate configurations were run at all
+five sizes:
+
+| Config | rows @1,875 | iterations | time @1,875 | E_u / E_v / E_p @1,875 | E_p @675 |
+|---|---|---|---|---|---|
+| Manuscript Table 9 | ? | 16/10/6/6/6 | 5.58 s | 7.2e-13 / 5.3e-12 / 1.3e-11 | 8.1e-4 |
+| Current script (k=4, .6/.2/.2, 1e-9) | 5,564 | 16/9/6/6/6 | 5.5 s | 7.0e-13 / 5.3e-12 / 1.8e-12 | 1.1e-4 |
+| Pre-v2 script (k=4, .8/.1/.1, 1e-9) | 6,580 | 16/10/6/6/6 | 7.5 s | 3.9e-13 / 3.5e-12 / 1.1e-11 | 4.4e-4 |
+| Manuscript text (k=10, .6/.2/.2, 1e-12) | 14,037 | 20/11/7/6/6 | 18.2 s | 1.2e-13 / 1.1e-12 / 7.3e-12 | 3.3e-4 |
+
+The current script reproduces Table 9's timings, its velocity errors at
+$P \ge 1{,}200$ to two digits, and every iteration count except one
+(9 vs 10 at $P=300$); its pressure errors are 2.6-7x *better* than the
+table's. The manuscript-text configuration is 3x slower, needs more
+iterations than the table reports, and is not uniformly more accurate
+(pressure worse than the current script). The tolerance check agrees:
+the current configuration with $10^{-12}$ gives 21/11/7/6/6 iterations,
+not the table's 16/10/6/6/6. **Decision: keep the current configuration.**
+The manuscript's Section 6.6 description (row counts, 14,037, and the
+$10^{-12}$ tolerance) does not describe the runs behind Table 9 and should
+be corrected, as should the Q5 answer that confirms it. Report the
+Table 9 pressure-error difference as an improvement, not a reproduction
+failure.
+
+---
+
 ## 2026-09-23 -- Section 3.7 (Beltrami pressure pinned at every temporal level) completed
 
 **Same "pulled forward from HPRC, run locally" batch as Section 3.6 above.**

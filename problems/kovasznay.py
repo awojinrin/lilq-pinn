@@ -372,10 +372,22 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
 
 
 def solve_kovasznay(config: KovasznayConfig, verbose=True,
-                     iteration_logger=None, run_json_path=None) -> Dict:
+                     iteration_logger=None, run_json_path=None,
+                     analyze_conditioning: bool = False) -> Dict:
     """Solve Kovasznay flow via multi-field LiL-Q.
 
     Returns a dict containing coefficients, errors, and iteration history.
+
+    ``analyze_conditioning`` : bool
+        If True, record ``np.linalg.cond`` (a full SVD) of the system
+        matrix every outer iteration in ``history['cond_number']``.
+        Diagnostic only -- the solve never uses it. Defaults to False,
+        matching the pre-GitHub code (which gated the same call) and
+        Beltrami's identical flag: ungated, it costs 1.3-3.6x the whole
+        solve's wall-clock and was the cause of the repository's slower
+        Kovasznay timings versus the manuscript's (see DECISIONS.md). When
+        ``iteration_logger`` is given, conditioning is already logged per
+        iteration via the tracker, outside the timed assemble/solve phases.
 
     ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
         When given, a full Section 3.1 ``iterations.csv`` row is recorded
@@ -649,7 +661,9 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         history['pde_residual'].append(pde_res)
         history['continuity_residual'].append(cont_res)
         history['solve_time'].append(dt)
-        history['cond_number'].append(float(np.linalg.cond(A_sys)))
+        history['cond_number'].append(
+            float(np.linalg.cond(A_sys)) if analyze_conditioning else float('nan')
+        )
 
         if verbose:
             print(f"  Iter {k:3d}: d_theta={rel_delta:.3e}  "

@@ -42,15 +42,29 @@ import os
 _THREAD_ENV_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
 
 
-def _default_thread_count() -> int:
-    """SLURM's own allocation if running under sbatch/salloc (correctly
-    matches --cpus-per-task rather than the whole node's core count);
-    otherwise every logical core on the machine.
-    """
-    slurm_cpus = os.environ.get("SLURM_CPUS_PER_TASK")
-    if slurm_cpus and slurm_cpus.isdigit():
-        return int(slurm_cpus)
+def _usable_cpu_count() -> int:
+    """Cores this process may actually run on. On Linux this respects the
+    cpuset a scheduler (SLURM cgroups, taskset) confines the job to --
+    ``os.cpu_count()`` reports the whole node (64 on a FASTER node)
+    regardless of how few cores the job was given."""
+    if hasattr(os, "sched_getaffinity"):
+        return len(os.sched_getaffinity(0)) or 1
     return os.cpu_count() or 1
+
+
+def _default_thread_count() -> int:
+    """Never more threads than cores this job owns. In order:
+    ``SLURM_CPUS_PER_TASK`` (set by ``--cpus-per-task``);
+    ``SLURM_CPUS_ON_NODE`` (the job's cores on this node, set under
+    ``--ntasks``-style requests, where ``SLURM_CPUS_PER_TASK`` is absent);
+    otherwise the cores the process is allowed to run on (every logical
+    core on an unscheduled workstation).
+    """
+    for var in ("SLURM_CPUS_PER_TASK", "SLURM_CPUS_ON_NODE"):
+        value = os.environ.get(var)
+        if value and value.isdigit():
+            return int(value)
+    return _usable_cpu_count()
 
 
 def configure(n_threads: int = None) -> int:
