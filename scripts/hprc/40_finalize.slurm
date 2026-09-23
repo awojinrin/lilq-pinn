@@ -1,5 +1,6 @@
 #!/bin/bash
-# After everything else: merge the four-method job CSVs into
+# After everything else: save reference/ (test grids and fields) and code/
+# (commit, diff, source), merge the four-method job CSVs into
 # four_method_tables.csv, write check B1 (reproduction_check.csv), and draw
 # the Section 3.5 residual-band figures from the Section 3.3 logs. Seconds.
 #SBATCH --job-name=lilq-finalize
@@ -15,6 +16,7 @@ source scripts/hprc/env.sh
 set -euo pipefail
 
 B="$PKG/B_instrumentation"
+python experiments/component_b.py --save-reference --save-code --out-root "$PKG"
 python experiments/four_method_tables.py --out-dir "$B" --merge-from "$B"/four_method_jobs/*/
 python experiments/component_b.py --reproduction-check --out-root "$PKG"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass paper --out-dir "$B/residual_band_figures/paper"

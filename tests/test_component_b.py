@@ -129,3 +129,40 @@ def test_reproduction_check_applies_b1_tolerances_and_orders_discrepancies_first
     assert by[('burgers', 'P25', 'LiL-Q iterations')]['status'] == 'missing'
     order = {'violation': 0, 'missing': 1, 'reported': 2, 'ok': 3}
     assert [order[r['status']] for r in rows] == sorted(order[r['status']] for r in rows)
+
+
+def test_saved_reference_is_the_grid_the_errors_use(tmp_path):
+    """Recompute a real Kovasznay run's logged test error from the saved
+    reference field: they must agree, so reference/ holds the actual grid."""
+    import numpy as np
+    from lilq.iteration_log import IterationLogger
+    from lilq.test_errors import rel_l2, tensor_grid_values
+    from problems.kovasznay import KovasznayConfig, solve_kovasznay
+
+    ref = cb.save_reference(tmp_path)
+    expected = {'kovasznay', 'bratu', 'burgers', 'bl', 'bl_gravity', 'elasticity', 'beltrami',
+                'darcy_S1', 'darcy_S2', 'darcy_S3', 'darcy_SPE10'}
+    assert {p.stem for p in ref.glob('*.npz')} == expected
+    assert (ref / 'README.txt').exists()
+
+    k = np.load(ref / 'kovasznay.npz')
+    assert k['u'].shape == (301, 401)
+    logger = IterationLogger()
+    r = solve_kovasznay(KovasznayConfig(N_x=6, N_y=6, max_iter=5), verbose=False, iteration_logger=logger)
+    u = tensor_grid_values(r['basis_u'], r['theta_u'], [k['x'], k['y']])
+    assert rel_l2(u, k['u']) == pytest.approx(logger.rows[-1]['eps_u'], rel=1e-12)
+
+    d = np.load(ref / 'darcy_S1.npz')
+    assert d['P_fvm'].shape == (60, 220)
+    assert np.load(ref / 'beltrami.npz')['p'].shape == (21, 21, 21, 11)
+
+
+def test_saved_code_records_the_commit_and_the_source(tmp_path):
+    code = cb.save_code(tmp_path)
+    prov = json.loads((code / 'PROVENANCE.json').read_text())
+    assert prov['available'] and len(prov['commit']) == 40
+    for d in cb.CODE_DIRS:
+        assert (code / d).is_dir()
+    assert (code / 'experiments' / 'component_b.py').exists()
+    assert (code / 'DECISIONS.md').exists()
+    assert not list(code.rglob('__pycache__'))

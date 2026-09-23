@@ -17,6 +17,24 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-23 -- `reference/` and `code/` folders (Sections 2 and 6)
+
+`component_b.py --save-reference` writes every test grid, and the
+reference field where one exists, to `<package>/reference/` (Section 2:
+"Save the grids and reference fields under reference/"): Kovasznay
+301 x 401 with exact u, v, p; the Bratu, Burgers and BL residual grids
+(no closed-form reference); elasticity 200 x 200 with exact u_x, u_y;
+Beltrami 21^3 x 11 with exact u, v, w, p; the four Darcy fields' FVM
+pressure at the cell centres; a README describing each (~4.5 MB). The
+grids come from the same constants the error code uses; a test recomputes
+a real run's logged error from the saved field to 1e-12.
+`--save-code` writes Section 6's `code/`: `PROVENANCE.json` (commit,
+branch, diff -- from git locally, from the bundle's record on the
+cluster), `uncommitted.diff` if any, and the source directories plus
+`DECISIONS.md`. Both run in `40_finalize.slurm`.
+
+---
+
 ## 2026-09-23 -- BL-gravity: known pathologies (kept as is; for the report)
 
 Decision: the `cos_fourier` basis, retargeted losses and K_max = 20 stay

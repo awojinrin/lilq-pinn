@@ -43,7 +43,7 @@ squeue -u $USER
 | `20_four_method_gpu` | Section 3.4 GPU pass, array of 4 (one per benchmark) | 8 cores, 1 A100 each | hours each |
 | `21_four_method_cpu` | Section 3.4 CPU pass at the largest sizes, array of 4 | 24 cores each | hours each |
 | `30_basis_study_and_beltrami_pinned` | Sections 3.6 and 3.7 | 24 cores | ~1 h |
-| `40_finalize` | merge four-method CSVs, check B1, Section 3.5 figures | 2 cores | seconds |
+| `40_finalize` | `reference/` and `code/`, merge four-method CSVs, check B1, Section 3.5 figures | 2 cores | under a minute |
 
 Everything waits for the pre-flight job to pass; the finalize job waits for
 all others. Results land in `$SCRATCH/lilq-run/lilq-pinn/results/package1/`

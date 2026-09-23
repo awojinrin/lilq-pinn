@@ -406,6 +406,112 @@ def reproduction_check(root: Path) -> Path:
     return path
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Section 6's reference/ and code/ folders
+# ─────────────────────────────────────────────────────────────────────────────
+
+REFERENCE_README = """Test grids and reference fields (Computational_Package_1_v2.md Section 2).
+None of these points is used for collocation. Arrays are on tensor grids,
+indexed [x, y] / [x, t] / [x, y, z, t] (numpy meshgrid indexing='ij').
+
+kovasznay.npz    x (301), y (401) uniform on [-0.5,1] x [-0.5,1.5]; exact u, v, p.
+bratu.npz        x, y (201 each) uniform on [0,1]^2. No closed-form solution:
+                 the test error is the mean square of the PDE residual there.
+burgers.npz      x (201) on [-1,1], t (201) on [0,1]: PDE-residual grid (our choice;
+                 Section 2 names none).
+bl.npz, bl_gravity.npz   x (201) on [0,1], t (201) on [0,T]: PDE-residual grids (our choice).
+elasticity.npz   x, y (200 each) on [0,1]^2 (the grid behind the paper's Table 7);
+                 exact u_x, u_y.
+beltrami.npz     x, y, z (21 each) on [-1,1], t (11) on [0,1] -- the paper's error grid;
+                 exact u, v, w, p. Snapshot errors use the same x, y, z at t = 0, 0.25,
+                 0.5, 0.75, 1.
+darcy_<field>.npz   cell centres x (60), y (220) on [0,1]^2 (normalized) and the FVM
+                 pressure (psi) the LiL-Q pressure is compared against, per field.
+"""
+
+
+def save_reference(out_root: Path) -> Path:
+    """Write every test grid, and the reference field where one exists, to
+    ``<out_root>/reference/`` (Section 2: "Save the grids and reference
+    fields under reference/"). The grids come from each problem's own
+    ``TEST_GRID``/error code, so they are the ones the errors used."""
+    import problems.bratu as bratu
+    import problems.burgers as burgers
+    import problems.buckley_leverett as bl
+    import problems.elasticity as elasticity
+    import problems.kovasznay as kov
+    import problems.beltrami as bel
+    import problems.darcy as darcy
+    ref = Path(out_root) / 'reference'
+    ref.mkdir(parents=True, exist_ok=True)
+
+    kc = kov.KovasznayConfig()
+    kp = kov.KovasznayPhysics(kc)
+    x = np.linspace(*kc.x_domain, kov.TEST_GRID[0]); y = np.linspace(*kc.y_domain, kov.TEST_GRID[1])
+    X, Y = np.meshgrid(x, y, indexing='ij')
+    np.savez_compressed(ref / 'kovasznay.npz', x=x, y=y, u=kp.exact_u(X, Y), v=kp.exact_v(X, Y), p=kp.exact_p(X, Y))
+
+    bc = bratu.BratuConfig()
+    np.savez_compressed(ref / 'bratu.npz', x=np.linspace(*bc.x_domain, bratu.TEST_GRID[0]),
+                        y=np.linspace(*bc.y_domain, bratu.TEST_GRID[1]))
+    uc = burgers.BurgersConfig()
+    np.savez_compressed(ref / 'burgers.npz', x=np.linspace(*uc.x_domain, burgers.TEST_GRID[0]),
+                        t=np.linspace(0.0, uc.T_final, burgers.TEST_GRID[1]))
+    for name, cfg in (('bl', bl.BLConfig()), ('bl_gravity', bl.BLConfig.with_gravity())):
+        np.savez_compressed(ref / f'{name}.npz', x=np.linspace(*cfg.x_domain, bl.TEST_GRID[0]),
+                            t=np.linspace(0.0, cfg.T_final, bl.TEST_GRID[1]))
+
+    ec = elasticity.ElasticityConfig()
+    ep = elasticity.ElasticityPhysics(ec)
+    x = np.linspace(*ec.x_domain, elasticity.TEST_GRID[0]); y = np.linspace(*ec.y_domain, elasticity.TEST_GRID[1])
+    X, Y = np.meshgrid(x, y, indexing='ij')
+    np.savez_compressed(ref / 'elasticity.npz', x=x, y=y, u_x=ep.exact_ux(X, Y), u_y=ep.exact_uy(X, Y))
+
+    bp = bel.BeltramiPhysics(bel.BeltramiConfig())
+    axes = [np.linspace(*bp.x_domain, 21), np.linspace(*bp.y_domain, 21),
+            np.linspace(*bp.z_domain, 21), np.linspace(*bp.t_domain, 11)]
+    G = np.meshgrid(*axes, indexing='ij')
+    np.savez_compressed(ref / 'beltrami.npz', x=axes[0], y=axes[1], z=axes[2], t=axes[3],
+                        u=bp.exact_u(*G), v=bp.exact_v(*G), w=bp.exact_w(*G), p=bp.exact_p(*G))
+
+    for field in DARCY_FIELDS:
+        dc = darcy.DarcyConfig(perm_file=f'perm_field_{field}.txt')
+        dp = darcy.DarcyPhysics(dc, verbose=False)
+        np.savez_compressed(ref / f'darcy_{field}.npz',
+                            x=(np.arange(dc.NX_CELLS) + 0.5) / dc.NX_CELLS,
+                            y=(np.arange(dc.NY_CELLS) + 0.5) / dc.NY_CELLS,
+                            P_fvm=darcy.solve_fvm(dp))
+
+    (ref / 'README.txt').write_text(REFERENCE_README, encoding='utf-8')
+    return ref
+
+
+CODE_DIRS = ('lilq', 'problems', 'experiments', 'scripts', 'tests')
+
+
+def save_code(out_root: Path) -> Path:
+    """Section 6's ``code/``: the commit hash and any diff (``PROVENANCE.json``,
+    from git in a checkout or the bundle's own record on the cluster) plus
+    the source that produced the results -- including the new scripts
+    (figures, monitors, GPU path) the spec asks for."""
+    import shutil
+    from lilq.provenance import capture_git_info
+    repo = Path(__file__).resolve().parent.parent
+    code = Path(out_root) / 'code'
+    code.mkdir(parents=True, exist_ok=True)
+    git = capture_git_info(repo)
+    (code / 'PROVENANCE.json').write_text(json.dumps(git, indent=2), encoding='utf-8')
+    if git.get('diff'):
+        (code / 'uncommitted.diff').write_text(git['diff'], encoding='utf-8')
+    for d in CODE_DIRS:
+        shutil.copytree(repo / d, code / d, dirs_exist_ok=True,
+                        ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+    for f in ('DECISIONS.md', 'requirements.txt', 'pyproject.toml'):
+        if (repo / f).exists():
+            shutil.copy2(repo / f, code / f)
+    return code
+
+
 INDEX_COLUMNS = ('run', 'benchmark', 'config', 'device', 'pass', 'status', 'iterations',
                  'final_norm_R_h', 't_cum_s', 'wall_total_s', 'first_stall_iteration',
                  'kappa_final', 'kappa_method', 'num_rank_gelsy_final',
@@ -451,7 +557,18 @@ def main():
     parser.add_argument('--reproduction-check', action='store_true',
                         help='Check B1 from the completed runs under --out-root (no solving): '
                              'writes reproduction_check.csv, discrepancies first.')
+    parser.add_argument('--save-reference', action='store_true',
+                        help="Write the test grids and reference fields to <out-root>/reference/ (Section 2).")
+    parser.add_argument('--save-code', action='store_true',
+                        help="Write the commit, any diff and the source to <out-root>/code/ (Section 6).")
     args = parser.parse_args()
+
+    if args.save_reference or args.save_code:
+        if args.save_reference:
+            print(f"Wrote {save_reference(Path(args.out_root))}")
+        if args.save_code:
+            print(f"Wrote {save_code(Path(args.out_root))}")
+        return
 
     if args.reproduction_check:
         root = Path(args.out_root) / 'B_instrumentation'
