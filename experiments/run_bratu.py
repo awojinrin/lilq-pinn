@@ -61,9 +61,7 @@ DEFAULT_PRETRAIN_TOL = 1e-5
 N_HIDDEN_LAYERS = 2
 
 TARGET_LOSSES = {5: 2.5e-1, 10: 1e-4, 15: 2.5e-7}
-# N=10 (P=100) reverted 10000 -> 7500 to match the pre-GitHub iteration
-# budget exactly; N=5 and N=15 were already unchanged (DECISIONS.md).
-MAX_ITERATIONS = {5: 5000, 10: 7500, 15: 10000}
+MAX_ITERATIONS = {5: 5000, 10: 10000, 15: 10000}
 # Reverted to the pre-GitHub (higher) values on every entry -- the
 # line-search cap has never actually bound for Bratu in stored results in
 # either codebase (iteration cap always binds first, well below this
@@ -71,13 +69,8 @@ MAX_ITERATIONS = {5: 5000, 10: 7500, 15: 10000}
 # than a correctness fix. See DECISIONS.md.
 MAX_LINE_SEARCHES = {5: 24000, 10: 30000, 15: 30000}
 MAX_QUASI_ITERS = 25
-# N=10 reverted 400 -> 300 to match the pre-GitHub value exactly. This is
-# NiL-Q's actual iteration budget (MAX_QUASI_ITERS * this value), separate
-# from MAX_ITERATIONS above which only governs NiL-N/LiL-N -- missed on
-# the first pass at reverting Bratu's N=10 cap; caught by comparing a
-# fresh run's NiL-Q iteration count (10000) against pre-GitHub's (7500).
-# See DECISIONS.md.
-MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 300, 15: 400}
+# NiL-Q's iteration budget is MAX_QUASI_ITERS times this per-outer-iteration cap.
+MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 400, 15: 400}
 
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 
