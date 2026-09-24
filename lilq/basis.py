@@ -521,54 +521,29 @@ class ELMBasis2D_Xavier:
 
         if dx == 0 and dy == 0:
             return self.evaluate(x, y)
-
-        x_t = self._to_tensor(x, requires_grad=True)
-        y_t = self._to_tensor(y, requires_grad=True)
-        Phi = self._forward(x_t, y_t)
-
-        n_pts = len(x)
-        n_hidden = self._n_hidden
-
-        if dx == 1 and dy == 0:
-            dPhi = torch.zeros(n_pts, n_hidden, dtype=self._dtype, device=self._device)
-            for j in range(n_hidden):
-                grad = torch.autograd.grad(Phi[:, j].sum(), x_t, create_graph=True)[0]
-                dPhi[:, j] = grad
-            return self._to_numpy(dPhi)
-
-        elif dx == 0 and dy == 1:
-            dPhi = torch.zeros(n_pts, n_hidden, dtype=self._dtype, device=self._device)
-            for j in range(n_hidden):
-                grad = torch.autograd.grad(Phi[:, j].sum(), y_t, create_graph=True)[0]
-                dPhi[:, j] = grad
-            return self._to_numpy(dPhi)
-
-        elif dx == 2 and dy == 0:
-            d2Phi = torch.zeros(n_pts, n_hidden, dtype=self._dtype, device=self._device)
-            for j in range(n_hidden):
-                grad1 = torch.autograd.grad(Phi[:, j].sum(), x_t, create_graph=True)[0]
-                grad2 = torch.autograd.grad(grad1.sum(), x_t, retain_graph=True)[0]
-                d2Phi[:, j] = grad2
-            return self._to_numpy(d2Phi)
-
-        elif dx == 0 and dy == 2:
-            d2Phi = torch.zeros(n_pts, n_hidden, dtype=self._dtype, device=self._device)
-            for j in range(n_hidden):
-                grad1 = torch.autograd.grad(Phi[:, j].sum(), y_t, create_graph=True)[0]
-                grad2 = torch.autograd.grad(grad1.sum(), y_t, retain_graph=True)[0]
-                d2Phi[:, j] = grad2
-            return self._to_numpy(d2Phi)
-
-        elif dx == 1 and dy == 1:
-            d2Phi = torch.zeros(n_pts, n_hidden, dtype=self._dtype, device=self._device)
-            for j in range(n_hidden):
-                grad_x = torch.autograd.grad(Phi[:, j].sum(), x_t, create_graph=True)[0]
-                grad_xy = torch.autograd.grad(grad_x.sum(), y_t, retain_graph=True)[0]
-                d2Phi[:, j] = grad_xy
-            return self._to_numpy(d2Phi)
-
-        else:
+        if (dx, dy) not in ((1, 0), (0, 1), (2, 0), (0, 2), (1, 1)):
             raise ValueError(f"Derivative order (dx={dx}, dy={dy}) not implemented")
+
+        # Closed form. Each basis function is s(z), z = alpha*x_n + beta*y_n
+        # + gamma, with x_n = 2(x - c_x)/L_x (likewise y), so
+        #   d^(dx+dy) phi / dx^dx dy^dy = s^(dx+dy)(z) (2 alpha/L_x)^dx (2 beta/L_y)^dy.
+        # (This replaced a per-column autograd loop that kept all n_hidden
+        # graphs alive through create_graph=True: tens of GB at n_hidden=625.)
+        with torch.no_grad():
+            x_n, y_n = self._normalize(self._to_tensor(x), self._to_tensor(y))
+            z = x_n.unsqueeze(1) * self.alpha + y_n.unsqueeze(1) * self.beta + self.gamma
+            if self._activation == 'tanh':
+                s = torch.tanh(z)
+                s1 = 1.0 - s * s
+                s2 = -2.0 * s * s1
+            elif self._activation == 'sigmoid':
+                s = torch.sigmoid(z)
+                s1 = s * (1.0 - s)
+                s2 = s1 * (1.0 - 2.0 * s)
+            else:
+                raise ValueError(f"Unknown activation: {self._activation}")
+            scale = ((2.0 * self.alpha / self._Lx) ** dx) * ((2.0 * self.beta / self._Ly) ** dy)
+            return self._to_numpy((s1 if dx + dy == 1 else s2) * scale)
 
     def reconstruct(self, coeffs: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Reconstruct function from coefficients."""

@@ -13,6 +13,7 @@ instantiated class; this test locks the correct class and bound in place.
 import csv
 import math
 
+import numpy as np
 import pytest
 
 from experiments.run_burgers_basis_comparison import (
@@ -156,3 +157,28 @@ def test_write_table3_csv_roundtrip(tmp_path):
         assert r["K_max"] == "3"
         assert float(r["final_R_h_squared"]) >= 0.0
         assert float(r["kappa"]) > 0.0
+
+
+@pytest.mark.parametrize("activation", ["tanh", "sigmoid"])
+@pytest.mark.parametrize("order", [(1, 0), (0, 1), (2, 0), (0, 2), (1, 1)])
+def test_elm_closed_form_derivatives_match_autograd(activation, order):
+    """ELM derivatives are closed-form; check them against autograd one
+    column at a time (the implementation they replaced)."""
+    import torch
+    basis = ELMBasis2D_Xavier(n_hidden=7, domain_x=(-1.0, 1.0), domain_y=(0.0, 0.5),
+                              activation=activation, seed=3)
+    rng = np.random.default_rng(0)
+    x, y = rng.uniform(-1, 1, 20), rng.uniform(0, 0.5, 20)
+    got = basis.derivative(x, y, dx=order[0], dy=order[1])
+
+    x_t = torch.tensor(x, dtype=torch.float64, requires_grad=True)
+    y_t = torch.tensor(y, dtype=torch.float64, requires_grad=True)
+    phi = basis._forward(x_t, y_t)
+    first, second = [x_t] * order[0] + [y_t] * order[1], None
+    want = np.empty_like(got)
+    for j in range(7):
+        g = torch.autograd.grad(phi[:, j].sum(), first[0], create_graph=True)[0]
+        if len(first) == 2:
+            g = torch.autograd.grad(g.sum(), first[1], retain_graph=True)[0]
+        want[:, j] = g.detach().numpy()
+    np.testing.assert_allclose(got, want, rtol=1e-12, atol=1e-14)

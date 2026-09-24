@@ -17,6 +17,39 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- First HPRC run (FASTER): ELM memory fix; check B3 at P = 1,875
+
+**ELM derivatives are now closed-form.** Job `lilq-b36-b37` was killed
+for exceeding 32 GB in the Section 3.6 basis study, on the ELM row.
+`ELMBasis2D_Xavier.derivative` built each of the 625 columns with
+autograd under `create_graph=True`, keeping every column's graph alive
+(peak 11.5 GB on the laptop, over 32 GB on FASTER's Linux nodes). For tanh
+and sigmoid the derivatives have closed forms,
+$s^{(k)}(z)\,(2\alpha/L_x)^{d_x}(2\beta/L_y)^{d_y}$, now used directly:
+1.05 GB peak, 31 s for the ELM row. A test checks them against autograd to
+1e-12 for every derivative order and both activations. The ELM row moves
+at the rounding level only -- final $\|R\|_h^2$ 0.049469 vs 0.049472,
+ranks unchanged (SVD 43, gelsy 70); the matrix has $\kappa \approx
+1.3\times10^{18}$, so rounding-level column changes shift the
+rank-truncated solution slightly. Paper: 5.0e-2. The ELM basis is used
+only by the basis study, so no other finished run is affected. Section
+3.6/3.7 is rerun on this commit.
+
+**Check B3 fails at P = 1,875 on the $\|R_{\rm lin}\|$ criterion alone
+(open; for the user).** On the A30: $\beta$ agrees to 6.6e-14 (criterion
+1e-8), but the final $\|R_{\rm lin}\|_h$ differs by a relative 1.3e-3
+(criterion 5e-7, "six significant figures"). Reproduced on the laptop GPU
+(8.9e-4), so it is not the A30. There $\|R_{\rm lin}\|_h \approx 6.3\times
+10^{-13}$: the system is solved to the rounding floor, and a residual
+that small is rounding noise, whose leading digits no two machines agree
+on. P <= 1,200 pass ($\|R_{\rm lin}\|_h \ge 4.7\times10^{-8}$). The
+earlier local validation ran B3 only at the smoke size, which is why this
+wasn't caught before the cluster run. Not changed: the criterion is the
+spec's, and whether to report it as a failure or add a rounding-floor
+allowance is the user's decision.
+
+---
+
 ## 2026-09-23 -- `reference/` and `code/` folders (Sections 2 and 6)
 
 `component_b.py --save-reference` writes every test grid, and the
