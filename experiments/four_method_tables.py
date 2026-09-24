@@ -55,6 +55,7 @@ from lilq.four_method_log import (
     FourMethodLogger, classify_stopping_reason, row_key, subsample_loss_history,
 )
 from lilq.provenance import save_provenance
+from lilq.solvers import line_search_cap
 
 from problems.bratu import (
     BratuConfig, BratuOptConfig,
@@ -82,7 +83,7 @@ DEFAULT_SEEDS = (0, 1, 2)
 
 def _bratu_runs(quick=False):
     from experiments.run_bratu import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_ITERATIONS, MAX_LINE_SEARCHES,
+        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_ITERATIONS,
         MAX_QUASI_ITERS, MAX_LBFGS_PER_QUASI_ITER,
         DEFAULT_LAMBDA, DEFAULT_BASIS, DEFAULT_K_RATIO,
     )
@@ -93,7 +94,6 @@ def _bratu_runs(quick=False):
                               k_ratio=DEFAULT_K_RATIO, basis_type=DEFAULT_BASIS)
         opt = BratuOptConfig(
             max_iterations=MAX_ITERATIONS.get(N, 10000),
-            max_line_searches=MAX_LINE_SEARCHES.get(N, 30000),
             R_tol=TARGET_LOSSES.get(N, 1e-4),
             max_quasi_iters_nn=MAX_QUASI_ITERS,
             max_inner_iters_nn=MAX_LBFGS_PER_QUASI_ITER.get(N, 300),
@@ -104,7 +104,7 @@ def _bratu_runs(quick=False):
 
 def _burgers_runs(quick=False):
     from experiments.run_burgers import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_LBFGS_ITERS, MAX_LINE_SEARCHES,
+        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_LBFGS_ITERS,
         MAX_QUASI_ITERS, MAX_LBFGS_PER_QUASI, DEFAULT_BASIS, VISCOSITY, T_FINAL, K_RATIO,
     )
     N_values = DEFAULT_N_VALUES[:1] if quick else DEFAULT_N_VALUES
@@ -114,7 +114,6 @@ def _burgers_runs(quick=False):
                                 basis_type=DEFAULT_BASIS, k_ratio=K_RATIO)
         opt = BurgersOptConfig(
             max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
-            max_line_searches=MAX_LINE_SEARCHES.get(N, 100000),
             R_tol=TARGET_LOSSES.get(N, 1e-4),
             max_quasi_iters_nn=MAX_QUASI_ITERS,
             max_inner_iters_nn=MAX_LBFGS_PER_QUASI.get(N, 300),
@@ -139,10 +138,7 @@ def _bl_runs(gravity, quick=False):
         base = BLConfig.with_gravity() if gravity else BLConfig()
         config = dataclasses.replace(base, N_x=N, N_t=N,
                                       basis_type=basis_type, k_ratio=K_RATIO)
-        # max_line_searches intentionally left unset -- BLOptConfig derives
-        # it from max_iterations (see tests/test_bl_experiment_runner_config.py
-        # and DECISIONS.md: an explicit override here previously truncated
-        # LiL-N before convergence at every N).
+        # max_line_searches left unset: lilq.solvers.line_search_cap.
         opt = BLOptConfig(
             max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
             R_tol=targets.get(N, 1e-3),
@@ -224,15 +220,18 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
             if method_name == 'NiL-Q':
                 iterations_used = summary['n_quasi_iters']
                 iterations_cap = opt.max_quasi_iters_nn
+                ls_cap = line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn,
+                                         opt.max_line_searches)
             else:
                 iterations_used = summary['total_iterations']
                 iterations_cap = opt.max_iterations
+                ls_cap = line_search_cap(opt.max_iterations, opt.max_line_searches)
 
             stopping_reason = classify_stopping_reason(
                 converged=summary['converged'],
                 iterations_used=iterations_used, iterations_cap=iterations_cap,
                 line_searches_used=summary['total_line_searches'],
-                line_searches_cap=opt.max_line_searches,
+                line_searches_cap=ls_cap,
             )
 
             logger.record(
@@ -243,7 +242,7 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 wall_total_s=elapsed,
                 final_loss=summary['final_loss'],
                 converged=summary['converged'], stopping_reason=stopping_reason,
-                iterations_cap=iterations_cap, line_searches_cap=opt.max_line_searches,
+                iterations_cap=iterations_cap, line_searches_cap=ls_cap,
                 loss_history_every_10=subsample_loss_history(metrics.to_dict()),
             )
             if csv_path is not None:

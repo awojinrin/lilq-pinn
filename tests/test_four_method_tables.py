@@ -49,10 +49,8 @@ def test_bl_gravity_runs_use_cos_fourier_basis():
 
 
 def test_bl_runs_never_pass_explicit_max_line_searches():
-    """Regression guard mirroring test_bl_experiment_runner_config.py:
-    BLOptConfig's derived max_line_searches (max_iterations * 15) is the
-    safe default; an explicit override here previously truncated LiL-N
-    before convergence (DECISIONS.md)."""
+    """Mirrors test_bl_experiment_runner_config.py: the cap comes from
+    lilq.solvers.line_search_cap, never an explicit override."""
     import inspect
     source = inspect.getsource(fmt._bl_runs)
     opt_construction = source[source.index("opt = BLOptConfig("):source.index("runs.append")]

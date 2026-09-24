@@ -25,7 +25,7 @@ from lilq.nn import MLP, calculate_hidden_dim
 from lilq.metrics import MetricsTracker, QuasilinearMetrics
 from lilq.collocation import generate_collocation_points_2d, collocation_to_torch
 from lilq.pretraining import pretrain_nn, pretrain_lil
-from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q
+from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q, line_search_cap
 from lilq.utils import set_seed, nn_init_seed, clear_gpu_memory, DEVICE
 from lilq.instrumentation import EPS_MACH
 from lilq.provenance import capture_blas_thread_env
@@ -57,7 +57,9 @@ class BratuOptConfig:
     """Optimization settings for Bratu experiments."""
     # NiL methods
     max_iterations: int = 10000
-    max_line_searches: int = 100000
+    # None: 3x the method's own iteration budget (lilq.solvers.line_search_cap),
+    # the same rule for every problem; an explicit value overrides it.
+    max_line_searches: Optional[int] = None
     R_tol: float = 1e-4
     lambda_pde: float = 1.0
     lambda_bc: float = 10.0
@@ -381,7 +383,7 @@ def run_nil_n(config: BratuConfig, opt: BratuOptConfig,
         pde_fn, bc_fn, model, x_pde, y_pde, bc_data,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc,
         max_iterations=opt.max_iterations,
-        max_line_searches=opt.max_line_searches,
+        max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
 
@@ -435,7 +437,7 @@ def run_nil_q(config: BratuConfig, opt: BratuOptConfig,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc,
         max_quasi_iters=opt.max_quasi_iters_nn,
         max_inner_iters=opt.max_inner_iters_nn,
-        max_line_searches=opt.max_line_searches,
+        max_line_searches=line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
 
@@ -489,7 +491,7 @@ def run_lil_n(config: BratuConfig, opt: BratuOptConfig,
         loss_fn, init_coeffs, device,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc,
         max_iterations=opt.max_iterations,
-        max_line_searches=opt.max_line_searches,
+        max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
 

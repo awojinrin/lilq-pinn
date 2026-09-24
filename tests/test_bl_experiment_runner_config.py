@@ -1,21 +1,8 @@
-"""Regression guard: run_bl.py must not reintroduce an explicit
-max_line_searches override that bypasses BLOptConfig's derived (inert)
-default.
-
-Context (DECISIONS.md, 2026-09-22 "line-search cap actually binds"
-entry): experiments/run_bl.py used to pass
-``max_line_searches=MAX_LBFGS_ITERS.get(N, 10000) * 3`` explicitly, which
--- unlike BLOptConfig's derived default -- genuinely did truncate LiL-N
-before convergence, confirmed against every N in
-reference_results/{bl,bl_gravity}_experiments_fourier (total_iterations
-well below max_iterations while total_line_searches sat at exactly
-3 * max_iterations). Removed so the config's own derived worst case
-(max_iterations * 15) takes over.
-
-This is checked at the source level rather than by executing
-run_experiment_for_N, which does real file I/O (make_experiment_dir) and
-real training as a side effect of being called -- not something a unit
-test should trigger just to inspect a constructed config object.
+"""Regression guard: run_bl.py must not pass an explicit
+max_line_searches, so every method gets the uniform cap of
+lilq.solvers.line_search_cap (3x its own iteration budget; DECISIONS.md,
+2026-09-24). Checked at the source level: executing run_experiment_for_N
+would do real file I/O and training.
 """
 
 import inspect

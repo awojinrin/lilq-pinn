@@ -25,7 +25,7 @@ from lilq.basis import create_basis_2d
 from lilq.nn import MLP, calculate_hidden_dim
 from lilq.collocation import generate_collocation_points_2d, collocation_to_torch
 from lilq.pretraining import pretrain_nn, pretrain_lil
-from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q
+from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q, line_search_cap
 from lilq.utils import set_seed, nn_init_seed, DEVICE
 from lilq.instrumentation import EPS_MACH
 from lilq.provenance import capture_blas_thread_env
@@ -56,7 +56,9 @@ class BurgersConfig:
 class BurgersOptConfig:
     """Optimization settings for Burgers experiments."""
     max_iterations: int = 10000
-    max_line_searches: int = 150000
+    # None: 3x the method's own iteration budget (lilq.solvers.line_search_cap),
+    # the same rule for every problem; an explicit value overrides it.
+    max_line_searches: Optional[int] = None
     R_tol: float = 1e-5
     lambda_pde: float = 1.0
     lambda_ic: float = 10.0
@@ -404,7 +406,7 @@ def run_nil_n(config: BurgersConfig, opt: BurgersOptConfig,
     model, metrics, summary = solve_nil_n(
         pde_fn, bc_fn, model, x_pde, t_pde, bc_data,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc, lambda_ic=opt.lambda_ic,
-        max_iterations=opt.max_iterations, max_line_searches=opt.max_line_searches,
+        max_iterations=opt.max_iterations, max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
@@ -457,7 +459,7 @@ def run_nil_q(config: BurgersConfig, opt: BurgersOptConfig,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc, lambda_ic=opt.lambda_ic,
         max_quasi_iters=opt.max_quasi_iters_nn,
         max_inner_iters=opt.max_inner_iters_nn,
-        max_line_searches=opt.max_line_searches,
+        max_line_searches=line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
@@ -509,7 +511,7 @@ def run_lil_n(config: BurgersConfig, opt: BurgersOptConfig,
     coefficients, metrics, summary = solve_lil_n(
         loss_fn, init_coeffs, device,
         max_iterations=opt.max_iterations,
-        max_line_searches=opt.max_line_searches,
+        max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
     summary['pretrain_loss'] = float(pretrain_loss)

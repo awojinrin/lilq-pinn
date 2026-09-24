@@ -62,12 +62,7 @@ N_HIDDEN_LAYERS = 2
 
 TARGET_LOSSES = {5: 2.5e-1, 10: 1e-4, 15: 2.5e-7}
 MAX_ITERATIONS = {5: 5000, 10: 10000, 15: 10000}
-# Reverted to the pre-GitHub (higher) values on every entry -- the
-# line-search cap has never actually bound for Bratu in stored results in
-# either codebase (iteration cap always binds first, well below this
-# limit), so this is a "prefer the more generous number" choice rather
-# than a correctness fix. See DECISIONS.md.
-MAX_LINE_SEARCHES = {5: 24000, 10: 30000, 15: 30000}
+# Line-search caps: 3x each method's iteration budget (lilq.solvers.line_search_cap).
 MAX_QUASI_ITERS = 25
 # NiL-Q's iteration budget is MAX_QUASI_ITERS times this per-outer-iteration cap.
 MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 400, 15: 400}
@@ -102,7 +97,6 @@ def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True, seeds=No
     R_tol = TARGET_LOSSES.get(N, 1e-4)
     opt = BratuOptConfig(
         max_iterations=MAX_ITERATIONS.get(N, 10000),
-        max_line_searches=MAX_LINE_SEARCHES.get(N, 30000),
         R_tol=R_tol,
         max_quasi_iters_nn=MAX_QUASI_ITERS,
         max_inner_iters_nn=MAX_LBFGS_PER_QUASI_ITER.get(N, 300),

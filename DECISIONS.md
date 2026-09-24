@@ -17,6 +17,79 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Addendum v2.1: reference codebase, budgets, line-search caps, BL-gravity
+
+**Reference codebase.** Addendum v2.1 Decision 2 names the GitHub version
+plus four fixes. We use this branch (v3-dev) instead, and will say so to
+the advisor. It fixes bugs the GitHub version has (the BL LiL-N gradient,
+the ELM class and its memory use, per-iteration SVDs in Kovasznay and
+Beltrami, seeds that moved the collocation grid, unpinned threads, an
+import-time dtype side effect) and adds the instrumentation the package
+requires. Where GitHub made a *choice* rather than a mistake, it did
+better than the pre-GitHub values restored here on 2026-09-22 (which
+were restored only to reproduce the old manuscript tables, now replaced),
+so those choices are GitHub's again:
+
+1. **Pretraining grid** (`cabdc71`): one fixed 50 x 50 grid for every
+   problem and size, for the NN fit and the LiL coefficient fit alike
+   (`pretrain_grid = 50`; LiL uses max(50, ceil(sqrt(2P))) per direction,
+   50 at every P <= 1,250). The restored per-problem grids were sparser at
+   every package size (7 x 7 at Bratu P = 25; about 2 points per
+   coefficient for the LiL fit) and used floors of 50/100/50 for no stated
+   reason. The 2026-09-22 entry called GitHub's LiL formula a structural
+   bug; it is the denser fit, and that label was wrong.
+2. **Bratu budgets** (`a0b70ed`): P = 100 back to 10,000 iterations
+   (NiL-N/LiL-N) and 25 x 400 (NiL-Q).
+3. **Line-search caps, standardized** (this commit): the cap on function
+   evaluations is 3x each method's own iteration budget, for every
+   problem -- `max_iterations` for NiL-N and LiL-N,
+   `max_quasi_iters_nn * max_inner_iters_nn` for NiL-Q
+   (`lilq.solvers.line_search_cap`; an explicit `max_line_searches`
+   overrides it). GitHub's caps, as multiples of the iteration cap, were
+   Bratu 3 / 2.5 / 2.5, Burgers 30 / 15 / 15 / 15 / 15 and BL 3, with
+   NiL-Q sharing NiL-N's cap whatever its own budget. L-BFGS makes at most
+   15 evaluations per iteration, so Burgers' caps could never bind; with
+   3x they can. A typical iteration uses about 2 evaluations. This is a
+   deliberate deviation from GitHub, to be disclosed: it gives every
+   method the same evaluation budget per allowed iteration. The addendum
+   asks for runs to end on a target, the iteration cap, the line-search
+   cap or failure, so a cap that can bind is part of the protocol.
+   Replaces the 2026-09-22 "made inert" BL entry and the Bratu
+   `MAX_LINE_SEARCHES` revert.
+
+**BL-gravity: `cos_fourier` and the retargeted losses stay.** The user's
+point: the paper's targets were also set a margin above what LiL-Q
+reached, so the retargeted values follow the same rule, measured against
+LiL-Q's true floor. The remaining question was LiL-Q at P = 64
+(`cos_fourier` does not reach the target from zero within K_max = 20).
+Diagnostic (scratchpad, not in the repo): with J = A(beta) (the verified
+Jacobian) and S = sum_i r_i Hess(r_i), the term Gauss-Newton drops (built
+by central differences of J^T r), rho = max|eig((J^T J)^{-1} S)| --
+the local GN rate at a solution:
+
+| Case | final loss | rho at the solution | rho along the path from zero (k = 1..12) |
+|---|---|---|---|
+| `cos_fourier` P=64 | 0.2283 | 0.78 | 9.4, 1.5, 1.07, 1.25, 1.41, 1.64, 1.86, 1.94, 2.32, 2.07, 2.73, 2.00 (loss 0.51 -> 0.82) |
+| `cos_fourier` P=256 | 0.0706 | 0.65 | 31, 17, 2.6, then 0.96-1.08, then 0.6 by k = 11 |
+| `fourier` P=64 | 0.1968 | 0.51 | 4.0, 3.9, 4.4, 2.1, 7.9, then 0.5 from k = 6 |
+| `fourier` P=256 | 0.1230 | 0.63 | 16, 6.8, 1.3, then 0.6-0.8 from k = 4 |
+
+Every solution attracts the undamped Gauss-Newton iteration (rho < 1;
+linear, not quadratic, convergence -- this problem is large-residual at
+every size). What separates `cos_fourier` P = 64 is the path: the other
+three reach a region with rho < 1 within 4-6 iterations; this one settles
+near loss 0.5, where the dropped term outweighs the kept one (rho
+1.1-2.7), the steps raise the loss, and the iteration never reaches the
+basin. Consistent with: one step to the floor from LiL-N's solution; 14
+iterations from the fitted initial profile (B8); backtracking along the GN
+direction stalling at 0.47. Not explained: why this path lands there for
+this basis and size. For the report: LiL-Q is an undamped Gauss-Newton
+iteration, it converges from inside the basin, and at P = 64 from zero it
+is caught where its own linearization is poor -- the regime the phase
+indicator chi_k monitors.
+
+---
+
 ## 2026-09-24 -- First HPRC run (FASTER): ELM memory fix; check B3 at P = 1,875
 
 **ELM derivatives are now closed-form.** Job `lilq-b36-b37` was killed

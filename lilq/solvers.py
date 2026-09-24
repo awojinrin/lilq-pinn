@@ -40,6 +40,19 @@ from .iteration_log import IterationLogger, LilQDiagnosticsTracker
 # METHOD 1: NiL-N — Standard PINN (Nonlinear-in-Learnables, Nonlinear PDE)
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Line-search (function-evaluation) cap, uniform across problems and methods:
+# three evaluations per allowed iteration of the method's own budget (a
+# typical L-BFGS iteration uses about two). NiL-N and LiL-N budget
+# ``max_iterations``; NiL-Q budgets ``max_quasi_iters * max_inner_iters``.
+# An explicit cap overrides it (smoke tests, probes). DECISIONS.md, 2026-09-24.
+LINE_SEARCH_CAP_FACTOR = 3
+
+
+def line_search_cap(iteration_budget: int, override: Optional[int] = None) -> int:
+    """The evaluation cap for a method whose iteration budget is ``iteration_budget``."""
+    return int(override) if override is not None else LINE_SEARCH_CAP_FACTOR * int(iteration_budget)
+
+
 def solve_nil_n(
     compute_pde_residual: Callable,
     compute_bc_residual: Callable,

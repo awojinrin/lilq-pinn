@@ -28,7 +28,7 @@ from lilq.basis import create_basis_2d
 from lilq.nn import MLP, calculate_hidden_dim
 from lilq.collocation import generate_collocation_points_2d, collocation_to_torch
 from lilq.pretraining import pretrain_nn, pretrain_lil
-from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q
+from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q, line_search_cap
 from lilq.utils import set_seed, nn_init_seed, DEVICE
 from lilq.instrumentation import EPS_MACH
 from lilq.provenance import capture_blas_thread_env
@@ -86,19 +86,9 @@ class BLOptConfig:
     # Pretraining fit grid, points per direction: one 50 x 50 grid for every
     # problem and size, NN and LiL fits alike (the GitHub reference; DECISIONS.md).
     pretrain_grid: int = 50
-    # Line-search evaluation cap: intentionally inert -- see DECISIONS.md.
-    # The pre-GitHub BL implementation had no separate evaluation-based
-    # cap at all; only the per-optimizer.step() max_eval=15 (hardcoded in
-    # lilq.solvers) bounded cost, giving a true worst case of
-    # max_iterations * 15 evaluations for a run that never converges.
-    # Left unset here and resolved to that worst case in __post_init__ so
-    # it can never bind before max_iterations does, regardless of how
-    # max_iterations is configured -- a backstop, not an active limit.
+    # None: 3x the method's own iteration budget (lilq.solvers.line_search_cap),
+    # the same rule for every problem; an explicit value overrides it.
     max_line_searches: Optional[int] = None
-
-    def __post_init__(self):
-        if self.max_line_searches is None:
-            self.max_line_searches = self.max_iterations * 15
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -693,7 +683,7 @@ def run_lil_n(config: BLConfig, opt: BLOptConfig,
     coefficients, metrics, summary = solve_lil_n(
         loss_fn, init_coeffs, device,
         max_iterations=opt.max_iterations,
-        max_line_searches=opt.max_line_searches,
+        max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
@@ -745,7 +735,7 @@ def run_nil_n(config: BLConfig, opt: BLOptConfig,
     model, metrics, summary = solve_nil_n(
         pde_fn, bc_fn, model, x_pde, t_pde, bc_data,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc, lambda_ic=opt.lambda_ic,
-        max_iterations=opt.max_iterations, max_line_searches=opt.max_line_searches,
+        max_iterations=opt.max_iterations, max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
@@ -843,7 +833,7 @@ def run_nil_q(config: BLConfig, opt: BLOptConfig,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc, lambda_ic=opt.lambda_ic,
         max_quasi_iters=opt.max_quasi_iters_nn,
         max_inner_iters=opt.max_inner_iters_nn,
-        max_line_searches=opt.max_line_searches,
+        max_line_searches=line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn, opt.max_line_searches),
         R_tol=opt.R_tol, verbose=verbose,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
