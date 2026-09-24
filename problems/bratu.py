@@ -24,7 +24,7 @@ from lilq.basis import create_basis_2d
 from lilq.nn import MLP, calculate_hidden_dim
 from lilq.metrics import MetricsTracker, QuasilinearMetrics
 from lilq.collocation import generate_collocation_points_2d, collocation_to_torch
-from lilq.pretraining import pretrain_nn, pretrain_lil, nn_pretrain_grid_side
+from lilq.pretraining import pretrain_nn, pretrain_lil
 from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q
 from lilq.utils import set_seed, nn_init_seed, clear_gpu_memory, DEVICE
 from lilq.instrumentation import EPS_MACH
@@ -69,10 +69,9 @@ class BratuOptConfig:
     # Pretraining
     pretrain_epochs: int = 500
     pretrain_tol: float = 1e-4
-    # NN-pretrain fit grid: side length = sqrt(max(floor, N_x*N_y)) -- see
-    # nn_pretrain_grid_side() and DECISIONS.md. 50 is Bratu's own historical
-    # floor (Burgers uses 100 for this path; not a shared constant).
-    pretrain_grid_floor: int = 50
+    # Pretraining fit grid, points per direction: one 50 x 50 grid for every
+    # problem and size, NN and LiL fits alike (the GitHub reference; DECISIONS.md).
+    pretrain_grid: int = 50
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -348,7 +347,7 @@ def run_nil_n(config: BratuConfig, opt: BratuOptConfig,
     pretrain_loss = pretrain_nn(
         model, physics.initial_guess,
         config.x_domain, config.y_domain, device,
-        n_grid=nn_pretrain_grid_side(config.N_x * config.N_y, floor=opt.pretrain_grid_floor),
+        n_grid=opt.pretrain_grid,
         max_epochs=opt.pretrain_epochs,
         tol=opt.pretrain_tol, verbose=verbose,
     )
@@ -403,7 +402,7 @@ def run_nil_q(config: BratuConfig, opt: BratuOptConfig,
     pretrain_loss = pretrain_nn(
         model, physics.initial_guess,
         config.x_domain, config.y_domain, device,
-        n_grid=nn_pretrain_grid_side(config.N_x * config.N_y, floor=opt.pretrain_grid_floor),
+        n_grid=opt.pretrain_grid,
         max_epochs=opt.pretrain_epochs,
         tol=opt.pretrain_tol, verbose=verbose,
     )
@@ -458,8 +457,7 @@ def run_lil_n(config: BratuConfig, opt: BratuOptConfig,
     init_coeffs, pretrain_loss = pretrain_lil(
         basis, physics.initial_guess,
         config.x_domain, config.y_domain,
-        verbose=verbose,  # n_grid left at pretrain_lil's default (100) --
-        # LiL-pretrain floor was never varied per-problem historically.
+        n_grid=opt.pretrain_grid, verbose=verbose,
     )
 
     pts = generate_collocation_points_2d(
@@ -555,8 +553,7 @@ def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
     init_coeffs, pretrain_loss = pretrain_lil(
         basis, physics.initial_guess,
         config.x_domain, config.y_domain,
-        verbose=verbose,  # n_grid left at pretrain_lil's default (100) --
-        # LiL-pretrain floor was never varied per-problem historically.
+        n_grid=opt.pretrain_grid, verbose=verbose,
     )
 
     pts = generate_collocation_points_2d(

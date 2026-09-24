@@ -24,7 +24,7 @@ from typing import Tuple, Dict, Optional
 from lilq.basis import create_basis_2d
 from lilq.nn import MLP, calculate_hidden_dim
 from lilq.collocation import generate_collocation_points_2d, collocation_to_torch
-from lilq.pretraining import pretrain_nn, pretrain_lil, nn_pretrain_grid_side
+from lilq.pretraining import pretrain_nn, pretrain_lil
 from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q
 from lilq.utils import set_seed, nn_init_seed, DEVICE
 from lilq.instrumentation import EPS_MACH
@@ -66,10 +66,9 @@ class BurgersOptConfig:
     max_quasi_iters_lil: int = 20
     pretrain_epochs: int = 500
     pretrain_tol: float = 1e-4
-    # NN-pretrain fit grid: side length = sqrt(max(floor, N_x*N_t)) -- see
-    # nn_pretrain_grid_side() and DECISIONS.md. 100 is Burgers' own
-    # historical floor (Bratu/BL use 50 for this path).
-    pretrain_grid_floor: int = 100
+    # Pretraining fit grid, points per direction: one 50 x 50 grid for every
+    # problem and size, NN and LiL fits alike (the GitHub reference; DECISIONS.md).
+    pretrain_grid: int = 50
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -375,7 +374,7 @@ def run_nil_n(config: BurgersConfig, opt: BurgersOptConfig,
     pretrain_loss = pretrain_nn(
         model, physics.initial_guess,
         config.x_domain, (0, config.T_final), device,
-        n_grid=nn_pretrain_grid_side(config.N_x * config.N_t, floor=opt.pretrain_grid_floor),
+        n_grid=opt.pretrain_grid,
         max_epochs=opt.pretrain_epochs,
         tol=opt.pretrain_tol, verbose=verbose,
     )
@@ -425,7 +424,7 @@ def run_nil_q(config: BurgersConfig, opt: BurgersOptConfig,
     pretrain_loss = pretrain_nn(
         model, physics.initial_guess,
         config.x_domain, (0, config.T_final), device,
-        n_grid=nn_pretrain_grid_side(config.N_x * config.N_t, floor=opt.pretrain_grid_floor),
+        n_grid=opt.pretrain_grid,
         max_epochs=opt.pretrain_epochs,
         tol=opt.pretrain_tol, verbose=verbose,
     )
@@ -479,8 +478,7 @@ def run_lil_n(config: BurgersConfig, opt: BurgersOptConfig,
     init_coeffs, pretrain_loss = pretrain_lil(
         basis, physics.initial_guess,
         config.x_domain, (0, config.T_final),
-        verbose=verbose,  # n_grid left at pretrain_lil's default (100) --
-        # LiL-pretrain floor was never varied per-problem historically.
+        n_grid=opt.pretrain_grid, verbose=verbose,
     )
 
     pts = generate_collocation_points_2d(
@@ -574,8 +572,7 @@ def run_lil_q(config: BurgersConfig, opt: BurgersOptConfig,
     init_coeffs, pretrain_loss = pretrain_lil(
         basis, physics.initial_guess,
         config.x_domain, (0, config.T_final),
-        verbose=verbose,  # n_grid left at pretrain_lil's default (100) --
-        # LiL-pretrain floor was never varied per-problem historically.
+        n_grid=opt.pretrain_grid, verbose=verbose,
     )
 
     pts = generate_collocation_points_2d(
