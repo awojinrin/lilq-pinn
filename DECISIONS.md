@@ -35,18 +35,39 @@ rank-truncated solution slightly. Paper: 5.0e-2. The ELM basis is used
 only by the basis study, so no other finished run is affected. Section
 3.6/3.7 is rerun on this commit.
 
-**Check B3 fails at P = 1,875 on the $\|R_{\rm lin}\|$ criterion alone
-(open; for the user).** On the A30: $\beta$ agrees to 6.6e-14 (criterion
-1e-8), but the final $\|R_{\rm lin}\|_h$ differs by a relative 1.3e-3
-(criterion 5e-7, "six significant figures"). Reproduced on the laptop GPU
-(8.9e-4), so it is not the A30. There $\|R_{\rm lin}\|_h \approx 6.3\times
-10^{-13}$: the system is solved to the rounding floor, and a residual
-that small is rounding noise, whose leading digits no two machines agree
-on. P <= 1,200 pass ($\|R_{\rm lin}\|_h \ge 4.7\times10^{-8}$). The
-earlier local validation ran B3 only at the smoke size, which is why this
-wasn't caught before the cluster run. Not changed: the criterion is the
-spec's, and whether to report it as a failure or add a rounding-floor
-allowance is the user's decision.
+**Check B3 fails at P = 1,875 on the $\|R_{\rm lin}\|$ criterion alone.**
+On the A30: $\beta$ agrees to 6.6e-14 (criterion 1e-8), but the final
+$\|R_{\rm lin}\|_h$ differs by a relative 1.3e-3 (criterion 5e-7, "six
+significant figures"). Reproduced on the laptop GPU (8.9e-4), so it is not
+the A30. There $\|R_{\rm lin}\|_h \approx 6.3\times10^{-13}$: the system is
+solved to the rounding floor, and a residual that small is rounding
+noise, whose leading digits no two machines agree on. P <= 1,200 pass.
+The earlier local validation ran B3 only at the smoke size, which is why
+this wasn't caught before the cluster run.
+
+Decision (user): both. (a) The report states the spec-rule result as a
+failure at P = 1,875, with the explanation above. (b) An amended rule is
+recorded alongside it and decides whether the job stops: the six-figure
+test is waived when **both** runs' final residuals are at or below
+Algorithm 1's round-off floor, $\|R_{\rm lin}\|_h \le
+\kappa(A)\,\varepsilon_{\rm mach}\,\|f\|_h$ (the paper's own floor, already
+logged per iteration as `roundoff_ratio` vs `kappa_eps`); $\beta$ must
+still agree to 1e-8 at every size, and a missing $\kappa$ never waives
+it. Values (laptop GPU; the floor is the CPU run's):
+
+| P | $\|R_{\rm lin}\|_h$ | floor $\kappa\varepsilon\|f\|_h$ | spec rule | amended |
+|---|---|---|---|---|
+| 75 | 2.5 | 1.8e-13 | pass | pass |
+| 300 | 1.3e-1 | 1.9e-12 | pass | pass |
+| 675 | 6.2e-5 | 1.4e-11 | pass | pass |
+| 1,200 | 4.7e-8 | 1.0e-10 | pass | pass (spec rule decides) |
+| 1,875 | 6.3e-13 | 9.2e-10 | **fail** | pass (waived: at floor) |
+
+`gpu_cpu_equivalence.csv` gains `rlin_floor_cpu`, `rlin_floor_gpu`,
+`rlin_at_floor`, `rlin_ok_amended`, `equivalent_amended`; `equivalent`
+stays the spec's verdict. `component_b.py --gpu-equivalence` prints both
+and exits non-zero only if the amended rule fails. Revisit: if the spec
+is amended differently, change `verify_gpu_cpu_equivalence` only.
 
 ---
 

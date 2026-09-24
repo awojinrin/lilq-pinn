@@ -83,7 +83,7 @@ def test_gpu_equivalence_smoke(tmp_path):
     with open(path, newline='') as f:
         (row,) = list(csv.DictReader(f))
     assert set(row) == set(cb.EQUIVALENCE_COLUMNS)
-    assert row['P'] == '75' and row['equivalent'] == 'True'
+    assert row['P'] == '75' and row['equivalent'] == row['equivalent_amended'] == 'True'
     assert float(row['beta_rel_diff']) <= 1e-8
     assert all(float(row[c]) > 0 for c in ('t_gelsy_cpu_s', 't_gels_cpu_s', 't_qr_gpu_s'))
     assert int(row['gpu_mem_peak_bytes']) > 0 and int(row['gpu_mem_estimate_bytes']) > 0

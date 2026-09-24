@@ -291,6 +291,7 @@ def execute_run(run: Run, root: Path, fresh=False, verbose=True) -> str:
 EQUIVALENCE_COLUMNS = (
     'P', 'N_rows', 'iterations_cpu', 'iterations_gpu',
     'beta_rel_diff', 'beta_ok', 'rlin_cpu', 'rlin_gpu', 'rlin_rel_diff', 'rlin_ok', 'equivalent',
+    'rlin_floor_cpu', 'rlin_floor_gpu', 'rlin_at_floor', 'rlin_ok_amended', 'equivalent_amended',
     't_gelsy_cpu_s', 't_gels_cpu_s', 't_qr_gpu_s', 'timing_repeats',
     'gpu_mem_estimate_bytes', 'gpu_mem_peak_bytes', 'gpu_min_diag_ratio', 'gpu_flagged_iterations',
 )
@@ -314,7 +315,9 @@ def _median_time(fn, repeats, sync=False):
 def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Path:
     """Section 3.2 / check B3, every Kovasznay size: the GPU run against
     the CPU ``gelsy`` run (``||beta_GPU - beta_CPU|| / ||beta_CPU|| <= 1e-8``,
-    ``||R_lin||_h`` equal to six significant figures), plus the solve time
+    ``||R_lin||_h`` equal to six significant figures -- ``equivalent``, the
+    spec's rule; ``equivalent_amended`` waives the six figures when both
+    residuals are at Algorithm 1's round-off floor), plus the solve time
     of CPU ``gelsy`` (the paper's), CPU ``gels`` and the GPU QR on the same
     final-iterate system (median of ``repeats`` after a warm-up; the GPU
     time includes the host-to-device copy of A)."""
@@ -337,7 +340,9 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
             'iterations_cpu': eq['cpu_result']['n_outer_iters'],
             'iterations_gpu': eq['gpu_result']['n_outer_iters'],
             **{k: eq[k] for k in ('beta_rel_diff', 'beta_ok', 'rlin_cpu', 'rlin_gpu',
-                                  'rlin_rel_diff', 'rlin_ok', 'equivalent')},
+                                  'rlin_rel_diff', 'rlin_ok', 'equivalent', 'rlin_floor_cpu',
+                                  'rlin_floor_gpu', 'rlin_at_floor', 'rlin_ok_amended',
+                                  'equivalent_amended')},
             't_gelsy_cpu_s': _median_time(
                 lambda: scipy.linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy'), repeats),
             't_gels_cpu_s': _median_time(lambda: _lstsq_cpu_gels(A, b), repeats),
@@ -349,7 +354,13 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
         })
         if verbose:
             r = rows[-1]
-            verdict = 'equivalent' if r['equivalent'] else 'NOT EQUIVALENT -- stop and report (Section 3.2)'
+            if r['equivalent']:
+                verdict = 'equivalent'
+            elif r['equivalent_amended']:
+                verdict = ('NOT EQUIVALENT under the spec rule; equivalent under the amended rule '
+                           '(both residuals at the round-off floor)')
+            else:
+                verdict = 'NOT EQUIVALENT -- stop and report (Section 3.2)'
             print(f"  P={r['P']}: beta diff {r['beta_rel_diff']:.1e}, R_lin diff {r['rlin_rel_diff']:.1e} "
                   f"-> {verdict}; gelsy {r['t_gelsy_cpu_s']:.3f}s, gels {r['t_gels_cpu_s']:.3f}s, "
                   f"GPU QR {r['t_qr_gpu_s']:.3f}s", flush=True)
@@ -587,9 +598,15 @@ def main():
         save_provenance(Path(args.out_root))
         path = run_gpu_equivalence(root, smoke=args.smoke)
         with open(path, newline='') as f:
-            failed = [r['P'] for r in csv.DictReader(f) if r['equivalent'] != 'True']
-        print(f"Wrote {path}" + (f" -- NOT EQUIVALENT at P={failed}" if failed else " -- all sizes equivalent"))
-        sys.exit(1 if failed else 0)
+            rows = list(csv.DictReader(f))
+        strict = [r['P'] for r in rows if r['equivalent'] != 'True']
+        amended = [r['P'] for r in rows if r['equivalent_amended'] != 'True']
+        print(f"Wrote {path}: spec rule "
+              + (f"fails at P={strict}" if strict else "passes at every size")
+              + "; amended rule " + (f"fails at P={amended}" if amended else "passes at every size"))
+        # The amended rule decides whether to stop (DECISIONS.md, 2026-09-24);
+        # spec-rule failures are reported in the CSV, not treated as fatal.
+        sys.exit(1 if amended else 0)
 
     devices = args.devices or (['cpu', 'cuda'] if torch.cuda.is_available() else ['cpu'])
     if 'cuda' in devices and not torch.cuda.is_available():

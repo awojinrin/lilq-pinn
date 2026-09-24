@@ -331,7 +331,10 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
     """Section 3.2's per-size equivalence check: run the same config once
     on GPU and once on CPU (``gelsy``, the paper's own driver), then
     check ``||beta_GPU - beta_CPU||_2 / ||beta_CPU||_2 <= 1e-8`` and that
-    the final ``||R_lin||_h`` agree to six significant figures. Returns a
+    the final ``||R_lin||_h`` agree to six significant figures
+    (``equivalent``). ``equivalent_amended`` waives the six figures when
+    both residuals are at or below Algorithm 1's round-off floor
+    ``kappa * eps_mach * ||f||_h``, where their digits are noise. Returns a
     dict with both raw results and the pass/fail verdicts; does **not**
     raise on failure itself -- "if it fails, stop and report" is the
     caller's decision (the experiment-script layer), not something a
@@ -352,8 +355,8 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
     beta_gpu = np.concatenate([gpu_result['theta_u'], gpu_result['theta_v'], gpu_result['theta_p']])
     beta_rel_diff = float(np.linalg.norm(beta_gpu - beta_cpu) / (np.linalg.norm(beta_cpu) + 1e-30))
 
-    rlin_cpu = last_solve_row(cpu_logger.rows)['norm_Rlin_h']
-    rlin_gpu = last_solve_row(gpu_logger.rows)['norm_Rlin_h']
+    cpu_row, gpu_row = last_solve_row(cpu_logger.rows), last_solve_row(gpu_logger.rows)
+    rlin_cpu, rlin_gpu = cpu_row['norm_Rlin_h'], gpu_row['norm_Rlin_h']
     # "Equal to six significant figures": relative difference below 5e-7
     # (half a unit in the 6th significant digit) is the standard meaning
     # of that phrase, not literal string-formatting comparison.
@@ -362,11 +365,24 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
     beta_ok = beta_rel_diff <= 1e-8
     rlin_ok = rlin_rel_diff <= 5e-7
 
+    # Amended rule (DECISIONS.md, 2026-09-24): a residual at or below
+    # Algorithm 1's round-off floor kappa * eps_mach * ||f||_h is rounding
+    # noise, whose digits no two machines share, so the six-figure test is
+    # waived when both runs are there. beta must still agree to 1e-8. A
+    # NaN kappa (not computed) never waives it.
+    def floor(row):
+        return row['kappa'] * EPS_MACH * row['norm_f_h']
+    at_floor = bool(rlin_cpu <= floor(cpu_row) and rlin_gpu <= floor(gpu_row))
+    rlin_ok_amended = rlin_ok or at_floor
+
     return {
         'beta_rel_diff': beta_rel_diff, 'beta_ok': beta_ok,
         'rlin_cpu': rlin_cpu, 'rlin_gpu': rlin_gpu,
         'rlin_rel_diff': rlin_rel_diff, 'rlin_ok': rlin_ok,
         'equivalent': beta_ok and rlin_ok,
+        'rlin_floor_cpu': floor(cpu_row), 'rlin_floor_gpu': floor(gpu_row),
+        'rlin_at_floor': at_floor, 'rlin_ok_amended': rlin_ok_amended,
+        'equivalent_amended': beta_ok and rlin_ok_amended,
         'cpu_result': cpu_result, 'gpu_result': gpu_result,
         'cpu_logger': cpu_logger, 'gpu_logger': gpu_logger,
     }
