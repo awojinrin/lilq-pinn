@@ -495,7 +495,9 @@ def solve_lilq_darcy(config: DarcyConfig,
     # ── Residuals ────────────────────────────────────────────────────────
     residual = A @ coeffs - b
 
+    t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
     if iteration_logger is not None:
+        t_diag0 = time.perf_counter()
         # Single direct linear solve: row k=0 (the solve, "assembled" at
         # the zero vector -- no previous iterate exists for this problem)
         # and the terminal row k=1 (the residual at the solution).
@@ -520,6 +522,7 @@ def solve_lilq_darcy(config: DarcyConfig,
         )
         iteration_logger.record(**row)
         iteration_logger.record(**tracker.finish(k=1))
+        t_diag = time.perf_counter() - t_diag0
 
     res_Dx_nd = residual[:n_pde]
     res_Dy_nd = residual[n_pde:2 * n_pde]
@@ -548,13 +551,14 @@ def solve_lilq_darcy(config: DarcyConfig,
     rmse = np.sqrt(np.mean(err**2))
     rel_L2 = np.linalg.norm(err) / np.linalg.norm(P_fvm)
 
-    t_total = time.time() - t_start
+    t_total = time.time() - t_start - t_diag
 
     metrics = {
         'build_time': t_build,
         'solve_time': t_solve,
         'fvm_time': t_fvm,
         'total_time': t_total,
+        'diagnostics_time': t_diag,
         'n_coefficients': n_total,
         # Dimensionless MSE
         'mse_Dx_nd': float(np.mean(res_Dx_nd**2)),

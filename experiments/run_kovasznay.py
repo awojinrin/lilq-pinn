@@ -20,7 +20,6 @@ if _proj not in sys.path:
 import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
-from lilq.utils import set_seed
 from problems.kovasznay import (
     KovasznayConfig, KovasznayPhysics,
     solve_kovasznay, evaluate_all_fields,
@@ -144,7 +143,7 @@ def main():
     all_results = {}
     t0 = time.time()
     for N in args.N:
-        set_seed(42)
+        np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
         all_results[N] = run_experiment_for_N(N, args.Re, args.basis, verbose)
 
     print_summary_table(all_results, args.N, ['LiL-Q'], 'Kovasznay')

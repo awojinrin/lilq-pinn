@@ -579,6 +579,7 @@ def solve_lil_q(
         is_final_iterate = just_converged or (quasi_iter == max_quasi_iters - 1)
 
         if tracker is not None:
+            t_diag = time.perf_counter()
             row = tracker.step(
                 k=quasi_iter,
                 A_stacked=A_stacked, b_stacked=b_stacked,
@@ -589,6 +590,8 @@ def solve_lil_q(
                 compute_residual_vector_fn=compute_residual_vector_fn,
             )
             iteration_logger.record(**row)
+            # The Section 3.1 diagnostics are passive: off the method's clock.
+            metrics.exclude_time(time.perf_counter() - t_diag)
 
         if just_converged:
             if verbose:

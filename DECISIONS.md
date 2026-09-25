@@ -17,6 +17,59 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Addendum fixes 3.1 and 3.3; diagnostics taken off the solver clock
+
+**Fix 3.1 (Buckley-Leverett LiL-Q iteration count).** The shared
+`solve_lil_q` already counts solves. Tests added for what the addendum
+asks: a run that stops after k solves reports k (k = 2, 3, 7), and a real
+Buckley-Leverett LiL-Q run whose outer least-squares solves are counted
+independently reports exactly that count.
+
+**Fix 3.3 (no PyTorch/CUDA setup in CPU-only LiL-Q drivers).** The
+LiL-Q-only drivers (Beltrami, Beltrami pinned, Kovasznay, elasticity;
+Darcy when its NiL part is skipped) and the `run_lil_q` of Bratu, Burgers
+and Buckley-Leverett now seed NumPy only, instead of `set_seed`. LiL-N
+keeps `set_seed`: it trains with PyTorch. Measured whether PyTorch's
+presence slows the CPU solve at all: a 24,000 x 5,000 `gelsy` solve
+(Beltrami's dominant operation), three repeats per fresh process, two
+rounds, 24 threads on this laptop:
+
+| Process | min / 3 (round 1) | min / 3 (round 2) |
+|---|---|---|
+| NumPy/SciPy only | 36.2 s | 37.8 s |
+| + `import torch` | 38.1 s | 37.2 s |
+| + CUDA probe (`is_available`, cuDNN version) | 36.0 s | 38.4 s |
+| + full CUDA context | 37.7 s | 38.4 s |
+
+No effect beyond run-to-run noise (about 5%), so PyTorch is still
+imported by these modules; removing it would touch every problem module
+for no measured gain. The 2026-09-22 entries already found that
+`set_seed`'s CUDA settings cost ~20 s of ~540 s and that the real
+Beltrami regression was the per-iteration SVD.
+
+**Diagnostics taken off the solver clock.** The Section 3.1 diagnostics
+(per-iterate test errors, check B2, SVD or pivoted-QR conditioning) are
+passive, but their time was inside the reported solver times:
+`solve_time_total` of Kovasznay, Beltrami and elasticity, Darcy's
+`total_time`, `solve_lil_q`'s `training_time`, and the Section 3.7
+"wall-clock". B1 compares Kovasznay's `solve_time_total` with Table 9,
+and with logging on the tracker adds an SVD every iteration. Each solver
+now times its diagnostics block and subtracts it (`diagnostics_time` is
+reported alongside; `QuasilinearMetrics.exclude_time` does it for
+`solve_lil_q`). `t_cum_s` in `iterations.csv` (assembly + solve) was
+already clean and is unchanged. Section 3.7 now reports the solver time,
+the diagnostics time and the process wall-clock separately.
+
+Beltrami on this laptop, paper configuration, full logging, nothing else
+running: 4 iterations, **solver time 308.1 s** (assembly 2.2-2.4 s and solve
+73.6-75.5 s per iteration; `t_cum_s` 306.6 s), diagnostics 75.8 s, process
+wall-clock 384.1 s; errors u 3.445e-4, p 2.614e-3 (Table 11's 0.0345% and
+0.261%). The paper says about 300 s; the pre-GitHub code measured 302 s on
+2026-09-22. The Section 3.7 figure of 363 s recorded earlier included the
+diagnostics.
+
+---
+
 ## 2026-09-24 -- Addendum v2.1: reference codebase, budgets, line-search caps, BL-gravity
 
 **Reference codebase.** Addendum v2.1 Decision 2 names the GitHub version

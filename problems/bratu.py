@@ -544,7 +544,7 @@ def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
     """
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
-    set_seed(config.seed)
+    np.random.seed(config.seed)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
     physics = BratuPhysics(config)
 
     basis = create_basis_2d(

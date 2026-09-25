@@ -429,6 +429,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         print("=" * 70)
 
     t_start = time.time()
+    t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
     pts = _generate_collocation(config, physics, P_total)
     xp, yp, zp, tp = pts['x_pde'], pts['y_pde'], pts['z_pde'], pts['t_pde']
     n_pde = pts['n_pde']
@@ -652,6 +653,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
                   f"QR={dt_iter:.3f}s  rank={rank}/{P_total}")
 
         if tracker is not None:
+            t_diag0 = time.perf_counter()
             is_final_iterate = (rel_delta < config.tol) or (k == config.max_iter - 1)
             total_loss = loss_fn(theta_new)
             row = tracker.step(
@@ -664,6 +666,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
                 compute_residual_vector_fn=residual_vector_fn,
             )
             iteration_logger.record(**row)
+            t_diag += time.perf_counter() - t_diag0
 
         theta_u, theta_v, theta_w, theta_p = tu, tv, tw, tp_
 
@@ -672,9 +675,12 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
             break
 
     if tracker is not None:
+        t_diag0 = time.perf_counter()
         iteration_logger.record(**tracker.finish(k=k + 1))
+        t_diag += time.perf_counter() - t_diag0
 
-    total_time = time.time() - t_start
+    # The Section 3.1 diagnostics are passive: off the method's clock.
+    total_time = time.time() - t_start - t_diag
     rel_l2 = compute_errors(physics, basis_u, basis_v, basis_w, basis_p,
                             theta_u, theta_v, theta_w, theta_p)
     snap = compute_time_snapshot_errors(physics, basis_u, basis_v, basis_w, basis_p,
@@ -741,6 +747,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         'basis_u': basis_u, 'basis_v': basis_v, 'basis_w': basis_w, 'basis_p': basis_p,
         'n_params': P_total, 'n_outer_iters': k + 1,
         'solve_time_total': total_time,
+        'diagnostics_time': t_diag,
         **rel_l2, 'pde_mse': pde_res, 'cont_mse': cont_res,
         'history': history, 'snapshots': snap,
     }

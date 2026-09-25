@@ -494,6 +494,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         print("=" * 70)
 
     t_start = time.time()
+    t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
 
     # Collocation
     pts = _generate_collocation(config, P_total)
@@ -724,6 +725,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                   f"PDE={pde_res:.3e}  cont={cont_res:.3e}  QR={dt:.4f}s")
 
         if tracker is not None:
+            t_diag0 = time.perf_counter()
             is_final_iterate = (rel_delta < config.tol) or (k == config.max_iter - 1)
             total_loss = loss_fn(theta_new)
             row = tracker.step(
@@ -737,6 +739,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 solver_path=solver_path, gpu_mem_peak_bytes=gpu_mem_peak_bytes,
             )
             iteration_logger.record(**row)
+            t_diag += time.perf_counter() - t_diag0
 
         theta_u, theta_v, theta_p = theta_u_new, theta_v_new, theta_p_new
 
@@ -746,9 +749,12 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             break
 
     if tracker is not None:
+        t_diag0 = time.perf_counter()
         iteration_logger.record(**tracker.finish(k=k + 1))
+        t_diag += time.perf_counter() - t_diag0
 
-    total_time = time.time() - t_start
+    # The Section 3.1 diagnostics are passive: off the method's clock.
+    total_time = time.time() - t_start - t_diag
 
     # Final errors vs. exact solution
     n_ev = 200
@@ -826,6 +832,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         'n_params': P_total,
         'n_outer_iters': k + 1,
         'solve_time_total': total_time,
+        'diagnostics_time': t_diag,
         'rel_l2_u': rel_l2_u, 'rel_l2_v': rel_l2_v, 'rel_l2_p': rel_l2_p,
         'pde_mse': pde_res, 'cont_mse': cont_res,
         'history': history,

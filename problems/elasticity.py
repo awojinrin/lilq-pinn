@@ -301,7 +301,9 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
     solve_time = time.time() - t_solve
 
     tracker = None
+    t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
     if iteration_logger is not None:
+        t_diag0 = time.perf_counter()
         residual_vector_fn = lambda beta: A_sys @ beta - b_sys  # noqa: E731 -- linear: this *is* the operator
         tracker = LilQDiagnosticsTracker(
             n_interior_rows=2 * n_pde, interior_weight=float(w_pde),
@@ -315,6 +317,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
             is_final_iterate=True, compute_residual_vector_fn=residual_vector_fn,
         ))
         iteration_logger.record(**tracker.finish(k=1))
+        t_diag = time.perf_counter() - t_diag0
 
     theta_u = theta[:Pu]
     theta_v = theta[Pu:]
@@ -357,7 +360,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
     rel_l2_syy = np.sqrt(np.mean((syy_pred-syy_exact)**2)) / max(np.sqrt(np.mean(syy_exact**2)), 1e-15)
     rel_l2_sxy = np.sqrt(np.mean((sxy_pred-sxy_exact)**2)) / max(np.sqrt(np.mean(sxy_exact**2)), 1e-15)
 
-    total_time = time.time() - t_start
+    total_time = time.time() - t_start - t_diag
 
     if verbose:
         print(f"\n  QR solve time: {solve_time:.4f}s")
@@ -402,7 +405,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
         'basis_u': basis_u, 'basis_v': basis_v,
         'theta_u': theta_u, 'theta_v': theta_v,
         'n_params': P_total,
-        'solve_time_qr': solve_time, 'solve_time_total': total_time,
+        'solve_time_qr': solve_time, 'solve_time_total': total_time, 'diagnostics_time': t_diag,
         'pde_mse': pde_mse,
         'rel_l2_ux': rel_l2_ux, 'rel_l2_uy': rel_l2_uy,
         'rel_l2_sxx': rel_l2_sxx, 'rel_l2_syy': rel_l2_syy, 'rel_l2_sxy': rel_l2_sxy,

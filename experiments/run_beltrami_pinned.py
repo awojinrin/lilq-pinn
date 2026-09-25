@@ -28,7 +28,6 @@ if _proj not in sys.path:
 import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
-from lilq.utils import set_seed
 from lilq.iteration_log import IterationLogger, last_solve_row
 from lilq.provenance import save_provenance
 from problems.beltrami import BeltramiConfig, solve_beltrami
@@ -52,7 +51,7 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / 'results' / 'beltrami_pinn
 
 def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR):
     out_dir = Path(out_dir)
-    set_seed(42)
+    np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
     config = BeltramiConfig(
         N_vel=N_VEL, N_p=N_P, basis_type=DEFAULT_BASIS,
         n_pressure_pin_levels=N_PRESSURE_PIN_LEVELS,
@@ -101,6 +100,10 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR):
         'n_pressure_pin_levels': N_PRESSURE_PIN_LEVELS,
         'P_total': P_total,
         'n_outer_iters': result['n_outer_iters'],
+        # The method's own time (collocation, assembly, solves), with the
+        # passive Section 3.1 diagnostics off the clock; the paper's figure.
+        'solver_time_s': result['solve_time_total'],
+        'diagnostics_time_s': result['diagnostics_time'],
         'wall_clock_s': wall_clock_s,
         'full_column_rank': bool(full_rank),
         'num_rank_svd': last_row['num_rank_svd'],
@@ -116,7 +119,9 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR):
         json.dump(report, f, indent=2)
 
     if verbose:
-        print(f"\n  Wall-clock: {wall_clock_s:.1f}s, iters: {result['n_outer_iters']}")
+        print(f"\n  Solver time: {result['solve_time_total']:.1f}s (diagnostics "
+              f"{result['diagnostics_time']:.1f}s, process wall-clock {wall_clock_s:.1f}s), "
+              f"iters: {result['n_outer_iters']}")
         print(f"  Full column rank ({P_total}/{P_total}): {full_rank}")
         print(f"  kappa: {kappa} ({last_row['kappa_method']})")
         print(f"\n  {'t':>6} {'u':>10} {'v':>10} {'w':>10} {'p':>10}")

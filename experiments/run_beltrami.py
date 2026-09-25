@@ -21,7 +21,6 @@ if _proj not in sys.path:
 import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
-from lilq.utils import set_seed
 from problems.beltrami import (
     BeltramiConfig, BeltramiPhysics, solve_beltrami,
     evaluate_fields_at_slice, evaluate_fields_3d,
@@ -157,7 +156,7 @@ def main():
     args = parser.parse_args()
 
     verbose = not args.quiet
-    set_seed(42)
+    np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
 
     print(f"Beltrami Experiments | N_vel={args.N_vel}, N_p={args.N_p}, "
           f"basis={args.basis}")

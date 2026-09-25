@@ -132,7 +132,10 @@ def main():
     parser.add_argument('--quiet', action='store_true')
     args = parser.parse_args()
 
-    set_seed(42)
+    if args.skip_pinn:
+        np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
+    else:
+        set_seed(42)
     verbose = not args.quiet
     print(f"Darcy Experiments | order={args.order}, fields={args.fields}")
 

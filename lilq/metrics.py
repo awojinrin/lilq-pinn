@@ -125,6 +125,11 @@ class QuasilinearMetrics:
         self.reason = None
         self.start_time = time.time()
 
+    def exclude_time(self, seconds: float) -> None:
+        """Keep ``seconds`` (the passive diagnostics' cost) out of ``wall_time``
+        from now on, so a method's recorded time is its own."""
+        self.start_time += seconds
+
     def reset(self) -> None:
         """Clear all recorded data and restart the timer."""
         for key in self.data:
