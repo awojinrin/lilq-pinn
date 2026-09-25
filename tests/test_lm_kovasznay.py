@@ -91,3 +91,47 @@ def test_check_a2_same_seed_runs_are_identical(tmp_path):
             return [row['loss_total'] for row in csv.DictReader(f)]
     first, second = run(tmp_path / 'a'), run(tmp_path / 'b')
     assert len(first) == 20 and first == second
+
+
+def _reference_point_residual(res, theta, xy):
+    """Verbatim the advisor's original (three forward passes)."""
+    from torch.func import jacfwd
+    params = res.unflatten(theta)
+    f = lambda z: lm.fields(res.model, params, z)  # noqa: E731
+    J = jacfwd(f)(xy)
+    H = jacfwd(jacfwd(f))(xy)
+    u, v, _ = f(xy)
+    ux, uy, vx, vy = J[0, 0], J[0, 1], J[1, 0], J[1, 1]
+    lap_u = H[0, 0, 0] + H[0, 1, 1]
+    lap_v = H[1, 0, 0] + H[1, 1, 1]
+    return torch.stack([u * ux + v * uy + J[2, 0] - lm.NU * lap_u,
+                        u * vx + v * vy + J[2, 1] - lm.NU * lap_v, ux + vy])
+
+
+def test_single_pass_residual_equals_the_reference(small):
+    _model, theta, res = small
+    for z in res.xy_int:
+        assert (res.point_residual(theta, z) - _reference_point_residual(res, theta, z)).abs().max() < 1e-13
+
+
+def test_normal_equations_equal_the_full_jacobian_form(small):
+    _model, theta, res = small
+    torch.manual_seed(2)
+    xy = torch.rand(40, 2) * torch.tensor([1.5, 2.0]) + torch.tensor([lm.X0, lm.Y0])
+    res = lm.Residual(res.model, xy, torch.tensor([lm.X0, lm.Y0]))
+    r = res.vector(theta, 16)
+    J = res.jacobian(theta, 16)
+    H, g = res.normal_equations(theta, r, 16)
+    assert (H - J.T @ J).abs().max() <= 1e-12 * (J.T @ J).abs().max()
+    assert (g - J.T @ r).abs().max() <= 1e-12 * (J.T @ r).abs().max()
+
+
+@pytest.mark.parametrize("width, depth, m, sigma", [(12, 2, 8, 1.0), (32, 4, 16, 2.0)])
+def test_batched_taylor_residual_equals_the_reference_evaluation(width, depth, m, sigma):
+    torch.manual_seed(3)
+    model = lm.FourierMLP(width, depth, m, sigma, 0)
+    theta = torch.cat([p.detach().reshape(-1) for p in model.parameters()])
+    xy = torch.rand(50, 2) * torch.tensor([1.5, 2.0]) + torch.tensor([lm.X0, lm.Y0])
+    res = lm.Residual(model, xy, torch.tensor([lm.X0, lm.Y0]))
+    fast, ref = res.interior(theta, slice(10, 40)), res.interior_reference(theta, xy[10:40])
+    assert (fast - ref).abs().max() <= 1e-13 * ref.abs().max()

@@ -17,6 +17,47 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-25 -- F2 (Levenberg-Marquardt) made faster; same algorithm
+
+Addendum v2.1 Section 6 allows speeding up the reference provided the
+finite-difference and A2 checks pass and the step equation, damping
+schedule, acceptance rule and stopping rule are unchanged. They are. Why it
+matters: the budget is wall-clock, so a faster step means more LM steps and
+a stronger F2 baseline. Changes in `baselines/lm_kovasznay.py`:
+
+1. **Batched Taylor-mode residual.** The reference evaluated each interior
+   point separately, with three nested forward-mode passes through
+   `functional_call` (thousands of tiny kernels). `taylor_forward` pushes the
+   value, first derivatives and the two second derivatives the Laplacian
+   needs through the network for a whole block of points at once, exactly
+   (the Fourier embedding and Linear layers are linear maps; tanh' = 1 -
+   tanh^2, tanh'' = -2 tanh tanh'). The Coons interpolant and the distance
+   factor do not depend on the parameters, so their derivatives are
+   computed once (`boundary_geometry`). Agreement with the reference's
+   evaluation: 3-4e-16 relative.
+2. **Normal equations by row block.** J^T J and J^T r are accumulated block
+   by block; the full Jacobian is never stored (the reference formed J, a
+   concatenated copy, then J^T J).
+3. **Damping in place** on a copy of J^T J instead of adding a dense
+   `diag(d)`.
+
+Measured on this laptop's GPU (weak in float64), per LM step, reference ->
+optimized: 1.62 -> 0.49 s (4,291 parameters, 3,001 rows), 4.47 -> 2.03 s
+(7,395; 6,001), 5.08 -> 3.45 s (12,675; 3,001); the steps agree to 1e-11
+relative (rounding, amplified by the conditioning of J^T J). The Jacobian
+itself went from 1.74 to 0.61 s at 12,675 parameters; what remains is
+dense float64 linear algebra (J^T J 1.66 s, Cholesky 1.20 s), which an
+A100 runs 10-20x faster, so on Grace the step becomes Jacobian-bound.
+
+End to end, the advisor's smoke run reproduced with the optimized code (this
+laptop's CPU): the same 60 steps and 115 function evaluations (the same
+accept/reject sequence), final loss 1.8783366e-9 against his 1.8783366e-9,
+eps_u 9.0925575e-5 against 9.0925571e-5; loss history within 9e-8 relative
+throughout. Tests: the batched residual and the block normal equations
+against the reference forms; the finite-difference and A2 checks.
+
+---
+
 ## 2026-09-25 -- Code review before the Grace runs: fixes
 
 A full read-through against Package 1 v2.0, Addendum v2.1 and the decisions

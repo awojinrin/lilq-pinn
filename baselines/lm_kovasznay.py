@@ -46,6 +46,16 @@ acceptance rule, stopping rule):
 * ``torch.set_default_dtype(torch.float64)`` moved from import time into
   ``lm_train`` and ``main``, so importing this module does not change
   PyTorch's default precision for the rest of the process.
+* Speed and memory, same step (Addendum v2.1 Section 6 allows it; the
+  finite-difference and A2 checks still pass, and tests compare against the
+  reference's own evaluation): the interior residual of a whole block of
+  points is computed in one batched Taylor-mode pass (the value, first
+  derivatives and the two second derivatives the Laplacian needs, propagated
+  exactly through the tanh layers; the boundary interpolant's
+  parameter-independent derivatives computed once), instead of nested
+  forward-mode passes point by point; J^T J and J^T r are accumulated row
+  block by row block, so the full Jacobian is never stored; the damping is
+  added to the diagonal in place instead of through a dense ``diag``.
 * The test errors (post-hoc reading only) are computed off the clock:
   their time is excluded from ``t_cum_s``, the budget and ``wall_s``, as
   for F1, so neither family's budget pays for evaluation.
@@ -152,6 +162,54 @@ def fields(model, params, xy):
     return torch.stack([u, v, p])
 
 
+def taylor_forward(model, params, xy):
+    """The network's raw outputs (u~, v~, p) at points ``xy`` (N x 2) and their
+    derivatives d/dx, d/dy, d2/dx2, d2/dy2, in one batched pass (the Laplacian
+    needs no mixed derivatives). Exact for FourierMLP's layers: the Fourier
+    embedding, Linear, and tanh (tanh' = 1 - tanh^2, tanh'' = -2 tanh tanh').
+    Returns five (N x 3) tensors."""
+    B = params['B']
+    z = 2.0 * math.pi * xy @ B.T                       # (N, m)
+    kx, ky = 2.0 * math.pi * B[:, 0], 2.0 * math.pi * B[:, 1]
+    c, s = torch.cos(z), torch.sin(z)
+    h = torch.stack([torch.cat([c, s], 1),
+                     torch.cat([-s * kx, c * kx], 1), torch.cat([-s * ky, c * ky], 1),
+                     torch.cat([-c * kx ** 2, -s * kx ** 2], 1),
+                     torch.cat([-c * ky ** 2, -s * ky ** 2], 1)])
+    for idx, layer in enumerate(model.net):
+        if isinstance(layer, torch.nn.Linear):
+            W, b = params[f'net.{idx}.weight'], params[f'net.{idx}.bias']
+            h = h @ W.T                                  # value and derivatives: the same linear map
+            h = torch.cat([h[:1] + b, h[1:]], 0)         # the bias only shifts the value
+        elif isinstance(layer, torch.nn.Tanh):
+            a, ax, ay, axx, ayy = h
+            t = torch.tanh(a)
+            t1 = 1.0 - t * t
+            t2 = -2.0 * t * t1
+            h = torch.stack([t, t1 * ax, t1 * ay, t2 * ax * ax + t1 * axx, t2 * ay * ay + t1 * ayy])
+        else:
+            raise TypeError(f"taylor_forward does not handle {type(layer).__name__}")
+    return h[0], h[1], h[2], h[3], h[4]
+
+
+def boundary_geometry(xy):
+    """The parameter-independent parts of the hard boundary conditions at
+    ``xy`` -- the Coons interpolants of u and v, and the distance factor l --
+    with the derivatives the residual needs, computed once."""
+    def geo(z):
+        x, y = z[0], z[1]
+        return torch.stack([coons(g_u, x, y), coons(g_v, x, y), ell(x, y)])
+    val = vmap(geo)(xy)
+    jac = vmap(jacfwd(geo))(xy)                          # (N, 3, 2)
+    hes = vmap(jacfwd(jacfwd(geo)))(xy)                  # (N, 3, 2, 2)
+    out = {}
+    for i, name in enumerate(('cu', 'cv', 'l')):
+        out[name] = val[:, i]
+        out[name + '_x'], out[name + '_y'] = jac[:, i, 0], jac[:, i, 1]
+        out[name + '_xx'], out[name + '_yy'] = hes[:, i, 0, 0], hes[:, i, 1, 1]
+    return out
+
+
 # ----------------------------------------------------------------------------
 # Residual r(theta)
 # ----------------------------------------------------------------------------
@@ -171,6 +229,7 @@ class Residual:
         self.pin_val = exact(pin_xy[0], pin_xy[1])[2]
         self.s_int = math.sqrt(w_int / xy_int.shape[0])
         self.s_pin = math.sqrt(w_pin)
+        self.geometry = boundary_geometry(xy_int)
 
     # flat parameter vector <-> dict
     def unflatten(self, theta):
@@ -184,9 +243,20 @@ class Residual:
     def point_residual(self, theta, xy):
         params = self.unflatten(theta)
         f = lambda z: fields(self.model, params, z)
-        J = jacfwd(f)(xy)                         # (3, 2): d(u,v,p)/d(x,y)
-        H = jacfwd(jacfwd(f))(xy)                 # (3, 2, 2)
-        u, v, _ = f(xy)
+
+        # One nested forward-mode pass gives the values, the first and the
+        # second derivatives together (the reference made three passes:
+        # f, jacfwd(f) and jacfwd(jacfwd(f)); same quantities).
+        def f_aux(z):
+            out = f(z)
+            return out, out
+
+        def jac_aux(z):
+            J, out = jacfwd(f_aux, has_aux=True)(z)
+            return J, (J, out)
+
+        H, (J, out) = jacfwd(jac_aux, has_aux=True)(xy)   # H (3,2,2), J (3,2), out (3,)
+        u, v = out[0], out[1]
         ux, uy, vx, vy = J[0, 0], J[0, 1], J[1, 0], J[1, 1]
         px, py = J[2, 0], J[2, 1]
         lap_u = H[0, 0, 0] + H[0, 1, 1]
@@ -196,21 +266,67 @@ class Residual:
         r3 = ux + vy
         return torch.stack([r1, r2, r3])
 
-    def interior(self, theta, xy_chunk):
+    def interior_reference(self, theta, xy_chunk):
+        """The reference's per-point evaluation (kept for the equivalence tests)."""
         return self.s_int * vmap(lambda z: self.point_residual(theta, z))(xy_chunk).reshape(-1)
+
+    def interior(self, theta, rows):
+        """Weighted interior residual at the points ``self.xy_int[rows]`` (a
+        slice), in one batched Taylor-mode pass: same values as
+        :meth:`interior_reference`, far fewer kernels."""
+        params = self.unflatten(theta)
+        out, dx, dy, dxx, dyy = taylor_forward(self.model, params, self.xy_int[rows])
+        G = {k: v[rows] for k, v in self.geometry.items()}
+
+        def bc_field(i, c):
+            # u = C_u + l u~ (and v): the product rule for its derivatives.
+            f, fx, fy, fxx, fyy = out[:, i], dx[:, i], dy[:, i], dxx[:, i], dyy[:, i]
+            val = G[c] + G['l'] * f
+            vx = G[c + '_x'] + G['l_x'] * f + G['l'] * fx
+            vy = G[c + '_y'] + G['l_y'] * f + G['l'] * fy
+            lap = (G[c + '_xx'] + G[c + '_yy'] + (G['l_xx'] + G['l_yy']) * f
+                   + 2.0 * (G['l_x'] * fx + G['l_y'] * fy) + G['l'] * (fxx + fyy))
+            return val, vx, vy, lap
+
+        u, ux, uy, lap_u = bc_field(0, 'cu')
+        v, vx, vy, lap_v = bc_field(1, 'cv')
+        px, py = dx[:, 2], dy[:, 2]                       # p = p~: no boundary factor
+        r = torch.stack([u * ux + v * uy + px - NU * lap_u,
+                         u * vx + v * vy + py - NU * lap_v,
+                         ux + vy], dim=1)
+        return self.s_int * r.reshape(-1)
 
     def pin(self, theta):
         p = fields(self.model, self.unflatten(theta), self.pin_xy)[2]
         return (self.s_pin * (p - self.pin_val)).reshape(1)
 
     def vector(self, theta, chunk):
-        parts = [self.interior(theta, self.xy_int[i:i + chunk])
+        parts = [self.interior(theta, slice(i, i + chunk))
                  for i in range(0, self.xy_int.shape[0], chunk)]
         parts.append(self.pin(theta))
         return torch.cat(parts)
 
+    def normal_equations(self, theta, r, chunk):
+        """J^T J and J^T r for the residual ``r = self.vector(theta, chunk)``,
+        accumulated one row block at a time: the full Jacobian is never held
+        (the reference formed J, then J^T J and J^T r; same quantities up to
+        the order of floating-point summation)."""
+        n = theta.numel()
+        H = torch.zeros(n, n, dtype=theta.dtype, device=theta.device)
+        g = torch.zeros_like(theta)
+        for i in range(0, self.xy_int.shape[0], chunk):
+            Jc = jacrev(self.interior, argnums=0)(theta, slice(i, i + chunk))
+            H.addmm_(Jc.T, Jc)
+            g.addmv_(Jc.T, r[3 * i:3 * i + Jc.shape[0]])
+        Jp = jacrev(self.pin)(theta)
+        H.addmm_(Jp.T, Jp)
+        g.addmv_(Jp.T, r[-1:])
+        return H, g
+
     def jacobian(self, theta, chunk):
-        blocks = [jacrev(self.interior, argnums=0)(theta, self.xy_int[i:i + chunk])
+        """The full Jacobian (for the finite-difference check; training uses
+        :meth:`normal_equations`)."""
+        blocks = [jacrev(self.interior, argnums=0)(theta, slice(i, i + chunk))
                   for i in range(0, self.xy_int.shape[0], chunk)]
         blocks.append(jacrev(self.pin)(theta))
         return torch.cat(blocks, dim=0)
@@ -255,11 +371,13 @@ def lm_train(args):
     res = Residual(model, xy_int, pin_xy, args.w_int, args.w_pin)
 
     n_rows = 3 * args.n_int + 1
-    mem_est = 8 * (n_rows * n_theta + 2 * n_theta * n_theta)
+    # J^T J, its damped copy and the Cholesky factor, plus one row block of J
+    # (the full J is never formed; see Residual.normal_equations).
+    mem_est = 8 * (3 * n_theta * n_theta + 3 * args.chunk * n_theta)
     os.makedirs(args.out, exist_ok=True)
     run = dict(vars(args), n_theta=n_theta, n_rows=n_rows, mem_estimate_bytes=mem_est,
                torch=torch.__version__, threads=torch.get_num_threads())
-    print(f"n_theta = {n_theta}, rows = {n_rows}, J + H memory ~ {mem_est / 1e9:.2f} GB")
+    print(f"n_theta = {n_theta}, rows = {n_rows}, normal-equation memory ~ {mem_est / 1e9:.2f} GB")
 
     f = open(os.path.join(args.out, "log.csv"), "w", newline="")
     w = csv.writer(f)
@@ -282,13 +400,12 @@ def lm_train(args):
     end_reason = "budget"
     it = 0
     while True:
-        J = res.jacobian(theta, args.chunk)
-        g = J.T @ r
-        H = J.T @ J
+        H, g = res.normal_equations(theta, r, args.chunk)
         d = torch.diagonal(H).clamp_min(args.diag_floor)
         accepted = False
         while not accepted:
-            A = H + mu * torch.diag(d)
+            A = H.clone()
+            A.diagonal().add_(mu * d)             # H + mu diag(d), without a dense diag(d)
             Lc, info = torch.linalg.cholesky_ex(A)
             if info.item() != 0:                  # not positive definite: damp more
                 mu *= 5.0
