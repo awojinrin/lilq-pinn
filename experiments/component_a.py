@@ -15,13 +15,14 @@ each run appended to ``tuning_log.md`` in the order tried::
     float32         F1's representative with Adam in float32, L-BFGS in float64, seed 0
     a1              check A1: the plain PINN must reach eps_u <= 1e-3 in the full budget
     f2-jacobian     check F2's Jacobian against central differences on this node
+    a2              check A2: two F2 runs with the same seed agree to 12 digits over 20 steps
 
 Layout under ``--root`` (the package's ``A_calibration/``)::
 
     search/F1_configs.json, F2_configs.json
     screening/<config>_s0/{log.csv, run.json}, screening/<family>_selection.json
     full/<config>_s<seed>/..., full/<family>_representative.json
-    full_cpu/..., float32/..., checks/a1.json, checks/f2_jacobian.json
+    full_cpu/..., float32/..., checks/{a1,a2,f2_jacobian}.json
     tuning_log.md
 
 Budgets are wall-clock from the first optimizer step, never stopped on test
@@ -34,6 +35,7 @@ Usage::
 """
 
 import argparse
+import csv
 import datetime
 import json
 import os
@@ -217,9 +219,31 @@ def check_f2_jacobian(root, device, n_params=16, h=1e-6):
     return result
 
 
+def check_a2(root, device, steps=20):
+    """Check A2 (Section 8): two F2 runs with the same seed agree to 12
+    significant digits over ``steps`` steps, on this node and device. A
+    moderate size that cannot be fitted exactly (an exact fit ends early)."""
+    histories = []
+    for name in ('a', 'b'):
+        out = Path(root) / 'checks' / 'a2' / name
+        args = argparse.Namespace(width=24, depth=2, m=16, sigma_ff=1.0, n_int=600, w_int=1.0, w_pin=1.0,
+                                  mu0=1e-3, diag_floor=1e-12, budget_s=3600.0, max_steps=steps,
+                                  max_params=20000, chunk=200, test_every=10 ** 6, seed=0, device=device,
+                                  out=str(out))
+        lm.lm_train(args)
+        with open(out / 'log.csv', newline='') as f:
+            histories.append([float(r['loss_total']) for r in csv.DictReader(f)])
+    a, b = histories
+    worst = max((abs(x - y) / max(abs(x), 1e-300) for x, y in zip(a, b)), default=float('inf'))
+    result = {'device': str(device), 'steps': [len(a), len(b)], 'max_relative_difference': worst,
+              'bit_identical': a == b, 'passed': len(a) == len(b) == steps and worst <= 1e-12}
+    (Path(root) / 'checks' / 'a2.json').write_text(json.dumps(result, indent=2))
+    return result
+
+
 def main():
     ap = argparse.ArgumentParser(description="Component A: Kovasznay baselines")
-    ap.add_argument('stage', choices=['search', 'screen', 'select', 'full', 'cpu', 'float32', 'a1', 'f2-jacobian'])
+    ap.add_argument('stage', choices=['search', 'screen', 'select', 'full', 'cpu', 'float32', 'a1', 'a2', 'f2-jacobian'])
     ap.add_argument('--root', required=True, help="The package's A_calibration/ directory.")
     ap.add_argument('--family', choices=FAMILIES)
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
@@ -250,6 +274,10 @@ def main():
         float32_run(root, args.device, budget(FULL_BUDGET_S))
     elif args.stage == 'a1':
         print(json.dumps(check_a1(root, args.device, budget(FULL_BUDGET_S))))
+    elif args.stage == 'a2':
+        result = check_a2(root, args.device)
+        print(json.dumps(result))
+        sys.exit(0 if result['passed'] else 1)
     elif args.stage == 'f2-jacobian':
         result = check_f2_jacobian(root, args.device)
         print(json.dumps(result))

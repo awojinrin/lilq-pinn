@@ -59,3 +59,8 @@ def test_f2_jacobian_check(tmp_path):
     result = ca.check_f2_jacobian(tmp_path, "cpu")
     assert result["passed"] and result["max_relative_fd_error"] < 1e-6
     assert json.loads((tmp_path / "checks" / "f2_jacobian.json").read_text())["passed"]
+
+
+def test_check_a2(tmp_path, monkeypatch):
+    result = ca.check_a2(tmp_path, "cpu", steps=5)
+    assert result["passed"] and result["steps"] == [5, 5] and result["max_relative_difference"] <= 1e-12
