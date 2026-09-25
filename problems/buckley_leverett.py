@@ -63,6 +63,11 @@ class BLConfig:
     basis_type: str = 'fourier'
     sampling: str = 'random'
     init_seed: Optional[int] = None  # NiL network init; None = seed (lilq.utils.nn_init_seed)
+    # Starting point of every method (task B8): 'zero', or 'ic' -- the initial
+    # saturation profile extended in time, least-squares fitted to the basis
+    # (LiL) or pretrained into the network (NiL). None: the paper's choice,
+    # 'zero' with gravity and 'ic' without.
+    initial_guess: Optional[str] = None
 
     @staticmethod
     def with_gravity():
@@ -117,6 +122,9 @@ class BLPhysics:
         self.x_domain = config.x_domain
         self.t_domain = (0.0, config.T_final)
         self._has_gravity = abs(config.N_g) > 1e-12
+        self.initial_guess_mode = config.initial_guess or ('zero' if self._has_gravity else 'ic')
+        if self.initial_guess_mode not in ('zero', 'ic'):
+            raise ValueError(f"initial_guess must be 'zero' or 'ic', not {config.initial_guess!r}")
 
     # ── Flux ──
 
@@ -220,12 +228,13 @@ class BLPhysics:
         return self.S_right * np.ones_like(np.asarray(t).flatten())
 
     def initial_guess(self, x, t):
-        """Initial guess for pretraining."""
-        if self._has_gravity:
-            if isinstance(x, torch.Tensor):
-                return torch.zeros_like(x.flatten())
-            return np.zeros_like(np.asarray(x).flatten())
-        return self._ic_no_gravity(x)
+        """Starting point every method is fitted to before training: zero, or
+        the initial condition extended in time (``initial_guess_mode``)."""
+        if self.initial_guess_mode == 'ic':
+            return self.initial_condition(x)
+        if isinstance(x, torch.Tensor):
+            return torch.zeros_like(x.flatten())
+        return np.zeros_like(np.asarray(x).flatten())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -628,8 +637,9 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,
                 'u': {'modes_x': config.N_x, 'modes_t': config.N_t},
             },
             initial_coefficients=(
-                'zero' if physics._has_gravity
-                else 'fitted initial profile (least-squares pretrain of exp(-10*x))'
+                'zero' if physics.initial_guess_mode == 'zero'
+                else 'initial saturation profile extended in time, least-squares fitted '
+                     + ('(smooth step at x = 0.4)' if physics._has_gravity else '(exp(-10 x))')
             ),
             solver_driver='gelsy', rcond=EPS_MACH,
             stopping_rule={'type': 'loss_target', 'value': opt.R_tol},

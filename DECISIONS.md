@@ -17,6 +17,35 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Task B8: Buckley-Leverett initial-guess sensitivity
+
+`BLConfig.initial_guess` ('zero' or 'ic'; None keeps the paper's choice:
+zero with gravity, the profile without) sets the starting point of all four
+methods through `BLPhysics.initial_guess`: the least-squares fit of the
+coefficients (LiL-Q, LiL-N; `pretrain_lil`) and the network pretraining
+(NiL-N, NiL-Q; `pretrain_nn`). 'ic' is the initial saturation profile
+extended in time (constant in t). `run.json` records which.
+
+`experiments/b8_initial_guess.py`: the 128 runs (2 cases x 2 guesses x 4
+sizes x LiL-Q, LiL-N, NiL-N and NiL-Q with seeds 0-2), from
+`run_bl.paper_setup` (paper budgets and targets; gravity: `cos_fourier`
+and the retargeted losses). LiL-Q stops only on its target or at K_max and
+keeps its full log in `lilq_logs/`; its CSV row adds the first stall
+iteration, whether the stall flag ever fired, and the chi_k history.
+Resumable; failures logged with tracebacks. CPU by default (untimed).
+
+LiL-Q at full budget, P = 64 and 256, this laptop (iterations; * = K_max
+reached without the target):
+
+| Case, guess | P = 64 | P = 256 |
+|---|---|---|
+| viscous, zero | 6 | 5 |
+| viscous, ic (paper) | 10 | 4 |
+| gravity, zero (paper) | 20* (loss 0.951, stall flag from k = 4) | 12 |
+| gravity, ic | 14 | 20* (loss 0.099) |
+
+---
+
 ## 2026-09-24 -- Four-method harness used the wrong NiL pretraining budget
 
 `experiments/four_method_tables.py` rebuilt each benchmark's configuration
