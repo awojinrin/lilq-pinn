@@ -9,7 +9,8 @@ Three solver approaches:
    transmissibilities and sparse direct solve.
 2. **LiL-Q** -- Linear-in-Learnables with lifting function
    h*(x*,y*) = y* + h_tilde*(x*,y*) and sqrt(K*) row-equilibration.
-3. **NiL-N** (PINN stub) -- placeholder for future neural-network solver.
+3. **NiL-N** (PINN) -- three MLPs for pressure and velocities, Adam
+   (``DarcyPINN``).
 
 Governing equations (dimensionless, sqrt(K*) normalization)::
 
@@ -157,21 +158,11 @@ class DarcyPhysics:
 # FVM Reference Solver
 # ─────────────────────────────────────────────────────────────────────────────
 
-def solve_fvm(physics: DarcyPhysics) -> np.ndarray:
-    """Finite-volume reference solver for single-phase Darcy flow.
-
-    Uses harmonic-mean transmissibilities and a sparse direct solve,
-    matching the PINN reference implementation exactly.
-
-    Parameters
-    ----------
-    physics : DarcyPhysics
-        Pre-computed physical quantities.
-
-    Returns
-    -------
-    P : ndarray of shape (NX_CELLS, NY_CELLS)
-        Cell-centre pressures in psi.
+def assemble_fvm(physics: DarcyPhysics):
+    """The two-point-flux (TPFA) system ``A p = b`` of :func:`solve_fvm`:
+    harmonic-mean transmissibilities, Dirichlet top and bottom, no-flow
+    sides. ``p`` is ordered ``j * NX_CELLS + i`` (row-major over
+    ``(NY_CELLS, NX_CELLS)``). Returns ``(A, b)`` with ``A`` in CSR form.
     """
     cfg = physics.config
     Nx, Ny = cfg.NX_CELLS, cfg.NY_CELLS
@@ -232,8 +223,46 @@ def solve_fvm(physics: DarcyPhysics) -> np.ndarray:
 
             A[k, k] = d
 
-    P = spsolve(A.tocsr(), b).reshape(Ny, Nx)
+    return A.tocsr(), b
+
+
+def solve_fvm(physics: DarcyPhysics) -> np.ndarray:
+    """Finite-volume reference solver for single-phase Darcy flow.
+
+    Uses harmonic-mean transmissibilities and a sparse direct solve,
+    matching the PINN reference implementation exactly.
+
+    Parameters
+    ----------
+    physics : DarcyPhysics
+        Pre-computed physical quantities.
+
+    Returns
+    -------
+    P : ndarray of shape (NX_CELLS, NY_CELLS)
+        Cell-centre pressures in psi.
+    """
+    cfg = physics.config
+    A, b = assemble_fvm(physics)
+    P = spsolve(A, b).reshape(cfg.NY_CELLS, cfg.NX_CELLS)
     return P.T  # Return shape (NX, NY)
+
+
+def delta_fv(P_h: np.ndarray, P_fvm: np.ndarray, p_bottom: float) -> float:
+    """Addendum v2.1 task B9: ``||p_h - p_FV||_2 / ||p_FV - p_bot||_2`` over
+    the cell centres. Normalizing by the pressure *increment* rather than
+    ``||p_FV||_2`` (as ``fvm_rel_L2`` does) keeps the 3,000 psi offset from
+    understating the difference."""
+    return float(np.linalg.norm(P_h - P_fvm) / np.linalg.norm(P_fvm - p_bottom))
+
+
+def tpfa_residual(physics: DarcyPhysics, P_fvm: np.ndarray) -> Dict:
+    """Residual of the TPFA system at the FVM solution: ``||A p - b||_2``
+    and relative to ``||b||_2``. A direct solve should leave it at round-off."""
+    A, b = assemble_fvm(physics)
+    r = A @ P_fvm.T.ravel() - b
+    return {'tpfa_residual': float(np.linalg.norm(r)),
+            'tpfa_residual_rel': float(np.linalg.norm(r) / np.linalg.norm(b))}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -579,6 +608,7 @@ def solve_lilq_darcy(config: DarcyConfig,
         # FVM comparison
         'fvm_rmse_psi': float(rmse),
         'fvm_rel_L2': float(rel_L2),
+        'delta_fv': delta_fv(P_lil, P_fvm, cfg.P_BOTTOM),
         'fvm_max_err_psi': float(np.abs(err).max()),
     }
 
@@ -649,6 +679,7 @@ def solve_lilq_darcy(config: DarcyConfig,
         'c_v': c_v,
         'metrics': metrics,
         'P_fvm': P_fvm,
+        'P_lil': P_lil,
         'basis_h_tilde': basis_h_tilde,
         'basis_u': basis_u,
         'basis_v': basis_v,
@@ -760,7 +791,7 @@ def evaluate_velocity_y(result: Dict, physics: DarcyPhysics,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# NiL-N Stub (PINN-style solver -- future implementation)
+# NiL-N (PINN) solver
 # ─────────────────────────────────────────────────────────────────────────────
 
 class DarcyPINN:
@@ -780,11 +811,17 @@ class DarcyPINN:
         Number of hidden layers (default 8).
     device : str or torch.device or None
         Compute device; auto-detected if None.
+    dtype : torch.dtype
+        Precision of the networks and every tensor. float64 by default
+        (Package 1 v2.0 Section 2: float64 everywhere); the manuscript's
+        NiL Darcy values were computed in float32, still available here.
+    seed : int or None
+        If given, ``torch.manual_seed(seed)`` before the networks are built.
     """
 
     def __init__(self, config: DarcyConfig, physics: DarcyPhysics,
                  hidden_dim: int = 200, num_layers: int = 8,
-                 device=None):
+                 device=None, dtype=torch.float64, seed=None):
         import torch
         import torch.nn as nn
         from lilq.nn import MLP
@@ -795,13 +832,16 @@ class DarcyPINN:
         if device is None:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.device = torch.device(device)
+        self.dtype = dtype
+        if seed is not None:
+            torch.manual_seed(seed)
 
         act = nn.SiLU()
-        self.net_P = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=torch.float32).to(self.device)
-        self.net_U = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=torch.float32).to(self.device)
-        self.net_V = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=torch.float32).to(self.device)
+        self.net_P = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=dtype).to(self.device)
+        self.net_U = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=dtype).to(self.device)
+        self.net_V = MLP(2, hidden_dim, 1, num_layers, activation=act, dtype=dtype).to(self.device)
 
-        # Scaling constants (float32 to match network dtype)
+        # Scaling constants (Python floats: they take the tensors' dtype)
         self.X_SCALE = float(physics.LX / 2.0)
         self.Y_SCALE = float(physics.LY / 2.0)
         self.P_SCALE = float(physics.config.P_BOTTOM)
@@ -820,32 +860,32 @@ class DarcyPINN:
         cfg = self.config
         phy = self.physics
 
-        x_c = ((np.arange(cfg.NX_CELLS) + 0.5) * (phy.LX / cfg.NX_CELLS)).astype(np.float32)
-        y_c = ((np.arange(cfg.NY_CELLS) + 0.5) * (phy.LY / cfg.NY_CELLS)).astype(np.float32)
+        x_c = (np.arange(cfg.NX_CELLS) + 0.5) * (phy.LX / cfg.NX_CELLS)
+        y_c = (np.arange(cfg.NY_CELLS) + 0.5) * (phy.LY / cfg.NY_CELLS)
         Xg, Yg = np.meshgrid(x_c, y_c, indexing='ij')
 
         def _t(arr):
-            return torch.tensor(arr.ravel(), dtype=torch.float32,
+            return torch.tensor(arr.ravel(), dtype=self.dtype,
                                 device=self.device).unsqueeze(1)
 
         self.xpde = _t(Xg).requires_grad_(True)
         self.ypde = _t(Yg).requires_grad_(True)
 
-        sqrt_K = np.sqrt(phy.K_star.ravel()).astype(np.float32)
+        sqrt_K = np.sqrt(phy.K_star.ravel())
         self.sqrt_Kx = _t(sqrt_K)
         self.sqrt_Ky = _t(sqrt_K)
 
         self.xbot = _t(x_c); self.ybot = torch.zeros_like(self.xbot, device=self.device)
         self.xtop = _t(x_c); self.ytop = torch.full_like(self.xtop, phy.LY, device=self.device)
-        self.xleft = torch.zeros(cfg.NY_CELLS, 1, dtype=torch.float32, device=self.device)
+        self.xleft = torch.zeros(cfg.NY_CELLS, 1, dtype=self.dtype, device=self.device)
         self.yleft = _t(y_c)
-        self.xright = torch.full((cfg.NY_CELLS, 1), phy.LX, dtype=torch.float32, device=self.device)
+        self.xright = torch.full((cfg.NY_CELLS, 1), phy.LX, dtype=self.dtype, device=self.device)
         self.yright = _t(y_c)
 
     def _norm_input(self, x, y):
         xn = x / self.X_SCALE - 1.0
         yn = y / self.Y_SCALE - 1.0
-        return xn.float(), yn.float()
+        return xn.to(self.dtype), yn.to(self.dtype)
 
     def _get_P(self, x, y):
         xn, yn = self._norm_input(x, y)
@@ -948,9 +988,9 @@ class DarcyPINN:
         Returns dict with 'P', 'U', 'V' arrays in physical units.
         """
         import torch
-        xt = torch.tensor(x.ravel(), dtype=torch.float32,
+        xt = torch.tensor(x.ravel(), dtype=self.dtype,
                           device=self.device).unsqueeze(1)
-        yt = torch.tensor(y.ravel(), dtype=torch.float32,
+        yt = torch.tensor(y.ravel(), dtype=self.dtype,
                           device=self.device).unsqueeze(1)
         with torch.no_grad():
             P = self._get_P(xt, yt).cpu().numpy().ravel()
@@ -963,13 +1003,13 @@ class DarcyPINN:
 def run_nil_n_darcy(config: DarcyConfig, physics: DarcyPhysics,
                     max_epochs: int = 150000, hidden_dim: int = 200,
                     num_layers: int = 8, device=None,
-                    verbose: bool = True) -> Dict:
+                    verbose: bool = True, dtype=torch.float64, seed=None) -> Dict:
     """Convenience wrapper: create, train, and evaluate a DarcyPINN.
 
     Returns dict with training metrics and field predictions at cell centres.
     """
     pinn = DarcyPINN(config, physics, hidden_dim=hidden_dim,
-                     num_layers=num_layers, device=device)
+                     num_layers=num_layers, device=device, dtype=dtype, seed=seed)
     if verbose:
         n_params = sum(p.numel() for p in pinn.net_P.parameters()) * 3
         print(f"DarcyPINN: 3 networks x {hidden_dim}w x {num_layers}L "

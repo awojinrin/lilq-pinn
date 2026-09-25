@@ -17,6 +17,42 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Task B9: Darcy pressures against the FVM solution; NiL in float64
+
+`experiments/darcy_fv_comparison.py` (Addendum fix 3.4, second script):
+per field and method, delta_FV = ||p_h - p_FV|| / ||p_FV - 3,000 psi|| on
+the 60 x 220 cell centres, the TPFA system's residual at the FVM solution,
+and `fvm_rel_L2` (normalized by ||p_FV||) kept for comparison only. No
+`np.gradient` divergence. `solve_fvm` is split into `assemble_fvm` +
+solve (same numbers); `delta_fv` and `tpfa_residual` in `problems/darcy.py`;
+`solve_lilq_darcy` now returns `P_lil` and `metrics['delta_fv']`.
+
+LiL, this laptop, order 32 (the paper's), confirming the advisor's values:
+
+| Field | delta_FV | advisor | TPFA residual (relative) |
+|---|---|---|---|
+| S1 | 1.373e-4 | 1.4e-4 | 5.7e-15 |
+| S2 | 2.331e-4 | 2.3e-4 | 1.6e-14 |
+| S3 | 6.736e-4 | 6.7e-4 | 6.8e-16 |
+| SPE10 | 3.421e-2 | 3.4e-2 | 8.8e-14 |
+
+**NiL (`DarcyPINN`) is now float64 by default**, per Package 1 v2.0
+Section 2 ("float64 everywhere"); it had been forced to float32, and the
+2026-09-22 entry left it so only because no package task ran it. B9 does.
+`dtype=torch.float32` remains available, and a `seed` argument serves the
+three-seed runs. Measured cost per Adam epoch on this laptop (the default
+3 networks x 200 wide x 8 layers, 13,200 collocation points):
+
+| Device, precision | ms/epoch | 150,000 epochs |
+|---|---|---|
+| RTX 5080, float64 | 561 | 23.4 h |
+| RTX 5080, float32 | 76 | 3.2 h |
+| CPU, float64 | 1,132 | 47 h |
+| CPU, float32 | 704 | 29 h |
+
+B9 needs 4 fields x 3 seeds = 12 NiL runs: about 280 h in float64 on this
+laptop. Open: where and in what precision to run them (the user's call).
+
 ## 2026-09-24 -- Addendum fixes 3.1 and 3.3; diagnostics taken off the solver clock
 
 **Fix 3.1 (Buckley-Leverett LiL-Q iteration count).** The shared
