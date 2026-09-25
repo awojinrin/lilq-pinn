@@ -17,6 +17,43 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Component A, F1 (modern first-order PINN) and the random search
+
+`baselines/search.py`: 24 configurations per family, generator seed 12345
+(one `numpy.random.default_rng(12345)` per family), F2 draws over
+n_theta = 20,000 redrawn (15 of them), saved once to `search/F*_configs.json`
+and never silently replaced. Choice where the package is open: F1's
+"hard or soft (lambda_bc in {1, 10, 100})" is drawn as hard/soft with equal
+probability, then lambda_bc if soft.
+
+`baselines/f1_pinn.py` implements Section 4.2's F1. Choices where the
+package is open, to go into the tuning log:
+- Loss balancing: the gradient-norm form of the cited guide (Wang, Sankaran,
+  Wang, Perdikaris, arXiv:2308.08468): lambda^_i = sum_k ||grad L_k|| /
+  ||grad L_i||, lambda_i <- 0.9 lambda_i + 0.1 lambda^_i, every 100 Adam
+  iterations, over the momentum, continuity and (soft) boundary terms;
+  the weights are frozen during L-BFGS.
+- Learning rate: warm-up factor min(1, (it+1)/1000) times 0.9^(it // 2000),
+  both counted from the first Adam iteration.
+- No pressure pin in F1's loss (the package lists none); baselines are
+  compared with the mean-free pressure error.
+- The run ends on the budget, on an L-BFGS call that does not lower the
+  loss (the family's criterion), or on a non-finite loss. An L-BFGS call is
+  never interrupted (up to 500 iterations), so a run can overshoot the
+  budget by one call; the logged time says by how much.
+- Test errors (301 x 401 grid) are computed off the clock, every 10th log
+  row and at the end.
+- Networks are initialized in the run's own precision.
+- Check A1's plain PINN (Fourier features off, balancing off, soft with
+  lambda_bc = 10; the rest unspecified): width 128, depth 4, shared trunk,
+  eta = 1e-3, T_Adam = 20,000, N_int = 8,000, no resampling
+  (`f1_pinn.A1_CONFIG`).
+Tests check F1's residual against the F2 reference's on the same weights
+(1e-12), the exact solution's residual, hard boundary values, the schedule
+and balancing formulas, determinism, logging, and the float32-Adam switch.
+
+---
+
 ## 2026-09-24 -- Component A, F2: the advisor's Levenberg-Marquardt reference in the repo
 
 `baselines/lm_kovasznay.py` is `lm_reference/lm_kovasznay_reference.py`
