@@ -39,8 +39,11 @@ python -c "import numpy; print(numpy.__version__)"   # must be the module's nump
 
 ```bash
 cd $SCRATCH/lilq-run/lilq-pinn
-CLUSTER=grace CPU_PARTITION=<from sinfo -s> bash scripts/cluster/submit_all.sh
+CLUSTER=grace bash scripts/cluster/submit_all.sh
 ```
+
+`SKIP_A=1` holds Component A back; submit it later with `bash scripts/cluster/submit_component_a.sh`
+(it adds its own finalize). On Grace the CPU jobs use `medium` (1-day limit); FASTER's profile uses `cpu`.
 
 To resubmit one script (after a walltime kill, say), use the wrapper so the
 profile's resources apply: `bash scripts/cluster/sbatch.sh scripts/cluster/20_four_method_gpu.slurm --array=2`.

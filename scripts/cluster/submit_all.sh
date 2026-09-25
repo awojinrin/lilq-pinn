@@ -36,17 +36,21 @@ submit pre   $S/00_preflight.slurm
 submit lilq  $S/10_timed_lilq.slurm           --dependency=afterok:$pre
 submit fmg   $S/20_four_method_gpu.slurm      --dependency=afterok:$pre
 submit fmc   $S/21_four_method_cpu.slurm      --dependency=afterok:$pre
-submit ascr  $S/30_A_screen.slurm             --dependency=afterok:$pre
-submit afull $S/31_A_full.slurm               --dependency=afterok:$ascr
-submit acpu  $S/32_A_cpu.slurm                --dependency=afterok:$afull
-submit af32  $S/33_A_float32_and_a1.slurm     --dependency=afterok:$afull
 submit b9    $S/40_b9_nil_darcy.slurm         --dependency=afterok:$pre
 submit b8    $S/41_b8_initial_guess.slurm     --dependency=afterok:$pre
 submit cc    $S/42_component_c.slurm          --dependency=afterok:$pre
 submit b6    $S/43_basis_study.slurm          --dependency=afterok:$pre
-submit fin   $S/90_finalize.slurm \
-             --dependency=afterany:$lilq:$fmg:$fmc:$ascr:$afull:$acpu:$af32:$b9:$b8:$cc:$b6
+# Component A (SKIP_A=1 holds it back; submit it later with submit_component_a.sh).
+adeps=""
+if [[ "${SKIP_A:-0}" != 1 ]]; then
+    submit ascr  $S/30_A_screen.slurm         --dependency=afterok:$pre
+    submit afull $S/31_A_full.slurm           --dependency=afterok:$ascr
+    submit acpu  $S/32_A_cpu.slurm            --dependency=afterok:$afull
+    submit af32  $S/33_A_float32_and_a1.slurm --dependency=afterok:$afull
+    adeps=":$ascr:$afull:$acpu:$af32"
+fi
+submit fin   $S/90_finalize.slurm              --dependency=afterany:$lilq:$fmg:$fmc:$b9:$b8:$cc:$b6$adeps
 
 echo "preflight $pre -> timed LiL-Q $lilq, four-method GPU $fmg / CPU $fmc,"
-echo "  Component A screen $ascr -> full $afull -> CPU $acpu, float32+A1 $af32,"
 echo "  B9 NiL $b9, B8 $b8, Component C $cc, B6 $b6 -> finalize $fin"
+[[ -n "$adeps" ]] && echo "  Component A: screen $ascr -> full $afull -> CPU $acpu, float32+A1 $af32"                   || echo "  Component A held back (SKIP_A=1): bash scripts/cluster/submit_component_a.sh"
