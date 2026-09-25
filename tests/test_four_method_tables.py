@@ -13,6 +13,9 @@ import pytest
 import torch
 
 import experiments.four_method_tables as fmt
+import experiments.run_bl as run_bl
+import experiments.run_bratu as run_bratu
+import experiments.run_burgers as run_burgers
 from lilq.four_method_log import FourMethodLogger
 
 
@@ -48,13 +51,26 @@ def test_bl_gravity_runs_use_cos_fourier_basis():
     assert gravity[0][1].basis_type == 'cos_fourier'
 
 
-def test_bl_runs_never_pass_explicit_max_line_searches():
-    """Mirrors test_bl_experiment_runner_config.py: the cap comes from
-    lilq.solvers.line_search_cap, never an explicit override."""
-    import inspect
-    source = inspect.getsource(fmt._bl_runs)
-    opt_construction = source[source.index("opt = BLOptConfig("):source.index("runs.append")]
-    assert "max_line_searches=" not in opt_construction
+@pytest.mark.parametrize("builder, paper", [
+    (lambda: fmt._bratu_runs(), lambda N: run_bratu.paper_setup(N)),
+    (lambda: fmt._burgers_runs(), lambda N: run_burgers.paper_setup(N)),
+    (lambda: fmt._bl_runs(False), lambda N: run_bl.paper_setup(N, False)),
+    (lambda: fmt._bl_runs(True), lambda N: run_bl.paper_setup(N, True)),
+])
+def test_four_method_runs_use_the_paper_scripts_settings(builder, paper):
+    """The harness must not rebuild configs by hand: it once dropped
+    pretrain_epochs (1,000 for Bratu and BL) and the gravity K_max (20)."""
+    for P, config, opt in builder():
+        ref_config, ref_opt = paper(int(round(P ** 0.5)))
+        assert config == ref_config and opt == ref_opt
+
+
+def test_paper_settings_that_the_harness_once_dropped():
+    bl_setup, bratu_setup = run_bl.paper_setup, run_bratu.paper_setup
+    assert bratu_setup(10)[1].pretrain_epochs == 1000
+    assert bl_setup(16, False)[1].pretrain_epochs == 1000
+    assert bl_setup(16, True)[1].max_quasi_iters_lil == 20
+    assert bl_setup(16, True)[0].basis_type == 'cos_fourier'
 
 
 def test_apply_quick_budgets_shrinks_caps_not_R_tol():

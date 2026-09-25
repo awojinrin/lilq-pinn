@@ -30,7 +30,6 @@ import os
 import csv
 import argparse
 import shutil
-import dataclasses
 from pathlib import Path
 
 _proj = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,9 +42,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
 from lilq.iteration_log import IterationLogger, solve_rows
-from problems.bratu import BratuConfig, BratuOptConfig, run_lil_q as run_bratu_lil_q
-from problems.burgers import BurgersConfig, BurgersOptConfig, run_lil_q as run_burgers_lil_q
-from problems.buckley_leverett import BLConfig, BLOptConfig, run_lil_q as run_bl_lil_q
+from problems.bratu import run_lil_q as run_bratu_lil_q
+from problems.burgers import run_lil_q as run_burgers_lil_q
+from problems.buckley_leverett import run_lil_q as run_bl_lil_q
 
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / 'results' / 'residual_band_figures'
@@ -61,53 +60,21 @@ RESULTS_DIR = Path(__file__).resolve().parent.parent / 'results' / 'residual_ban
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _bratu_runs(quick=False):
-    from experiments.run_bratu import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_QUASI_ITERS,
-        DEFAULT_LAMBDA, DEFAULT_BASIS, DEFAULT_K_RATIO,
-    )
+    from experiments.run_bratu import DEFAULT_N_VALUES, paper_setup
     N_values = DEFAULT_N_VALUES[:2] if quick else DEFAULT_N_VALUES
-    runs = []
-    for N in N_values:
-        config = BratuConfig(lambda_=DEFAULT_LAMBDA, N_x=N, N_y=N,
-                              k_ratio=DEFAULT_K_RATIO, basis_type=DEFAULT_BASIS)
-        opt = BratuOptConfig(R_tol=TARGET_LOSSES[N], max_quasi_iters_lil=MAX_QUASI_ITERS)
-        runs.append((N * N, config, opt))
-    return runs
+    return [(N * N, *paper_setup(N)) for N in N_values]
 
 
 def _burgers_runs(quick=False):
-    from experiments.run_burgers import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_QUASI_ITERS,
-        DEFAULT_BASIS, VISCOSITY, T_FINAL, K_RATIO,
-    )
+    from experiments.run_burgers import DEFAULT_N_VALUES, paper_setup
     N_values = DEFAULT_N_VALUES[:2] if quick else DEFAULT_N_VALUES
-    runs = []
-    for N in N_values:
-        config = BurgersConfig(N_x=N, N_t=N, viscosity=VISCOSITY, T_final=T_FINAL,
-                                basis_type=DEFAULT_BASIS, k_ratio=K_RATIO)
-        opt = BurgersOptConfig(R_tol=TARGET_LOSSES[N], max_quasi_iters_lil=MAX_QUASI_ITERS)
-        runs.append((N * N, config, opt))
-    return runs
+    return [(N * N, *paper_setup(N)) for N in N_values]
 
 
 def _bl_runs(gravity, quick=False):
-    from experiments.run_bl import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_QUASI_ITERS,
-        GRAVITY_TARGET_LOSSES, GRAVITY_MAX_QUASI_ITERS,
-        DEFAULT_BASIS, GRAVITY_BASIS, K_RATIO,
-    )
+    from experiments.run_bl import DEFAULT_N_VALUES, paper_setup
     N_values = DEFAULT_N_VALUES[:2] if quick else DEFAULT_N_VALUES
-    targets = GRAVITY_TARGET_LOSSES if gravity else TARGET_LOSSES
-    quasi_iters = GRAVITY_MAX_QUASI_ITERS if gravity else MAX_QUASI_ITERS
-    basis_type = GRAVITY_BASIS if gravity else DEFAULT_BASIS
-    runs = []
-    for N in N_values:
-        base = BLConfig.with_gravity() if gravity else BLConfig()
-        config = dataclasses.replace(base, N_x=N, N_t=N,
-                                      basis_type=basis_type, k_ratio=K_RATIO)
-        opt = BLOptConfig(R_tol=targets[N], max_quasi_iters_lil=quasi_iters)
-        runs.append((N * N, config, opt))
-    return runs
+    return [(N * N, *paper_setup(N, gravity)) for N in N_values]
 
 
 # label, title, run-list builder, LiL-Q entry point

@@ -5,20 +5,16 @@ lilq.solvers.line_search_cap (3x its own iteration budget; DECISIONS.md,
 would do real file I/O and training.
 """
 
-import inspect
 import sys
 
 import experiments.run_bl as run_bl_module
 
 
-def test_run_bl_opt_construction_has_no_explicit_max_line_searches():
-    source = inspect.getsource(run_bl_module.run_experiment_for_N)
-    opt_construction = source[source.index("opt = BLOptConfig("):source.index("R_tol=")]
-    code_lines = [
-        line for line in opt_construction.splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]
-    assert not any("max_line_searches=" in line for line in code_lines)
+def test_paper_setup_leaves_the_line_search_cap_to_the_uniform_rule():
+    for gravity in (False, True):
+        for N in (8, 32):
+            _config, opt = run_bl_module.paper_setup(N, gravity)
+            assert opt.max_line_searches is None
 
 
 def test_gravity_basis_constant_is_cos_fourier():

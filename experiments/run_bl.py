@@ -11,6 +11,7 @@ Usage::
     python experiments/run_bl.py --lil-q-only
 """
 
+import dataclasses
 import sys, os, time, argparse
 from pathlib import Path
 
@@ -77,27 +78,18 @@ GRAVITY_BASIS = 'cos_fourier'
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 
 
-def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True, seeds=None):
-    """``seeds``, when given, runs NiL-N/NiL-Q across every seed in it
-    (Section 2/3.4: seeds 0, 1, 2) via ``run_stochastic_with_seeds``
-    instead of once at ``config.seed``. LiL-N/LiL-Q always run once
-    regardless. Omitted (``None``, the default), behavior is unchanged.
-    """
-    if gravity:
-        config = BLConfig.with_gravity()
-        config.N_x = N; config.N_t = N
-        config.basis_type = basis_type; config.k_ratio = K_RATIO
-        label = 'bl_gravity'
-        targets = GRAVITY_TARGET_LOSSES
-        quasi_iters = GRAVITY_MAX_QUASI_ITERS
-        inner_per_quasi = GRAVITY_MAX_LBFGS_PER_QUASI
-    else:
-        config = BLConfig(N_x=N, N_t=N, basis_type=basis_type, k_ratio=K_RATIO)
-        label = 'bl'
-        targets = TARGET_LOSSES
-        quasi_iters = MAX_QUASI_ITERS
-        inner_per_quasi = MAX_LBFGS_PER_QUASI
-
+def paper_setup(N, gravity, basis_type=None):
+    """``(config, opt)`` of the paper's run at N -- the one place they are
+    set; every driver (this script, the four-method tables, the residual-band
+    figures, B8) builds its runs from here. ``basis_type=None``: GRAVITY_BASIS
+    with gravity, DEFAULT_BASIS without."""
+    if basis_type is None:
+        basis_type = GRAVITY_BASIS if gravity else DEFAULT_BASIS
+    base = BLConfig.with_gravity() if gravity else BLConfig()
+    config = dataclasses.replace(base, N_x=N, N_t=N, basis_type=basis_type, k_ratio=K_RATIO)
+    targets = GRAVITY_TARGET_LOSSES if gravity else TARGET_LOSSES
+    quasi_iters = GRAVITY_MAX_QUASI_ITERS if gravity else MAX_QUASI_ITERS
+    inner_per_quasi = GRAVITY_MAX_LBFGS_PER_QUASI if gravity else MAX_LBFGS_PER_QUASI
     opt = BLOptConfig(
         max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
         # max_line_searches left unset: 3x each method's iteration budget
@@ -108,6 +100,17 @@ def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True, seeds=No
         max_quasi_iters_lil=quasi_iters,
         pretrain_epochs=PRETRAIN_EPOCHS,
     )
+    return config, opt
+
+
+def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True, seeds=None):
+    """``seeds``, when given, runs NiL-N/NiL-Q across every seed in it
+    (Section 2/3.4: seeds 0, 1, 2) via ``run_stochastic_with_seeds``
+    instead of once at ``config.seed``. LiL-N/LiL-Q always run once
+    regardless. Omitted (``None``, the default), behavior is unchanged.
+    """
+    config, opt = paper_setup(N, gravity, basis_type)
+    label = 'bl_gravity' if gravity else 'bl'
 
     n_dir = make_experiment_dir(label, basis_type, N)
     fig_dir = make_figures_dir(label, basis_type)

@@ -55,16 +55,12 @@ MAX_LBFGS_PER_QUASI = {5: 100, 10: 250, 15: 375, 20: 500, 25: 750}
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 
 
-def run_experiment_for_N(N, basis_type, methods, verbose=True, seeds=None):
-    """``seeds``, when given, runs NiL-N/NiL-Q across every seed in it
-    (Section 2/3.4: seeds 0, 1, 2) via ``run_stochastic_with_seeds``
-    instead of once at ``config.seed``. LiL-N/LiL-Q always run once
-    regardless. Omitted (``None``, the default), behavior is unchanged.
-    """
-    config = BurgersConfig(
-        N_x=N, N_t=N, viscosity=VISCOSITY, T_final=T_FINAL,
-        basis_type=basis_type, k_ratio=K_RATIO,
-    )
+def paper_setup(N, basis_type=DEFAULT_BASIS):
+    """``(config, opt)`` of the paper's run at N -- the one place they are
+    set; every driver (this script, the four-method tables, the residual-band
+    figures, B8) builds its runs from here."""
+    config = BurgersConfig(N_x=N, N_t=N, viscosity=VISCOSITY, T_final=T_FINAL,
+                           basis_type=basis_type, k_ratio=K_RATIO)
     opt = BurgersOptConfig(
         max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
         R_tol=TARGET_LOSSES.get(N, 1e-4),
@@ -73,6 +69,16 @@ def run_experiment_for_N(N, basis_type, methods, verbose=True, seeds=None):
         max_quasi_iters_lil=MAX_QUASI_ITERS,
         pretrain_epochs=PRETRAIN_EPOCHS,
     )
+    return config, opt
+
+
+def run_experiment_for_N(N, basis_type, methods, verbose=True, seeds=None):
+    """``seeds``, when given, runs NiL-N/NiL-Q across every seed in it
+    (Section 2/3.4: seeds 0, 1, 2) via ``run_stochastic_with_seeds``
+    instead of once at ``config.seed``. LiL-N/LiL-Q always run once
+    regardless. Omitted (``None``, the default), behavior is unchanged.
+    """
+    config, opt = paper_setup(N, basis_type)
 
     n_dir = make_experiment_dir('burgers', basis_type, N)
     fig_dir = make_figures_dir('burgers', basis_type)

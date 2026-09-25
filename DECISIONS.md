@@ -17,6 +17,27 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Four-method harness used the wrong NiL pretraining budget
+
+`experiments/four_method_tables.py` rebuilt each benchmark's configuration
+by hand and dropped two settings that the paper scripts
+(`experiments/run_*.py`) pass: `pretrain_epochs` (1,000 for Bratu and
+Buckley-Leverett; the dataclass default is 500) and `max_quasi_iters_lil`
+(20 for gravity; default 50). The first changes the NiL-N/NiL-Q starting
+network, so every four-method NiL row for Bratu and Buckley-Leverett so far
+used half the paper's pretraining (Burgers uses 500 in both, unaffected).
+Those rows (the FASTER run) were already superseded. The second did not
+matter there (no LiL-Q in the four-method tables) but would have in B8.
+The Section 3.3 driver and the residual-band figures only run LiL-Q, which
+uses neither setting.
+
+Fix: each paper script has `paper_setup(N, ...)` returning its
+`(config, opt)`; the script itself, the four-method harness and the
+residual-band builders all use it, and B8 will too. A test asserts the
+harness's configs equal `paper_setup`'s for every size and benchmark.
+
+---
+
 ## 2026-09-24 -- Task B9: Darcy pressures against the FVM solution; NiL in float64
 
 `experiments/darcy_fv_comparison.py` (Addendum fix 3.4, second script):

@@ -74,6 +74,23 @@ ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']
 # Single-N Experiment
 # ─────────────────────────────────────────────────────────────────────────────
 
+def paper_setup(N, basis_type=DEFAULT_BASIS, lambda_=DEFAULT_LAMBDA):
+    """``(config, opt)`` of the paper's run at N -- the one place they are
+    set; every driver (this script, the four-method tables, the residual-band
+    figures, B8) builds its runs from here."""
+    config = BratuConfig(lambda_=lambda_, N_x=N, N_y=N, k_ratio=DEFAULT_K_RATIO,
+                         basis_type=basis_type)
+    opt = BratuOptConfig(
+        max_iterations=MAX_ITERATIONS.get(N, 10000),
+        R_tol=TARGET_LOSSES.get(N, 1e-4),
+        max_quasi_iters_nn=MAX_QUASI_ITERS,
+        max_inner_iters_nn=MAX_LBFGS_PER_QUASI_ITER.get(N, 300),
+        max_quasi_iters_lil=MAX_QUASI_ITERS,
+        pretrain_epochs=DEFAULT_PRETRAIN_EPOCHS,
+    )
+    return config, opt
+
+
 def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True, seeds=None):
     """Run specified methods for a single N value. Returns results dict.
 
@@ -87,22 +104,7 @@ def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True, seeds=No
     the default), every method runs exactly as before this parameter
     existed.
     """
-    config = BratuConfig(
-        lambda_=lambda_,
-        N_x=N, N_y=N,
-        k_ratio=DEFAULT_K_RATIO,
-        basis_type=basis_type,
-    )
-
-    R_tol = TARGET_LOSSES.get(N, 1e-4)
-    opt = BratuOptConfig(
-        max_iterations=MAX_ITERATIONS.get(N, 10000),
-        R_tol=R_tol,
-        max_quasi_iters_nn=MAX_QUASI_ITERS,
-        max_inner_iters_nn=MAX_LBFGS_PER_QUASI_ITER.get(N, 300),
-        max_quasi_iters_lil=MAX_QUASI_ITERS,
-        pretrain_epochs=DEFAULT_PRETRAIN_EPOCHS,
-    )
+    config, opt = paper_setup(N, basis_type, lambda_)
 
     # Output directory for this N
     n_dir = make_experiment_dir('bratu', basis_type, N)

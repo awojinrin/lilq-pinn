@@ -62,11 +62,9 @@ from problems.bratu import (
     run_nil_n as bratu_nil_n, run_nil_q as bratu_nil_q, run_lil_n as bratu_lil_n,
 )
 from problems.burgers import (
-    BurgersConfig, BurgersOptConfig,
     run_nil_n as burgers_nil_n, run_nil_q as burgers_nil_q, run_lil_n as burgers_lil_n,
 )
 from problems.buckley_leverett import (
-    BLConfig, BLOptConfig,
     run_nil_n as bl_nil_n, run_nil_q as bl_nil_q, run_lil_n as bl_lil_n,
 )
 
@@ -82,71 +80,21 @@ DEFAULT_SEEDS = (0, 1, 2)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _bratu_runs(quick=False):
-    from experiments.run_bratu import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_ITERATIONS,
-        MAX_QUASI_ITERS, MAX_LBFGS_PER_QUASI_ITER,
-        DEFAULT_LAMBDA, DEFAULT_BASIS, DEFAULT_K_RATIO,
-    )
+    from experiments.run_bratu import DEFAULT_N_VALUES, paper_setup
     N_values = DEFAULT_N_VALUES[:1] if quick else DEFAULT_N_VALUES
-    runs = []
-    for N in N_values:
-        config = BratuConfig(lambda_=DEFAULT_LAMBDA, N_x=N, N_y=N,
-                              k_ratio=DEFAULT_K_RATIO, basis_type=DEFAULT_BASIS)
-        opt = BratuOptConfig(
-            max_iterations=MAX_ITERATIONS.get(N, 10000),
-            R_tol=TARGET_LOSSES.get(N, 1e-4),
-            max_quasi_iters_nn=MAX_QUASI_ITERS,
-            max_inner_iters_nn=MAX_LBFGS_PER_QUASI_ITER.get(N, 300),
-        )
-        runs.append((N * N, config, opt))
-    return runs
+    return [(N * N, *paper_setup(N)) for N in N_values]
 
 
 def _burgers_runs(quick=False):
-    from experiments.run_burgers import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_LBFGS_ITERS,
-        MAX_QUASI_ITERS, MAX_LBFGS_PER_QUASI, DEFAULT_BASIS, VISCOSITY, T_FINAL, K_RATIO,
-    )
+    from experiments.run_burgers import DEFAULT_N_VALUES, paper_setup
     N_values = DEFAULT_N_VALUES[:1] if quick else DEFAULT_N_VALUES
-    runs = []
-    for N in N_values:
-        config = BurgersConfig(N_x=N, N_t=N, viscosity=VISCOSITY, T_final=T_FINAL,
-                                basis_type=DEFAULT_BASIS, k_ratio=K_RATIO)
-        opt = BurgersOptConfig(
-            max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
-            R_tol=TARGET_LOSSES.get(N, 1e-4),
-            max_quasi_iters_nn=MAX_QUASI_ITERS,
-            max_inner_iters_nn=MAX_LBFGS_PER_QUASI.get(N, 300),
-        )
-        runs.append((N * N, config, opt))
-    return runs
+    return [(N * N, *paper_setup(N)) for N in N_values]
 
 
 def _bl_runs(gravity, quick=False):
-    from experiments.run_bl import (
-        DEFAULT_N_VALUES, TARGET_LOSSES, MAX_LBFGS_ITERS, MAX_LBFGS_PER_QUASI,
-        GRAVITY_TARGET_LOSSES, GRAVITY_MAX_QUASI_ITERS, GRAVITY_MAX_LBFGS_PER_QUASI,
-        MAX_QUASI_ITERS, DEFAULT_BASIS, GRAVITY_BASIS, K_RATIO,
-    )
+    from experiments.run_bl import DEFAULT_N_VALUES, paper_setup
     N_values = DEFAULT_N_VALUES[:1] if quick else DEFAULT_N_VALUES
-    targets = GRAVITY_TARGET_LOSSES if gravity else TARGET_LOSSES
-    quasi_iters = GRAVITY_MAX_QUASI_ITERS if gravity else MAX_QUASI_ITERS
-    inner_per_quasi = GRAVITY_MAX_LBFGS_PER_QUASI if gravity else MAX_LBFGS_PER_QUASI
-    basis_type = GRAVITY_BASIS if gravity else DEFAULT_BASIS
-    runs = []
-    for N in N_values:
-        base = BLConfig.with_gravity() if gravity else BLConfig()
-        config = dataclasses.replace(base, N_x=N, N_t=N,
-                                      basis_type=basis_type, k_ratio=K_RATIO)
-        # max_line_searches left unset: lilq.solvers.line_search_cap.
-        opt = BLOptConfig(
-            max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
-            R_tol=targets.get(N, 1e-3),
-            max_quasi_iters_nn=quasi_iters,
-            max_inner_iters_nn=inner_per_quasi.get(N, 200),
-        )
-        runs.append((N * N, config, opt))
-    return runs
+    return [(N * N, *paper_setup(N, gravity)) for N in N_values]
 
 
 # label, run-list builder, NiL-N fn, NiL-Q fn, LiL-N fn
