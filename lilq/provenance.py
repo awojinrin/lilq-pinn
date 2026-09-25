@@ -142,17 +142,50 @@ _SLURM_ENV_VARS = (
     "SLURM_JOB_ID", "SLURM_JOB_NAME", "SLURM_JOB_PARTITION", "SLURM_JOB_NODELIST",
     "SLURM_CPUS_PER_TASK", "SLURM_CPUS_ON_NODE", "SLURM_NTASKS",
     "SLURM_MEM_PER_NODE", "SLURM_MEM_PER_CPU", "SLURM_JOB_GPUS", "SLURM_GPUS_ON_NODE",
-    "CUDA_VISIBLE_DEVICES",
+    "CUDA_VISIBLE_DEVICES", "SLURMD_NODENAME", "SLURM_JOB_ACCOUNT",
 )
+
+
+def _scontrol_fields(kind: str, name: Optional[str], keys) -> Optional[dict]:
+    """Selected ``Key=Value`` fields of ``scontrol show <kind> <name>``."""
+    if not name:
+        return None
+    out = _run(["scontrol", "show", kind, str(name)])
+    if out is None:
+        return None
+    fields = {}
+    for token in out.split():
+        if "=" in token:
+            k, v = token.split("=", 1)
+            if k in keys:
+                fields[k] = v
+    return fields
 
 
 def capture_scheduler_info() -> dict:
     """The SLURM allocation this run executed under (``{"slurm": False}``
     on a workstation) -- what a timing on a shared cluster node actually
-    had to work with, which the node's hardware alone doesn't say."""
+    had to work with, which the node's hardware alone doesn't say. Adds the
+    node's type (its features, GPUs, cores, memory) and whether the job held
+    the node exclusively (``OverSubscribe=NO``), from ``scontrol``."""
     if "SLURM_JOB_ID" not in os.environ:
         return {"slurm": False}
-    return {"slurm": True, **{k: os.environ.get(k) for k in _SLURM_ENV_VARS}}
+    info = {"slurm": True, **{k: os.environ.get(k) for k in _SLURM_ENV_VARS}}
+    info["node"] = _scontrol_fields("node", os.environ.get("SLURMD_NODENAME"),
+                                    ("NodeName", "AvailableFeatures", "ActiveFeatures", "Gres",
+                                     "CPUTot", "RealMemory", "Partitions"))
+    job = _scontrol_fields("job", os.environ.get("SLURM_JOB_ID"),
+                           ("OverSubscribe", "Account", "Partition", "TRES", "NumCPUs"))
+    info["job"] = job
+    info["exclusive"] = (job or {}).get("OverSubscribe") == "NO" if job else None
+    return info
+
+
+def capture_thread_info() -> dict:
+    """Threads actually in effect: PyTorch's intra- and inter-op pools
+    (BLAS's are in ``blas_thread_env``)."""
+    return {"torch_num_threads": torch.get_num_threads(),
+            "torch_num_interop_threads": torch.get_num_interop_threads()}
 
 
 def capture_gpu_info() -> dict:
@@ -203,6 +236,7 @@ def capture_hardware_json(repo_root: Optional[Path] = None) -> dict:
         "gpu": capture_gpu_info(),
         "scheduler": capture_scheduler_info(),
         "blas_thread_env": capture_blas_thread_env(),
+        "threads": capture_thread_info(),
         "packages": capture_package_versions(),
         "git": capture_git_info(repo_root),
     }

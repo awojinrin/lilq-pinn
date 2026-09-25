@@ -46,8 +46,10 @@ _proj = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _proj not in sys.path:
     sys.path.insert(0, _proj)
 
-import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy/torch)
+from lilq.blas_threads import pin_torch  # first: sets the BLAS threads before numpy/scipy load
 import torch
+
+pin_torch()   # PyTorch's threads = the BLAS allocation
 
 import baselines.f1_pinn as f1
 import baselines.lm_kovasznay as lm

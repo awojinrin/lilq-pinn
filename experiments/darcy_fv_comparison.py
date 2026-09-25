@@ -34,13 +34,15 @@ _proj = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _proj not in sys.path:
     sys.path.insert(0, _proj)
 
-import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
+from lilq.blas_threads import pin_torch  # first: sets the BLAS threads before numpy/scipy load
 import numpy as np
 
 from lilq.provenance import save_provenance
 from problems.darcy import (
     DarcyConfig, DarcyPhysics, delta_fv, run_nil_n_darcy, solve_fvm, solve_lilq_darcy, tpfa_residual,
 )
+
+pin_torch()   # PyTorch's threads = the BLAS allocation
 
 FIELDS = ('S1', 'S2', 'S3', 'SPE10')
 ORDER = 32  # the paper's (experiments/run_darcy.py DEFAULT_ORDER)

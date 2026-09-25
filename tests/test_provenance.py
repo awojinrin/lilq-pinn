@@ -158,5 +158,35 @@ def test_save_provenance_writes_both_files(tmp_path):
     assert env_path.exists()
 
     hardware = json.loads(hardware_path.read_text())
-    assert set(hardware.keys()) == {"cpu", "gpu", "scheduler", "blas_thread_env", "packages", "git"}
+    assert set(hardware.keys()) == {"cpu", "gpu", "scheduler", "blas_thread_env", "threads", "packages", "git"}
     assert env_path.read_text()  # non-empty
+
+
+def test_torch_threads_pinned_to_the_blas_allocation(monkeypatch):
+    import torch
+    from lilq.blas_threads import pin_torch
+    old = torch.get_num_threads()
+    try:
+        monkeypatch.setenv("OMP_NUM_THREADS", "3")
+        assert pin_torch() == 3 and torch.get_num_threads() == 3
+        from lilq.provenance import capture_thread_info
+        assert capture_thread_info()["torch_num_threads"] == 3
+    finally:
+        torch.set_num_threads(old)
+
+
+def test_scheduler_info_records_node_type_and_exclusivity(monkeypatch):
+    import lilq.provenance as prov
+    monkeypatch.setenv("SLURM_JOB_ID", "123")
+    monkeypatch.setenv("SLURMD_NODENAME", "g001")
+    outputs = {
+        ("scontrol", "show", "node", "g001"):
+            "NodeName=g001 Arch=x86_64 CPUTot=48 AvailableFeatures=a100,gpu ActiveFeatures=a100,gpu "
+            "Gres=gpu:a100:2 RealMemory=376000 Partitions=gpu",
+        ("scontrol", "show", "job", "123"):
+            "JobId=123 Account=132698954494 Partition=gpu NumCPUs=48 OverSubscribe=NO TRES=cpu=48,gres/gpu=2",
+    }
+    monkeypatch.setattr(prov, "_run", lambda args, **kw: outputs.get(tuple(args)))
+    info = prov.capture_scheduler_info()
+    assert info["node"]["AvailableFeatures"] == "a100,gpu" and info["node"]["Gres"] == "gpu:a100:2"
+    assert info["job"]["Account"] == "132698954494" and info["exclusive"] is True

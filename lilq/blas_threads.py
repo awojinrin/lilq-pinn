@@ -93,4 +93,15 @@ def configure(n_threads: int = None) -> int:
     return int(os.environ[_THREAD_ENV_VARS[0]])
 
 
+def pin_torch() -> int:
+    """Set PyTorch's intra-op thread count to the same allocation as BLAS
+    (``OMP_NUM_THREADS``; Addendum v2.1 Section 2). Imports torch, so it is a
+    function, never an import-time effect of this module; ``lilq.utils`` and
+    the baseline drivers call it right after importing torch."""
+    import torch
+    n = int(os.environ.get(_THREAD_ENV_VARS[0]) or configure())
+    torch.set_num_threads(n)
+    return n
+
+
 configure()

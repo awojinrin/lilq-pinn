@@ -8,6 +8,10 @@ shared across all experiments.
 
 import numpy as np
 import torch
+
+from lilq.blas_threads import pin_torch
+
+pin_torch()   # PyTorch's threads = the BLAS allocation (Addendum v2.1 Section 2)
 import random
 import gc
 
