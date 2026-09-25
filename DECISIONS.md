@@ -53,6 +53,8 @@ three-seed runs. Measured cost per Adam epoch on this laptop (the default
 B9 needs 4 fields x 3 seeds = 12 NiL runs: about 280 h in float64 on this
 laptop. Open: where and in what precision to run them (the user's call).
 
+---
+
 ## 2026-09-24 -- Addendum fixes 3.1 and 3.3; diagnostics taken off the solver clock
 
 **Fix 3.1 (Buckley-Leverett LiL-Q iteration count).** The shared
