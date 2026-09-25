@@ -46,6 +46,9 @@ acceptance rule, stopping rule):
 * ``torch.set_default_dtype(torch.float64)`` moved from import time into
   ``lm_train`` and ``main``, so importing this module does not change
   PyTorch's default precision for the rest of the process.
+* The test errors (post-hoc reading only) are computed off the clock:
+  their time is excluded from ``t_cum_s``, the budget and ``wall_s``, as
+  for F1, so neither family's budget pays for evaluation.
 """
 
 import argparse
@@ -275,6 +278,7 @@ def lm_train(args):
     history = [loss]
     n_evals = 1
     t0 = time.perf_counter()
+    excluded = 0.0                              # test-error time, off the clock
     end_reason = "budget"
     it = 0
     while True:
@@ -302,11 +306,13 @@ def lm_train(args):
             if mu > 1e16:
                 end_reason = "mu_overflow"
                 break
-            if time.perf_counter() - t0 > args.budget_s:
+            if time.perf_counter() - t0 - excluded > args.budget_s:
                 break
         it += 1
-        t = time.perf_counter() - t0
+        t = time.perf_counter() - t0 - excluded
+        t_te = time.perf_counter()
         eu, ev, ep, epm = test_errors(model, res, theta, device) if it % args.test_every == 0 else [""] * 4
+        excluded += time.perf_counter() - t_te
         comp = split_loss(r)
         w.writerow([it, "lm", f"{t:.3f}", repr(loss), *map(repr, comp),
                     args.w_int, args.w_int, args.w_int, args.w_pin,
@@ -326,10 +332,11 @@ def lm_train(args):
             end_reason = "max_steps"
             break
 
+    wall_s = time.perf_counter() - t0 - excluded
     eu, ev, ep, epm = test_errors(model, res, theta, device)
     run.update(end_reason=end_reason, steps=it, n_evals=n_evals, final_loss=loss,
                eps_u=eu, eps_v=ev, eps_p=ep, eps_p_meanfree=epm,
-               wall_s=time.perf_counter() - t0,
+               wall_s=wall_s,
                peak_gpu_bytes=(torch.cuda.max_memory_allocated() if device.type == "cuda" else None))
     f.close()
     json.dump(run, open(os.path.join(args.out, "run.json"), "w"), indent=2)

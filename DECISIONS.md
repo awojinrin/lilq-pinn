@@ -17,6 +17,26 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Component A driver; F2's test errors off the clock
+
+`experiments/component_a.py` runs Section 4.3 as resumable stages (search,
+screen, select, full, cpu, float32, a1, f2-jacobian) under the package's
+`A_calibration/` layout, appending every run to `tuning_log.md` in the
+order tried (and a "manual intervention" line whenever a stage runs with a
+non-package budget). Screening: every configuration, seed 0, 600 s.
+Selection: final training loss only. Full: top 3 x seeds 0-4, 3,600 s;
+representative = lowest median final training loss; the best test errors
+over the 15 runs are reported separately. Test errors are logged at every
+log row (every 100 Adam iterations, every L-BFGS call, every LM step), for
+time-to-accuracy.
+
+F2 change, not to the algorithm: the reference computed its test errors
+inside the clock, so they counted against its budget, while F1's do not.
+`baselines/lm_kovasznay.py` now excludes their time from `t_cum_s`, the
+budget and `wall_s` (recorded in its docstring). Check A2 still passes.
+
+---
+
 ## 2026-09-24 -- Component A, F1 (modern first-order PINN) and the random search
 
 `baselines/search.py`: 24 configurations per family, generator seed 12345
