@@ -17,6 +17,25 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Component A, F2: the advisor's Levenberg-Marquardt reference in the repo
+
+`baselines/lm_kovasznay.py` is `lm_reference/lm_kovasznay_reference.py`
+with one change, recorded in its docstring: `torch.set_default_dtype
+(torch.float64)` moved from import time into `lm_train`/`main`, so
+importing the module does not change PyTorch's default precision for the
+rest of the process (the same side effect removed from `lilq` on
+2026-09-22). The algorithm is untouched. `tests/test_lm_kovasznay.py`
+reproduces the advisor's checks: boundary values (< 1e-14), residual
+against an independent autograd evaluation (< 1e-12), the exact solution
+satisfying the equations (< 1e-12), the Jacobian against central
+differences (< 1e-7 relative; advisor 6e-10), and check A2 (two seed-0
+runs, identical loss histories over 20 steps). A2 needs a problem the
+network cannot fit exactly: with 40 interior points (121 rows, 273
+parameters) the loss reaches 1e-31 and the run ends when the damping
+overflows, at a step that depends on rounding; 150 points is used.
+
+---
+
 ## 2026-09-24 -- Task B8: Buckley-Leverett initial-guess sensitivity
 
 `BLConfig.initial_guess` ('zero' or 'ic'; None keeps the paper's choice:
