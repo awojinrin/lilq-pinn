@@ -29,6 +29,7 @@ import math
 from dataclasses import dataclass, replace as dataclasses_replace
 from typing import Tuple, Dict, Optional
 
+from lilq.collocation import points_1d
 from lilq.basis import (
     Chebyshev1D, Fourier1D, TensorProductBasis2D, AugmentedBasis1D,
     create_chebyshev_basis_2d, create_basis_2d,
@@ -70,6 +71,12 @@ class KovasznayConfig:
     lambda_cont: float = 1.0
     lambda_bc: float = 10.0
     use_gpu: bool = False
+    # Collocation family (Component C): 'uniform' is the paper's equispaced
+    # tensor grid; also 'cgl' and 'scattered' (lilq.collocation.points_1d).
+    sampling: str = 'uniform'
+    # Minimum points per direction and per edge (the paper's 10). Component C
+    # lowers it so that N/P = 1 is reachable at P = 300.
+    collocation_floor: int = 10
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -110,16 +117,21 @@ def _generate_collocation(config: KovasznayConfig, P_total):
     norm_r = [r / sum(ratios) for r in ratios]
 
     n_pde = config.k_ratio * norm_r[0] * P_total / 3
-    n_dim = max(math.ceil(np.sqrt(n_pde)), 10)
+    floor = config.collocation_floor
+    n_dim = max(math.ceil(np.sqrt(n_pde)), floor)
 
-    xp = np.linspace(x_min + 1e-6, x_max - 1e-6, n_dim, dtype=np.float64)
-    yp = np.linspace(y_min + 1e-6, y_max - 1e-6, n_dim, dtype=np.float64)
-    xx, yy = np.meshgrid(xp, yp)
-    x_pde, y_pde = xx.ravel(), yy.ravel()
+    if config.sampling == 'scattered':
+        x_pde = np.random.uniform(x_min + 1e-6, x_max - 1e-6, n_dim * n_dim)
+        y_pde = np.random.uniform(y_min + 1e-6, y_max - 1e-6, n_dim * n_dim)
+    else:
+        xp = points_1d(x_min + 1e-6, x_max - 1e-6, n_dim, config.sampling)
+        yp = points_1d(y_min + 1e-6, y_max - 1e-6, n_dim, config.sampling)
+        xx, yy = np.meshgrid(xp, yp)
+        x_pde, y_pde = xx.ravel(), yy.ravel()
 
-    n_bc = max(math.ceil(config.k_ratio * norm_r[2] * P_total / (3 * 4)), 10)
-    tx = np.linspace(x_min, x_max, n_bc, dtype=np.float64)
-    ty = np.linspace(y_min, y_max, n_bc, dtype=np.float64)
+    n_bc = max(math.ceil(config.k_ratio * norm_r[2] * P_total / (3 * 4)), floor)
+    tx = points_1d(x_min, x_max, n_bc, config.sampling)
+    ty = points_1d(y_min, y_max, n_bc, config.sampling)
 
     return {
         'x_pde': x_pde, 'y_pde': y_pde, 'n_pde': len(x_pde),

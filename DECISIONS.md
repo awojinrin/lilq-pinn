@@ -17,6 +17,38 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-24 -- Component C: oversampling sweep; CGL and scattered collocation
+
+`experiments/component_c.py` runs Section 5's 196 LiL-Q runs (Kovasznay P =
+300, 1,200; Bratu P = 100, 225; N/P in {1, 1.5, 2, 3, 5, 10, 20}; paper
+construction, CGL tensor grid, uniform random points with seeds 0-4) to the
+paper's stopping rule with the full Section 3.1 log, and writes
+`results/oversampling.csv` and, per benchmark and P, final ||R_lin||_h and
+kappa_2 against N/P (random: median with min-max band). Resumable; a
+failing run is logged with its traceback.
+
+Choices where the package is open:
+- **Hitting N/P.** For each target, the density factor `k_ratio` whose
+  actual row count is closest (proportions of row types as in the paper;
+  exact counts recorded). Actual N/P lands within 3% of every target
+  (0.97-1.01 at N/P = 1).
+- **Minimum point counts lowered to 1 in the sweep.** The paper's
+  generators enforce at least 10 points per direction and per edge
+  (Kovasznay) and 5 and 10 (Bratu). At Kovasznay P = 300 those floors alone
+  give ~381 rows, so N/P = 1 would be unreachable, and at small N/P they
+  distort the row-type proportions. `KovasznayConfig.collocation_floor`
+  (default 10) and `BratuConfig.collocation_floor` (default None: the
+  paper's) make them settable; the sweep uses 1 for every run.
+- **Distributions.** `lilq.collocation.points_1d`: 'cgl' is the
+  Chebyshev-Gauss-Lobatto family (endpoints included; interior grids inset
+  by 1e-6 like the paper's), and 'scattered' draws the same number of
+  interior points uniformly at random (not a tensor grid). Boundary points
+  follow the same family along each edge. The paper's constructions are
+  unchanged: bit-identical point sets for 'random' and 'uniform' (checked
+  against the previous code).
+
+---
+
 ## 2026-09-24 -- Component A driver; F2's test errors off the clock
 
 `experiments/component_a.py` runs Section 4.3 as resumable stages (search,

@@ -49,6 +49,7 @@ class BratuConfig:
     seed: int = 42  # collocation set (and LiL methods)
     basis_type: str = 'fourier'
     sampling: str = 'random'
+    collocation_floor: Optional[int] = None  # None: the paper's minimums (Component C lowers it)
     init_seed: Optional[int] = None  # NiL network init; None = seed (lilq.utils.nn_init_seed)
 
 
@@ -359,7 +360,7 @@ def run_nil_n(config: BratuConfig, opt: BratuOptConfig,
         config.x_domain, config.y_domain, config.N_x, config.N_y,
         k_ratio=config.k_ratio, collocation_ratios=(0.85, 0.15),
         has_initial_condition=False, seed=config.seed,
-        sampling=config.sampling,
+        sampling=config.sampling, floor=config.collocation_floor,
     )
     pts_t = collocation_to_torch(pts, device)
 
@@ -413,7 +414,7 @@ def run_nil_q(config: BratuConfig, opt: BratuOptConfig,
         config.x_domain, config.y_domain, config.N_x, config.N_y,
         k_ratio=config.k_ratio, collocation_ratios=(0.85, 0.15),
         has_initial_condition=False, seed=config.seed,
-        sampling=config.sampling,
+        sampling=config.sampling, floor=config.collocation_floor,
     )
     pts_t = collocation_to_torch(pts, device)
 
@@ -466,7 +467,7 @@ def run_lil_n(config: BratuConfig, opt: BratuOptConfig,
         config.x_domain, config.y_domain, config.N_x, config.N_y,
         k_ratio=config.k_ratio, collocation_ratios=(0.85, 0.15),
         has_initial_condition=False, seed=config.seed,
-        sampling=config.sampling,
+        sampling=config.sampling, floor=config.collocation_floor,
     )
 
     # Precompute basis matrices at collocation points
@@ -562,7 +563,7 @@ def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
         config.x_domain, config.y_domain, config.N_x, config.N_y,
         k_ratio=config.k_ratio, collocation_ratios=(0.85, 0.15),
         has_initial_condition=False, seed=config.seed,
-        sampling=config.sampling,
+        sampling=config.sampling, floor=config.collocation_floor,
     )
 
     x_pde, y_pde = pts['x_pde'], pts['y_pde']

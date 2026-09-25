@@ -10,7 +10,20 @@ optional initial condition line.
 import math
 import numpy as np
 import torch
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional
+
+
+def points_1d(a: float, b: float, n: int, sampling: str) -> np.ndarray:
+    """n points on [a, b] of one family: sorted uniform random ('random',
+    'scattered'), equispaced ('uniform'), or Chebyshev-Gauss-Lobatto ('cgl',
+    endpoints included, clustered towards them). Random draws use NumPy's
+    global generator, as the paper's construction does."""
+    if sampling in ("random", "scattered"):
+        return np.sort(np.random.uniform(a, b, n)).astype(np.float64)
+    if sampling == "cgl":
+        t = np.cos(np.pi * np.arange(n) / (n - 1))[::-1]           # -1 .. 1
+        return (a + (b - a) * (t + 1.0) / 2.0).astype(np.float64)
+    return np.linspace(a, b, n, dtype=np.float64)
 
 
 def generate_collocation_points_2d(
@@ -23,6 +36,7 @@ def generate_collocation_points_2d(
     sampling: str = "random",
     seed: int = 42,
     has_initial_condition: bool = False,
+    floor: Optional[int] = None,
 ) -> Dict[str, np.ndarray]:
     """Generate collocation points for 2D PDE problems.
 
@@ -44,12 +58,20 @@ def generate_collocation_points_2d(
     collocation_ratios : tuple
         Relative allocation to (PDE, BC) or (PDE, IC, BC).
     sampling : str
-        'uniform' for linspace grids, 'random' for random points.
+        'random' (the paper's): tensor grid of sorted uniform random
+        abscissae; 'uniform': equispaced tensor grid; 'cgl':
+        Chebyshev-Gauss-Lobatto tensor grid; 'scattered': uniformly random
+        points, not a tensor grid (the same number of them). Boundary and
+        initial points follow the same family along each edge.
     seed : int
         Random seed for reproducible point placement.
     has_initial_condition : bool
         If True, expects 3-element collocation_ratios and generates
         IC points along y=y_min.
+    floor : int, optional
+        Minimum points per direction and per boundary/initial edge. None
+        keeps the paper's minimums (5 per direction, 10 per edge);
+        Component C lowers them so that small N/P are reachable.
 
     Returns
     -------
@@ -73,19 +95,21 @@ def generate_collocation_points_2d(
 
     # ── Interior PDE points ──
     n_pde = k_ratio * norm_ratios[0] * n_coefs
-    n_pde_dim = max(math.ceil(np.sqrt(n_pde)), 5)
+    n_pde_dim = max(math.ceil(np.sqrt(n_pde)), 5 if floor is None else floor)
 
     eps = 1e-6
-    if sampling == "random":
-        xp = np.sort(np.random.uniform(x_min + eps, x_max - eps, n_pde_dim)).astype(np.float64)
-        yp = np.sort(np.random.uniform(y_min + eps, y_max - eps, n_pde_dim)).astype(np.float64)
+    if sampling not in ("random", "uniform", "cgl", "scattered"):
+        raise ValueError(f"unknown sampling {sampling!r}")
+    if sampling == "scattered":
+        n = n_pde_dim ** 2
+        x_pde = np.random.uniform(x_min + eps, x_max - eps, n).astype(np.float64)
+        y_pde = np.random.uniform(y_min + eps, y_max - eps, n).astype(np.float64)
     else:
-        xp = np.linspace(x_min + eps, x_max - eps, n_pde_dim, dtype=np.float64)
-        yp = np.linspace(y_min + eps, y_max - eps, n_pde_dim, dtype=np.float64)
-
-    xx, yy = np.meshgrid(xp, yp)
-    x_pde = xx.ravel()
-    y_pde = yy.ravel()
+        xp = points_1d(x_min + eps, x_max - eps, n_pde_dim, sampling)
+        yp = points_1d(y_min + eps, y_max - eps, n_pde_dim, sampling)
+        xx, yy = np.meshgrid(xp, yp)
+        x_pde = xx.ravel()
+        y_pde = yy.ravel()
 
     result = {
         'x_pde': x_pde,
@@ -97,12 +121,9 @@ def generate_collocation_points_2d(
     if has_initial_condition:
         ic_ratio_idx = 1
         bc_ratio_idx = 2
-        n_ic = max(10, math.ceil(k_ratio * norm_ratios[ic_ratio_idx] * n_coefs))
+        n_ic = max(10 if floor is None else floor, math.ceil(k_ratio * norm_ratios[ic_ratio_idx] * n_coefs))
 
-        if sampling == "random":
-            x_ic = np.sort(np.random.uniform(x_min, x_max, n_ic)).astype(np.float64)
-        else:
-            x_ic = np.linspace(x_min, x_max, n_ic, dtype=np.float64)
+        x_ic = points_1d(x_min, x_max, n_ic, sampling)
 
         result['x_ic'] = x_ic
         result['y_ic'] = np.full_like(x_ic, y_min)
@@ -111,14 +132,10 @@ def generate_collocation_points_2d(
         bc_ratio_idx = 1
 
     # ── Boundary condition points ──
-    n_bc = max(10, math.ceil(k_ratio * norm_ratios[bc_ratio_idx] * n_coefs / 4))
+    n_bc = max(10 if floor is None else floor, math.ceil(k_ratio * norm_ratios[bc_ratio_idx] * n_coefs / 4))
 
-    if sampling == "random":
-        tx = np.sort(np.random.uniform(x_min, x_max, n_bc)).astype(np.float64)
-        ty = np.sort(np.random.uniform(y_min, y_max, n_bc)).astype(np.float64)
-    else:
-        tx = np.linspace(x_min, x_max, n_bc, dtype=np.float64)
-        ty = np.linspace(y_min, y_max, n_bc, dtype=np.float64)
+    tx = points_1d(x_min, x_max, n_bc, sampling)
+    ty = points_1d(y_min, y_max, n_bc, sampling)
 
     result['x_bc_left'] = np.full(n_bc, x_min, dtype=np.float64)
     result['y_bc_left'] = ty
