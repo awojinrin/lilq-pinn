@@ -17,6 +17,26 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-25 -- Everything on the cluster; one set of job scripts for Grace or FASTER
+
+The user's rule: all runs on one platform. The untimed work the addendum
+allowed on the laptop now runs on the cluster too: B8 (`41_b8_initial_guess`,
+one task per case and guess, networks on a shared A100 as in the
+four-method GPU pass, so its rows are comparable with Tables 4 and 5),
+Component C (`42_component_c`, CPU) and B6 (`43_basis_study`, CPU).
+`90_finalize` merges B8's four CSVs.
+
+`scripts/grace/` became `scripts/cluster/`: job scripts carry only their name,
+time and array plus a `# lilq-resources:` class (timed / shared-gpu / cpu);
+`sbatch.sh` applies the class's resources from `profiles/grace.sh` or
+`profiles/faster.sh` (account, partitions, A100 gres, cores per node, module
+names), and `submit_all.sh` checks the profile before submitting anything.
+Deleted as stale: `scripts/hprc/` (the FASTER shakedown scripts, superseded)
+and `experiments/validate_pre_hprc.py` (built configurations by hand with
+pre-decision budgets).
+
+---
+
 ## 2026-09-25 -- F2 (Levenberg-Marquardt) made faster; same algorithm
 
 Addendum v2.1 Section 6 allows speeding up the reference provided the

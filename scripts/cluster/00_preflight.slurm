@@ -1,20 +1,15 @@
 #!/bin/bash
-# Pre-flight on a Grace A100 node (not timed, so not exclusive): versions,
+# Pre-flight on an A100 (not timed, so not exclusive): versions,
 # the test suite, smoke runs of every driver, and check F2 -- the LM
 # Jacobian against finite differences on this node, which the addendum
 # requires before any Component A run -- and check A2 (F2 reproducibility).
 # Everything else waits for this.
+# lilq-resources: shared-gpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-preflight
 #SBATCH --time=01:00:00
-#SBATCH --partition=gpu
-#SBATCH --account=132698954494
-#SBATCH --gres=gpu:a100:1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=32G
 #SBATCH --output=logs/%x.%j.out
 
-source scripts/grace/env.sh
+source scripts/cluster/env.sh
 set -euo pipefail
 
 python -c "import numpy, scipy, torch; print('numpy', numpy.__version__, 'scipy', scipy.__version__, 'torch', torch.__version__, 'cuda', torch.cuda.is_available(), torch.cuda.get_device_name(0))"

@@ -1,13 +1,10 @@
-# Sourced by every Grace job script (before `set -euo pipefail`: Lmod's own
+# Sourced by every job script (before `set -euo pipefail`: Lmod's own
 # functions are not safe under `set -u`): software environment, threads,
-# paths. Layout, as on FASTER:
+# paths. Layout, on either cluster:
 #   $SCRATCH/lilq-run/venv           (python -m venv --system-site-packages)
 #   $SCRATCH/lilq-run/lilq-pinn      (the extracted upload bundle)
-#
-# CHECK ONCE on a Grace login node before the first submission:
-#   module spider PyTorch
-# The names below are FASTER's. If Grace's differ, change LILQ_MODULES here
-# (or export it before sbatch); nothing else refers to them.
+# LILQ_MODULES comes from the cluster profile (scripts/cluster/profiles/),
+# exported by sbatch.sh.
 LILQ_MODULES="${LILQ_MODULES:-GCC/13.3.0 OpenMPI/5.0.3 PyTorch/2.9.1-CUDA-12.6.0}"
 
 module purge
