@@ -166,3 +166,17 @@ def test_saved_code_records_the_commit_and_the_source(tmp_path):
     assert (code / 'experiments' / 'component_b.py').exists()
     assert (code / 'DECISIONS.md').exists()
     assert not list(code.rglob('__pycache__'))
+
+
+def test_reproduction_check_separates_round_off_from_violations(tmp_path, monkeypatch):
+    import experiments.paper_values as pvmod
+    from experiments.paper_values import PaperValue
+    (tmp_path / 'x_P1_cpu_paper').mkdir()
+    (tmp_path / 'x_P1_cpu_paper' / 'summary.json').write_text(json.dumps({'a': 3e-16, 'b': 3e-6}))
+    monkeypatch.setattr(pvmod, 'PAPER_VALUES', [
+        PaperValue('x', 'P1', 'tiny error', 1e-15, 'error', 't', lambda s: s['a']),   # both round-off
+        PaperValue('x', 'P1', 'real error', 1e-5, 'error', 't', lambda s: s['b']),    # 3.3x off: violation
+    ])
+    with open(cb.reproduction_check(tmp_path), newline='') as f:
+        status = {r['quantity']: r['status'] for r in csv.DictReader(f)}
+    assert status == {'tiny error': 'round-off', 'real error': 'violation'}

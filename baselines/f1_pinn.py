@@ -26,9 +26,10 @@ No pressure condition: the pressure is determined up to a constant, and
 baselines are compared with the mean-free pressure error (Section 2).
 The exact solution is used only for boundary data and test errors.
 
-The budget is wall-clock from the first optimizer step; a run ends on the
-budget, on L-BFGS making no progress (``criterion``), or on a non-finite
-loss (``failure``). Test errors are computed off the clock. Logs follow
+The budget is wall-clock from the first optimizer step, enforced inside an
+L-BFGS call as well (a call interrupted by the budget keeps the lowest-loss
+point it evaluated); a run ends on the budget, on L-BFGS making no progress
+(``criterion``), or on a non-finite loss (``failure``). Test errors are computed off the clock. Logs follow
 the Section 6 baseline ``log.csv`` format; ``run.json`` holds the
 configuration, seed, n_theta, peak GPU memory and end reason.
 
@@ -175,6 +176,10 @@ def test_errors(model, device, dtype, nx=301, ny=401, chunk=20000):
     return rel(out[:, 0], ue), rel(out[:, 1], ve), rel(p, pe), rel(p - p.mean(), pe - pe.mean())
 
 
+class _BudgetReached(Exception):
+    """Raised inside the L-BFGS closure once the wall-clock budget is spent."""
+
+
 def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
              test_every=10, max_adam_iters=None, max_lbfgs_calls=None):
     """Train one F1 configuration (a dict with the Section 4.3 search keys).
@@ -269,15 +274,34 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
             lbfgs = torch.optim.LBFGS(params, lr=1.0, max_iter=500, history_size=50,
                                       line_search_fn="strong_wolfe")
             last = None
+            best = {"loss": math.inf, "params": None}
 
             def closure():
+                # The budget holds inside a call too (a call can run 500
+                # iterations): past it, stop at the next evaluation.
+                if elapsed() >= budget_s:
+                    raise _BudgetReached
                 lbfgs.zero_grad()
                 loss = weighted(loss_terms(model, xy_int, xy_bc))
                 loss.backward()
+                value = float(loss.detach())
+                if value < best["loss"]:
+                    best["loss"], best["params"] = value, [q.detach().clone() for q in params]
                 return loss
 
             while elapsed() < budget_s and (max_lbfgs_calls is None or lbfgs_calls < max_lbfgs_calls):
-                lbfgs.step(closure)
+                budget_hit = False
+                try:
+                    lbfgs.step(closure)
+                except _BudgetReached:
+                    # Interrupted mid-call, the parameters may sit at a line-search
+                    # trial point: keep the lowest-loss point L-BFGS evaluated
+                    # (none yet: the call never evaluated, parameters untouched).
+                    budget_hit = True
+                    if best["params"] is not None:
+                        with torch.no_grad():
+                            for q, b in zip(params, best["params"]):
+                                q.copy_(b)
                 lbfgs_calls += 1
                 it = adam_iters + lbfgs.state[params[0]].get("n_iter", 0)   # cumulative over calls
                 terms = loss_terms(model, xy_int, xy_bc)
@@ -287,6 +311,8 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
                 write_row(it, "lbfgs", terms, 1.0, gn)
                 if not math.isfinite(total_now):
                     end_reason = "failure: non-finite loss"
+                    break
+                if budget_hit:
                     break
                 if last is not None and total_now >= last:
                     end_reason = "criterion: L-BFGS made no progress"

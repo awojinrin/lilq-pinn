@@ -10,7 +10,7 @@ family's representative runs (``A_calibration/full/`` on the GPU,
 
 ``results/kovasznay_comparison.csv``
     One row per (family, device): the best eps_u, eps_v and mean-free eps_p
-    reached within the budget (per seed the minimum over its log; median,
+    reached within the budget (per seed the minimum over its log within the budget; median,
     min and max over seeds), peak GPU memory, and for each of the five
     LiL-Q eps_u levels on the same device the time-to-accuracy (median over
     the seeds that reached it, and how many did) with the iteration count at
@@ -72,13 +72,17 @@ def load_seed_runs(a_root, family, stage_dir):
     for run_dir in sorted((Path(a_root) / stage_dir).glob(f'{rep}_s*')):
         if not (run_dir / 'run.json').exists():
             continue
+        run = json.loads((run_dir / 'run.json').read_text())
+        budget = _num(run.get('budget_s')) or float('inf')
         with open(run_dir / 'log.csv', newline='') as f:
-            rows = [r for r in csv.DictReader(f)]
+            # Within the budget only: an LM step (or the last F1 evaluation)
+            # can finish just past it.
+            rows = [r for r in csv.DictReader(f) if float(r['t_cum_s']) <= budget]
         curve = [(float(r['t_cum_s']), int(float(r['iter'])), _num(r['eps_u']))
                  for r in rows if _num(r['eps_u']) is not None]
-        run = json.loads((run_dir / 'run.json').read_text())
-        best = {k: min([v for v in [_num(r.get(k)) for r in rows] + [_num(run.get(k))] if v is not None],
-                       default=None) for k in EPS}
+        final = [_num(run.get(k)) for k in EPS] if (_num(run.get('wall_s')) or 0.0) <= budget else [None] * 3
+        best = {k: min([v for v in [_num(r.get(k)) for r in rows] + [f] if v is not None], default=None)
+                for k, f in zip(EPS, final)}
         runs.append({'seed': run.get('seed'), 'curve': curve, 'best': best,
                      'peak_gpu_bytes': run.get('peak_gpu_bytes')})
     return rep, runs

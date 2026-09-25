@@ -124,8 +124,10 @@ def run_one(benchmark, N, ratio, distribution, seed, run_dir, quick=False):
         from problems.kovasznay import solve_kovasznay
         if quick:
             config = dataclasses.replace(config, max_iter=3)
-        r = solve_kovasznay(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json')
-        stopping = 'tolerance' if r['n_outer_iters'] < config.max_iter else 'K_max'
+        solve_kovasznay(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json')
+        # The solver stops when the relative coefficient change drops below tol
+        # (also possible on the last allowed iteration).
+        stopping = 'tolerance' if solve_rows(logger.rows)[-1]['rel_dbeta'] < config.tol else 'K_max'
     else:
         from problems.bratu import run_lil_q
         if quick:

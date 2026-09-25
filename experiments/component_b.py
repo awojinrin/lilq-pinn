@@ -378,7 +378,10 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
 
 REPRODUCTION_COLUMNS = ('status', 'benchmark', 'config', 'quantity', 'paper_value', 'rerun_value',
                         'ratio', 'kind', 'tolerance', 'source', 'note')
-_STATUS_ORDER = {'violation': 0, 'missing': 1, 'reported': 2, 'ok': 3}
+_STATUS_ORDER = {'violation': 0, 'missing': 1, 'round-off': 2, 'reported': 3, 'ok': 4}
+# A relative error at or below this on both sides is round-off: the factor-2
+# test says nothing there (e.g. elasticity's 1e-16 against the paper's 1e-15).
+ROUND_OFF_ERROR = 1e-13
 
 
 def reproduction_check(root: Path) -> Path:
@@ -406,6 +409,9 @@ def reproduction_check(root: Path) -> Path:
             tolerance = f'factor {factor:g}'
             ok = value is not None and value > 0 and 1 / factor <= ratio <= factor
         status = 'reported' if ok is None else ('ok' if ok else 'violation')
+        if (status == 'violation' and pv.kind == 'error' and value is not None
+                and max(value, pv.value) <= ROUND_OFF_ERROR):
+            status = 'round-off'
         rows.append({**row, 'status': status, 'rerun_value': value, 'ratio': ratio, 'tolerance': tolerance})
     rows.sort(key=lambda r: _STATUS_ORDER[r['status']])
     path = root / 'reproduction_check.csv'

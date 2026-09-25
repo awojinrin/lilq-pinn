@@ -24,4 +24,5 @@ python experiments/component_b.py --gpu-equivalence --smoke --out-root "$SCRATCH
 python experiments/four_method_tables.py --quick --out-dir "$SCRATCH/lilq-run/preflight/four_method"
 python experiments/component_a.py f2-jacobian --device cuda --root "$A"
 python experiments/component_a.py a2 --device cuda --root "$A"
+python experiments/component_a.py search --root "$A"      # saved once, before any Component A run
 echo "PREFLIGHT OK"

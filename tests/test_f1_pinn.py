@@ -90,3 +90,14 @@ def test_soft_balanced_adam32_run(tmp_path):
     assert run["precision"] == "adam32" and run["end_reason"] == "budget"
     state = torch.load(tmp_path / "model.pt")
     assert all(v.dtype == torch.float64 for v in state.values())         # L-BFGS ran in float64
+
+
+def test_budget_holds_inside_an_lbfgs_call(tmp_path):
+    """A 500-iteration L-BFGS call must not run past the budget: the run
+    stops at the next evaluation and keeps the lowest-loss point."""
+    cfg = dict(TINY, t_adam=20, n_int=400, width=32)
+    run = f1.f1_train(cfg, 0, 3.0, tmp_path, test_every=10 ** 6)
+    rows = _read(tmp_path / "log.csv")
+    assert run["end_reason"] == "budget" and rows[-1]["phase"] == "lbfgs"
+    assert run["wall_s"] < 3.0 + 1.0
+    assert run["final_loss"] <= float(rows[-1]["loss_total"]) + 1e-15

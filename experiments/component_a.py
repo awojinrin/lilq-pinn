@@ -82,8 +82,11 @@ the check-A1 configuration, and the hard/soft draw.
 
 def _log(root, line):
     path = Path(root) / 'tuning_log.md'
-    if not path.exists():
-        path.write_text(TUNING_LOG_HEADER, encoding='utf-8')
+    try:                                   # atomic: concurrent jobs never truncate each other
+        with open(path, 'x', encoding='utf-8') as f:
+            f.write(TUNING_LOG_HEADER)
+    except FileExistsError:
+        pass
     with open(path, 'a', encoding='utf-8') as f:
         f.write(line.rstrip() + '\n')
 
@@ -99,8 +102,13 @@ def run_one(root, stage, family, config, seed, budget_s, out_dir, device, precis
         return json.loads((out_dir / 'run.json').read_text())
     out_dir.mkdir(parents=True, exist_ok=True)
     if family == 'F1':
-        run = f1.f1_train(config, seed, budget_s, out_dir, device=device, precision=precision,
-                          test_every=test_every)
+        try:
+            run = f1.f1_train(config, seed, budget_s, out_dir, device=device, precision=precision,
+                              test_every=test_every)
+        except Exception:                  # e.g. out of memory building the network
+            run = dict(config=config, seed=seed, device=device, precision=precision, budget_s=budget_s,
+                       end_reason='failure', final_loss=None, traceback=traceback.format_exc())
+            (out_dir / 'run.json').write_text(json.dumps(run, indent=2, default=str))
     else:
         args = argparse.Namespace(width=config['width'], depth=config['depth'], m=config['m'],
                                   sigma_ff=config['sigma_ff'], n_int=config['n_int'], w_int=1.0, w_pin=1.0,

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Component A screening: save the search (idempotent), then all 24
-# configurations of one family, seed 0, 10 minutes each (~4 h + evaluation).
+# Component A screening (the search itself is saved by the preflight, so the
+# two array tasks never race on it): all 24 configurations of one family, seed 0, 10 minutes each (~4 h + evaluation).
 #SBATCH --job-name=lilq-A-screen
 #SBATCH --array=0-1
 #SBATCH --time=08:00:00
@@ -18,5 +18,4 @@ set -euo pipefail
 
 FAMILIES=(F1 F2)
 F="${FAMILIES[$SLURM_ARRAY_TASK_ID]}"
-python experiments/component_a.py search --root "$A"
 python experiments/component_a.py screen --family "$F" --device cuda --root "$A"

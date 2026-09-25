@@ -17,6 +17,44 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-25 -- Code review before the Grace runs: fixes
+
+A full read-through against Package 1 v2.0, Addendum v2.1 and the decisions
+above. The core monitors (chi_k, o_k, stall flag with tau = 0.1, round-off
+comparison, SVD/pivoted-QR conditioning and numerical rank) match the
+spec's formulas. Fixed:
+
+1. **F1 could overrun its budget by a whole L-BFGS call.** The clock was
+   checked only between calls, and a call runs up to 500 iterations: for
+   the largest configurations (three 256-wide networks, 32,000 points) that
+   could be minutes against a 10-minute screening budget, unequal across
+   configurations. The budget is now checked at every evaluation inside a
+   call; an interrupted call keeps the lowest-loss point L-BFGS evaluated.
+   Overshoot: at most one evaluation.
+2. **Section 4.6 "best within budget" counted rows logged after the budget**
+   (an LM step can end just past it). Only rows with t <= budget count, and
+   the end-of-run values only if the run did not overrun.
+3. **Race in Component A's search.** Both screening array tasks saved the
+   search at the same moment; one could read a half-written file. The
+   preflight saves it once. The tuning-log header is created atomically.
+4. **An F1 run failing before training** (e.g. out of memory building a
+   network) would have stopped the stage; it is now a logged failure, as
+   for F2.
+5. **Component C mislabelled a Kovasznay run that met its tolerance on its
+   last allowed iteration** as K_max; the label now comes from the final
+   coefficient change.
+6. **B1 called round-off a violation.** Elasticity's relative errors (1e-16
+   against the paper's 1e-15) failed the factor-2 test on the FASTER run.
+   Error entries at or below 1e-13 on both sides are now `round-off`
+   (still reported, like B3's amended rule): 8 of the FASTER run's 23
+   violations; the 15 left are all known.
+
+Checked, not changed: the FASTER run's Burgers P = 625 LiL-Q time (6.07 s
+against the paper's 1.26 s) was the diagnostics on the clock, fixed on
+2026-09-24; locally, with full logging, 0.94 s (0.91 s without logging).
+
+---
+
 ## 2026-09-24 -- Component C: oversampling sweep; CGL and scattered collocation
 
 `experiments/component_c.py` runs Section 5's 196 LiL-Q runs (Kovasznay P =
