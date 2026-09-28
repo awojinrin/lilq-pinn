@@ -19,7 +19,9 @@ Output ``b8_initial_guess.csv``, one row per run: case, guess, P, method,
 seed, iterations, evaluations, final loss, target, target reached,
 stopping reason, and for LiL-Q the first stall iteration, whether the
 stall flag ever fired, and the chi_k history. Resumable: completed rows are
-kept and skipped; a run that raises is logged with its traceback.
+kept and skipped; a run that raises is logged with its traceback. Every
+run's trained model is saved in ``models/<case>_<guess>_P<P>_<method>_s<seed>/``
+(``lilq.saved_models``) before its row is written.
 
 Untimed (Addendum Section 2): runs on this machine's CPU by default.
 
@@ -51,6 +53,7 @@ from lilq.four_method_log import classify_stopping_reason
 from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
 from lilq.run_metadata import first_stall_iteration
+from lilq.saved_models import save_network, save_solution
 from lilq.solvers import line_search_cap
 from problems.buckley_leverett import run_lil_n, run_lil_q, run_nil_n, run_nil_q
 
@@ -74,8 +77,9 @@ def _quick(opt):
                                max_inner_iters_nn=10, max_quasi_iters_lil=3, pretrain_epochs=5)
 
 
-def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=None):
-    """One B8 row (raises on failure; the caller logs it)."""
+def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=None, model_dir=None):
+    """One B8 row (raises on failure; the caller logs it). With ``model_dir``,
+    the trained model is saved there (``lilq.saved_models``)."""
     config, opt = paper_setup(N, gravity=(case == 'gravity'))
     config = dataclasses.replace(config, initial_guess=guess)
     if seed != '':
@@ -90,8 +94,10 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
         log_dir = Path(log_root) / f'{case}_{guess}_P{N * N}' if log_root else None
         if log_dir:
             log_dir.mkdir(parents=True, exist_ok=True)
-        summary = run_lil_q(config, opt, verbose=False, iteration_logger=logger,
-                            run_json_path=(log_dir / 'run.json') if log_dir else None)[-1]
+        basis, c, _metrics, summary = run_lil_q(config, opt, verbose=False, iteration_logger=logger,
+                                                run_json_path=(log_dir / 'run.json') if log_dir else None)
+        if model_dir:
+            save_solution(model_dir, {'u': (basis, c)}, config, opt)
         if log_dir:
             logger.to_csv(log_dir / 'iterations.csv')
         rows = solve_rows(logger.rows)
@@ -106,7 +112,13 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
         )
     else:
         runner = {'LiL-N': run_lil_n, 'NiL-N': run_nil_n, 'NiL-Q': run_nil_q}[method]
-        summary = runner(config, opt, device=device, verbose=False)[-1]
+        result = runner(config, opt, device=device, verbose=False)
+        summary = result[-1]
+        if model_dir:
+            if method == 'LiL-N':
+                save_solution(model_dir, {'u': (result[0], result[1])}, config, opt)
+            else:
+                save_network(model_dir, result[0], config, opt)
         if method == 'NiL-Q':
             used, cap = summary['n_quasi_iters'], opt.max_quasi_iters_nn
             ls_cap = line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn, opt.max_line_searches)
@@ -161,7 +173,8 @@ def run_b8(out_dir, device='cpu', quick=False, verbose=True, **selection):
         t0 = time.perf_counter()
         try:
             row = run_one(case, guess, N, method, seed, device=device, quick=quick,
-                          log_root=out_dir / 'lilq_logs')
+                          log_root=out_dir / 'lilq_logs',
+                          model_dir=out_dir / 'models' / f"{case}_{guess}_P{N * N}_{method}_s{seed if seed != '' else 'na'}")
         except Exception:
             row = dict(case=case, guess=guess, P=N * N, method=method, seed=seed,
                        stopping_reason='failure', device=device, error=traceback.format_exc())

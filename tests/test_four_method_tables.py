@@ -170,7 +170,7 @@ def _fake_runner_factory(calls, fail_seeds=()):
         calls.append(config.init_seed)
         if config.init_seed in fail_seeds:
             raise RuntimeError("boom")
-        return "model", _FakeMetrics(), {
+        return torch.nn.Linear(2, 1), _FakeMetrics(), {
             "total_iterations": 1, "total_line_searches": 2, "training_time": 0.1,
             "final_loss": 0.5, "converged": True,
         }

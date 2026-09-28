@@ -31,6 +31,7 @@ import numpy as np
 from lilq.iteration_log import IterationLogger, last_solve_row
 from lilq.provenance import save_provenance
 from problems.beltrami import BeltramiConfig, solve_beltrami
+from lilq.saved_models import save_solution
 
 # Matches experiments/run_beltrami.py's paper config for N_vel=6.
 N_VEL, N_P = 6, 8
@@ -77,6 +78,7 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR):
     wall_clock_s = time.time() - t0
 
     logger.to_csv(out_dir / 'iterations.csv')
+    save_solution(out_dir, {f: (result[f'basis_{f}'], result[f'theta_{f}']) for f in 'uvwp'}, config)
     save_provenance(out_dir)
 
     last_row = last_solve_row(logger.rows)

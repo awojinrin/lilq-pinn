@@ -38,6 +38,7 @@ from lilq.blas_threads import pin_torch  # first: sets the BLAS threads before n
 import numpy as np
 
 from lilq.provenance import save_provenance
+from lilq.saved_models import save_solution
 from problems.darcy import (
     DarcyConfig, DarcyPhysics, delta_fv, run_nil_n_darcy, solve_fvm, solve_lilq_darcy, tpfa_residual,
 )
@@ -67,8 +68,14 @@ def _row(field, method, seed, P_h, P_fvm, p_bot, tpfa, time_s, final_loss, dtype
     }
 
 
-def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=True):
-    """Rows for one field: LiL, then NiL once per seed in ``nil_seeds``."""
+def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=True, model_root=None):
+    """Rows for one field: LiL, then NiL once per seed in ``nil_seeds``.
+
+    With ``model_root``, the LiL solution is saved in ``<model_root>/LiL_<field>/``
+    and each NiL run keeps ``<model_root>/NiL_<field>_s<seed>/``: a checkpoint
+    every 5,000 epochs while it trains (a rerun resumes from it), then the
+    trained networks (``network.pt``, ``problems.darcy.load_darcy_pinn``),
+    which a rerun loads instead of training again."""
     config = _config(field, order)
     physics = DarcyPhysics(config, verbose=False)
     P_fvm = solve_fvm(physics)
@@ -77,6 +84,11 @@ def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=T
 
     t0 = time.perf_counter()
     lil = solve_lilq_darcy(config, physics, verbose=False)
+    if model_root is not None:
+        save_solution(Path(model_root) / f'LiL_{field}',
+                      {'h_tilde': (lil['basis_h_tilde'], lil['c_h_tilde']),
+                       'u': (lil['basis_u'], lil['c_u']), 'v': (lil['basis_v'], lil['c_v'])},
+                      config, extra={'P_lil': lil['P_lil'], 'P_fvm': P_fvm})
     rows = [_row(field, 'LiL', '', lil['P_lil'], P_fvm, p_bot, tpfa,
                  time.perf_counter() - t0, '', 'float64')]
     if verbose:
@@ -84,7 +96,8 @@ def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=T
               f"(TPFA residual {tpfa['tpfa_residual_rel']:.1e} relative)", flush=True)
 
     for seed in nil_seeds:
-        nil = run_nil_n_darcy(config, physics, max_epochs=nil_epochs, seed=seed, verbose=False)
+        nil = run_nil_n_darcy(config, physics, max_epochs=nil_epochs, seed=seed, verbose=False,
+                              model_dir=Path(model_root) / f'NiL_{field}_s{seed}' if model_root else None)
         rows.append(_row(field, 'NiL', seed, nil['fields']['P'], P_fvm, p_bot, tpfa,
                          nil['training_time'], nil['final_loss'], 'float64'))
         if verbose:
@@ -111,7 +124,8 @@ def main():
         if not (DATA_DIR / f'perm_field_{field}.txt').exists():
             print(f"  [SKIP] perm_field_{field}.txt not found in {DATA_DIR}")
             continue
-        rows += compare_field(field, args.order, args.seeds if args.nil else (), args.nil_epochs)
+        rows += compare_field(field, args.order, args.seeds if args.nil else (), args.nil_epochs,
+                              model_root=out_dir / 'models')
         with open(out_dir / 'darcy_fv_comparison.csv', 'w', newline='') as f:  # after every field
             writer = csv.DictWriter(f, fieldnames=COLUMNS)
             writer.writeheader()

@@ -628,6 +628,7 @@ def run_table3_study(
     config: Optional[ComparisonConfig] = None,
     basis_keys: Optional[List[str]] = None,
     verbose: bool = True,
+    run_root=None,
 ) -> Dict[str, Dict]:
     """Section 3.6: run every basis configuration on the study's own grid
     (73x73 interior / 313 IC / 313 BC, equispaced, P=625 -- already what
@@ -640,6 +641,10 @@ def run_table3_study(
     for every basis that ran successfully (a failed basis is omitted, not
     included as None -- unlike ``run_all_bases``, since a per-row CSV has
     no natural "failed" row).
+
+    With ``run_root``, each basis also leaves ``<run_root>/<basis_key>/``
+    with its ``iterations.csv`` and its trained solution (``solution.pt``,
+    ``lilq.saved_models``).
     """
     if config is None:
         config = ComparisonConfig(N_x=25, N_t=25, disable_stopping_rule=True,
@@ -672,9 +677,14 @@ def run_table3_study(
             if verbose:
                 print(f"\n  Running: {desc}  ({nc} coefficients)")
             logger = IterationLogger()
-            solve_lilq_burgers_comparison(bk, basis, config, pts, verbose=False,
-                                          iteration_logger=logger)
+            res = solve_lilq_burgers_comparison(bk, basis, config, pts, verbose=False,
+                                                iteration_logger=logger)
             results[bk] = {'logger': logger, 'n_coefficients': nc}
+            if run_root is not None:
+                from lilq.saved_models import save_solution
+                logger.to_csv(Path(run_root) / bk / 'iterations.csv')
+                save_solution(Path(run_root) / bk, {'u': (basis, res['coefficients'])}, config,
+                              extra={'basis_key': bk, 'description': desc})
             if verbose:
                 final = logger.rows[-1]
                 cond = last_solve_row(logger.rows)
@@ -825,7 +835,7 @@ def main():
             disable_stopping_rule=True, max_quasi_iters=50,
             output_dir=args.output_dir,
         )
-        results = run_table3_study(config, basis_keys=args.bases, verbose=True)
+        results = run_table3_study(config, basis_keys=args.bases, verbose=True, run_root=out / 'runs')
         write_table3_csv(results, out / 'table3_basis_study.csv')
         save_provenance(out)
         print(f"\nAll outputs: {out}\nDONE.")

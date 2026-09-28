@@ -456,8 +456,10 @@ def lm_train(args):
                wall_s=wall_s,
                peak_gpu_bytes=(torch.cuda.max_memory_allocated() if device.type == "cuda" else None))
     f.close()
-    json.dump(run, open(os.path.join(args.out, "run.json"), "w"), indent=2)
+    # theta before run.json, which marks the run complete (reordered from the
+    # reference so a completed run always has its parameters).
     torch.save(theta.cpu(), os.path.join(args.out, "theta.pt"))
+    json.dump(run, open(os.path.join(args.out, "run.json"), "w"), indent=2)
     print(json.dumps({k: run[k] for k in ("end_reason", "steps", "final_loss", "eps_u", "eps_v", "eps_p_meanfree", "wall_s")}, indent=2))
     return run
 

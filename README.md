@@ -84,6 +84,23 @@ python experiments/run_darcy.py --fields S3 --order 32
 python experiments/run_burgers_basis_comparison.py
 ```
 
+### Reloading trained models
+
+The Package 1 drivers save every trained model next to its logs
+(`lilq/saved_models.py`): `solution.pt` for LiL runs, `network.pt` for NiL
+runs, F1's `model.pt` and F2's `theta.pt` for the Component A baselines, and
+the Darcy PINN's `network.pt`. Load them with the code at the commit in the
+run's `hardware.json`:
+
+```python
+from lilq.saved_models import load_solution, evaluate_field, load_network, load_f1, load_f2
+sol = load_solution('B_instrumentation/bl_gravity_P1024_cpu_paper')   # basis + coefficients + config
+S = evaluate_field(sol, 'u', x, t)
+net = load_network('B_instrumentation/four_method_jobs/bl_gravity_gpu/models/bl_gravity_P1024_NiL-N_s0_cuda')['model']
+from problems.darcy import load_darcy_pinn
+pinn, saved = load_darcy_pinn('B_instrumentation/darcy_fv/S1_s0/models/NiL_S1_s0')
+```
+
 ## Project Structure
 
 ```

@@ -334,9 +334,11 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
                wall_s=wall, eps_u=eu, eps_v=ev, eps_p=ep, eps_p_meanfree=epm, final_loss=final_loss,
                weights=weights,
                peak_gpu_bytes=torch.cuda.max_memory_allocated() if device.type == "cuda" else None)
+    # The model before run.json: run.json marks the run complete, so a run
+    # marked complete always has its model (lilq.saved_models.load_f1).
+    torch.save({k: v.cpu() for k, v in model.state_dict().items()}, os.path.join(out_dir, "model.pt"))
     with open(os.path.join(out_dir, "run.json"), "w") as f:
         json.dump(run, f, indent=2, default=str)
-    torch.save({k: v.cpu() for k, v in model.state_dict().items()}, os.path.join(out_dir, "model.pt"))
     return run
 
 

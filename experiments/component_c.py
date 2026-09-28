@@ -23,7 +23,7 @@ Untimed (Addendum v2.1 Section 2): the laptop's CPU.
 
 Outputs under ``--root`` (the package's ``C_oversampling/``)::
 
-    runs/<benchmark>_P<P>_r<ratio>_<distribution>[_s<seed>]/{iterations.csv, run.json}
+    runs/<benchmark>_P<P>_r<ratio>_<distribution>[_s<seed>]/{iterations.csv, run.json, solution.pt}
     results/oversampling.csv
     figures/<benchmark>_P<P>.pdf, .csv
 
@@ -54,6 +54,7 @@ import numpy as np
 from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
 from lilq.run_metadata import first_stall_iteration
+from lilq.saved_models import save_solution
 
 BENCHMARKS = (('kovasznay', 10), ('kovasznay', 20), ('bratu', 10), ('bratu', 15))   # (name, N): P = 3N^2 / N^2
 RATIOS = (1, 1.5, 2, 3, 5, 10, 20)
@@ -124,7 +125,8 @@ def run_one(benchmark, N, ratio, distribution, seed, run_dir, quick=False):
         from problems.kovasznay import solve_kovasznay
         if quick:
             config = dataclasses.replace(config, max_iter=3)
-        solve_kovasznay(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json')
+        r = solve_kovasznay(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json')
+        save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uvp'}, config)
         # The solver stops when the relative coefficient change drops below tol
         # (also possible on the last allowed iteration).
         stopping = 'tolerance' if solve_rows(logger.rows)[-1]['rel_dbeta'] < config.tol else 'K_max'
@@ -132,8 +134,9 @@ def run_one(benchmark, N, ratio, distribution, seed, run_dir, quick=False):
         from problems.bratu import run_lil_q
         if quick:
             opt = dataclasses.replace(opt, max_quasi_iters_lil=3)
-        summary = run_lil_q(config, opt, verbose=False, iteration_logger=logger,
-                            run_json_path=run_dir / 'run.json')[-1]
+        basis, c, _metrics, summary = run_lil_q(config, opt, verbose=False, iteration_logger=logger,
+                                                run_json_path=run_dir / 'run.json')
+        save_solution(run_dir, {'u': (basis, c)}, config, opt)
         stopping = 'target' if summary['converged'] else 'K_max'
     logger.to_csv(run_dir / 'iterations.csv')
     solves, last = solve_rows(logger.rows), logger.rows[-1]

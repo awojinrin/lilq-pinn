@@ -55,6 +55,7 @@ from lilq.four_method_log import (
     FourMethodLogger, classify_stopping_reason, row_key, subsample_loss_history,
 )
 from lilq.provenance import save_provenance
+from lilq.saved_models import save_network, save_solution
 from lilq.solvers import line_search_cap
 
 from problems.bratu import (
@@ -124,6 +125,12 @@ def _apply_quick_budgets(opt, max_iterations=15, max_line_searches=200,
 # Run + log
 # ─────────────────────────────────────────────────────────────────────────────
 
+def model_dir_name(row):
+    """``<benchmark>_P<P>_<method>_s<seed>_<device>``, the folder of a row's saved model."""
+    seed = 'na' if row['seed'] in (None, '') else row['seed']
+    return f"{row['benchmark']}_P{row['P']}_{row['method']}_s{seed}_{row['device']}"
+
+
 def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                  seeds, devices, verbose=True, csv_path=None, skip_keys=frozenset()):
     """One row per (seed, device). ``seeds=None`` means "run once at
@@ -135,6 +142,11 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
     continues. With ``csv_path``, the whole CSV is rewritten after every
     row, so a killed job loses at most the run in progress. Rows whose key
     is in ``skip_keys`` (already completed, on resume) are not rerun.
+
+    Every completed run's trained model is saved under
+    ``<csv_path's folder>/models/<benchmark>_P<P>_<method>_s<seed>_<device>/``
+    (``lilq.saved_models``: ``network.pt`` for NiL-N/NiL-Q, ``solution.pt``
+    for LiL-N), after the run's clock stops and before its row is written.
     """
     actual_seeds = list(seeds) if seeds else [None]
 
@@ -164,6 +176,16 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 continue
             elapsed = time.perf_counter() - t0
             metrics, summary = result[-2], result[-1]
+            save_error = {}
+            if csv_path is not None:
+                model_dir = Path(csv_path).parent / 'models' / model_dir_name(base)
+                try:       # a failed save is recorded in the row; it does not stop the sweep
+                    if method_name == 'LiL-N':
+                        save_solution(model_dir, {'u': (result[0], result[1])}, run_config, opt)
+                    else:
+                        save_network(model_dir, result[0], run_config, opt)
+                except Exception:
+                    save_error = {'error': 'model not saved: ' + traceback.format_exc()}
 
             if method_name == 'NiL-Q':
                 iterations_used = summary['n_quasi_iters']
@@ -192,6 +214,7 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 converged=summary['converged'], stopping_reason=stopping_reason,
                 iterations_cap=iterations_cap, line_searches_cap=ls_cap,
                 loss_history_every_10=subsample_loss_history(metrics.to_dict()),
+                **save_error,
             )
             if csv_path is not None:
                 logger.to_csv(csv_path)

@@ -47,7 +47,13 @@ CLUSTER=grace bash scripts/cluster/submit_all.sh
 
 To resubmit one script (after a walltime kill, say), use the wrapper so the
 profile's resources apply: `bash scripts/cluster/sbatch.sh scripts/cluster/20_four_method_gpu.slurm --array=2`.
-Every job resumes where it stopped.
+Every job resumes where it stopped: completed runs are skipped, and a B9
+Darcy network resumes from its last 5,000-epoch checkpoint.
+
+Every run saves its trained model next to its logs (`solution.pt`,
+`network.pt`, F1's `model.pt`, F2's `theta.pt`); see "Reloading trained
+models" in the top-level README. Keep `package1_results/` whole when copying
+it off the cluster: the models are what later figures are made from.
 
 | Script | What | Class | Rough duration |
 |---|---|---|---|

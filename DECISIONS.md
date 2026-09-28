@@ -17,6 +17,43 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-28 -- Every trained model is saved, reloadable; long runs checkpoint
+
+Nothing will be rerun after the Grace pass, so every run keeps what later
+analysis and figures need (`lilq/saved_models.py`):
+
+- **LiL runs** (Component B's Section 3.3 runs on every benchmark, LiL-N in
+  the four-method sweep and B8, LiL-Q in B8, Component C, the B6 basis
+  study, Section 3.7, B9's LiL): `solution.pt` next to the run's logs,
+  holding the basis objects, the final coefficients and the configuration
+  objects. `load_solution`, `evaluate_field`.
+- **Network runs** (NiL-N and NiL-Q in the four-method sweep and B8):
+  `models/<run>/network.pt`, the network, its `state_dict` and the
+  configuration objects. `load_network`.
+- **Component A:** F1's `model.pt` and F2's `theta.pt` were already saved;
+  they are now written before `run.json` (the completion marker), and
+  `load_f1`, `load_f2`, `predict_f2` rebuild the models from `run.json`.
+- **B9's Darcy PINN** (2-4 h per run): a checkpoint every 5,000 epochs
+  (networks, Adam and scheduler states, history, time so far); a rerun
+  of the job resumes from it and continues exactly as if it had not
+  stopped (a test crashes a run and checks the resumed weights are
+  bit-identical). The trained networks go to `network.pt`
+  (`problems.darcy.load_darcy_pinn`), which a rerun loads instead of
+  training again.
+
+Models are saved when a run ends, outside every timed phase, and before
+the row or file that marks the run complete, so a completed run always has
+its model. Runs other than B9's are at most minutes to an hour, and a
+crash reruns only the run in progress (the drivers already resume per
+run); a timed run cannot be resumed mid-way without corrupting its time.
+A failed save in the four-method sweep is recorded in the row's `error`
+column instead of stopping the sweep. All files are `torch.save` pickles of
+this repository's classes, loadable on a CPU-only machine, with the code
+at the commit in the run's `hardware.json`. Sizes: kilobytes to a few MB
+per run, about 25 MB for a Darcy checkpoint.
+
+---
+
 ## 2026-09-28 -- Buckley-Leverett test error: against a reference solution, not the residual
 
 The spec sets no test metric for Buckley-Leverett; the log had used the

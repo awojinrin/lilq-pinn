@@ -833,6 +833,7 @@ class DarcyPINN:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.device = torch.device(device)
         self.dtype = dtype
+        self.hidden_dim, self.num_layers, self.seed = hidden_dim, num_layers, seed
         if seed is not None:
             torch.manual_seed(seed)
 
@@ -938,14 +939,36 @@ class DarcyPINN:
                        'continuity': lCE.item(), 'bc_bot': lBCD_bot.item(),
                        'bc_top': lBCD_top.item(), 'bc_lr': lBCN_lr.item()}
 
+    def network_state(self) -> Dict:
+        """The three networks' weights (CPU copies) and what rebuilds them."""
+        return {'net_P': {k: v.detach().cpu().clone() for k, v in self.net_P.state_dict().items()},
+                'net_U': {k: v.detach().cpu().clone() for k, v in self.net_U.state_dict().items()},
+                'net_V': {k: v.detach().cpu().clone() for k, v in self.net_V.state_dict().items()},
+                'hidden_dim': self.hidden_dim, 'num_layers': self.num_layers,
+                'seed': self.seed, 'dtype': str(self.dtype)}
+
+    def load_network_state(self, state: Dict) -> None:
+        for name in ('net_P', 'net_U', 'net_V'):
+            getattr(self, name).load_state_dict(state[name])
+
     def train(self, max_epochs: int = 150000, lr: float = 1e-3,
-              log_every: int = 5000, verbose: bool = True) -> Dict:
+              log_every: int = 5000, verbose: bool = True,
+              checkpoint_path=None, checkpoint_every: int = 5000) -> Dict:
         """Train all three networks with Adam + cosine annealing.
 
-        Returns dict with 'history' (list of per-epoch loss dicts) and
-        'final_loss'.
+        With ``checkpoint_path``, the networks, the optimizer and scheduler
+        states, the epoch and the history are saved there every
+        ``checkpoint_every`` epochs (atomically, overwriting), and a
+        checkpoint found there at the start is resumed from: the run then
+        continues as if it had not stopped (the loop has no randomness),
+        and ``training_time`` adds up the time of every segment.
+
+        Returns dict with 'history' (list of per-epoch loss dicts),
+        'final_loss', 'training_time', and 'resumed_at' (the epochs a
+        checkpoint was resumed from).
         """
         import torch
+        from lilq.saved_models import load_checkpoint, save_checkpoint
 
         all_params = (list(self.net_P.parameters()) +
                       list(self.net_U.parameters()) +
@@ -954,10 +977,24 @@ class DarcyPINN:
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=max_epochs, eta_min=1e-5)
 
-        history = []
+        history, resumed_at, start, time_before = [], [], 0, 0.0
+        ckpt = load_checkpoint(checkpoint_path) if checkpoint_path else None
+        if ckpt is not None:
+            if (ckpt['max_epochs'], ckpt['lr']) != (max_epochs, lr):
+                raise ValueError(f"checkpoint {checkpoint_path} is for max_epochs={ckpt['max_epochs']}, "
+                                 f"lr={ckpt['lr']}, not {max_epochs}, {lr}")
+            self.load_network_state(ckpt['networks'])
+            optimizer.load_state_dict(ckpt['optimizer'])
+            scheduler.load_state_dict(ckpt['scheduler'])
+            history, time_before = ckpt['history'], ckpt['training_time']
+            resumed_at = ckpt['resumed_at'] + [ckpt['epoch']]
+            start = ckpt['epoch'] + 1
+            if verbose:
+                print(f"  Resuming from epoch {ckpt['epoch']} ({checkpoint_path})")
+
         t0 = time.time()
 
-        for epoch in range(max_epochs + 1):
+        for epoch in range(start, max_epochs + 1):
             optimizer.zero_grad()
             total, components = self._compute_loss()
             total.backward()
@@ -973,14 +1010,20 @@ class DarcyPINN:
                           f"Dx={components['darcy_x']:.3e}  "
                           f"Dy={components['darcy_y']:.3e}  "
                           f"CE={components['continuity']:.3e}")
+            if checkpoint_path and epoch % checkpoint_every == 0 and epoch < max_epochs:
+                save_checkpoint(checkpoint_path, {
+                    'epoch': epoch, 'max_epochs': max_epochs, 'lr': lr,
+                    'networks': self.network_state(), 'optimizer': optimizer.state_dict(),
+                    'scheduler': scheduler.state_dict(), 'history': history,
+                    'training_time': time_before + time.time() - t0, 'resumed_at': resumed_at})
 
-        elapsed = time.time() - t0
+        elapsed = time_before + time.time() - t0
         if verbose:
             print(f"  Training complete: {elapsed:.1f}s, "
                   f"final loss={total.item():.4e}")
 
         return {'history': history, 'final_loss': total.item(),
-                'training_time': elapsed}
+                'training_time': elapsed, 'resumed_at': resumed_at}
 
     def predict(self, x: np.ndarray, y: np.ndarray) -> Dict:
         """Evaluate all fields at physical coordinates.
@@ -1000,11 +1043,37 @@ class DarcyPINN:
                 'V': V.reshape(x.shape)}
 
 
+def load_darcy_pinn(path, config: DarcyConfig = None, physics: DarcyPhysics = None, device='cpu'):
+    """``(pinn, saved)``: a trained DarcyPINN from a ``network.pt`` written by
+    :func:`run_nil_n_darcy` (or its folder); ``pinn.predict(x, y)``
+    evaluates it. ``config`` defaults to the saved one, ``physics`` to
+    ``DarcyPhysics(config)``."""
+    from pathlib import Path
+    from lilq.saved_models import load_checkpoint
+    path = Path(path)
+    saved = load_checkpoint(path / 'network.pt' if path.is_dir() else path)
+    config = config or saved['config']
+    physics = physics or DarcyPhysics(config, verbose=False)
+    nets = saved['networks']
+    dtype = getattr(torch, nets['dtype'].replace('torch.', ''))
+    pinn = DarcyPINN(config, physics, hidden_dim=nets['hidden_dim'], num_layers=nets['num_layers'],
+                     device=device, dtype=dtype, seed=nets['seed'])
+    pinn.load_network_state(nets)
+    return pinn, saved
+
+
 def run_nil_n_darcy(config: DarcyConfig, physics: DarcyPhysics,
                     max_epochs: int = 150000, hidden_dim: int = 200,
                     num_layers: int = 8, device=None,
-                    verbose: bool = True, dtype=torch.float64, seed=None) -> Dict:
+                    verbose: bool = True, dtype=torch.float64, seed=None,
+                    model_dir=None) -> Dict:
     """Convenience wrapper: create, train, and evaluate a DarcyPINN.
+
+    With ``model_dir``: training checkpoints to ``<model_dir>/checkpoint.pt``
+    every 5,000 epochs and resumes from it after a crash or a walltime kill;
+    the trained networks are saved to ``<model_dir>/network.pt``
+    (:func:`load_darcy_pinn`), and the checkpoint is then removed; a
+    ``network.pt`` already there is loaded instead of training again.
 
     Returns dict with training metrics and field predictions at cell centres.
     """
@@ -1015,7 +1084,22 @@ def run_nil_n_darcy(config: DarcyConfig, physics: DarcyPhysics,
         print(f"DarcyPINN: 3 networks x {hidden_dim}w x {num_layers}L "
               f"(SiLU), ~{n_params} params")
 
-    result = pinn.train(max_epochs=max_epochs, verbose=verbose)
+    from pathlib import Path
+    from lilq.saved_models import load_checkpoint, save_checkpoint
+    final_path = Path(model_dir) / 'network.pt' if model_dir else None
+    saved = load_checkpoint(final_path) if final_path else None
+    if saved is not None:
+        if saved['max_epochs'] != max_epochs:
+            raise ValueError(f"{final_path} was trained for {saved['max_epochs']} epochs, not {max_epochs}")
+        pinn.load_network_state(saved['networks'])
+        result = {k: saved[k] for k in ('history', 'final_loss', 'training_time', 'resumed_at')}
+    else:
+        ckpt_path = Path(model_dir) / 'checkpoint.pt' if model_dir else None
+        result = pinn.train(max_epochs=max_epochs, verbose=verbose, checkpoint_path=ckpt_path)
+        if final_path:
+            save_checkpoint(final_path, {'networks': pinn.network_state(), 'max_epochs': max_epochs,
+                                         'config': config, **result})
+            ckpt_path.unlink(missing_ok=True)
 
     cfg = config
     x_c = (np.arange(cfg.NX_CELLS) + 0.5) * (physics.LX / cfg.NX_CELLS)

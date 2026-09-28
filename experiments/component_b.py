@@ -49,6 +49,7 @@ import numpy as np
 
 from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
+from lilq.saved_models import save_solution
 from lilq.run_metadata import first_stall_iteration
 
 DEFAULT_OUT_ROOT = Path(__file__).resolve().parent.parent / 'results' / 'package1'
@@ -119,10 +120,11 @@ def _scalar_runs(benchmark, smoke, passes):
 
             def execute(run_dir, config=config, run_opt=run_opt, run_lil_q=run_lil_q):
                 logger = IterationLogger()
-                _basis, _c, _metrics, summary = run_lil_q(
+                basis, c, _metrics, summary = run_lil_q(
                     config, run_opt, verbose=False, iteration_logger=logger,
                     run_json_path=run_dir / 'run.json')
                 logger.to_csv(run_dir / 'iterations.csv')
+                save_solution(run_dir, {'u': (basis, c)}, config, run_opt)
                 return {'final_loss': summary['final_loss'], 'converged': summary['converged'],
                         'R_tol': run_opt.R_tol, 'K_max': run_opt.max_quasi_iters_lil,
                         **_log_summary(logger)}
@@ -147,6 +149,7 @@ def _kovasznay_runs(smoke, passes, devices):
                     r = solve_kovasznay(config, verbose=False, iteration_logger=logger,
                                         run_json_path=run_dir / 'run.json')
                     logger.to_csv(run_dir / 'iterations.csv')
+                    save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uvp'}, config)
                     return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': r['solve_time_total'],
                             'rel_l2_u': r['rel_l2_u'], 'rel_l2_v': r['rel_l2_v'], 'rel_l2_p': r['rel_l2_p'],
                             'tol': config.tol, 'K_max': config.max_iter, **_log_summary(logger)}
@@ -166,6 +169,7 @@ def _elasticity_runs(smoke):
             r = solve_elasticity(config, verbose=False, iteration_logger=logger,
                                  run_json_path=run_dir / 'run.json')
             logger.to_csv(run_dir / 'iterations.csv')
+            save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uv'}, config)
             return {k: r[k] for k in ('solve_time_qr', 'solve_time_total', 'pde_mse', 'rel_l2_ux',
                                       'rel_l2_uy', 'rel_l2_sxx', 'rel_l2_syy', 'rel_l2_sxy')} | _log_summary(logger)
         runs.append(Run('elasticity', f'P{2 * N * N}', 'cpu', 'paper', execute))
@@ -186,6 +190,7 @@ def _beltrami_runs(smoke):
         r = solve_beltrami(config, verbose=False, iteration_logger=logger,
                            run_json_path=run_dir / 'run.json')
         logger.to_csv(run_dir / 'iterations.csv')
+        save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uvwp'}, config)
         return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': r['solve_time_total'],
                 'rel_l2_u': r['rel_l2_u'], 'rel_l2_v': r['rel_l2_v'], 'rel_l2_w': r['rel_l2_w'],
                 'rel_l2_p': r['rel_l2_p'], 'snapshots': r['snapshots'], **_log_summary(logger)}
@@ -206,6 +211,9 @@ def _darcy_runs(smoke):
             r = solve_lilq_darcy(config, DarcyPhysics(config, verbose=False), verbose=False,
                                  iteration_logger=logger, run_json_path=run_dir / 'run.json')
             logger.to_csv(run_dir / 'iterations.csv')
+            save_solution(run_dir, {'h_tilde': (r['basis_h_tilde'], r['c_h_tilde']),
+                                    'u': (r['basis_u'], r['c_u']), 'v': (r['basis_v'], r['c_v'])},
+                          config, extra={'P_lil': r['P_lil'], 'P_fvm': r['P_fvm']})
             return {'order': config.ORDER_H, **r['metrics'], **_log_summary(logger)}
         runs.append(Run('darcy', field, 'cpu', 'paper', execute))
     return runs
