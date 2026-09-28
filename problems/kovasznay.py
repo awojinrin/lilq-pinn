@@ -823,7 +823,18 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 'pressure_pin': w_pin,
             },
             collocation_construction={
-                'method': 'equispaced tensor grid',
+                # Component C runs this solver with the CGL and scattered
+                # families too; record what was actually used.
+                'method': {'uniform': 'equispaced tensor grid',
+                           'cgl': 'Chebyshev-Gauss-Lobatto tensor grid',
+                           'scattered': 'uniform random scattered points'}.get(
+                               config.sampling, config.sampling),
+                'sampling': config.sampling,
+                # The seed only affects the scattered family; the tensor
+                # grids are deterministic.
+                'seed': config.seed if config.sampling == 'scattered' else None,
+                'collocation_floor': config.collocation_floor,
+                'n_interior': int(n_pde), 'n_per_edge': int(n_bc_edge),
                 'N_x': config.N_x, 'N_y': config.N_y, 'k_ratio': config.k_ratio,
                 'collocation_ratios': list(config.collocation_ratios),
             },
