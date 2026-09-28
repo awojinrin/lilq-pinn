@@ -6,7 +6,7 @@
 # lilq-resources: shared-gpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-b8
 #SBATCH --array=0-3
-#SBATCH --time=16:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=logs/%x.%A_%a.out
 
 source scripts/cluster/env.sh

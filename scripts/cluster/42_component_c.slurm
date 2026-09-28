@@ -2,7 +2,7 @@
 # Component C (untimed): the oversampling sweep, 196 LiL-Q runs, CPU.
 # lilq-resources: cpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-C
-#SBATCH --time=16:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=logs/%x.%j.out
 
 source scripts/cluster/env.sh

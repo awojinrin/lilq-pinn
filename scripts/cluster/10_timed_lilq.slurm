@@ -6,7 +6,7 @@
 #   timings, and Section 3.7 (Beltrami pinned) -- its wall-clock.
 # lilq-resources: timed   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-timed-lilq
-#SBATCH --time=06:00:00
+#SBATCH --time=04:00:00
 #SBATCH --output=logs/%x.%j.out
 
 source scripts/cluster/env.sh

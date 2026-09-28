@@ -4,7 +4,7 @@
 # lilq-resources: timed   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-b4-cpu
 #SBATCH --array=0-3
-#SBATCH --time=24:00:00
+#SBATCH --time=03:00:00
 #SBATCH --output=logs/%x.%A_%a.out
 
 source scripts/cluster/env.sh
