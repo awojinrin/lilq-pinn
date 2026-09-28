@@ -332,7 +332,16 @@ def _lstsq_cpu_gels(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     """
     A_f = np.asfortranarray(A, dtype=np.float64)
     b_f = np.asfortranarray(b.reshape(-1, 1), dtype=np.float64)
-    _lqr, x_out, info = lapack.dgels(A_f, b_f)
+    m, n_cols = A_f.shape
+    # Query LAPACK's optimal workspace. SciPy's default lwork is the minimum
+    # (min(m,n) + max(m,n,nrhs)), which forces the unblocked QR and made the
+    # CPU gels timing 4-12x slower than LAPACK's blocked algorithm
+    # (27.4 s vs 2.35 s at 5,564 x 1,875).
+    work, info_q = lapack.dgels_lwork(m, n_cols, 1)
+    if info_q != 0:
+        raise RuntimeError(f"LAPACK dgels_lwork failed with info={info_q}")
+    lwork = max(int(np.real(work)), min(m, n_cols) + max(m, n_cols, 1))
+    _lqr, x_out, info = lapack.dgels(A_f, b_f, lwork=lwork)
     if info != 0:
         raise RuntimeError(f"LAPACK dgels failed with info={info}")
     n = A.shape[1]
