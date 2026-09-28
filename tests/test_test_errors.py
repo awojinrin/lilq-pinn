@@ -146,19 +146,16 @@ def test_burgers_terminal_residual_matches_full_evaluation():
     assert logger.rows[-1]["eps_u"] == pytest.approx(expected, rel=1e-10)
 
 
-def test_bl_terminal_residual_matches_full_evaluation():
-    from problems.buckley_leverett import BLConfig, BLOptConfig, BLPhysics, TEST_GRID, run_lil_q
+def test_bl_terminal_error_matches_full_evaluation():
+    from problems.buckley_leverett import BLConfig, BLOptConfig, TEST_GRID, reference_solution, run_lil_q
     config = BLConfig(N_x=6, N_t=6)
     logger = IterationLogger()
     basis, c, _, _ = run_lil_q(config, BLOptConfig(max_quasi_iters_lil=5), verbose=False,
                                iteration_logger=logger)
-    physics = BLPhysics(config)
     xs = np.linspace(*config.x_domain, TEST_GRID[0])
     ts = np.linspace(0.0, config.T_final, TEST_GRID[1])
-
-    def residual(u, ux, ut, uxx, uyy):
-        fp = physics.flux_derivative(torch.tensor(u, dtype=torch.float64)).numpy()
-        return ut + fp * ux + physics.D * uxx
-
-    expected = _residual_ms_on_grid(basis, c, xs, ts, residual)
-    assert logger.rows[-1]["eps_u"] == pytest.approx(expected, rel=1e-10)
+    X, T = np.meshgrid(xs, ts, indexing="ij")
+    S = (basis.evaluate(X.ravel(), T.ravel()) @ c).reshape(X.shape)
+    S_ref = reference_solution(config)
+    assert logger.rows[-1]["eps_u"] == pytest.approx(np.linalg.norm(S - S_ref) / np.linalg.norm(S_ref), rel=1e-10)
+    assert logger.rows[-1]["maxerr_u"] == pytest.approx(np.abs(S - S_ref).max(), rel=1e-10)

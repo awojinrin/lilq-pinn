@@ -17,6 +17,7 @@ When N_g ≠ 0 (gravity, Li & Tchelepi 2015):
 BCs:  S(0,t) = S_left,  S(1,t) = S_right
 """
 
+import functools
 import os
 import numpy as np
 import torch
@@ -503,24 +504,79 @@ def _prepare_lil_matrices(config: BLConfig, physics: BLPhysics, basis, pts):
 # ─────────────────────────────────────────────────────────────────────────────
 
 TEST_GRID = (201, 201)  # not set by the spec for BL; same density as Bratu's
+REFERENCE_INTERVALS = 4000  # finite-difference reference: 20 intervals per test-grid spacing
+
+
+def reference_solution(config: BLConfig, n_intervals: int = REFERENCE_INTERVALS):
+    """The saturation on the uniform ``TEST_GRID`` over [x_domain] x [0, T]
+    (array ``[i_x, j_t]``), from a finite-difference method-of-lines solve
+    of the same PDE, S_t + f(S)_x + D S_xx = 0 (D < 0: diffusion |D|), with
+    the same initial and boundary data: second-order central differences on
+    ``n_intervals`` equal intervals, the Dirichlet values at both ends, BDF
+    time stepping at rtol 1e-9. The problem has no closed-form solution;
+    doubling ``n_intervals`` from 2,000 to 4,000 changes the result by about
+    1e-6 relative (tests). Cached per configuration."""
+    return _reference_cached(config.N_g, config.M_param, config.D_coef, config.S_left, config.S_right,
+                             config.T_final, tuple(config.x_domain), int(n_intervals))
+
+
+@functools.lru_cache(maxsize=8)
+def _reference_cached(N_g, M_param, D_coef, S_left, S_right, T_final, x_domain, n_intervals):
+    import scipy.sparse as sp
+    from scipy.integrate import solve_ivp
+    cfg = BLConfig(N_g=N_g, M_param=M_param, D_coef=D_coef, S_left=S_left, S_right=S_right,
+                   T_final=T_final, x_domain=x_domain)
+    physics = BLPhysics(cfg)
+    nx, nt = TEST_GRID
+    if n_intervals % (nx - 1):
+        raise ValueError(f"n_intervals must be a multiple of {nx - 1}")
+    x = np.linspace(*x_domain, n_intervals + 1)
+    h = x[1] - x[0]
+    t_eval = np.linspace(0.0, T_final, nt)
+
+    def flux(S):
+        return physics.flux(torch.from_numpy(S)).numpy()
+
+    def rhs(t, u):
+        S = np.concatenate([[S_left], u, [S_right]])
+        F = flux(S)
+        return -(F[2:] - F[:-2]) / (2.0 * h) - D_coef * (S[2:] - 2.0 * S[1:-1] + S[:-2]) / h ** 2
+
+    S0 = np.asarray(physics.initial_condition(x[1:-1]), dtype=np.float64)
+    n = n_intervals - 1
+    pattern = sp.diags([np.ones(n - 1), np.ones(n), np.ones(n - 1)], [-1, 0, 1], format='csr')
+    sol = solve_ivp(rhs, (0.0, T_final), S0, method='BDF', t_eval=t_eval,
+                    rtol=1e-9, atol=1e-11, jac_sparsity=pattern)
+    if not sol.success:
+        raise RuntimeError(f"BL reference solve failed: {sol.message}")
+    U = np.vstack([np.full(nt, S_left), sol.y, np.full(nt, S_right)])
+    # t = 0: the initial condition itself, including at the two end points.
+    U[:, 0] = physics.initial_condition(x)
+    step = n_intervals // (nx - 1)
+    U = U[::step, :]
+    U.setflags(write=False)
+    return U
 
 
 def make_test_error_fn(basis, config: BLConfig):
-    """``beta -> {'eps_u': mean square of S_t + f'(S) S_x + D S_xx}`` on a
-    uniform 201 x 201 grid over [x_domain] x [0, T] -- the same residual
-    the solver's own loss uses (a residual-MSE benchmark)."""
-    physics = BLPhysics(config)
+    """``beta -> {'eps_u', 'maxerr_u'}``: the relative L2 error and the
+    maximum absolute error of the saturation against
+    :func:`reference_solution`, on the uniform ``TEST_GRID`` over
+    [x_domain] x [0, T].
+
+    Not the PDE residual's mean square on that grid (the earlier metric):
+    for the steep gravity front it was dominated by a few points at t = 0
+    and on the domain edges, outside the collocation points' extent, and
+    ranked the methods opposite to their actual errors (DECISIONS.md,
+    2026-09-28)."""
     xs = np.linspace(*config.x_domain, TEST_GRID[0])
     ts = np.linspace(0.0, config.T_final, TEST_GRID[1])
+    S_ref = reference_solution(config)
+    norm_ref = float(np.linalg.norm(S_ref))
 
     def test_errors(beta):
-        S = tensor_grid_values(basis, beta, [xs, ts])
-        S_x = tensor_grid_values(basis, beta, [xs, ts], [1, 0])
-        S_t = tensor_grid_values(basis, beta, [xs, ts], [0, 1])
-        S_xx = tensor_grid_values(basis, beta, [xs, ts], [2, 0])
-        f_p = physics.flux_derivative(torch.tensor(S.ravel(), dtype=torch.float64)).numpy()
-        res = S_t + f_p.reshape(S.shape) * S_x + physics.D * S_xx
-        return {'eps_u': float(np.mean(res ** 2))}
+        E = tensor_grid_values(basis, beta, [xs, ts]) - S_ref
+        return {'eps_u': float(np.linalg.norm(E)) / norm_ref, 'maxerr_u': float(np.max(np.abs(E)))}
 
     return test_errors
 

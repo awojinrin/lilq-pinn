@@ -17,6 +17,46 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-28 -- Buckley-Leverett test error: against a reference solution, not the residual
+
+The spec sets no test metric for Buckley-Leverett; the log had used the
+PDE residual's mean square on a uniform 201 x 201 grid, as for Bratu. On
+the gravity case it ranked LiL-Q ten times worse than LiL-N at P = 1,024
+(3.6 against 0.65) although LiL-Q's training loss is lower. Investigated
+before the Grace runs (P = 1,024, `cos_fourier`, paper settings):
+
+- On the collocation points the PDE residual's mean square is 0.0072
+  (LiL-Q) and 0.0083 (LiL-N), in line with the training losses: the
+  solves are correct.
+- On the test grid, 1% of the points carry 99% of the metric. They lie
+  on the t = 0 line and in the first few time levels, where the IC's
+  steepness-100 front has second derivatives no 32-mode basis resolves
+  (mean r^2 over x: 91 at t = 0, 0.02 by t = 0.0175, for both methods),
+  and on the domain edges, outside the collocation points' extent (t up
+  to 0.1725 of 0.175; LiL-Q's r^2 reaches 1.6e4 at the corner x = 1,
+  t = T). The metric measured behaviour where no method is trained, and
+  it did not converge with the grid (3.6, 2.5, 2.0 at 201, 401, 801).
+- Against a finite-difference reference solution the two methods are
+  about equally accurate: relative L2 error of S 1.16e-2 (LiL-Q) and
+  1.05e-2 (LiL-N); max error 0.045 and 0.080.
+
+Change: `eps_u` is now the relative L2 error of S, and `maxerr_u` the
+maximum absolute error, against `reference_solution(config)` on the same
+201 x 201 grid. The reference solves the same PDE with the same data by
+second-order central differences on 4,000 intervals (method of lines, BDF,
+rtol 1e-9); 2,000 against 4,000 intervals differ by 1.3e-6 relative, and
+it takes 0.3 s. It is saved under `reference/bl*.npz` (field `S`). At the
+paper sizes, LiL-Q's eps_u falls with P in both cases (viscous 9.9e-2,
+3.8e-2, 9.0e-4, 1.9e-4; gravity 1.2e-1, 3.2e-2, 2.1e-2, 1.2e-2). Bratu and
+Burgers keep the residual metric: there it tracks the training loss at
+every size (checked).
+
+Affects only the logged test-error columns of Buckley-Leverett runs; the
+manuscript reports no test metric for this benchmark (Tables 5, 6: target
+loss, iterations, time).
+
+---
+
 ## 2026-09-25 -- Everything on the cluster; one set of job scripts for Grace or FASTER
 
 The user's rule: all runs on one platform. The untimed work the addendum

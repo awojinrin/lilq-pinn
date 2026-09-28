@@ -476,7 +476,8 @@ def save_reference(out_root: Path) -> Path:
                         t=np.linspace(0.0, uc.T_final, burgers.TEST_GRID[1]))
     for name, cfg in (('bl', bl.BLConfig()), ('bl_gravity', bl.BLConfig.with_gravity())):
         np.savez_compressed(ref / f'{name}.npz', x=np.linspace(*cfg.x_domain, bl.TEST_GRID[0]),
-                            t=np.linspace(0.0, cfg.T_final, bl.TEST_GRID[1]))
+                            t=np.linspace(0.0, cfg.T_final, bl.TEST_GRID[1]),
+                            S=bl.reference_solution(cfg))   # finite-difference reference, [i_x, j_t]
 
     ec = elasticity.ElasticityConfig()
     ep = elasticity.ElasticityPhysics(ec)
