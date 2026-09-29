@@ -18,7 +18,9 @@ constants (the same ones the rest of this codebase uses). A run folder
 whose ``summary.json`` exists is complete and is skipped on rerun, so an
 interrupted job resumes where it stopped; a run that raises writes
 ``error.txt`` (with the traceback) and the driver moves on. Runs execute
-one at a time, after one untimed warm-up per device.
+one at a time, after one untimed warm-up per device; every paper-pass (timed)
+run is also preceded by one complete untimed run of the same configuration
+on the same device (the advisor's reply to wave 1, item 2.2).
 
 Usage::
 
@@ -103,6 +105,21 @@ SHORT_RUN_S = 1.0          # runs shorter than this are timed 5 times (Addendum 
 SHORT_RUN_REPEATS = 5
 
 
+def _warm_up_run(pass_, run_once):
+    """The advisor's reply to wave 1, item 2.2: the first solve at each new
+    matrix size carries a one-time setup cost (0.6-1.35 s on the GPU against
+    5-40 ms afterwards; 1.35 s against 0.60 s on the CPU at Kovasznay
+    P = 1,875), which the per-device warm-up at the smallest size does not
+    remove. So before a timed (paper-pass) run, ``run_once`` -- one complete
+    untimed run of the same configuration on the same device -- is called.
+    Its own time (the cold time) is returned and recorded beside the timed
+    one as ``warmup_run_time_s``; the kmax pass is not timed and gets
+    none."""
+    if pass_ != 'paper':
+        return None
+    return float(run_once())
+
+
 def _timing_repeats(first_time, rerun, pass_, smoke):
     """``(reported, repeats)``: a paper-pass run shorter than 1 s is timed
     five more times without the log (its clock excludes the diagnostics
@@ -142,6 +159,7 @@ def _scalar_runs(benchmark, smoke, passes):
                 run_opt = dataclasses.replace(run_opt, max_quasi_iters_lil=min(run_opt.max_quasi_iters_lil, 5))
 
             def execute(run_dir, config=config, run_opt=run_opt, run_lil_q=run_lil_q, pass_=pass_):
+                warm = _warm_up_run(pass_, lambda: run_lil_q(config, run_opt, verbose=False)[-1]['training_time'])
                 logger = IterationLogger()
                 basis, c, _metrics, summary = run_lil_q(
                     config, run_opt, verbose=False, iteration_logger=logger,
@@ -156,7 +174,7 @@ def _scalar_runs(benchmark, smoke, passes):
                 return {'final_loss': summary['final_loss'], 'converged': summary['converged'],
                         'R_tol': run_opt.R_tol, 'K_max': run_opt.max_quasi_iters_lil,
                         'training_time': reported, 'training_time_single_run': summary['training_time'],
-                        'timing_repeats_s': repeats, **_log_summary(logger)}
+                        'timing_repeats_s': repeats, 'warmup_run_time_s': warm, **_log_summary(logger)}
             runs.append(Run(benchmark, f'P{P}', 'cpu', pass_, execute))
     return runs
 
@@ -177,6 +195,7 @@ def _kovasznay_runs(smoke, passes, devices):
                     config = dataclasses.replace(config, max_iter=min(config.max_iter, 5))
 
                 def execute(run_dir, config=config, pass_=pass_):
+                    warm = _warm_up_run(pass_, lambda: solve_kovasznay(config, verbose=False)['solve_time_total'])
                     logger = IterationLogger()
                     r = solve_kovasznay(config, verbose=False, iteration_logger=logger,
                                         run_json_path=run_dir / 'run.json')
@@ -188,6 +207,7 @@ def _kovasznay_runs(smoke, passes, devices):
                     gpu = r.get('gpu_qr') or {}
                     return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': reported,
                             'solve_time_total_single_run': r['solve_time_total'], 'timing_repeats_s': repeats,
+                            'warmup_run_time_s': warm,
                             'gpu_h2d_s_total': sum(gpu.get('h2d_s', [])) if gpu else None,
                             'gpu_qr_solve_s_total': sum(gpu.get('qr_solve_s', [])) if gpu else None,
                             'rel_l2_u': r['rel_l2_u'], 'rel_l2_v': r['rel_l2_v'], 'rel_l2_p': r['rel_l2_p'],
@@ -196,26 +216,39 @@ def _kovasznay_runs(smoke, passes, devices):
     return runs
 
 
-def _elasticity_runs(smoke):
+def _elasticity_runs(smoke, sizes=None):
+    """Table 7's QR solve time and errors. Timing (the advisor's reply to
+    wave 1, item 2.2): after a warm-up run, a run shorter than 1 s is timed
+    five more times, each repeat measuring assembly + solve -- the phase of
+    ``t_cum_s`` (``time_lil_s``) -- and the QR solve alone
+    (``solve_time_qr``, the table's quantity); both are reported as medians.
+    Wave 1 repeated ``solve_time_total``, which also counts collocation and
+    the error evaluation (2-35x the solve). ``solve_time_total`` stays the
+    logged run's own."""
     from experiments.run_elasticity import DEFAULT_N_VALUES, K_RATIO
     from problems.elasticity import ElasticityConfig, solve_elasticity
     runs = []
-    for N in (DEFAULT_N_VALUES[:1] if smoke else DEFAULT_N_VALUES):
+    for N in (sizes or (DEFAULT_N_VALUES[:1] if smoke else DEFAULT_N_VALUES)):
         config = ElasticityConfig(N_x=N, N_y=N, k_ratio=K_RATIO)
 
         def execute(run_dir, config=config):
+            warm = _warm_up_run('paper', lambda: solve_elasticity(config, verbose=False)['time_lil_s'])
             logger = IterationLogger()
             r = solve_elasticity(config, verbose=False, iteration_logger=logger,
                                  run_json_path=run_dir / 'run.json')
             logger.to_csv(run_dir / 'iterations.csv')
             save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uv'}, config)
-            reported, repeats = _timing_repeats(
-                r['solve_time_total'], lambda: solve_elasticity(config, verbose=False)['solve_time_total'],
-                'paper', smoke)
-            return {k: r[k] for k in ('solve_time_qr', 'pde_mse', 'rel_l2_ux', 'rel_l2_uy', 'rel_l2_sxx',
+            time_lil, time_qr, repeats = r['time_lil_s'], r['solve_time_qr'], None
+            if not smoke and time_lil < SHORT_RUN_S:
+                reps = [solve_elasticity(config, verbose=False) for _ in range(SHORT_RUN_REPEATS)]
+                repeats = [{'time_lil_s': x['time_lil_s'], 'solve_time_qr': x['solve_time_qr']} for x in reps]
+                time_lil = float(np.median([x['time_lil_s'] for x in repeats]))
+                time_qr = float(np.median([x['solve_time_qr'] for x in repeats]))
+            return {k: r[k] for k in ('solve_time_total', 'pde_mse', 'rel_l2_ux', 'rel_l2_uy', 'rel_l2_sxx',
                                       'rel_l2_syy', 'rel_l2_sxy')} | {
-                'solve_time_total': reported, 'solve_time_total_single_run': r['solve_time_total'],
-                'timing_repeats_s': repeats} | _log_summary(logger)
+                'solve_time_qr': time_qr, 'solve_time_qr_single_run': r['solve_time_qr'],
+                'time_lil_s': time_lil, 'time_lil_s_single_run': r['time_lil_s'],
+                'timing_repeats_s': repeats, 'warmup_run_time_s': warm} | _log_summary(logger)
         runs.append(Run('elasticity', f'P{2 * N * N}', 'cpu', 'paper', execute))
     return runs
 
@@ -235,7 +268,8 @@ def _beltrami_runs(smoke, passes=('paper',)):
         config = base if pass_ == 'paper' else dataclasses.replace(
             base, tol=0.0, max_iter=3 if smoke else BELTRAMI_KMAX_PASS_ITERS)
 
-        def execute(run_dir, config=config):
+        def execute(run_dir, config=config, pass_=pass_):
+            warm = _warm_up_run(pass_, lambda: solve_beltrami(config, verbose=False)['solve_time_total'])
             logger = IterationLogger()
             r = solve_beltrami(config, verbose=False, iteration_logger=logger,
                                run_json_path=run_dir / 'run.json')
@@ -244,7 +278,8 @@ def _beltrami_runs(smoke, passes=('paper',)):
             return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': r['solve_time_total'],
                     'rel_l2_u': r['rel_l2_u'], 'rel_l2_v': r['rel_l2_v'], 'rel_l2_w': r['rel_l2_w'],
                     'rel_l2_p': r['rel_l2_p'], 'snapshots': r['snapshots'],
-                    'tol': config.tol, 'K_max': config.max_iter, **_log_summary(logger)}
+                    'tol': config.tol, 'K_max': config.max_iter, 'warmup_run_time_s': warm,
+                    **_log_summary(logger)}
         runs.append(Run('beltrami', f'P{P}', 'cpu', pass_, execute))
     return runs
 
@@ -259,6 +294,8 @@ def _darcy_runs(smoke):
                              perm_file=f'perm_field_{field}.txt')
 
         def execute(run_dir, config=config):
+            warm = _warm_up_run('paper', lambda: solve_lilq_darcy(
+                config, DarcyPhysics(config, verbose=False), verbose=False)['metrics']['total_time'])
             logger = IterationLogger()
             r = solve_lilq_darcy(config, DarcyPhysics(config, verbose=False), verbose=False,
                                  iteration_logger=logger, run_json_path=run_dir / 'run.json')
@@ -266,7 +303,7 @@ def _darcy_runs(smoke):
             save_solution(run_dir, {'h_tilde': (r['basis_h_tilde'], r['c_h_tilde']),
                                     'u': (r['basis_u'], r['c_u']), 'v': (r['basis_v'], r['c_v'])},
                           config, extra={'P_lil': r['P_lil'], 'P_fvm': r['P_fvm']})
-            return {'order': config.ORDER_H, **r['metrics'], **_log_summary(logger)}
+            return {'order': config.ORDER_H, **r['metrics'], 'warmup_run_time_s': warm, **_log_summary(logger)}
         runs.append(Run('darcy', field, 'cpu', 'paper', execute))
     return runs
 

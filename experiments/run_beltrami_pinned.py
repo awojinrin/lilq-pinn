@@ -8,8 +8,10 @@ enter only the single pin row at t=t_domain[0]). Rerun once at the
 paper's config (N_vel=6, N_p=8) with the pressure pinned at one spatial
 point at each of the 8 Chebyshev-Gauss-Lobatto temporal collocation
 levels (8 pin rows instead of 1) -- everything else unchanged -- and
-confirm: full column rank, a meaningful kappa from the pivoted QR, and a
-smaller pressure error at t=1 than the paper's published 0.752% baseline.
+confirm full column rank and a meaningful kappa from the pivoted QR. The
+t=1 pressure error is reported beside the paper's published 0.752%, without
+a better/worse verdict: the paper's figure has three digits, and wave 1's
+0.7515% against it is no difference (the advisor's reply to wave 1).
 Reports the 5-snapshot error table (paper Table 11 format) and wall-clock
 time. Expected runtime: about ten minutes.
 
@@ -104,7 +106,6 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
 
     snap = result['snapshots']
     t1_p_pct = next(s['p'] for s in snap if s['t'] == 1.0) * 100.0
-    improved = t1_p_pct < PAPER_T1_PRESSURE_ERROR_PCT
 
     report = {
         'N_vel': N_VEL, 'N_p': N_P,
@@ -133,7 +134,6 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
             'the pin rows have weight sqrt(lambda_bc / 8) each (the single pin had sqrt(lambda_bc))',
         ],
         'paper_t1_pressure_error_pct': PAPER_T1_PRESSURE_ERROR_PCT,
-        'improved_over_paper_baseline': bool(improved),
     }
     with open(out_dir / 'report.json', 'w') as f:
         json.dump(report, f, indent=2)
@@ -149,8 +149,7 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
             print(f"  {s['t']:>6.2f} {s['u']:>10.3e} {s['v']:>10.3e} "
                   f"{s['w']:>10.3e} {s['p']:>10.3e}")
         print(f"\n  t=1 pressure error: {t1_p_pct:.4f}% "
-              f"(paper baseline: {PAPER_T1_PRESSURE_ERROR_PCT:.3f}%, "
-              f"improved: {improved})")
+              f"(paper: {PAPER_T1_PRESSURE_ERROR_PCT:.3f}%)")
         print(f"\n  Report written to {out_dir / 'report.json'}")
 
     return report

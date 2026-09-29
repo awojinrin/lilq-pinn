@@ -17,6 +17,56 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Timing: a warm-up run before every timed run; elasticity's repeats; Beltrami flag removed (reply to wave 1, item 2.2 and Section 1)
+
+**Warm-up.** The advisor found in wave 1's logs that the first solve at
+each new matrix size costs 0.6-1.35 s on the A100 against 5-40 ms
+afterwards (1.35 s against a 0.60 s median on the CPU at Kovasznay
+P = 1,875). The existing warm-up -- one small Kovasznay solve per device --
+does not cover a new size, so Kovasznay's GPU paper-pass totals at P = 300
+(1.42 s) and 1,200 included one-time setup. Worse, a run pushed over 1 s by
+that cost skipped the median-of-five that runs under 1 s get.
+
+`component_b._warm_up_run`: every paper-pass run -- the timed one -- of
+every benchmark (Bratu, Burgers, both BL, elasticity, Kovasznay on CPU and
+GPU, Beltrami, Darcy) is preceded by one complete untimed run of the same
+configuration on the same device. A complete run rather than a single
+solve of the same shape: it covers the solve and any other first-call cost
+(allocation, basis evaluation), and the runs being rerun take seconds. Its
+own time, the cold time, is recorded as `warmup_run_time_s` beside the
+timed one. The kmax pass is not timed and gets none. On this laptop's GPU,
+Kovasznay P = 300 goes from 0.109 s cold to 0.059 s warm. Check B3's
+same-system timings already had a same-shape warm-up (`_median_time` and
+`_median_gpu_parts` solve the same system once untimed before timing), so
+B3 is unchanged; it is rerun in wave 2 as asked.
+
+**Elasticity's median of five.** Wave 1 repeated `solve_time_total`, which
+counts collocation and the error evaluation as well as the solve, so its
+medians (0.069-0.862 s) were 2-35x the logged solve (0.0019 s at the
+smallest size). `solve_elasticity` now also returns `time_lil_s` = assembly
++ solve, the phase of `iterations.csv`'s `t_cum_s`, and `time_assemble_s`.
+Each repeat records `time_lil_s` and `solve_time_qr` (Table 7's quantity);
+the summary reports both as medians, their single-run values beside them,
+and `solve_time_total` as the logged run's own. The 1 s threshold applies to
+`time_lil_s`.
+
+**Beltrami.** `run_beltrami_pinned.py`'s report drops
+`improved_over_paper_baseline`: it compared 0.75145% with the paper's
+rounded 0.752%, which is no difference. The report keeps both numbers.
+Wave 1's `report.json` still carries the flag; it must not be quoted.
+
+**Reruns in wave 2** (on the new commit, in timed jobs): the Kovasznay CPU
+and GPU paper passes at all five sizes, check B3, the elasticity paper
+passes and the scalar benchmarks' paper passes. Their rows replace wave 1's
+in `package1` (`WAVES.json` lists the replaced files); the kmax passes and
+every non-timing result of wave 1 stand. Beltrami and Darcy are not rerun,
+as the reply lists: their wave-1 times (285 s, 24-30 s) come from a single
+cold run each.
+
+Tests: `tests/test_wave1_reply_timing.py`.
+
+---
+
 ## 2026-09-29 -- F2 search: 24 distinct configurations (reply to wave 1, item 2.1)
 
 Wave 1's `search/F2_configs.json` had only 17 distinct configurations of

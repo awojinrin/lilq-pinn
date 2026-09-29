@@ -406,6 +406,9 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
         'theta_u': theta_u, 'theta_v': theta_v,
         'n_params': P_total,
         'solve_time_qr': solve_time, 'solve_time_total': total_time, 'diagnostics_time': t_diag,
+        # Assembly + solve: the phase iterations.csv's t_cum_s measures
+        # (solve_time_total adds collocation and the error evaluation).
+        'time_assemble_s': t_assemble_s, 'time_lil_s': t_assemble_s + t_solve_s,
         'pde_mse': pde_mse,
         'rel_l2_ux': rel_l2_ux, 'rel_l2_uy': rel_l2_uy,
         'rel_l2_sxx': rel_l2_sxx, 'rel_l2_syy': rel_l2_syy, 'rel_l2_sxy': rel_l2_sxy,
