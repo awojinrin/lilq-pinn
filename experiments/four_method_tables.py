@@ -52,7 +52,7 @@ import torch
 
 from lilq.utils import DEVICE, clear_gpu_memory
 from lilq.four_method_log import (
-    FourMethodLogger, classify_stopping_reason, row_key, subsample_loss_history,
+    FourMethodLogger, row_key, stopping_fields, subsample_loss_history,
 )
 from lilq.provenance import save_provenance
 from lilq.saved_models import save_network, save_solution
@@ -187,22 +187,7 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 except Exception:
                     save_error = {'error': 'model not saved: ' + traceback.format_exc()}
 
-            if method_name == 'NiL-Q':
-                iterations_used = summary['n_quasi_iters']
-                iterations_cap = opt.max_quasi_iters_nn
-                ls_cap = line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn,
-                                         opt.max_line_searches)
-            else:
-                iterations_used = summary['total_iterations']
-                iterations_cap = opt.max_iterations
-                ls_cap = line_search_cap(opt.max_iterations, opt.max_line_searches)
-
-            stopping_reason = classify_stopping_reason(
-                converged=summary['converged'],
-                iterations_used=iterations_used, iterations_cap=iterations_cap,
-                line_searches_used=summary['total_line_searches'],
-                line_searches_cap=ls_cap,
-            )
+            stop = stopping_fields(method_name, summary, opt)
 
             logger.record(
                 **base,
@@ -211,8 +196,10 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 training_time_s=summary['training_time'],
                 wall_total_s=elapsed,
                 final_loss=summary['final_loss'],
-                converged=summary['converged'], stopping_reason=stopping_reason,
-                iterations_cap=iterations_cap, line_searches_cap=ls_cap,
+                converged=summary['converged'], stopping_reason=stop['stopping_reason'],
+                iterations_cap=stop['iterations_cap'], line_searches_cap=stop['evaluations_cap'],
+                stall_iteration=stop['stall_iteration'], stall_evaluations=stop['stall_evaluations'],
+                stall_time_s=stop['stall_time_s'],
                 loss_history_every_10=subsample_loss_history(metrics.to_dict()),
                 **save_error,
             )
@@ -220,7 +207,7 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 logger.to_csv(csv_path)
 
             if verbose:
-                status = "CONVERGED" if summary['converged'] else stopping_reason
+                status = "CONVERGED" if summary['converged'] else stop['stopping_reason']
                 seed_label = f"seed={seed}" if seed is not None else "seed=n/a"
                 print(f"    {method_name:6s} {seed_label:10s} device={device!s:6s} "
                       f"iters={summary['total_iterations']:6d} "

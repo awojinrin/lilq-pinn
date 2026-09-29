@@ -17,6 +17,22 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Stopping reasons: one rule for the four-method and B8 CSVs (Addendum v2.2 Section 2.3)
+
+`lilq.four_method_log.stopping_fields(method, summary, opt)` gives both
+drivers the same iterations, caps, reason and stall fields. NiL-Q is now
+classified on its inner-iteration total against (outer cap) x (inner cap);
+the four-method CSV used to report the outer count against the outer cap
+while B8 reported the product, so `iterations_cap` meant different things
+in the two files. Reasons, in order: `failure` for a non-finite final
+loss; `target`; `optimizer_stall`; `line_search_cap` when the evaluation
+cap is reached with iterations below theirs (an anomaly now); then
+`iteration_cap`, including NiL-Q runs that used every outer iteration
+after inner loops ended early on stalls. Both CSVs gain `stall_iteration`,
+`stall_evaluations`, `stall_time_s`.
+
+---
+
 ## 2026-09-28 -- Every trained model is saved, reloadable; long runs checkpoint
 
 Nothing will be rerun after the Grace pass, so every run keeps what later

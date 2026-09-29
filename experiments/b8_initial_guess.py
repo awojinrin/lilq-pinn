@@ -49,7 +49,7 @@ import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
 from experiments.run_bl import DEFAULT_N_VALUES, paper_setup
-from lilq.four_method_log import classify_stopping_reason
+from lilq.four_method_log import stopping_fields
 from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
 from lilq.run_metadata import first_stall_iteration
@@ -65,7 +65,8 @@ OUTPUT_DIR = Path(_proj) / 'results' / 'b8_initial_guess'
 
 COLUMNS = ('case', 'guess', 'P', 'method', 'seed', 'iterations', 'evaluations', 'final_loss',
            'target', 'target_reached', 'stopping_reason', 'iterations_cap', 'evaluations_cap',
-           'first_stall_iteration', 'stall_flag_ever', 'chi_history', 'wall_s', 'device', 'error')
+           'first_stall_iteration', 'stall_flag_ever', 'chi_history',
+           'stall_iteration', 'stall_evaluations', 'stall_time_s', 'wall_s', 'device', 'error')
 
 
 def row_key(row):
@@ -119,21 +120,8 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
                 save_solution(model_dir, {'u': (result[0], result[1])}, config, opt)
             else:
                 save_network(model_dir, result[0], config, opt)
-        if method == 'NiL-Q':
-            used, cap = summary['n_quasi_iters'], opt.max_quasi_iters_nn
-            ls_cap = line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn, opt.max_line_searches)
-            iterations_cap = opt.max_quasi_iters_nn * opt.max_inner_iters_nn
-        else:
-            used, cap = summary['total_iterations'], opt.max_iterations
-            ls_cap = line_search_cap(opt.max_iterations, opt.max_line_searches)
-            iterations_cap = opt.max_iterations
-        row.update(
-            iterations=summary['total_iterations'], evaluations=summary['total_line_searches'],
-            iterations_cap=iterations_cap, evaluations_cap=ls_cap,
-            stopping_reason=classify_stopping_reason(
-                converged=summary['converged'], iterations_used=used, iterations_cap=cap,
-                line_searches_used=summary['total_line_searches'], line_searches_cap=ls_cap),
-        )
+        stop = stopping_fields(method, summary, opt)
+        row.update(stop)
     row.update(final_loss=summary['final_loss'], target_reached=bool(summary['converged']))
     return row
 

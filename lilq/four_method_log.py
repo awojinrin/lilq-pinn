@@ -12,6 +12,9 @@ per (benchmark, P, method, seed, device), with the exact fields Section
     stopping reason (target, iteration_cap, line_search_cap, failure),
     plus the loss history every 10 iterations.
 
+Addendum v2.2 adds ``optimizer_stall`` and its iteration, evaluation count
+and time (Section 2.2), and fixes NiL-Q's caps (Section 2.3).
+
 LiL-Q is deliberately absent from this schema -- it already has its own
 full per-iteration log (``lilq.iteration_log``, Section 3.1) from
 sub-batches 3-6; this module is for the three L-BFGS-trained methods
@@ -21,6 +24,7 @@ based summary shape instead.
 
 import csv
 import json
+import math
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -35,6 +39,7 @@ FOUR_METHOD_CSV_COLUMNS = (
     "total_iterations", "total_line_searches", "training_time_s", "wall_total_s",
     "final_loss", "converged", "stopping_reason",
     "iterations_cap", "line_searches_cap",
+    "stall_iteration", "stall_evaluations", "stall_time_s",
     "loss_history_every_10", "error",
 )
 
@@ -56,40 +61,75 @@ def classify_stopping_reason(
     iterations_cap: int,
     line_searches_used: int,
     line_searches_cap: int,
+    optimizer_stall: bool = False,
+    final_loss: Optional[float] = None,
+    budget_exhausted: bool = False,
 ) -> str:
-    """``target`` / ``iteration_cap`` / ``line_search_cap`` -- matches
-    Section 3.4's own vocabulary (``failure`` is not returned here: it
-    covers a run that raised an exception, which happens above this
-    function, at the call site, not as a property of a completed
-    summary dict -- see ``experiments/four_method_tables.py``).
+    """``target`` / ``optimizer_stall`` / ``line_search_cap`` /
+    ``iteration_cap`` / ``failure`` (Addendum v2.2 Sections 2.2-2.3).
 
-    Every ``solve_nil_n``/``solve_lil_n`` run stops (``lilq/solvers.py``)
-    via ``while iterations < iterations_cap and line_searches <
-    line_searches_cap`` -- at exit, at least one of the two caps has been
-    reached (unless it converged first). Checked in this order --
-    ``iteration_cap`` before ``line_search_cap`` -- because that is the
-    order DECISIONS.md's own empirical findings for this codebase's
-    tuned budgets say actually binds first for Bratu/Burgers/BL (the
-    line-search cap has never bound in stored results); a tie (both caps
-    reached in the same final step) is the one case this ordering is a
-    genuine judgment call rather than a re-derivation of history the
-    summary dict doesn't preserve.
+    - A non-finite final loss is a ``failure`` (so is a run that raised,
+      which the call site records without calling this).
+    - ``optimizer_stall``: an L-BFGS step (NiL-N, LiL-N) or a whole outer
+      iteration (NiL-Q) left the parameters bitwise unchanged.
+    - The evaluation cap is tested before the iteration cap when the
+      iterations are below theirs; with the cap of ``lilq.solvers``
+      (16x) it cannot bind, and a ``line_search_cap`` row is an anomaly.
+    - ``iteration_cap`` when the iterations reached their cap, or when
+      ``budget_exhausted`` (NiL-Q: every outer iteration used, some inner
+      loops having ended early on a stall).
 
-    For NiL-Q, pass ``iterations_used=summary['n_quasi_iters']``,
-    ``iterations_cap=max_quasi_iters`` (its outer-loop budget, not
-    ``total_iterations``/``max_iterations`` -- NiL-Q's inner L-BFGS loop
-    has no single named cap of its own; only the outer quasi-iteration
-    count and the global line-search count are capped) and
-    ``line_searches_used=summary['total_line_searches']``,
-    ``line_searches_cap=max_line_searches``.
+    Use :func:`stopping_fields` rather than calling this directly: it
+    applies the same caps in every driver.
     """
+    if final_loss is not None and not math.isfinite(final_loss):
+        return "failure"
     if converged:
         return "target"
-    if iterations_used >= iterations_cap:
+    if optimizer_stall:
+        return "optimizer_stall"
+    if line_searches_used >= line_searches_cap and iterations_used < iterations_cap:
+        return "line_search_cap"
+    if iterations_used >= iterations_cap or budget_exhausted:
         return "iteration_cap"
     if line_searches_used >= line_searches_cap:
         return "line_search_cap"
     return "failure"
+
+
+def stopping_fields(method: str, summary: Dict[str, Any], opt) -> Dict[str, Any]:
+    """The iteration and evaluation counts, their caps, the stopping reason
+    and the stall fields of one L-BFGS run (NiL-N, NiL-Q, LiL-N), the same
+    in the four-method CSV and the B8 CSV (Addendum v2.2 Section 2.3).
+
+    Iterations are L-BFGS steps; for NiL-Q the inner steps summed over the
+    outer iterations, with cap ``max_quasi_iters_nn * max_inner_iters_nn``.
+    Evaluations are real loss evaluations (``lilq.solvers.LBFGSObjective``).
+    """
+    from lilq.solvers import line_search_cap
+    if method == 'NiL-Q':
+        iterations_cap = opt.max_quasi_iters_nn * opt.max_inner_iters_nn
+        budget_exhausted = (summary['n_quasi_iters'] >= opt.max_quasi_iters_nn
+                            and not summary['converged'] and not summary.get('optimizer_stall'))
+    else:
+        iterations_cap = opt.max_iterations
+        budget_exhausted = False
+    evaluations_cap = line_search_cap(iterations_cap, opt.max_line_searches)
+    reason = classify_stopping_reason(
+        converged=summary['converged'],
+        iterations_used=summary['total_iterations'], iterations_cap=iterations_cap,
+        line_searches_used=summary['total_line_searches'], line_searches_cap=evaluations_cap,
+        optimizer_stall=bool(summary.get('optimizer_stall')),
+        final_loss=summary.get('final_loss'), budget_exhausted=budget_exhausted,
+    )
+    return {
+        'iterations': summary['total_iterations'], 'iterations_cap': iterations_cap,
+        'evaluations': summary['total_line_searches'], 'evaluations_cap': evaluations_cap,
+        'stopping_reason': reason,
+        'stall_iteration': summary.get('stall_iteration'),
+        'stall_evaluations': summary.get('stall_evaluations'),
+        'stall_time_s': summary.get('stall_time_s'),
+    }
 
 
 def subsample_loss_history(metrics_dict: Dict[str, list], every: int = 10) -> List[list]:

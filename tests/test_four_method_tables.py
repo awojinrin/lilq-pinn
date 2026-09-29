@@ -118,7 +118,9 @@ def test_run_and_log_lil_n_logs_seed_as_none():
     assert logger.rows[0]['seed'] is None
 
 
-def test_run_and_log_nil_q_uses_quasi_iter_cap_not_total_iterations():
+def test_run_and_log_nil_q_counts_inner_iterations_against_outer_times_inner_cap():
+    """Addendum v2.2 Section 2.3: NiL-Q is classified on its inner-iteration
+    total, with cap = outer cap x inner cap, as in the B8 CSV."""
     from problems.bratu import BratuConfig, BratuOptConfig, run_nil_q
 
     config = BratuConfig(N_x=3, N_y=3, k_ratio=5)
@@ -129,11 +131,9 @@ def test_run_and_log_nil_q_uses_quasi_iter_cap_not_total_iterations():
                      seeds=[0], devices=[torch.device('cpu')], verbose=False)
 
     row = logger.rows[0]
-    # iterations_cap must reflect the outer quasi-iteration budget (2),
-    # not total_iterations' own value (which is quasi_iters * inner_iters,
-    # a different, larger number).
-    assert row['iterations_cap'] == 2
-    assert row['total_iterations'] != row['iterations_cap']
+    assert row['iterations_cap'] == 2 * 5
+    assert row['total_iterations'] <= row['iterations_cap']
+    assert row['stopping_reason'] in ('target', 'iteration_cap', 'optimizer_stall')
 
 
 def test_csv_output_is_well_formed(tmp_path):
