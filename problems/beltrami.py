@@ -786,11 +786,15 @@ def compute_errors(phys, bu, bv, bw, bp, tu, tv, tw, tp, n_s=21, n_t=11):
     we = phys.exact_w(X, Y, Z, T)
     pe = phys.exact_p(X, Y, Z, T)
 
-    # Per-time-step pressure shift
+    # The pin gauge: the pressure as solved, no shift (Addendum v2.2 2.11).
+    rel_l2_p_pin_gauge = _rel_l2(pp, pe)
+    # Per-time-step pressure shift (the paper's). It removes exactly the
+    # null-space modes T_j(t) * 1, so it cannot see whether they were pinned.
     pp = pp - pp.mean(axis=(0, 1, 2)) + pe.mean(axis=(0, 1, 2))
 
     return {'rel_l2_u': _rel_l2(up, ue), 'rel_l2_v': _rel_l2(vp, ve),
-            'rel_l2_w': _rel_l2(wp, we), 'rel_l2_p': _rel_l2(pp, pe)}
+            'rel_l2_w': _rel_l2(wp, we), 'rel_l2_p': _rel_l2(pp, pe),
+            'rel_l2_p_pin_gauge': rel_l2_p_pin_gauge}
 
 
 def compute_time_snapshot_errors(phys, bu, bv, bw, bp, tu, tv, tw, tp,
@@ -811,9 +815,10 @@ def compute_time_snapshot_errors(phys, bu, bv, bw, bp, tu, tv, tw, tp,
         we = phys.exact_w(X, Y, Z, T)
         pe = phys.exact_p(X, Y, Z, T)
 
-        pp = pp - np.mean(pp) + np.mean(pe)
+        p_pin_gauge = _rel_l2(pp, pe)                 # as solved (Addendum v2.2 2.11)
+        pp = pp - np.mean(pp) + np.mean(pe)           # the paper's per-snapshot mean shift
         snapshots.append({'t': t_val, 'u': _rel_l2(up, ue), 'v': _rel_l2(vp, ve),
-                          'w': _rel_l2(wp, we), 'p': _rel_l2(pp, pe)})
+                          'w': _rel_l2(wp, we), 'p': _rel_l2(pp, pe), 'p_pin_gauge': p_pin_gauge})
     return snapshots
 
 

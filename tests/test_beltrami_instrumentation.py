@@ -378,3 +378,12 @@ def test_check_b2_residual_identity_with_multiple_pin_levels():
 
     rel_err = abs(norm_R_direct - norm_R_logged) / (abs(norm_R_direct) + 1e-30)
     assert rel_err < 1e-10
+
+
+def test_pressure_error_also_in_the_pin_gauge():
+    """Addendum v2.2 Section 2.11: the snapshot and global pressure errors
+    also without the per-time-level mean shift (the pin gauge)."""
+    config = _small_config(max_iter=2, n_pressure_pin_levels=3)
+    r = solve_beltrami(config, verbose=False)
+    assert all('p_pin_gauge' in s for s in r['snapshots'])
+    assert r['rel_l2_p_pin_gauge'] >= 0

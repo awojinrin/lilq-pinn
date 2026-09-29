@@ -17,6 +17,20 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Beltrami pinned: the pressure error in the pin gauge too (Addendum v2.2 Section 2.11)
+
+The snapshot and global pressure errors subtract the mean at each time
+level, and the null-space modes T_j(t) * 1 are exactly those means, so the
+shifted error cannot change when the pins remove the null space (0.7515%
+against 0.752%). `compute_errors` and the snapshots now also give the error
+as solved, without the shift (`rel_l2_p_pin_gauge`, `p_pin_gauge`), and
+the Section 3.7 report gives both at t = 1. Two harmless deviations from
+the spec are recorded in its report: the pins are at Chebyshev-Gauss-
+Lobatto times rather than at the temporal collocation levels, and each pin
+row has weight sqrt(lambda_bc / 8).
+
+---
+
 ## 2026-09-29 -- Timing details (Addendum v2.2 Section 2.10)
 
 1. **LiL-Q's time as the other methods report it.** The scalar benchmarks'

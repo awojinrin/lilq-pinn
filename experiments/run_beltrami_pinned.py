@@ -119,6 +119,15 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
         'kappa_method': last_row['kappa_method'],
         'snapshots': snap,
         't1_pressure_error_pct': t1_p_pct,
+        # Without the per-time-level mean shift, which removes exactly the
+        # null-space modes and so cannot show their removal (0.7515% against
+        # 0.752%); the pins fix the gauge here (Addendum v2.2 2.11).
+        't1_pressure_error_pin_gauge_pct': next(s['p_pin_gauge'] for s in snap if s['t'] == 1.0) * 100.0,
+        'rel_l2_p_pin_gauge': result.get('rel_l2_p_pin_gauge'),
+        'deviations_from_spec': [
+            'the pins are at Chebyshev-Gauss-Lobatto times in [0, 1], not at the temporal collocation levels',
+            'the pin rows have weight sqrt(lambda_bc / 8) each (the single pin had sqrt(lambda_bc))',
+        ],
         'paper_t1_pressure_error_pct': PAPER_T1_PRESSURE_ERROR_PCT,
         'improved_over_paper_baseline': bool(improved),
     }
