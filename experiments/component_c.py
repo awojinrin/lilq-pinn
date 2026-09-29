@@ -55,6 +55,7 @@ from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
 from lilq.run_metadata import first_stall_iteration
 from lilq.saved_models import save_solution
+from lilq.source_lock import current_commit
 
 BENCHMARKS = (('kovasznay', 10), ('kovasznay', 20), ('bratu', 10), ('bratu', 15))   # (name, N): P = 3N^2 / N^2
 RATIOS = (1, 1.5, 2, 3, 5, 10, 20)
@@ -62,10 +63,10 @@ DISTRIBUTIONS = (('paper', None), ('cgl', None)) + tuple(('random', s) for s in 
 SWEEP_FLOOR = 1
 OUTPUT_DIR = Path(_proj) / 'results' / 'C_oversampling'
 
-COLUMNS = ('benchmark', 'P', 'ratio_nominal', 'ratio_actual', 'N_rows', 'k_ratio', 'distribution', 'seed',
+COLUMNS = ('benchmark', 'P', 'ratio_nominal', 'ratio_actual', 'N_rows', 'N_distinct', 'k_ratio', 'distribution', 'seed',
            'iterations', 'final_norm_Rlin_h', 'final_norm_Rlin_interior', 'final_norm_R_h', 'kappa',
            'kappa_method', 'num_rank_svd', 'num_rank_gelsy', 'first_stall_iteration',
-           'eps_u', 'eps_v', 'eps_p', 'eps_p_meanfree', 't_cum_s', 'stopping', 'error')
+           'eps_u', 'eps_v', 'eps_p', 'eps_p_meanfree', 't_cum_s', 'stopping', 'commit', 'error')
 
 
 def n_params(benchmark, N):
@@ -91,9 +92,15 @@ def n_rows(benchmark, N, k, floor=SWEEP_FLOOR):
 
 
 def k_for_ratio(benchmark, N, ratio):
-    """The density whose row count is closest to ratio x P (smallest such k)."""
+    """The density whose row count is closest to ratio x P (smallest such
+    k); at the nominal ratio 1, the smallest density with at least P rows
+    (Addendum v2.2 Section 2.9: the closest count gave fewer rows than
+    unknowns, 97 for Bratu P = 100)."""
     P = n_params(benchmark, N)
     ks = np.round(np.arange(0.02, 40.0, 0.005), 3)
+    if ratio == 1:
+        k = float(next(k for k in ks if n_rows(benchmark, N, k) >= P))
+        return k, n_rows(benchmark, N, k)
     errors = [abs(n_rows(benchmark, N, k) / P - ratio) for k in ks]
     k = float(ks[int(np.argmin(errors))])
     return k, n_rows(benchmark, N, k)
@@ -125,7 +132,8 @@ def run_one(benchmark, N, ratio, distribution, seed, run_dir, quick=False):
         from problems.kovasznay import solve_kovasznay
         if quick:
             config = dataclasses.replace(config, max_iter=3)
-        r = solve_kovasznay(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json')
+        r = solve_kovasznay(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json',
+                            collocation_path=run_dir / 'collocation.npz')
         save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uvp'}, config)
         # The solver stops when the relative coefficient change drops below tol
         # (also possible on the last allowed iteration).
@@ -135,7 +143,8 @@ def run_one(benchmark, N, ratio, distribution, seed, run_dir, quick=False):
         if quick:
             opt = dataclasses.replace(opt, max_quasi_iters_lil=3)
         basis, c, _metrics, summary = run_lil_q(config, opt, verbose=False, iteration_logger=logger,
-                                                run_json_path=run_dir / 'run.json')
+                                                run_json_path=run_dir / 'run.json',
+                                                collocation_path=run_dir / 'collocation.npz')
         save_solution(run_dir, {'u': (basis, c)}, config, opt)
         stopping = 'target' if summary['converged'] else 'K_max'
     logger.to_csv(run_dir / 'iterations.csv')
@@ -146,7 +155,9 @@ def run_one(benchmark, N, ratio, distribution, seed, run_dir, quick=False):
                kappa=final['kappa'], kappa_method=final['kappa_method'], num_rank_svd=final['num_rank_svd'],
                num_rank_gelsy=final['num_rank_gelsy'], first_stall_iteration=first_stall_iteration(logger.rows),
                eps_u=last.get('eps_u'), eps_v=last.get('eps_v'), eps_p=last.get('eps_p'),
-               eps_p_meanfree=last.get('eps_p_meanfree'), t_cum_s=last['t_cum_s'], stopping=stopping)
+               eps_p_meanfree=last.get('eps_p_meanfree'), t_cum_s=last['t_cum_s'], stopping=stopping,
+               N_distinct=int(np.load(run_dir / 'collocation.npz')['n_distinct']), commit=current_commit())
+    save_provenance(run_dir)          # hardware.json per run, not only at the sweep root (Addendum v2.2 2.8.4)
     return row
 
 

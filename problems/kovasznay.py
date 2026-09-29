@@ -29,7 +29,7 @@ import math
 from dataclasses import dataclass, replace as dataclasses_replace
 from typing import Tuple, Dict, Optional
 
-from lilq.collocation import points_1d
+from lilq.collocation import points_1d, write_collocation_rows
 from lilq.basis import (
     Chebyshev1D, Fourier1D, TensorProductBasis2D, AugmentedBasis1D,
     create_chebyshev_basis_2d, create_basis_2d,
@@ -441,7 +441,8 @@ def make_test_error_fn(physics, basis_u, basis_v, basis_p):
 def solve_kovasznay(config: KovasznayConfig, verbose=True,
                      iteration_logger=None, run_json_path=None,
                      analyze_conditioning: bool = False,
-                     return_final_system: bool = False) -> Dict:
+                     return_final_system: bool = False,
+                     collocation_path=None) -> Dict:
     """Solve Kovasznay flow via multi-field LiL-Q.
 
     Returns a dict containing coefficients, errors, and iteration history.
@@ -560,6 +561,16 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     y_pin = np.array([config.y_domain[0]], dtype=np.float64)
     Phi_p_pin = basis_p.evaluate(x_pin, y_pin)
     p_pin_val = physics.exact_p(x_pin[0], y_pin[0])
+
+    if collocation_path is not None:           # every row, in assembly order (Addendum v2.2 2.8.3)
+        w_mom = np.sqrt(config.lambda_mom / n_pde)
+        blocks = [('xmom', 'xmom', xp, yp, w_mom), ('ymom', 'ymom', xp, yp, w_mom),
+                  ('cont', 'cont', xp, yp, np.sqrt(config.lambda_cont / n_pde))]
+        for edge in ['bot', 'top', 'left', 'right']:
+            xe, ye, w_bc = pts[f'x_{edge}'], pts[f'y_{edge}'], np.sqrt(config.lambda_bc / bc_blocks[edge]['n'])
+            blocks += [(f'bc_u_{edge}', 'bc_u', xe, ye, w_bc), (f'bc_v_{edge}', 'bc_v', xe, ye, w_bc)]
+        blocks.append(('pin', 'pin', x_pin, y_pin, np.sqrt(config.lambda_bc)))
+        write_collocation_rows(collocation_path, blocks)
 
     # Initialize
     theta_u = np.zeros(Pu, dtype=np.float64)

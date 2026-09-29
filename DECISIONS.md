@@ -17,6 +17,31 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Component C: at least P rows at N/P = 1; distinct rows logged; collocation rows saved (Addendum v2.2 Sections 2.8.3, 2.9)
+
+- **Ratio 1.** `k_for_ratio` now takes the smallest density with at least
+  P rows at the nominal ratio 1; the closest-count rule gave fewer rows than
+  unknowns (97 for Bratu P = 100, 1,189 for Kovasznay P = 1,200). The
+  generators' granularity makes it overshoot: Bratu P = 100 116 rows, P =
+  225 228; Kovasznay P = 300 300, P = 1,200 1,308. The other ratios keep
+  the closest-count rule (within 10%).
+- **`N_distinct`** in `oversampling.csv`: rows of the same equation at the
+  same point are identical, and the equispaced and CGL tensor grids put
+  each corner on two edges. At Kovasznay P = 300, ratio 1: 300 rows, 292
+  distinct (4 corners x the u and v rows), matching the advisor's count;
+  scattered points have none. The ratio-1 rule counts rows, as specified,
+  so the tensor grids there have slightly fewer distinct rows than
+  unknowns; reported beside the nominal and actual N/P.
+- **`collocation.npz` per run**: every row's coordinates, block (e.g.
+  `bc_u_left`), equation, and weight, in assembly order, plus `n_distinct`,
+  written by the solver itself from the points it used
+  (`solve_kovasznay`/`bratu.run_lil_q` `collocation_path`); for an
+  a-posteriori computation of the sampling constants c1, c2 on each grid.
+- Each run's directory gets its own `hardware.json`, and each CSV row the
+  commit.
+
+---
+
 ## 2026-09-29 -- Data retention and the provenance lock (Addendum v2.2 Section 2.8)
 
 Nothing will be rerun, so:

@@ -23,7 +23,7 @@ from typing import Tuple, Dict, Optional, Callable
 from lilq.basis import create_basis_2d
 from lilq.nn import MLP, calculate_hidden_dim
 from lilq.metrics import MetricsTracker, QuasilinearMetrics
-from lilq.collocation import generate_collocation_points_2d, collocation_to_torch
+from lilq.collocation import generate_collocation_points_2d, collocation_to_torch, write_collocation_rows
 from lilq.pretraining import pretrain_nn, pretrain_lil
 from lilq.solvers import solve_nil_n, solve_nil_q, solve_lil_n, solve_lil_q, line_search_cap
 from lilq.utils import set_seed, nn_init_seed, clear_gpu_memory, DEVICE
@@ -526,7 +526,7 @@ def make_test_error_fn(basis, config: BratuConfig):
 
 def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
               verbose=True, diagnostics_callback=None,
-              iteration_logger=None, run_json_path=None):
+              iteration_logger=None, run_json_path=None, collocation_path=None):
     """Run LiL-Q (Quasilinear LiL) for Bratu.
 
     ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
@@ -579,6 +579,11 @@ def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
 
     n_bc = len(x_bc)
     n_pde = pts['n_pde']
+    if collocation_path is not None:           # every row, in assembly order (Addendum v2.2 2.8.3)
+        w_bc = np.sqrt(opt.lambda_bc / n_bc)
+        write_collocation_rows(collocation_path, [('pde', 'pde', x_pde, y_pde, np.sqrt(opt.lambda_pde / n_pde))] + [
+            (f'bc_{side}', 'bc', pts[f'x_bc_{side}'], pts[f'y_bc_{side}'], w_bc)
+            for side in ('left', 'right', 'bottom', 'top')])
 
     system_fn = _make_lil_q_system_fn(
         A_u, A_uxx, A_uyy, A_bc, n_pde, n_bc,

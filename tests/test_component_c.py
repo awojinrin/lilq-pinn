@@ -26,11 +26,18 @@ def test_row_count_formula_matches_the_generators(k, floor):
 
 
 def test_196_runs_and_every_ratio_within_ten_percent():
+    """Every ratio within 10% of its target, except 1, which takes the
+    smallest density with at least P rows (Addendum v2.2 Section 2.9) and
+    may overshoot (Bratu P = 100: 116 rows)."""
     assert len(cc.BENCHMARKS) * len(cc.RATIOS) * len(cc.DISTRIBUTIONS) == 196
     for b, N in cc.BENCHMARKS:
         P = cc.n_params(b, N)
         for r in cc.RATIOS:
-            assert abs(cc.k_for_ratio(b, N, r)[1] / P / r - 1) < 0.1
+            rows = cc.k_for_ratio(b, N, r)[1]
+            if r == 1:
+                assert P <= rows < 1.2 * P
+            else:
+                assert abs(rows / P / r - 1) < 0.1
 
 
 def test_cgl_points_cluster_towards_the_ends():
@@ -49,3 +56,33 @@ def test_smoke_sweep_is_resumable(tmp_path):
     assert (tmp_path / 'figures' / 'bratu_P100.pdf').exists()
     cc.run_sweep(tmp_path, **kw)
     assert len(list(csv.DictReader(open(path)))) == 4
+
+
+# ── Addendum v2.2 Sections 2.8.3 and 2.9 ──────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("benchmark, N", [('bratu', 10), ('bratu', 15), ('kovasznay', 10), ('kovasznay', 20)])
+def test_ratio_one_has_at_least_P_rows(benchmark, N):
+    k, rows = cc.k_for_ratio(benchmark, N, 1)
+    P = cc.n_params(benchmark, N)
+    assert rows >= P
+    smaller = [kk for kk in np.round(np.arange(0.02, k, 0.005), 3) if kk < k]
+    assert all(cc.n_rows(benchmark, N, kk) < P for kk in smaller)
+
+
+def test_collocation_rows_saved_and_corner_duplicates_counted(tmp_path):
+    row = cc.run_one('kovasznay', 10, 1, 'paper', None, tmp_path / 'k', quick=True)
+    z = np.load(tmp_path / 'k' / 'collocation.npz')
+    assert len(z['x']) == row['N_rows'] == 300
+    assert row['N_distinct'] == int(z['n_distinct']) == 292            # 4 corners x 2 equations duplicated
+    config, _ = cc._config('kovasznay', 10, row['k_ratio'], 'paper', None)
+    n_pde = int((z['block'] == 'xmom').sum())
+    assert np.allclose(z['weight'][z['block'] == 'xmom'], np.sqrt(config.lambda_mom / n_pde))
+    assert list(z['block'][-1:]) == ['pin']
+    assert (tmp_path / 'k' / 'hardware.json').exists()
+
+
+def test_scattered_points_have_no_duplicate_rows(tmp_path):
+    row = cc.run_one('kovasznay', 10, 3, 'random', 0, tmp_path / 'k', quick=True)
+    assert row['N_distinct'] == row['N_rows']
+
+

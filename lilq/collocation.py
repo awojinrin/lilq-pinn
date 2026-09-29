@@ -150,6 +150,41 @@ def generate_collocation_points_2d(
     return result
 
 
+def count_distinct_rows(equation, x, y) -> int:
+    """Distinct collocation rows: rows of the same equation at the same
+    point are identical (a tensor grid's corner lies on two edges, so its
+    boundary rows appear twice). Addendum v2.2 Section 2.9."""
+    keys = set(zip(np.asarray(equation).tolist(), np.asarray(x, dtype=np.float64).tolist(),
+                   np.asarray(y, dtype=np.float64).tolist()))
+    return len(keys)
+
+
+def write_collocation_rows(path, blocks) -> int:
+    """Save every collocation row, in the order the system is assembled, to
+    ``path`` (``.npz``): ``x``, ``y``, ``block`` (e.g. ``bc_u_left``),
+    ``equation`` (the row's equation: rows with the same equation and point
+    are identical), ``weight`` (the row weight), and ``n_distinct``. What an
+    a-posteriori computation of the sampling constants c1, c2 on each grid
+    needs (Addendum v2.2 Section 2.8.3). ``blocks``: a list of ``(block,
+    equation, x, y, weight)``. Returns ``n_distinct``."""
+    import os
+    xs, ys, blk, eq, w = [], [], [], [], []
+    for block, equation, x, y, weight in blocks:
+        x = np.asarray(x, dtype=np.float64).ravel()
+        y = np.asarray(y, dtype=np.float64).ravel()
+        xs.append(x); ys.append(y)
+        blk += [block] * len(x); eq += [equation] * len(x)
+        w.append(np.full(len(x), float(weight)))
+    x, y = np.concatenate(xs), np.concatenate(ys)
+    n_distinct = count_distinct_rows(eq, x, y)
+    path = str(path)
+    tmp = path + '.tmp.npz'
+    np.savez_compressed(tmp, x=x, y=y, block=np.array(blk), equation=np.array(eq),
+                        weight=np.concatenate(w), n_distinct=np.array(n_distinct))
+    os.replace(tmp, path)
+    return n_distinct
+
+
 def collocation_to_torch(points: Dict[str, np.ndarray],
                          device: torch.device) -> Dict[str, torch.Tensor]:
     """Convert numpy collocation points to torch tensors on the given device.
