@@ -153,7 +153,7 @@ def test_csv_output_is_well_formed(tmp_path):
     assert len(rows) == 1
     history = json.loads(rows[0]["loss_history_every_10"])
     assert isinstance(history, list)
-    assert all(len(pair) == 2 for pair in history)
+    assert all(len(entry) == 3 for entry in history)       # iteration, loss, wall time (Addendum v2.2 2.8)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -233,7 +233,7 @@ def test_resume_skips_completed_and_reruns_failures(tmp_path):
         rows = list(csv.DictReader(f))
     assert sorted(r['seed'] for r in rows) == ['0', '1', '2']
     assert all(r['stopping_reason'] == 'target' for r in rows)
-    assert json.loads(rows[0]['loss_history_every_10']) == [[0, 1.0], [1, 0.5]]  # not double-encoded
+    assert json.loads(rows[0]['loss_history_every_10']) == [[0, 1.0, None], [1, 0.5, None]]  # not double-encoded
 
 
 def test_run_problem_selects_sizes_methods_and_passes(monkeypatch):

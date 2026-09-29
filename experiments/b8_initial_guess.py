@@ -53,7 +53,8 @@ from lilq.four_method_log import stopping_fields
 from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
 from lilq.run_metadata import first_stall_iteration
-from lilq.saved_models import save_network, save_solution
+from lilq.saved_models import save_history, save_network, save_solution
+from lilq.source_lock import current_commit
 from lilq.solvers import line_search_cap
 from problems.buckley_leverett import run_lil_n, run_lil_q, run_nil_n, run_nil_q
 
@@ -66,7 +67,7 @@ OUTPUT_DIR = Path(_proj) / 'results' / 'b8_initial_guess'
 COLUMNS = ('case', 'guess', 'P', 'method', 'seed', 'iterations', 'evaluations', 'final_loss',
            'target', 'target_reached', 'stopping_reason', 'iterations_cap', 'evaluations_cap',
            'first_stall_iteration', 'stall_flag_ever', 'chi_history',
-           'stall_iteration', 'stall_evaluations', 'stall_time_s', 'wall_s', 'device', 'error')
+           'stall_iteration', 'stall_evaluations', 'stall_time_s', 'wall_s', 'device', 'commit', 'error')
 
 
 def row_key(row):
@@ -95,12 +96,14 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
         log_dir = Path(log_root) / f'{case}_{guess}_P{N * N}' if log_root else None
         if log_dir:
             log_dir.mkdir(parents=True, exist_ok=True)
-        basis, c, _metrics, summary = run_lil_q(config, opt, verbose=False, iteration_logger=logger,
-                                                run_json_path=(log_dir / 'run.json') if log_dir else None)
+        try:
+            basis, c, _metrics, summary = run_lil_q(config, opt, verbose=False, iteration_logger=logger,
+                                                    run_json_path=(log_dir / 'run.json') if log_dir else None)
+        finally:            # a run that diverges or raises keeps its chi_k history (Addendum v2.2 2.8)
+            if log_dir:
+                logger.to_csv(log_dir / 'iterations.csv')
         if model_dir:
             save_solution(model_dir, {'u': (basis, c)}, config, opt)
-        if log_dir:
-            logger.to_csv(log_dir / 'iterations.csv')
         rows = solve_rows(logger.rows)
         chi = [r['chi'] for r in rows]
         row.update(
@@ -120,9 +123,11 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
                 save_solution(model_dir, {'u': (result[0], result[1])}, config, opt)
             else:
                 save_network(model_dir, result[0], config, opt)
+            save_history(model_dir, result[-2])
         stop = stopping_fields(method, summary, opt)
         row.update(stop)
-    row.update(final_loss=summary['final_loss'], target_reached=bool(summary['converged']))
+    row.update(final_loss=summary['final_loss'], target_reached=bool(summary['converged']),
+               commit=current_commit())
     return row
 
 

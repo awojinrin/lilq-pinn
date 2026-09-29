@@ -111,6 +111,29 @@ def load_network(path: PathLike) -> Dict[str, Any]:
     return _load(_resolve(path, NETWORK_FILE))
 
 
+HISTORY_FILE = 'history.csv'
+
+
+def save_history(run_dir: PathLike, metrics, filename: str = HISTORY_FILE) -> Path:
+    """The full per-iteration history of an L-BFGS run (a
+    ``lilq.metrics.MetricsTracker``): iteration, real evaluations, the
+    weighted loss and its components, wall time -- next to the run's saved
+    model (Addendum v2.2 Section 2.8: time to the manuscript targets and to
+    a common loss is read from it)."""
+    import csv
+    data = metrics.to_dict()
+    cols = ['iteration', 'n_func_evals', 'loss', 'pde_loss', 'ic_loss', 'bc_loss', 'wall_time']
+    path = Path(run_dir) / filename
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + '.tmp')
+    with open(tmp, 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(cols)
+        w.writerows(zip(*(data[c] for c in cols)))
+    os.replace(tmp, path)
+    return path
+
+
 def save_checkpoint(path: PathLike, state: Dict[str, Any]) -> Path:
     """A mid-training checkpoint (atomic; overwrites the previous one)."""
     return _atomic_save({'format': FORMAT_VERSION, **state}, Path(path))

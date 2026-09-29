@@ -40,7 +40,7 @@ FOUR_METHOD_CSV_COLUMNS = (
     "final_loss", "converged", "stopping_reason",
     "iterations_cap", "line_searches_cap",
     "stall_iteration", "stall_evaluations", "stall_time_s",
-    "loss_history_every_10", "error",
+    "loss_history_every_10", "commit", "error",
 )
 
 RowKey = Tuple[str, int, str, str, str]
@@ -133,7 +133,9 @@ def stopping_fields(method: str, summary: Dict[str, Any], opt) -> Dict[str, Any]
 
 
 def subsample_loss_history(metrics_dict: Dict[str, list], every: int = 10) -> List[list]:
-    """``[[iteration, loss], ...]`` from a ``MetricsTracker.to_dict()``
+    """``[[iteration, loss, wall_time_s], ...]`` (wall time added by Addendum
+    v2.2 Section 2.8; the full history is saved next to the model) from a
+    ``MetricsTracker.to_dict()``
     dict, keeping every ``every``-th recorded row (iteration 0, 10, 20,
     ... since ``MetricsTracker.record`` is called once per optimizer
     step with a contiguous, 1-per-call iteration counter -- so index
@@ -144,12 +146,13 @@ def subsample_loss_history(metrics_dict: Dict[str, list], every: int = 10) -> Li
     """
     iterations = metrics_dict.get("iteration", [])
     losses = metrics_dict.get("loss", [])
+    times = metrics_dict.get("wall_time", [None] * len(iterations))
     n = len(iterations)
     if n == 0:
         return []
-    history = [[iterations[i], losses[i]] for i in range(0, n, every)]
+    history = [[iterations[i], losses[i], times[i]] for i in range(0, n, every)]
     if history[-1][0] != iterations[-1]:
-        history.append([iterations[-1], losses[-1]])
+        history.append([iterations[-1], losses[-1], times[-1]])
     return history
 
 

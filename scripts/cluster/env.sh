@@ -34,6 +34,12 @@ export PKG="$SCRATCH/lilq-run/lilq-pinn/results/package1"   # package1_results/
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"
 mkdir -p "$PKG"
 
+# Provenance lock (Addendum v2.2 Section 2.8.4): the first job records the
+# commit and the source-tree hash in $PKG/COMMIT; every job refuses to run
+# if the code differs from it, if the files on disk differ from the bundle
+# as uploaded, or if the code's version is unknown.
+python -m lilq.source_lock --pkg "$PKG" || exit 1
+
 echo "job ${SLURM_JOB_ID:-?} on $(hostname): $OMP_NUM_THREADS threads, $(nproc) cores usable," \
      "$(scontrol show job "${SLURM_JOB_ID:-0}" 2>/dev/null | grep -o 'OverSubscribe=[A-Z]*' || echo 'OverSubscribe=?')"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null || echo "no GPU visible"

@@ -93,10 +93,13 @@ def build_run_metadata(**fields: Any) -> Dict[str, Any]:
 
 
 def write_run_json(path: Union[str, Path], metadata: Dict[str, Any]) -> None:
+    """Writes ``run.json``, with the commit of the running code added
+    (Addendum v2.2 Section 2.8.4)."""
+    from lilq.source_lock import current_commit
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
-        json.dump(metadata, f, indent=2, default=_json_default)
+        json.dump({**metadata, "commit": current_commit()}, f, indent=2, default=_json_default)
 
 
 def _json_default(obj: Any) -> Any:

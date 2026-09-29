@@ -50,6 +50,7 @@ import numpy as np
 from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
 from lilq.saved_models import save_solution
+from lilq.source_lock import current_commit
 from lilq.run_metadata import first_stall_iteration
 
 DEFAULT_OUT_ROOT = Path(__file__).resolve().parent.parent / 'results' / 'package1'
@@ -301,7 +302,8 @@ def execute_run(run: Run, root: Path, fresh=False, verbose=True) -> str:
     wall = time.perf_counter() - t0
     save_provenance(run_dir)
     summary = {'run': run.name, 'benchmark': run.benchmark, 'config': run.config_label,
-               'device': run.device, 'pass': run.pass_, 'wall_total_s': wall, **summary}
+               'device': run.device, 'pass': run.pass_, 'wall_total_s': wall,
+               'commit': current_commit(), **summary}
     # Written last: its presence marks the run complete.
     (run_dir / 'summary.json').write_text(json.dumps(_jsonable(summary), indent=2), encoding='utf-8')
     if verbose:

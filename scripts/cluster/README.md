@@ -57,6 +57,13 @@ profile's resources apply: `bash scripts/cluster/sbatch.sh scripts/cluster/20_fo
 Every job resumes where it stopped: completed runs are skipped, and a B9
 Darcy network resumes from its last 5,000-epoch checkpoint.
 
+**Provenance lock.** The first job writes `results/package1/COMMIT` (the
+bundle's commit and source-tree hash); every job then refuses to run if the
+code differs from it, if a file was edited after upload, or if the bundle
+was built from uncommitted changes (`lilq/source_lock.py`). To run a new
+version of the code, upload a new bundle and use a new package root: results
+from two versions must not mix.
+
 Every run saves its trained model next to its logs (`solution.pt`,
 `network.pt`, F1's `model.pt`, F2's `theta.pt`); see "Reloading trained
 models" in the top-level README. Keep `package1_results/` whole when copying

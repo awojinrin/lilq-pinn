@@ -44,7 +44,8 @@ def test_write_run_json_round_trips(tmp_path):
 
     with open(out_path) as f:
         loaded = json.load(f)
-    assert loaded == meta
+    from lilq.source_lock import current_commit
+    assert loaded == {**meta, "commit": current_commit()}     # the commit is added (Addendum v2.2 2.8.4)
 
 
 def test_write_run_json_handles_numpy_types(tmp_path):

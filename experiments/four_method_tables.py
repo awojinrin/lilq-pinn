@@ -55,7 +55,8 @@ from lilq.four_method_log import (
     FourMethodLogger, row_key, stopping_fields, subsample_loss_history,
 )
 from lilq.provenance import save_provenance
-from lilq.saved_models import save_network, save_solution
+from lilq.saved_models import save_history, save_network, save_solution
+from lilq.source_lock import current_commit
 from lilq.solvers import line_search_cap
 
 from problems.bratu import (
@@ -184,6 +185,7 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                         save_solution(model_dir, {'u': (result[0], result[1])}, run_config, opt)
                     else:
                         save_network(model_dir, result[0], run_config, opt)
+                    save_history(model_dir, metrics)
                 except Exception:
                     save_error = {'error': 'model not saved: ' + traceback.format_exc()}
 
@@ -201,6 +203,7 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 stall_iteration=stop['stall_iteration'], stall_evaluations=stop['stall_evaluations'],
                 stall_time_s=stop['stall_time_s'],
                 loss_history_every_10=subsample_loss_history(metrics.to_dict()),
+                commit=current_commit(),
                 **save_error,
             )
             if csv_path is not None:

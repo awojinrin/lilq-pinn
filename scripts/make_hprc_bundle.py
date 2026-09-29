@@ -3,8 +3,11 @@ Build the upload bundle for running experiments on a cluster (TAMU HPRC).
 
 The bundle is the git-tracked source (minus ``reference_results/``, which
 isn't needed to run anything) under a single top-level ``lilq-pinn/``
-folder, plus a ``PROVENANCE.json`` recording the commit hash, branch, and
-any uncommitted diff. The cluster copy has no ``.git``, so
+folder, plus a ``PROVENANCE.json`` recording the commit hash, branch, the
+file list and the source-tree hash (``lilq.source_lock``; every cluster job
+checks the files on disk against it). A tree with uncommitted changes is
+refused unless ``--allow-dirty`` (Addendum v2.2 Section 2.8.4: the bundle
+is built from a clean tree at the final commit). The cluster copy has no ``.git``, so
 ``lilq.provenance.capture_git_info`` reads this file instead -- every
 ``hardware.json`` written on the cluster still names the exact code that
 produced it (Computational_Package_1_v2.md Section 2).
@@ -30,7 +33,9 @@ import tarfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-EXCLUDED_PREFIXES = ("reference_results/",)
+sys.path.insert(0, str(REPO_ROOT))
+from lilq.source_lock import EXCLUDED_PREFIXES, normalized_bytes, tree_hash  # noqa: E402
+
 TOP_LEVEL = "lilq-pinn"
 
 
@@ -47,11 +52,14 @@ def tracked_files():
 
 def provenance_record() -> dict:
     diff = _git("diff", "HEAD")
+    files = tracked_files()
     return {
         "commit": _git("rev-parse", "HEAD").strip(),
         "branch": _git("rev-parse", "--abbrev-ref", "HEAD").strip(),
         "dirty": bool(diff),
         "diff": diff or None,
+        "files": files,
+        "tree_hash": tree_hash(REPO_ROOT, files),
         "bundled_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "bundled_on_host": platform.node(),
     }
@@ -71,15 +79,13 @@ def build_bundle(out_path: Path) -> dict:
     carriage returns in job scripts. Binary files (any NUL byte) are copied
     unchanged."""
     record = provenance_record()
-    files = tracked_files()
+    files = record["files"]
     with tarfile.open(out_path, "w:gz") as tar:
         for rel in files:
             src = REPO_ROOT / rel
             if not src.is_file():
                 continue
-            data = src.read_bytes()
-            if b"\0" not in data:
-                data = data.replace(b"\r\n", b"\n")
+            data = normalized_bytes(src)
             executable = rel.endswith((".sh", ".slurm"))
             _add_bytes(tar, f"{TOP_LEVEL}/{rel}", data, 0o755 if executable else 0o644)
         _add_bytes(tar, f"{TOP_LEVEL}/PROVENANCE.json", json.dumps(record, indent=2).encode())
@@ -90,7 +96,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--out", type=str, default=None,
                         help="Output .tar.gz (default: lilq-pinn-<short sha>.tar.gz next to the repo)")
+    parser.add_argument("--allow-dirty", action="store_true",
+                        help="Bundle uncommitted changes anyway (the cluster jobs will then refuse to run).")
     args = parser.parse_args()
+    if _git("status", "--porcelain", "--untracked-files=no").strip() and not args.allow_dirty:
+        sys.exit("Uncommitted changes to tracked files: commit first (or --allow-dirty for a test bundle).")
 
     short_sha = _git("rev-parse", "--short", "HEAD").strip()
     out_path = Path(args.out) if args.out else REPO_ROOT.parent / f"lilq-pinn-{short_sha}.tar.gz"

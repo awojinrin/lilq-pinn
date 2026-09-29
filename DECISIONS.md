@@ -17,6 +17,31 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Data retention and the provenance lock (Addendum v2.2 Section 2.8)
+
+Nothing will be rerun, so:
+
+1. **Four-method sweep and B8: the full per-iteration history** of every
+   run (`history.csv`: iteration, real evaluations, weighted loss and its
+   components, wall time) next to its saved model; the CSV's every-10-
+   iteration history gains the wall time (`[iteration, loss, time]`).
+   Time to the manuscript targets and to a common loss are read from these.
+2. **B8 writes the LiL-Q log in a `finally` block**, so a run that
+   diverges or raises keeps its chi_k history.
+3. **Provenance lock** (`lilq/source_lock.py`). The bundle records its file
+   list and a source-tree hash (SHA-256 over each file's path and content,
+   text normalized to LF). The first job on a package root writes
+   `$PKG/COMMIT` (commit and tree hash); `env.sh` checks it before every
+   job, which refuses to run if the commit or the tree hash differs, if the
+   files on disk no longer match the bundle (edited on the cluster), if the
+   bundle was built from uncommitted changes, or if the version is
+   unknown. `make_hprc_bundle.py` refuses a dirty tree unless
+   `--allow-dirty`. The commit is recorded in every `run.json` (all
+   LiL-Q runs and Component A), `summary.json`, and every row of the
+   four-method, B8 and oversampling CSVs.
+
+---
+
 ## 2026-09-29 -- K_max = 60 pass; Beltrami conditioning every iteration and a K_max = 8 pass; retained kappa and ||beta|| logged (Addendum v2.2 Section 2.7)
 
 For the table of where the proposed stopping rule would stop:

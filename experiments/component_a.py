@@ -57,6 +57,7 @@ import baselines.f1_pinn as f1
 import baselines.lm_kovasznay as lm
 from baselines.search import save_search
 from lilq.provenance import save_provenance
+from lilq.source_lock import current_commit
 
 FAMILIES = ('F1', 'F2')
 SCREEN_BUDGET_S = 600.0
@@ -125,6 +126,9 @@ def run_one(root, stage, family, config, seed, budget_s, out_dir, device, precis
         except Exception:
             run = dict(vars(args), end_reason='failure', final_loss=None, traceback=traceback.format_exc())
         run.update(config=config, seed=seed)
+        (out_dir / 'run.json').write_text(json.dumps(run, indent=2, default=str))
+    if 'commit' not in run:           # the code's commit in every run.json (Addendum v2.2 2.8.4)
+        run['commit'] = current_commit()
         (out_dir / 'run.json').write_text(json.dumps(run, indent=2, default=str))
     save_provenance(out_dir)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
