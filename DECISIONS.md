@@ -17,6 +17,34 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- F2 search: 24 distinct configurations (reply to wave 1, item 2.1)
+
+Wave 1's `search/F2_configs.json` had only 17 distinct configurations of
+24: `draw_f2` redrew draws over the n_theta cap but kept repeats, so the
+top-3 selection could pick one configuration twice and spend 5-10 GPU-hours
+of the full stage on it.
+
+**Rule.** `baselines.search.draw_f2` now redraws a repeat from the same
+generator (`default_rng(12345)`), exactly as it redraws a draw over the cap,
+until it has 24 distinct configurations. Two configurations are the same
+when width, depth, m, sigma_FF and N_int all agree. 42 of the space's 72
+configurations satisfy n_theta <= 20,000 (width 100 never does, nor does
+width 64 at depth 4 with m = 64), so 24 distinct exist; `draw_f2` raises if
+a cap ever leaves fewer than 24. The list's first 11 configurations are
+wave 1's; from the first repeat on, the draws differ. The saved list
+records `redrawn_violators` (32) and `redrawn_duplicates` (11). It is
+written once, by wave 2's gate job (29), into `results/wave2`.
+
+`component_a.select` takes the top three *distinct* configurations by
+screening loss, whatever the list, and F1's list (already 24 distinct) is
+unchanged.
+
+Tests: `tests/test_baseline_search.py` (24 distinct entries in both saved
+lists; wave 1's first 11 draws kept; the too-few-under-the-cap error;
+selection of three distinct configurations from a list with repeats).
+
+---
+
 ## 2026-09-29 -- Wave-1 preflight failed on a test import; tests share helpers through conftest
 
 The wave-1 preflight at `111dddc` (job 19898134, 14 min) failed on two of

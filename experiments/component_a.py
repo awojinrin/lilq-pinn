@@ -167,17 +167,33 @@ def screen(root, family, device, budget_s=SCREEN_BUDGET_S, configs=None):
             for c in configs}
 
 
+def _config_key(c):
+    """A configuration without its id: two ids with the same key are the
+    same configuration."""
+    return json.dumps({k: v for k, v in c.items() if k != 'id'}, sort_keys=True)
+
+
 def select(root, family):
+    """The top three *distinct* configurations by screening loss (the
+    advisor's reply to wave 1, item 2.1: the saved lists are distinct, and
+    selection does not rely on it)."""
+    configs = load_configs(root, family)
+    keys = {c['id']: _config_key(c) for c in configs}
     runs = []
-    for c in load_configs(root, family):
+    for c in configs:
         path = Path(root) / 'screening' / f"{c['id']}_s0" / 'run.json'
         if not path.exists():
             raise FileNotFoundError(f"screening run missing: {path}")
         runs.append((c['id'], _final_loss(json.loads(path.read_text()))))
     ranking = sorted(runs, key=lambda r: r[1])
+    top, chosen = [], set()
+    for i, _ in ranking:
+        if keys[i] not in chosen and len(top) < TOP_K:
+            top.append(i)
+            chosen.add(keys[i])
     selection = {'selection_loss': 'final_loss_unweighted' if family == 'F1' else 'final_loss',
                  'ranking': [{'id': i, 'loss': l} for i, l in ranking],
-                 'top': [i for i, _ in ranking[:TOP_K]]}
+                 'top': top}
     (Path(root) / 'screening' / f'{family}_selection.json').write_text(json.dumps(selection, indent=2))
     return selection
 
