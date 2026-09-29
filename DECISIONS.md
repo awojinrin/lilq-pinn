@@ -17,6 +17,44 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- The advisor's reply, Section 2: fixes for waves 2 and 3, made before wave 1
+
+Made now rather than before waves 2 and 3, so all three waves run on one
+commit (a later commit would make wave 2 rerun the preflight and the A1
+gate). Each has a test (`tests/test_advisor_reply_fixes.py`).
+
+1. **Component A selection:** `_final_loss` maps every non-finite value
+   (NaN from a diverged run, as well as None) to inf, so a failed
+   configuration can never enter the top 3 or become the representative.
+2. **The lock's creation** (`source_lock.py`): each job writes its own
+   temporary file and creates `COMMIT` by a hard link, which fails if it
+   already exists, so the first job's lock is never overwritten; reading
+   retries a half-written file. (Jobs 30, 20 and 21 of wave 2 start together.)
+3. **PyTorch version in every job:** `env.sh` runs `assert_torch_version`
+   after the lock check (waves 2 and 3 skip the preflight on unchanged code).
+4. **B8's LiL-Q rows:** a non-finite final loss is `failure`, as 2.3's rule.
+5. **Diverged L-BFGS runs stop** (`lilq.solvers`): NaN parameters never
+   compare equal, so the stall test cannot fire and a diverged run spent its
+   whole budget. NiL-N and LiL-N stop at the first non-finite loss, NiL-Q
+   at the first non-finite full loss; the run is classified `failure`.
+6. **B9:** `commit` and `n_params` columns in the B9 CSV; the finalize
+   counts 24 NiL rows (4 fields x 3 seeds x 2 precisions); the `DarcyPINN`
+   docstring says plain MLPs (it said ResNet-style); walltime 4 h per task
+   (small networks are overhead-bound, and a Grace core may be slower than
+   the laptop's).
+
+From the reply's notes: Component C checks that `N_rows` equals the rows
+the solver saved in `collocation.npz`; `run_gpu_equivalence`'s docstring
+describes the tightened B3 waiver; `run_beltrami_pinned.py` skips a
+completed run, so a resubmitted job 10a does not redo it. **The golden-
+trajectory check the advisor suggested**, against the reviewed commit
+itself: Bratu P = 100, 300 iterations on the CPU, the loss trajectory from
+`2263cef`'s own code and from this commit is bitwise identical for NiL-N and
+for LiL-N (301 entries each), with real evaluations 636 -> 337 and
+612 -> 313.
+
+---
+
 ## 2026-09-29 -- The advisor's reply to our Addendum v2.2 response: before wave 1
 
 The advisor accepted the implementation (a static reading of `2263cef`..

@@ -797,7 +797,7 @@ def evaluate_velocity_y(result: Dict, physics: DarcyPhysics,
 class DarcyPINN:
     """PINN-based (NiL-N) solver for single-phase Darcy flow on SPE10 fields.
 
-    Uses three separate ResNet-style MLPs with SiLU activation for pressure,
+    Uses three separate plain MLPs (``lilq.nn.MLP``) with SiLU activation for pressure,
     x-velocity, and y-velocity.  Loss is sqrt(K*)-normalised to handle the
     extreme heterogeneity of SPE10 permeability fields.
 

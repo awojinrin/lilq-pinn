@@ -391,8 +391,9 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
     """Section 3.2 / check B3, every Kovasznay size: the GPU run against
     the CPU ``gelsy`` run (``||beta_GPU - beta_CPU|| / ||beta_CPU|| <= 1e-8``,
     ``||R_lin||_h`` equal to six significant figures -- ``equivalent``, the
-    spec's rule; ``equivalent_amended`` waives the six figures when both
-    residuals are at Algorithm 1's round-off floor), plus the solve time
+    spec's rule; ``equivalent_amended`` waives the six figures when the two
+    residuals differ by no more than the CPU run's round-off floor
+    kappa * eps_mach * ||f||_h, Addendum v2.2's tightened rule), plus the solve time
     of CPU ``gelsy`` (the paper's), CPU ``gels`` and the GPU QR on the same
     final-iterate system (median of ``repeats`` after a warm-up; the GPU
     time includes the host-to-device copy of A; ``t_h2d_gpu_s`` and

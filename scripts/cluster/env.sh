@@ -44,6 +44,9 @@ mkdir -p "$PKG"
 # if the code differs from it, if the files on disk differ from the bundle
 # as uploaded, or if the code's version is unknown.
 python -m lilq.source_lock --pkg "$PKG" || exit 1
+# PyTorch 2.10.0 in every job, not only in the preflight, which waves 2 and 3
+# skip on unchanged code (Addendum v2.2 Section 2.4; the advisor's reply, item 2.3).
+python -c "from lilq.provenance import assert_torch_version; assert_torch_version()" || exit 1
 
 echo "job ${SLURM_JOB_ID:-?} on $(hostname): $OMP_NUM_THREADS threads, $(nproc) cores usable," \
      "$(scontrol show job "${SLURM_JOB_ID:-0}" 2>/dev/null | grep -o 'OverSubscribe=[A-Z]*' || echo 'OverSubscribe=?')"

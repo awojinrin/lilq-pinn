@@ -51,6 +51,6 @@ index = list(csv.DictReader(open(B / "runs_index.csv")))
 fm = list(csv.DictReader(open(B / "four_method_tables.csv")))
 print(f"Section 3.3 runs: {len(index)} ({sum(r['status'] != 'ok' for r in index)} failed)")
 print(f"four-method rows: {len(fm)} ({sum(r['stopping_reason'] == 'failure' for r in fm)} failures)")
-print(f"B9 rows: {len(rows)} (NiL: {sum(r['method'] == 'NiL' for r in rows)} of 12)")
+print(f"B9 rows: {len(rows)} (NiL: {sum(r['method'] == 'NiL' for r in rows)} of 24: 4 fields x 3 seeds x 2 precisions)")
 print(f"B8 rows: {len(b8)} of 128 ({sum(r['stopping_reason'] == 'failure' for r in b8)} failures)")
 PY

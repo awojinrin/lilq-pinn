@@ -12,6 +12,7 @@ Each solver accepts callback functions for the problem-specific parts
 (PDE residual, boundary conditions, quasilinearization formula).
 """
 
+import math
 import time
 import numpy as np
 import torch
@@ -171,6 +172,14 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
 
         if verbose and iteration % 500 == 0:
             print(f"  Iter {iteration} (evals: {objective.n_evals}): loss={loss:.6e}")
+        if not math.isfinite(loss):
+            # Diverged: NaN parameters never compare equal, so the stall test
+            # cannot fire and the run would spend its whole budget. Stop; the
+            # non-finite final loss is classified 'failure' (the advisor's
+            # reply to Addendum v2.2, item 2.5).
+            if verbose:
+                print(f"  Non-finite loss at iter {iteration}: stopping")
+            break
         if loss < R_tol:
             if verbose:
                 print(f"  Converged at iter {iteration} ({objective.n_evals} evals)")
@@ -383,6 +392,8 @@ def solve_nil_q(
             monitor_evals += 1
             metrics.record(total_iterations, objective.n_evals, total_loss.item(), pde_val, ic_val, bc_val)
 
+            if not math.isfinite(total_loss.item()):       # diverged: stop (item 2.5 of the advisor's reply)
+                break
             if total_loss.item() < R_tol or objective.n_evals >= max_line_searches:
                 break
             if torch.equal(objective.point(), x_before):
@@ -393,6 +404,10 @@ def solve_nil_q(
             print(f"    Loss: {metrics.data['loss'][-1]:.6e} "
                   f"(iter: {total_iterations}, evals: {objective.n_evals})")
 
+        if not math.isfinite(metrics.data['loss'][-1]):
+            if verbose:
+                print(f"  Non-finite loss at quasi-iteration {quasi_iter + 1}: stopping")
+            break
         if metrics.data['loss'][-1] < R_tol:
             if verbose:
                 print(f"  Converged at quasi-iteration {quasi_iter + 1}")

@@ -40,6 +40,7 @@ import torch
 
 from lilq.provenance import save_provenance
 from lilq.saved_models import save_solution
+from lilq.source_lock import current_commit
 from problems.darcy import (
     DarcyConfig, DarcyPhysics, delta_fv, run_nil_n_darcy, solve_fvm, solve_lilq_darcy, tpfa_residual,
 )
@@ -52,20 +53,21 @@ DATA_DIR = Path(_proj) / 'data' / 'spe10'
 OUTPUT_DIR = Path(_proj) / 'results' / 'darcy_fv_comparison'
 
 COLUMNS = ('field', 'method', 'seed', 'delta_fv', 'rel_l2_vs_abs_pressure', 'max_abs_err_psi',
-           'tpfa_residual', 'tpfa_residual_rel', 'time_s', 'final_loss', 'dtype')
+           'tpfa_residual', 'tpfa_residual_rel', 'time_s', 'final_loss', 'dtype', 'n_params', 'commit')
 
 
 def _config(field, order):
     return DarcyConfig(ORDER_H=order, ORDER_U=order, ORDER_V=order, perm_file=f'perm_field_{field}.txt')
 
 
-def _row(field, method, seed, P_h, P_fvm, p_bot, tpfa, time_s, final_loss, dtype):
+def _row(field, method, seed, P_h, P_fvm, p_bot, tpfa, time_s, final_loss, dtype, n_params=None):
     return {
         'field': field, 'method': method, 'seed': seed,
         'delta_fv': delta_fv(P_h, P_fvm, p_bot),
         'rel_l2_vs_abs_pressure': float(np.linalg.norm(P_h - P_fvm) / np.linalg.norm(P_fvm)),
         'max_abs_err_psi': float(np.abs(P_h - P_fvm).max()),
         **tpfa, 'time_s': time_s, 'final_loss': final_loss, 'dtype': dtype,
+        'n_params': n_params, 'commit': current_commit(),
     }
 
 
@@ -96,8 +98,9 @@ def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=T
                       {'h_tilde': (lil['basis_h_tilde'], lil['c_h_tilde']),
                        'u': (lil['basis_u'], lil['c_u']), 'v': (lil['basis_v'], lil['c_v'])},
                       config, extra={'P_lil': lil['P_lil'], 'P_fvm': P_fvm})
+    n_lil = sum(len(lil[k]) for k in ('c_h_tilde', 'c_u', 'c_v'))
     rows = [_row(field, 'LiL', '', lil['P_lil'], P_fvm, p_bot, tpfa,
-                 time.perf_counter() - t0, '', 'float64')]
+                 time.perf_counter() - t0, '', 'float64', n_lil)]
     if verbose:
         print(f"  {field} LiL: delta_FV = {rows[-1]['delta_fv']:.3e}  "
               f"(TPFA residual {tpfa['tpfa_residual_rel']:.1e} relative)", flush=True)
@@ -107,8 +110,10 @@ def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=T
             nil = run_nil_n_darcy(config, physics, max_epochs=nil_epochs, seed=seed, verbose=False,
                                   dtype=getattr(torch, dtype),
                                   model_dir=Path(model_root) / f'NiL_{field}_s{seed}_{dtype}' if model_root else None)
+            pinn = nil['pinn']
+            n_nil = sum(q.numel() for net in (pinn.net_P, pinn.net_U, pinn.net_V) for q in net.parameters())
             rows.append(_row(field, 'NiL', seed, np.asarray(nil['fields']['P'], dtype=np.float64), P_fvm, p_bot,
-                             tpfa, nil['training_time'], nil['final_loss'], dtype))
+                             tpfa, nil['training_time'], nil['final_loss'], dtype, n_nil))
             if verbose:
                 print(f"  {field} NiL seed {seed} {dtype}: delta_FV = {rows[-1]['delta_fv']:.3e}  "
                       f"({nil['training_time']:.0f} s)", flush=True)

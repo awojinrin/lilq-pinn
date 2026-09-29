@@ -157,6 +157,9 @@ def run_one(benchmark, N, ratio, distribution, seed, run_dir, quick=False):
                eps_u=last.get('eps_u'), eps_v=last.get('eps_v'), eps_p=last.get('eps_p'),
                eps_p_meanfree=last.get('eps_p_meanfree'), t_cum_s=last['t_cum_s'], stopping=stopping,
                N_distinct=int(np.load(run_dir / 'collocation.npz')['n_distinct']), commit=current_commit())
+    saved_rows = len(np.load(run_dir / 'collocation.npz')['x'])
+    if saved_rows != row['N_rows']:        # the row-count formula and the solver must agree
+        raise RuntimeError(f"N_rows {row['N_rows']} != {saved_rows} collocation rows saved by the solver")
     save_provenance(run_dir)          # hardware.json per run, not only at the sweep root (Addendum v2.2 2.8.4)
     return row
 

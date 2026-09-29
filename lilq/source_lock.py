@@ -30,9 +30,11 @@ import datetime
 import functools
 import hashlib
 import json
+import os
 import platform
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -120,6 +122,17 @@ def current_commit() -> Optional[str]:
     return source_identity()["commit"]
 
 
+def _read_lock(lock: Path, attempts: int = 20) -> dict:
+    """The lock's record, retrying a moment if the file is not yet readable."""
+    for i in range(attempts):
+        try:
+            return json.loads(lock.read_text())
+        except (OSError, ValueError):
+            if i == attempts - 1:
+                raise
+            time.sleep(0.5)
+
+
 def check_lock(pkg: Path, root: Path = REPO_ROOT) -> dict:
     """Write ``<pkg>/COMMIT`` at the first call; afterwards raise unless the
     code is the same. Raises ``RuntimeError`` with the reason."""
@@ -133,16 +146,19 @@ def check_lock(pkg: Path, root: Path = REPO_ROOT) -> dict:
         record = {"commit": ident["commit"], "tree_hash": ident["tree_hash"], "source": ident["source"],
                   "locked_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                   "locked_on_host": platform.node()}
-        tmp = lock.with_name(LOCK_FILE + ".tmp")
+        # Jobs of a wave can start together: each writes its own temporary
+        # file, and the lock is created by a hard link, which fails if it
+        # already exists -- the first job's lock stands, never overwritten,
+        # and never read half-written (the advisor's reply, item 2.2).
+        tmp = lock.with_name(f"{LOCK_FILE}.{platform.node()}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(record, indent=2))
         try:
-            tmp.rename(lock)                  # atomic; a concurrent first job loses the race harmlessly
-        except OSError:
+            os.link(tmp, lock)
+        except FileExistsError:
+            pass
+        finally:
             tmp.unlink(missing_ok=True)
-        if lock.exists():
-            record = json.loads(lock.read_text())
-    else:
-        record = json.loads(lock.read_text())
+    record = _read_lock(lock)
     for key in ("commit", "tree_hash"):
         if record.get(key) != ident[key]:
             raise RuntimeError(f"provenance: this package root ({pkg}) is locked to {key} "

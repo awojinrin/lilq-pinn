@@ -38,6 +38,7 @@ import argparse
 import csv
 import datetime
 import json
+import math
 import os
 import statistics
 import sys
@@ -152,9 +153,11 @@ def _final_loss(run):
     """The selection loss (Addendum v2.2 Section 2.5): F1's unweighted final
     loss (``final_loss_unweighted``: its balanced or lambda_bc-weighted loss
     is not comparable across configurations); F2's final loss, whose row
-    weights are the same for every configuration."""
+    weights are the same for every configuration. Anything missing or
+    non-finite (a failed or diverged run: NaN would sort arbitrarily) ranks
+    last, as inf."""
     v = run.get('final_loss_unweighted', run.get('final_loss'))
-    return v if isinstance(v, (int, float)) else float('inf')
+    return float(v) if isinstance(v, (int, float)) and math.isfinite(v) else float('inf')
 
 
 def screen(root, family, device, budget_s=SCREEN_BUDGET_S, configs=None):

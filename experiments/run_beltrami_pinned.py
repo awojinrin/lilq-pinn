@@ -55,6 +55,10 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
     """Section 3.7's run; ``kmax=True``: its K_max pass (8 iterations, zero
     coefficient-change tolerance; Addendum v2.2 Section 2.7)."""
     out_dir = Path(out_dir)
+    if (out_dir / 'report.json').exists():   # completed: a resubmitted job does not redo it
+        if verbose:
+            print(f"  {out_dir}: done, skipping")
+        return json.loads((out_dir / 'report.json').read_text())
     np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
     config = BeltramiConfig(
         N_vel=N_VEL, N_p=N_P, basis_type=DEFAULT_BASIS,

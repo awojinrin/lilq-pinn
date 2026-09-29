@@ -109,7 +109,8 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
         row.update(
             iterations=summary['total_iterations'], evaluations=summary['total_iterations'],
             iterations_cap=opt.max_quasi_iters_lil, evaluations_cap=opt.max_quasi_iters_lil,
-            stopping_reason='target' if summary['converged'] else 'iteration_cap',
+            stopping_reason=('failure' if not np.isfinite(summary['final_loss'])      # 2.3's rule
+                             else 'target' if summary['converged'] else 'iteration_cap'),
             first_stall_iteration=first_stall_iteration(logger.rows),
             stall_flag_ever=any(bool(r['stall_flag']) for r in rows),
             chi_history=';'.join('' if c is None or np.isnan(c) else f'{c:.3g}' for c in chi),
