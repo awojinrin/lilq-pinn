@@ -7,7 +7,8 @@
 #   30 A screen -> 31 A full -> 32 A CPU, 33 A float32
 #   20 / 21 for Burgers, viscous BL, gravity BL, each with its stall controls;
 #     task 0 (Bratu): the controls of wave 1's stalled Bratu runs (--array=0-3)
-#   11a / 11b timing reruns (warm-up runs; item 2.2)
+#   11a / 11b timing reruns (warm-up runs; item 2.2); 12 Beltrami and Darcy
+#     (the advisor's reply of 30 Sept; in the wave that ran, submitted by hand)
 #   -> 91 wave report: results/wave2_report.tar.gz.
 # With wave 1's code, wave 1's Component A search and checks (A1, A2, F2) are
 # copied in and gate Component A; with new code they are redone here.
@@ -50,7 +51,8 @@ submit fmg  $S/20_four_method_gpu.slurm  ${deps[@]+"${deps[@]}"} --array=0-3
 submit fmc  $S/21_four_method_cpu.slurm  ${deps[@]+"${deps[@]}"} --array=0-3
 submit tcpu $S/11a_timing_reruns_cpu.slurm ${deps[@]+"${deps[@]}"}
 submit tgpu $S/11b_timing_reruns_gpu.slurm ${deps[@]+"${deps[@]}"}
-submit rep  $S/91_wave_report.slurm      --dependency=afterany:$scr:$full:$acpu:$af32:$fmg:$fmc:$tcpu:$tgpu
+submit tbd  $S/12_timing_reruns_beltrami_darcy.slurm ${deps[@]+"${deps[@]}"}   # added 30 Sept (submitted by hand in wave 2)
+submit rep  $S/91_wave_report.slurm      --dependency=afterany:$scr:$full:$acpu:$af32:$fmg:$fmc:$tcpu:$tgpu:$tbd
 [[ "$DRY_RUN" == 1 ]] || echo "Wave 2 submitted. When job $rep finishes: results/wave2_report.tar.gz."
 [[ "$DRY_RUN" == 1 ]] || echo "When the first timed job starts, check sacct shows gres/gpu=1 (item 2.3):"
 [[ "$DRY_RUN" == 1 ]] || echo "  sacct -X -j <job> --format=JobID,JobName%24,AllocTRES%70  -- and after it ends, its charge in myproject."

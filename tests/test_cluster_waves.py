@@ -130,6 +130,7 @@ def test_timing_reruns_and_classes_of_wave_2():
     classes = {s.stem: next(l for l in s.read_text().splitlines() if l.startswith('# lilq-resources:')).split()[2]
                for s in (REPO / 'scripts' / 'cluster').glob('*.slurm')}
     assert classes['11a_timing_reruns_cpu'] == 'timed-cpu' and classes['11b_timing_reruns_gpu'] == 'timed'
+    assert classes['12_timing_reruns_beltrami_darcy'] == 'timed-cpu'
     assert '#SBATCH --time=04:00:00' in (REPO / 'scripts/cluster/21_four_method_cpu.slurm').read_text()
     wave2 = (REPO / 'scripts/cluster/submit_wave2.sh').read_text()
     assert '11a_timing_reruns_cpu.slurm' in wave2 and '11b_timing_reruns_gpu.slurm' in wave2
@@ -182,7 +183,7 @@ def test_wave_2_dry_run_requests_one_gpu_per_timed_job(tmp_path):
                          capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
     log = (tmp_path / 'log').read_text().splitlines()
-    assert len(log) == 11
+    assert len(log) == 12
     gpu_timed = [l for l in log if '--partition=gpu' in l and '--cpus-per-task=48' in l]
     assert len(gpu_timed) == 5                      # 30, 31, 33, 20, 11b
     assert all('--gres=gpu:a100:1' in l and '--mem=360G' in l and '--exclusive' not in l for l in gpu_timed)

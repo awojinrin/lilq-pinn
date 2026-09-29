@@ -17,6 +17,30 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-30 -- Beltrami and Darcy timing reruns (the advisor's reply to our note before wave 2)
+
+The advisor accepted the note's three departures but one: every reported
+LiL-Q time should follow one rule, so the Beltrami and Darcy paper passes
+are rerun with the warm-up run too. `12_timing_reruns_beltrami_darcy.slurm`
+(timed-cpu, 1 h, about 20 minutes of work) runs `component_b.py --passes
+paper --devices cpu --benchmarks beltrami darcy` into wave 2's run folders,
+which have wave 1's names, so the assembled package takes them and
+`WAVES.json` lists them under `overrides`.
+
+It could not be added to job 11a, already queued: Slurm copies a job's
+script at submission, and replacing 11a with an edited one would change a
+file of the bundle, which the lock refuses. So it was submitted by hand as
+its own wave-2 job, from a copy of this file on the cluster. The lock hashes
+only the bundle's listed files, so the extra file leaves wave 2's tree hash
+unchanged (checked on the extracted 905e58c bundle); the code it runs is
+905e58c's. This commit adds the file and its line in `submit_wave2.sh` for
+the record; the Grace bundle stays 905e58c.
+
+The Section 3.7 runs (`run_beltrami_pinned.py`, wave 1) have no warm-up and
+are not rerun; their `solver_time_s` comes from a single cold run each.
+
+---
+
 ## 2026-09-29 -- Wave 2's cluster setup: one GPU per timed job, job 21 at 4 h, timing reruns, controls (reply to wave 1, items 2.2-2.5 and Section 3)
 
 **Timed GPU jobs at 120 SU/h (item 2.3).** Wave 1's `sacct` showed that
