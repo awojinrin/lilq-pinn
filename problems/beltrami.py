@@ -432,7 +432,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         print(f"  P_u={Pu}, P_v={Pv}, P_w={Pw}, P_p={Pp}, P_total={P_total}")
         print("=" * 70)
 
-    t_start = time.time()
+    t_start = time.perf_counter()
     t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
     pts = _generate_collocation(config, physics, P_total)
     xp, yp, zp, tp = pts['x_pde'], pts['y_pde'], pts['z_pde'], pts['t_pde']
@@ -440,7 +440,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
 
     # Precompute basis matrices
     if verbose: print("  Precomputing basis matrices...", end=' ', flush=True)
-    t0 = time.time()
+    t0 = time.perf_counter()
 
     def _mats(bas, x, y, z, t):
         ev = lambda *o: bas.derivative(x, y, z, t, orders=list(o))
@@ -459,7 +459,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
     Diff_u = -nu * (Mu['dxx'] + Mu['dyy'] + Mu['dzz'])
     Diff_v = -nu * (Mv['dxx'] + Mv['dyy'] + Mv['dzz'])
     Diff_w = -nu * (Mw['dxx'] + Mw['dyy'] + Mw['dzz'])
-    if verbose: print(f"{time.time()-t0:.2f}s")
+    if verbose: print(f"{time.perf_counter()-t0:.2f}s")
 
     # BC matrices
     bc_blocks = {}
@@ -536,7 +536,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
 
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):
-        t_iter = time.time()
+        t_iter = time.perf_counter()
         t0 = time.perf_counter()
 
         uk = Mu['val'] @ theta_u; uk_x = Mu['dx'] @ theta_u
@@ -617,7 +617,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         t0 = time.perf_counter()
         theta_new, rank = _lstsq(A_sys, b_sys, use_gpu=config.use_gpu)
         t_solve_s = time.perf_counter() - t0
-        dt_iter = time.time() - t_iter
+        dt_iter = time.perf_counter() - t_iter
 
         tu = theta_new[:Pu]
         tv = theta_new[Pu:Pu+Pv]
@@ -684,7 +684,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         t_diag += time.perf_counter() - t_diag0
 
     # The Section 3.1 diagnostics are passive: off the method's clock.
-    total_time = time.time() - t_start - t_diag
+    total_time = time.perf_counter() - t_start - t_diag
     rel_l2 = compute_errors(physics, basis_u, basis_v, basis_w, basis_p,
                             theta_u, theta_v, theta_w, theta_p)
     snap = compute_time_snapshot_errors(physics, basis_u, basis_v, basis_w, basis_p,

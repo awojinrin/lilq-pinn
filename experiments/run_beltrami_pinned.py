@@ -74,13 +74,13 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
         print(f"  N_vel={N_VEL}, N_p={N_P}, basis={DEFAULT_BASIS}")
         print("=" * 70)
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     result = solve_beltrami(
         config, verbose=verbose,
         iteration_logger=logger,
         run_json_path=out_dir / 'run.json',
     )
-    wall_clock_s = time.time() - t0
+    wall_clock_s = time.perf_counter() - t0
 
     logger.to_csv(out_dir / 'iterations.csv')
     save_solution(out_dir, {f: (result[f'basis_{f}'], result[f'theta_{f}']) for f in 'uvwp'}, config)

@@ -140,7 +140,7 @@ def main():
     print(f"Darcy Experiments | order={args.order}, fields={args.fields}")
 
     all_results = {}
-    t0 = time.time()
+    t0 = time.perf_counter()
 
     for fname in args.fields:
         result = run_for_field(fname, args.order, not args.skip_pinn,
@@ -162,7 +162,7 @@ def main():
             print(f"    NiL-N: time={pn['training_time']:.1f}s, "
                   f"final_loss={pn['final_loss']:.4e}")
 
-    print(f"\nTotal: {time.time()-t0:.1f}s")
+    print(f"\nTotal: {time.perf_counter()-t0:.1f}s")
 
     base_dir = experiment_base_dir('darcy', f'order{args.order}')
     save_master_results(base_dir / 'darcy_master_results.json', all_results,

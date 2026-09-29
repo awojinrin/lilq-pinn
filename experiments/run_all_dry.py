@@ -270,7 +270,7 @@ def main():
     print(f"PyTorch: {torch.__version__}")
     print("=" * 60)
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     all_results = {}
 
     try:
@@ -341,7 +341,7 @@ def main():
         import traceback
         traceback.print_exc()
 
-    elapsed = time.time() - t0
+    elapsed = time.perf_counter() - t0
 
     print("\n" + "=" * 60)
     print("SUMMARY")

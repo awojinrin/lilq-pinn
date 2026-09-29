@@ -17,6 +17,30 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Timing details (Addendum v2.2 Section 2.10)
+
+1. **LiL-Q's time as the other methods report it.** The scalar benchmarks'
+   `summary.json` gains `training_time` (the solver's own clock) beside
+   `t_cum_s`. A paper-pass LiL-Q run shorter than 1 s (scalar benchmarks,
+   Kovasznay, elasticity) is timed five more times without the log and
+   reported as their median (`training_time` / `solve_time_total`), with
+   all five (`timing_repeats_s`) and the logged run's own time
+   (`*_single_run`) kept; +-25% run to run was seen at 0.03 s.
+2. **Kovasznay: the tracker and the test-grid fields off the clock** (they
+   count as diagnostics). With the log on, P = 75 now takes 0.0446 s
+   against 0.0433 s without (the advisor saw about +30%).
+3. **Kovasznay GPU path:** the host-to-device copy, the QR + triangular
+   solve and the copy back are timed apart, between synchronizations
+   (`gpu_qr.h2d_s`, `qr_solve_s`, `d2h_s` per iteration; totals in the
+   summary); `t_solve_s` stays the whole solve. Check B3 adds `t_h2d_gpu_s`
+   and `t_qr_solve_gpu_s` beside `t_qr_gpu_s`. The optional `geqrf` +
+   `ormqr` rewrite of the GPU solve was not done.
+4. **`time.perf_counter()` for every duration**, replacing `time.time()`
+   in `MetricsTracker`, the Kovasznay, Beltrami, elasticity and Darcy
+   solvers, the Darcy PINN and the experiment scripts.
+
+---
+
 ## 2026-09-29 -- Component C: at least P rows at N/P = 1; distinct rows logged; collocation rows saved (Addendum v2.2 Sections 2.8.3, 2.9)
 
 - **Ratio 1.** `k_for_ratio` now takes the smallest density with at least

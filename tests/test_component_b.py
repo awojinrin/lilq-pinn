@@ -214,3 +214,21 @@ def test_bl_logs_retained_kappa_and_beta_norm():
     rows = logger.rows
     assert all(r["kappa_retained"] <= r["kappa_raw"] == r["kappa"] for r in solve_rows(rows))
     assert all(r["norm_beta"] is not None for r in rows)          # terminal row too
+
+
+def test_short_paper_runs_are_timed_five_times():
+    """Addendum v2.2 Section 2.10: a paper-pass run under 1 s is reported as
+    the median of five repeats, all five kept; longer runs and the kmax pass
+    report their own time."""
+    times = iter([0.05, 0.03, 0.04, 0.06, 0.02])
+    reported, repeats = cb._timing_repeats(0.2, lambda: next(times), 'paper', smoke=False)
+    assert repeats == [0.05, 0.03, 0.04, 0.06, 0.02] and reported == 0.04
+    assert cb._timing_repeats(0.2, lambda: 1 / 0, 'kmax', smoke=False) == (0.2, None)
+    assert cb._timing_repeats(3.0, lambda: 1 / 0, 'paper', smoke=False) == (3.0, None)
+
+
+def test_scalar_summary_has_training_time_beside_t_cum(tmp_path):
+    runs = cb.build_runs(benchmarks=('bratu',), passes=('paper',), devices=('cpu',), smoke=True)
+    assert cb.execute_run(runs[0], tmp_path, verbose=False) == 'ok'
+    s = json.loads((tmp_path / runs[0].name / 'summary.json').read_text())
+    assert s['training_time'] > 0 and 't_cum_s' in s and 'training_time_single_run' in s

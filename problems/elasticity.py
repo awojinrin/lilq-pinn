@@ -213,7 +213,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
         print(f"  BC mode: {config.bc_mode}")
         print("=" * 70)
 
-    t_start = time.time()
+    t_start = time.perf_counter()
     t0 = time.perf_counter()
     pts = _generate_collocation(config, physics, P_total)
     x_pde, y_pde = pts['x_pde'], pts['y_pde']
@@ -294,11 +294,11 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
     b_sys = np.concatenate(b_rows)
     t_assemble_s = time.perf_counter() - t0
 
-    t_solve = time.time()
+    t_solve = time.perf_counter()
     t0 = time.perf_counter()
     theta, _, rank, _ = scipy.linalg.lstsq(A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy')
     t_solve_s = time.perf_counter() - t0
-    solve_time = time.time() - t_solve
+    solve_time = time.perf_counter() - t_solve
 
     tracker = None
     t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
@@ -360,7 +360,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
     rel_l2_syy = np.sqrt(np.mean((syy_pred-syy_exact)**2)) / max(np.sqrt(np.mean(syy_exact**2)), 1e-15)
     rel_l2_sxy = np.sqrt(np.mean((sxy_pred-sxy_exact)**2)) / max(np.sqrt(np.mean(sxy_exact**2)), 1e-15)
 
-    total_time = time.time() - t_start - t_diag
+    total_time = time.perf_counter() - t_start - t_diag
 
     if verbose:
         print(f"\n  QR solve time: {solve_time:.4f}s")

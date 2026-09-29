@@ -127,7 +127,7 @@ def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True, seeds=No
             print('=' * 60)
 
         try:
-            t0 = time.time()
+            t0 = time.perf_counter()
             is_lil = method_name.startswith('LiL')
             tag = method_name.lower().replace('-', '_')
 
@@ -196,7 +196,7 @@ def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True, seeds=No
             save_summary_json(n_dir / f'{tag}_summary.json', summary)
 
             results[method_name] = summary
-            elapsed = time.time() - t0
+            elapsed = time.perf_counter() - t0
 
             if verbose:
                 status = "CONVERGED" if summary.get('converged', False) else "completed"
@@ -222,14 +222,14 @@ def run_experiment_for_N(N, basis_type, lambda_, methods, verbose=True, seeds=No
 def run_all_experiments(N_values, basis_type, lambda_, methods, verbose=True, seeds=None):
     """Run the full experiment matrix and generate plots."""
     all_results = {}
-    total_t0 = time.time()
+    total_t0 = time.perf_counter()
 
     for N in N_values:
         set_seed(42)
         all_results[N] = run_experiment_for_N(
             N, basis_type, lambda_, methods, verbose, seeds=seeds)
 
-    total_elapsed = time.time() - total_t0
+    total_elapsed = time.perf_counter() - total_t0
 
     # Summary table
     print_summary_table(all_results, N_values, methods, 'Bratu')

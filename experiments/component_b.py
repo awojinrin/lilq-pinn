@@ -99,6 +99,22 @@ def _log_summary(logger: IterationLogger) -> Dict:
 # Run registry
 # ─────────────────────────────────────────────────────────────────────────────
 
+SHORT_RUN_S = 1.0          # runs shorter than this are timed 5 times (Addendum v2.2 2.10)
+SHORT_RUN_REPEATS = 5
+
+
+def _timing_repeats(first_time, rerun, pass_, smoke):
+    """``(reported, repeats)``: a paper-pass run shorter than 1 s is timed
+    five more times without the log (its clock excludes the diagnostics
+    anyway) and reported as their median, all five recorded; +-25% run to
+    run was seen at 0.03 s. Longer runs, and the kmax pass, report their
+    own time."""
+    if pass_ != 'paper' or smoke or first_time >= SHORT_RUN_S:
+        return first_time, None
+    times = [float(rerun()) for _ in range(SHORT_RUN_REPEATS)]
+    return float(np.median(times)), times
+
+
 def _scalar_runs(benchmark, smoke, passes):
     """Bratu, Burgers, viscous and gravity BL: the same (P, config, opt)
     triples the residual-band figures use (each problem's paper sizes,
@@ -125,16 +141,22 @@ def _scalar_runs(benchmark, smoke, passes):
             if smoke:
                 run_opt = dataclasses.replace(run_opt, max_quasi_iters_lil=min(run_opt.max_quasi_iters_lil, 5))
 
-            def execute(run_dir, config=config, run_opt=run_opt, run_lil_q=run_lil_q):
+            def execute(run_dir, config=config, run_opt=run_opt, run_lil_q=run_lil_q, pass_=pass_):
                 logger = IterationLogger()
                 basis, c, _metrics, summary = run_lil_q(
                     config, run_opt, verbose=False, iteration_logger=logger,
                     run_json_path=run_dir / 'run.json')
                 logger.to_csv(run_dir / 'iterations.csv')
                 save_solution(run_dir, {'u': (basis, c)}, config, run_opt)
+                # training_time: the method's own clock, the same quantity the
+                # other methods report (Addendum v2.2 2.10), beside t_cum_s.
+                reported, repeats = _timing_repeats(
+                    summary['training_time'],
+                    lambda: run_lil_q(config, run_opt, verbose=False)[-1]['training_time'], pass_, smoke)
                 return {'final_loss': summary['final_loss'], 'converged': summary['converged'],
                         'R_tol': run_opt.R_tol, 'K_max': run_opt.max_quasi_iters_lil,
-                        **_log_summary(logger)}
+                        'training_time': reported, 'training_time_single_run': summary['training_time'],
+                        'timing_repeats_s': repeats, **_log_summary(logger)}
             runs.append(Run(benchmark, f'P{P}', 'cpu', pass_, execute))
     return runs
 
@@ -154,13 +176,20 @@ def _kovasznay_runs(smoke, passes, devices):
                 if smoke:
                     config = dataclasses.replace(config, max_iter=min(config.max_iter, 5))
 
-                def execute(run_dir, config=config):
+                def execute(run_dir, config=config, pass_=pass_):
                     logger = IterationLogger()
                     r = solve_kovasznay(config, verbose=False, iteration_logger=logger,
                                         run_json_path=run_dir / 'run.json')
                     logger.to_csv(run_dir / 'iterations.csv')
                     save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uvp'}, config)
-                    return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': r['solve_time_total'],
+                    reported, repeats = _timing_repeats(
+                        r['solve_time_total'], lambda: solve_kovasznay(config, verbose=False)['solve_time_total'],
+                        pass_, smoke)
+                    gpu = r.get('gpu_qr') or {}
+                    return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': reported,
+                            'solve_time_total_single_run': r['solve_time_total'], 'timing_repeats_s': repeats,
+                            'gpu_h2d_s_total': sum(gpu.get('h2d_s', [])) if gpu else None,
+                            'gpu_qr_solve_s_total': sum(gpu.get('qr_solve_s', [])) if gpu else None,
                             'rel_l2_u': r['rel_l2_u'], 'rel_l2_v': r['rel_l2_v'], 'rel_l2_p': r['rel_l2_p'],
                             'tol': config.tol, 'K_max': config.max_iter, **_log_summary(logger)}
                 runs.append(Run('kovasznay', f'P{3 * N * N}', device, pass_, execute))
@@ -180,8 +209,13 @@ def _elasticity_runs(smoke):
                                  run_json_path=run_dir / 'run.json')
             logger.to_csv(run_dir / 'iterations.csv')
             save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uv'}, config)
-            return {k: r[k] for k in ('solve_time_qr', 'solve_time_total', 'pde_mse', 'rel_l2_ux',
-                                      'rel_l2_uy', 'rel_l2_sxx', 'rel_l2_syy', 'rel_l2_sxy')} | _log_summary(logger)
+            reported, repeats = _timing_repeats(
+                r['solve_time_total'], lambda: solve_elasticity(config, verbose=False)['solve_time_total'],
+                'paper', smoke)
+            return {k: r[k] for k in ('solve_time_qr', 'pde_mse', 'rel_l2_ux', 'rel_l2_uy', 'rel_l2_sxx',
+                                      'rel_l2_syy', 'rel_l2_sxy')} | {
+                'solve_time_total': reported, 'solve_time_total_single_run': r['solve_time_total'],
+                'timing_repeats_s': repeats} | _log_summary(logger)
         runs.append(Run('elasticity', f'P{2 * N * N}', 'cpu', 'paper', execute))
     return runs
 
@@ -320,7 +354,7 @@ EQUIVALENCE_COLUMNS = (
     'P', 'N_rows', 'iterations_cpu', 'iterations_gpu',
     'beta_rel_diff', 'beta_ok', 'rlin_cpu', 'rlin_gpu', 'rlin_rel_diff', 'rlin_ok', 'equivalent',
     'rlin_floor_cpu', 'rlin_floor_gpu', 'rlin_at_floor', 'rlin_ok_amended', 'equivalent_amended',
-    't_gelsy_cpu_s', 't_gels_cpu_s', 't_qr_gpu_s', 'timing_repeats',
+    't_gelsy_cpu_s', 't_gels_cpu_s', 't_qr_gpu_s', 't_h2d_gpu_s', 't_qr_solve_gpu_s', 'timing_repeats',
     'gpu_mem_estimate_bytes', 'gpu_mem_peak_bytes', 'gpu_min_diag_ratio', 'gpu_flagged_iterations',
 )
 
@@ -340,6 +374,19 @@ def _median_time(fn, repeats, sync=False):
     return float(np.median(times))
 
 
+def _median_gpu_parts(fn, repeats):
+    """The GPU solve's host-to-device copy and its QR + triangular solve,
+    timed apart (median of ``repeats`` after a warm-up; Addendum v2.2 2.10)."""
+    fn({})
+    parts = []
+    for _ in range(repeats):
+        t = {}
+        fn(t)
+        parts.append(t)
+    return {'t_h2d_gpu_s': float(np.median([p['h2d_s'] for p in parts])),
+            't_qr_solve_gpu_s': float(np.median([p['qr_solve_s'] for p in parts]))}
+
+
 def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Path:
     """Section 3.2 / check B3, every Kovasznay size: the GPU run against
     the CPU ``gelsy`` run (``||beta_GPU - beta_CPU|| / ||beta_CPU|| <= 1e-8``,
@@ -348,7 +395,8 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
     residuals are at Algorithm 1's round-off floor), plus the solve time
     of CPU ``gelsy`` (the paper's), CPU ``gels`` and the GPU QR on the same
     final-iterate system (median of ``repeats`` after a warm-up; the GPU
-    time includes the host-to-device copy of A)."""
+    time includes the host-to-device copy of A; ``t_h2d_gpu_s`` and
+    ``t_qr_solve_gpu_s`` give the copy and the QR apart)."""
     import scipy.linalg
     from experiments.run_kovasznay import DEFAULT_N_VALUES, K_RATIO, MAX_ITER, TOL
     from lilq.instrumentation import EPS_MACH
@@ -375,6 +423,7 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
                 lambda: scipy.linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy'), repeats),
             't_gels_cpu_s': _median_time(lambda: _lstsq_cpu_gels(A, b), repeats),
             't_qr_gpu_s': _median_time(lambda: _lstsq_gpu_qr(A, b), repeats, sync=True),
+            **_median_gpu_parts(lambda t: _lstsq_gpu_qr(A, b, timings=t), repeats),
             'timing_repeats': repeats,
             'gpu_mem_estimate_bytes': gpu['mem_estimate_bytes'], 'gpu_mem_peak_bytes': peak,
             'gpu_min_diag_ratio': gpu['min_diag_ratio'],
@@ -663,11 +712,11 @@ def main():
     save_provenance(Path(args.out_root))
     print(f"{len(runs)} runs -> {root}")
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     status = [execute_run(r, root, fresh=args.fresh) for r in runs]
     index = write_index(root)
     print(f"\nok={status.count('ok')} skipped={status.count('done')} failed={status.count('failed')} "
-          f"in {time.time() - t0:.1f}s; index: {index}")
+          f"in {time.perf_counter() - t0:.1f}s; index: {index}")
 
 
 if __name__ == '__main__':

@@ -126,7 +126,7 @@ def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True, seeds=No
         try:
             tag = method.lower().replace('-', '_')
             is_lil = method.startswith('LiL')
-            t0 = time.time()
+            t0 = time.perf_counter()
 
             if is_lil:
                 if method == 'LiL-Q':
@@ -163,7 +163,7 @@ def run_experiment_for_N(N, basis_type, gravity, methods, verbose=True, seeds=No
             if verbose:
                 status = "CONVERGED" if summary.get('converged') else "completed"
                 print(f"  {method}: loss={summary['final_loss']:.4e}, "
-                      f"time={time.time()-t0:.2f}s, {status}")
+                      f"time={time.perf_counter()-t0:.2f}s, {status}")
         except Exception as e:
             results[method] = {'error': str(e), 'final_loss': float('nan')}
             if verbose:
@@ -202,14 +202,14 @@ def main():
         print(f"NiL-N/NiL-Q seeds: {args.seeds}")
 
     all_results = {}
-    t0 = time.time()
+    t0 = time.perf_counter()
     for N in args.N:
         set_seed(42)
         all_results[N] = run_experiment_for_N(
             N, basis, args.gravity, methods, verbose, seeds=args.seeds)
 
     print_summary_table(all_results, args.N, methods, plabel)
-    print(f"\nTotal: {time.time()-t0:.1f}s")
+    print(f"\nTotal: {time.perf_counter()-t0:.1f}s")
 
     tag = 'bl_gravity' if args.gravity else 'bl'
     base_dir = experiment_base_dir(tag, basis)

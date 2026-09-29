@@ -142,8 +142,8 @@ def test_degeneracy_flag_triggers_cpu_gelsy_cross_check(monkeypatch):
     real_lstsq_gpu_qr = kz_module._lstsq_gpu_qr
     call_count = {"n": 0}
 
-    def fake_lstsq_gpu_qr(A, b):
-        x, R_diag, peak_mem = real_lstsq_gpu_qr(A, b)
+    def fake_lstsq_gpu_qr(A, b, timings=None):
+        x, R_diag, peak_mem = real_lstsq_gpu_qr(A, b, timings=timings)
         call_count["n"] += 1
         if call_count["n"] == 1:
             # Force degeneracy only on the first call so the run still
@@ -195,6 +195,22 @@ def test_equivalence_amended_rule_waives_six_figures_only_at_round_off_floor():
         KovasznayConfig(N_x=20, N_y=20, k_ratio=K_RATIO, max_iter=MAX_ITER, tol=TOL))
     assert mid['rlin_at_floor'] is False
     assert mid['equivalent_amended'] == mid['equivalent'] is True
+
+
+@requires_cuda
+def test_gpu_solve_times_the_transfers_apart_from_the_qr():
+    """Addendum v2.2 Section 2.10: host-to-device copy, QR + triangular
+    solve, and the copy back, timed apart; the solver logs them per iteration."""
+    import numpy as np
+    rng = np.random.default_rng(0)
+    A, b = rng.standard_normal((400, 60)), rng.standard_normal(400)
+    t = {}
+    x, _, _ = _lstsq_gpu_qr(A, b, timings=t)
+    assert set(t) == {'h2d_s', 'qr_solve_s', 'd2h_s'} and all(v >= 0 for v in t.values())
+    assert np.allclose(x, np.linalg.lstsq(A, b, rcond=None)[0])
+    import problems.kovasznay as kz_module
+    r = kz_module.solve_kovasznay(_small_config(use_gpu=True, max_iter=3), verbose=False)
+    assert len(r['gpu_qr']['h2d_s']) == len(r['gpu_qr']['qr_solve_s']) == r['n_outer_iters']
 
 
 def test_verify_gpu_cpu_equivalence_requires_cuda(monkeypatch):

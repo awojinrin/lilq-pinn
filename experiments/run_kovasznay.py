@@ -53,9 +53,9 @@ def run_experiment_for_N(N, Re, basis_type, verbose=True):
     if verbose:
         print(f"\n{'='*60}\nKOVASZNAY  N={N}  Re={Re}\n{'='*60}")
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     result = solve_kovasznay(config, verbose=verbose)
-    elapsed = time.time() - t0
+    elapsed = time.perf_counter() - t0
 
     summary = {
         'N': N, 'method': 'LiL-Q',
@@ -141,13 +141,13 @@ def main():
     print(f"Kovasznay Experiments | Re={args.Re}, basis={args.basis}")
 
     all_results = {}
-    t0 = time.time()
+    t0 = time.perf_counter()
     for N in args.N:
         np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
         all_results[N] = run_experiment_for_N(N, args.Re, args.basis, verbose)
 
     print_summary_table(all_results, args.N, ['LiL-Q'], 'Kovasznay')
-    print(f"\nTotal: {time.time()-t0:.1f}s")
+    print(f"\nTotal: {time.perf_counter()-t0:.1f}s")
 
     base_dir = experiment_base_dir('kovasznay', args.basis)
     save_master_results(base_dir / 'kovasznay_master_results.json', all_results,

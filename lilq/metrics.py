@@ -48,13 +48,13 @@ class MetricsTracker:
 
     def start(self) -> None:
         """Begin the wall-clock timer."""
-        self.start_time = time.time()
+        self.start_time = time.perf_counter()
 
     def reset(self) -> None:
         """Clear all recorded data and restart the timer."""
         for key in self.data:
             self.data[key] = []
-        self.start_time = time.time()
+        self.start_time = time.perf_counter()
 
     def record(
         self,
@@ -72,7 +72,7 @@ class MetricsTracker:
         self.data['pde_loss'].append(float(pde_loss))
         self.data['ic_loss'].append(float(ic_loss))
         self.data['bc_loss'].append(float(bc_loss))
-        elapsed = time.time() - self.start_time if self.start_time else 0.0
+        elapsed = time.perf_counter() - self.start_time if self.start_time else 0.0
         self.data['wall_time'].append(elapsed)
 
     def to_dict(self) -> dict:
@@ -123,7 +123,7 @@ class QuasilinearMetrics:
         }
         self.converged = False
         self.reason = None
-        self.start_time = time.time()
+        self.start_time = time.perf_counter()
 
     def exclude_time(self, seconds: float) -> None:
         """Keep ``seconds`` (the passive diagnostics' cost) out of ``wall_time``
@@ -136,7 +136,7 @@ class QuasilinearMetrics:
             self.data[key] = []
         self.converged = False
         self.reason = None
-        self.start_time = time.time()
+        self.start_time = time.perf_counter()
 
     def record(
         self,
@@ -160,7 +160,7 @@ class QuasilinearMetrics:
         self.data['ic_loss'].append(float(ic_loss))
         self.data['bc_loss'].append(float(bc_loss))
         self.data['total_loss'].append(float(total_loss))
-        self.data['wall_time'].append(time.time() - self.start_time)
+        self.data['wall_time'].append(time.perf_counter() - self.start_time)
 
     def to_dict(self) -> dict:
         """Convert to plain dictionary for JSON serialization."""

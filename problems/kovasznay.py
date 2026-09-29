@@ -263,7 +263,7 @@ def _make_kovasznay_residual_vector_fn(
 # Section 3.2: GPU solve path (Kovasznay only)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray):
+def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray, timings: Optional[dict] = None):
     """Full-rank GPU least-squares solve, float64:
     ``torch.linalg.qr(A, mode='reduced')`` + ``solve_triangular`` (the
     spec's first-listed option -- chosen over
@@ -287,16 +287,33 @@ def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray):
     ``torch.cuda.max_memory_allocated()`` read immediately after the
     factorization (peak stats reset just before it, so this reflects
     this solve's own footprint on top of the already-resident A/b).
+
+    ``timings`` (a dict), when given, receives ``h2d_s`` (copying A and b to
+    the GPU), ``qr_solve_s`` (the QR and the triangular solve) and ``d2h_s``
+    (copying the solution back), each between device synchronizations
+    (Addendum v2.2 Section 2.10).
     """
+    if timings is not None:
+        torch.cuda.synchronize()
+        t0 = time.perf_counter()
     At = torch.as_tensor(A, dtype=torch.float64, device='cuda')
     bt = torch.as_tensor(b, dtype=torch.float64, device='cuda')
+    if timings is not None:
+        torch.cuda.synchronize()
+        t1 = time.perf_counter()
     torch.cuda.reset_peak_memory_stats()
     Q, R = torch.linalg.qr(At, mode='reduced')
     y = Q.transpose(0, 1) @ bt
     x = torch.linalg.solve_triangular(R, y.unsqueeze(1), upper=True).squeeze(1)
     peak_mem_bytes = int(torch.cuda.max_memory_allocated())
+    if timings is not None:
+        torch.cuda.synchronize()
+        t2 = time.perf_counter()
     R_diag = R.diagonal().detach().cpu().numpy()
-    return x.detach().cpu().numpy(), R_diag, peak_mem_bytes
+    x_host = x.detach().cpu().numpy()
+    if timings is not None:
+        timings.update(h2d_s=t1 - t0, qr_solve_s=t2 - t1, d2h_s=time.perf_counter() - t2)
+    return x_host, R_diag, peak_mem_bytes
 
 
 def _qr_degeneracy_ratio(R_diag: np.ndarray) -> float:
@@ -515,7 +532,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         print(f"  P_u={Pu}, P_v={Pv}, P_p={Pp}, P_total={P_total}")
         print("=" * 70)
 
-    t_start = time.time()
+    t_start = time.perf_counter()
     t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
 
     # Collocation
@@ -577,7 +594,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     theta_v = np.zeros(Pv, dtype=np.float64)
     theta_p = np.zeros(Pp, dtype=np.float64)
 
-    gpu_diag = {'mem_estimate_bytes': None, 'min_diag_ratio': float('inf'), 'flagged_iterations': []}
+    gpu_diag = {'mem_estimate_bytes': None, 'min_diag_ratio': float('inf'), 'flagged_iterations': [],
+                'h2d_s': [], 'qr_solve_s': [], 'd2h_s': []}
 
     history = {
         'iteration': [], 'coeff_change': [],
@@ -589,6 +607,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     loss_fn = None
     residual_vector_fn = None
     if iteration_logger is not None:
+        t_diag0 = time.perf_counter()
         loss_fn = _make_kovasznay_nonlinear_loss_fn(
             Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
             Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
@@ -601,19 +620,24 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
             nu, Pu, Pv, Pp, n_pde, config.lambda_mom, config.lambda_cont, config.lambda_bc,
         )
+        t_diag += time.perf_counter() - t_diag0
 
         tracker_kwargs = {}
         if config.lambda_mom == config.lambda_cont:
             tracker_kwargs["n_interior_rows"] = 3 * n_pde
             tracker_kwargs["interior_weight"] = float(np.sqrt(config.lambda_mom / n_pde))
 
+        # The tracker and the test-grid fields are diagnostics: off the clock
+        # (Addendum v2.2 Section 2.10: at P = 75 they added about 30%).
+        t_diag0 = time.perf_counter()
         tracker = LilQDiagnosticsTracker(
             test_error_fn=make_test_error_fn(physics, basis_u, basis_v, basis_p), **tracker_kwargs,
         )
+        t_diag += time.perf_counter() - t_diag0
 
     # ── Quasilinearization loop ──
     for k in range(config.max_iter):
-        t_iter = time.time()
+        t_iter = time.perf_counter()
         t0 = time.perf_counter()
 
         uk = Phi_u @ theta_u
@@ -687,9 +711,12 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             # time includes the host-to-device copy of A (assembled on CPU).
             torch.cuda.synchronize()
             t0 = time.perf_counter()
-            theta_new, R_diag, gpu_mem_peak_bytes = _lstsq_gpu_qr(A_sys, b_sys)
+            parts = {}
+            theta_new, R_diag, gpu_mem_peak_bytes = _lstsq_gpu_qr(A_sys, b_sys, timings=parts)
             torch.cuda.synchronize()
             t_solve_s = time.perf_counter() - t0
+            for key in ('h2d_s', 'qr_solve_s', 'd2h_s'):     # the transfers apart from the QR (2.10)
+                gpu_diag[key].append(parts[key])
             solver_path = 'gpu_qr'
             rank_gelsy = None  # the full-rank GPU path has no rank-revealing step
 
@@ -714,7 +741,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy',
             )
             t_solve_s = time.perf_counter() - t0
-        dt = time.time() - t_iter
+        dt = time.perf_counter() - t_iter
 
         theta_u_new = theta_new[:Pu]
         theta_v_new = theta_new[Pu:Pu+Pv]
@@ -786,7 +813,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         t_diag += time.perf_counter() - t_diag0
 
     # The Section 3.1 diagnostics are passive: off the method's clock.
-    total_time = time.time() - t_start - t_diag
+    total_time = time.perf_counter() - t_start - t_diag
 
     # Final errors vs. exact solution
     n_ev = 200

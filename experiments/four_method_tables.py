@@ -352,7 +352,7 @@ def main():
     else:
         logger = FourMethodLogger()
     skip_keys = frozenset(logger.completed_keys())
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     for benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn in problems:
         print(f"\n{'=' * 60}\n{benchmark}\n{'=' * 60}")
@@ -364,7 +364,7 @@ def main():
     logger.to_csv(out_path)
     n_fail = sum(1 for r in logger.rows if r['stopping_reason'] == 'failure')
     print(f"\nWrote {len(logger)} rows to {out_path} ({n_fail} failures)")
-    print(f"Total elapsed: {time.time() - t_start:.1f}s")
+    print(f"Total elapsed: {time.perf_counter() - t_start:.1f}s")
 
 
 if __name__ == '__main__':

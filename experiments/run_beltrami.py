@@ -65,9 +65,9 @@ def run_experiment(N_vel, N_p, basis_type, verbose=True):
               f"N_p={N_p} (P={Pp}), P_total={Pt}")
         print(f"{'='*70}")
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     result = solve_beltrami(config, verbose=verbose)
-    elapsed = time.time() - t0
+    elapsed = time.perf_counter() - t0
 
     summary = {
         'N_vel': N_vel, 'N_p': N_p, 'label': label,

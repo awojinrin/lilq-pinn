@@ -364,7 +364,7 @@ def solve_lilq_burgers_comparison(
         print(f"{'='*70}")
 
     # ---- build basis matrices ----
-    t0 = time.time()
+    t0 = time.perf_counter()
     A_u   = _bmm(basis, pts['pts_pde'], 0, 0)
     A_ux  = _bmm(basis, pts['pts_pde'], 1, 0)
     A_ut  = _bmm(basis, pts['pts_pde'], 0, 1)
@@ -372,7 +372,7 @@ def solve_lilq_burgers_comparison(
     A_ic  = _bmm(basis, pts['pts_ic'],  0, 0)
     A_bcL = _bmm(basis, pts['pts_bc_left'],  0, 0)
     A_bcR = _bmm(basis, pts['pts_bc_right'], 0, 0)
-    t_build = time.time() - t0
+    t_build = time.perf_counter() - t0
     if verbose:
         print(f"  Matrix build: {t_build:.3f}s   "
               f"PDE={pts['n_pde']}  IC={pts['n_ic']}  BC={pts['n_bc']}")
@@ -403,7 +403,7 @@ def solve_lilq_burgers_comparison(
         'pde_loss': [], 'ic_loss': [], 'bc_loss': [],
     }
 
-    t_start = time.time()
+    t_start = time.perf_counter()
 
     def nonlinear_residual(b):
         return (A_ut @ b) + (A_u @ b) * (A_ux @ b) - nu * (A_uxx @ b)
@@ -529,7 +529,7 @@ def solve_lilq_burgers_comparison(
     if tracker is not None:
         iteration_logger.record(**tracker.finish(k=it))
 
-    total_time = time.time() - t_start
+    total_time = time.perf_counter() - t_start
     summary = {
         'basis_key': basis_key,
         'n_coefficients': n_coeffs,

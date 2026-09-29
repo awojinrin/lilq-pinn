@@ -454,7 +454,7 @@ def solve_lilq_darcy(config: DarcyConfig,
         print("-" * 70)
 
     # ── Build system ─────────────────────────────────────────────────────
-    t_start = time.time()
+    t_start = time.perf_counter()
     t0 = time.perf_counter()
 
     # Basis evaluations
@@ -493,21 +493,21 @@ def solve_lilq_darcy(config: DarcyConfig,
     A = np.vstack([A_Dx, A_Dy, A_CE])
     b = np.concatenate([b_Dx, b_Dy, b_CE])
 
-    t_build = time.time() - t_start
+    t_build = time.perf_counter() - t_start
     t_assemble_s = time.perf_counter() - t0
 
     if verbose:
         print("System: A shape = %s, build time = %.4fs" % (A.shape, t_build))
 
     # ── Solve ────────────────────────────────────────────────────────────
-    t_solve_start = time.time()
+    t_solve_start = time.perf_counter()
     t0 = time.perf_counter()
     if cfg.solver_method == 'lstsq':
         coeffs, _, _, _ = np.linalg.lstsq(A, b, rcond=None)
         rank_gelsy = None
     else:
         coeffs, _, rank_gelsy, _ = linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy')
-    t_solve = time.time() - t_solve_start
+    t_solve = time.perf_counter() - t_solve_start
     t_solve_s = time.perf_counter() - t0
 
     c_h_tilde = coeffs[:n_h]
@@ -517,9 +517,9 @@ def solve_lilq_darcy(config: DarcyConfig,
     # ── FVM reference ────────────────────────────────────────────────────
     if verbose:
         print("Solving FVM reference...")
-    t_fvm_start = time.time()
+    t_fvm_start = time.perf_counter()
     P_fvm = solve_fvm(physics)
-    t_fvm = time.time() - t_fvm_start
+    t_fvm = time.perf_counter() - t_fvm_start
 
     # ── Residuals ────────────────────────────────────────────────────────
     residual = A @ coeffs - b
@@ -580,7 +580,7 @@ def solve_lilq_darcy(config: DarcyConfig,
     rmse = np.sqrt(np.mean(err**2))
     rel_L2 = np.linalg.norm(err) / np.linalg.norm(P_fvm)
 
-    t_total = time.time() - t_start - t_diag
+    t_total = time.perf_counter() - t_start - t_diag
 
     metrics = {
         'build_time': t_build,
@@ -992,7 +992,7 @@ class DarcyPINN:
             if verbose:
                 print(f"  Resuming from epoch {ckpt['epoch']} ({checkpoint_path})")
 
-        t0 = time.time()
+        t0 = time.perf_counter()
 
         for epoch in range(start, max_epochs + 1):
             optimizer.zero_grad()
@@ -1015,9 +1015,9 @@ class DarcyPINN:
                     'epoch': epoch, 'max_epochs': max_epochs, 'lr': lr,
                     'networks': self.network_state(), 'optimizer': optimizer.state_dict(),
                     'scheduler': scheduler.state_dict(), 'history': history,
-                    'training_time': time_before + time.time() - t0, 'resumed_at': resumed_at})
+                    'training_time': time_before + time.perf_counter() - t0, 'resumed_at': resumed_at})
 
-        elapsed = time_before + time.time() - t0
+        elapsed = time_before + time.perf_counter() - t0
         if verbose:
             print(f"  Training complete: {elapsed:.1f}s, "
                   f"final loss={total.item():.4e}")
