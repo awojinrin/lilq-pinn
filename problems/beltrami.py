@@ -71,6 +71,10 @@ class BeltramiConfig:
     # the original single-pin-at-t=0 behavior exactly -- see
     # _cgl_temporal_pin_nodes and DECISIONS.md.
     n_pressure_pin_levels: int = 1
+    # Pivoted-QR conditioning at every iteration, off the clock (Addendum
+    # v2.2 Section 2.7; about 75 s per iteration at the paper's P), not only
+    # at the final iterate: the round-off exit needs kappa at every k.
+    conditioning_every_iteration: bool = True
     # Solver
     max_iter: int = 20
     tol: float = 1e-9
@@ -520,13 +524,13 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
             tracker_kwargs["n_interior_rows"] = 4 * n_pde
             tracker_kwargs["interior_weight"] = float(np.sqrt(config.lambda_mom / n_pde))
         # P_total ~ 8000 for the paper's Beltrami config -- above
-        # DEFAULT_SVD_CONDITIONING_THRESHOLD (3200), so the tracker
-        # already does pivoted-QR-at-final-iterate-only here, matching
-        # Section 3.1 item 8's Beltrami-specific conditioning method
-        # (not a full per-iteration SVD -- see analyze_conditioning above).
+        # DEFAULT_SVD_CONDITIONING_THRESHOLD (3200), so the tracker uses
+        # the pivoted QR of Section 3.1 item 8, at every iteration by
+        # default (config.conditioning_every_iteration; Addendum v2.2 2.7).
 
         tracker = LilQDiagnosticsTracker(
             test_error_fn=make_test_error_fn(physics, basis_u, basis_v, basis_w, basis_p),
+            conditioning_every_iteration=config.conditioning_every_iteration,
             **tracker_kwargs,
         )
 

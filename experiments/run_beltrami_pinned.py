@@ -18,7 +18,7 @@ Usage::
     python experiments/run_beltrami_pinned.py
 """
 
-import sys, os, json, time
+import dataclasses, sys, os, json, time
 from pathlib import Path
 
 _proj = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,9 +48,12 @@ N_PRESSURE_PIN_LEVELS = N_P
 PAPER_T1_PRESSURE_ERROR_PCT = 0.752
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / 'results' / 'beltrami_pinned'
+KMAX_ITERS = 8
 
 
-def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR):
+def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
+    """Section 3.7's run; ``kmax=True``: its K_max pass (8 iterations, zero
+    coefficient-change tolerance; Addendum v2.2 Section 2.7)."""
     out_dir = Path(out_dir)
     np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
     config = BeltramiConfig(
@@ -58,6 +61,8 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR):
         n_pressure_pin_levels=N_PRESSURE_PIN_LEVELS,
         **COLLOC_N6,
     )
+    if kmax:
+        config = dataclasses.replace(config, tol=0.0, max_iter=KMAX_ITERS)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     logger = IterationLogger()
@@ -144,4 +149,7 @@ if __name__ == '__main__':
                                                  "pinned at every temporal level")
     parser.add_argument('--out-dir', type=str, default=str(OUTPUT_DIR),
                         help='Output directory (default: results/beltrami_pinned/).')
-    run_beltrami_pinned(out_dir=parser.parse_args().out_dir)
+    parser.add_argument('--kmax', action='store_true',
+                        help='The K_max pass: 8 iterations, zero tolerance (Addendum v2.2 2.7).')
+    args = parser.parse_args()
+    run_beltrami_pinned(out_dir=args.out_dir, kmax=args.kmax)

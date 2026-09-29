@@ -21,9 +21,11 @@ def test_schema_has_exactly_the_spec_columns_in_order():
         "eps_u", "eps_v", "eps_p", "eps_p_meanfree",
         "maxerr_u", "maxerr_v", "maxerr_p",
         "solver_path", "gpu_mem_peak_bytes",
+        # Addendum v2.2 Section 2.7, after the spec's thirty:
+        "kappa_raw", "kappa_retained", "num_rank_qr", "norm_beta",
     )
     assert ITERATION_CSV_COLUMNS == expected
-    assert len(ITERATION_CSV_COLUMNS) == 30
+    assert len(ITERATION_CSV_COLUMNS) == 34
 
 
 def test_record_fills_unspecified_columns_with_none():

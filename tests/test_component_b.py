@@ -14,7 +14,7 @@ requires_cuda = pytest.mark.skipif(not torch.cuda.is_available(), reason="needs 
 def test_full_plan_matches_section_3_3():
     runs = cb.build_runs(devices=('cpu', 'cuda'))
     names = [r.name for r in runs]
-    assert len(names) == len(set(names)) == 62
+    assert len(names) == len(set(names)) == 63
     # Scalar benchmarks: paper sizes x {paper, kmax}, CPU.
     assert sum(r.benchmark == 'bratu' for r in runs) == 3 * 2
     assert sum(r.benchmark == 'burgers' for r in runs) == 5 * 2
@@ -22,16 +22,18 @@ def test_full_plan_matches_section_3_3():
     assert sum(r.benchmark == 'bl_gravity' for r in runs) == 4 * 2
     # Kovasznay: five sizes x {cpu, cuda} x {paper, kmax}.
     assert sum(r.benchmark == 'kovasznay' for r in runs) == 5 * 2 * 2
-    # Single-pass benchmarks (no K_max pass per Section 3.3).
-    assert [r.name for r in runs if r.benchmark == 'beltrami'] == ['beltrami_P7984_cpu_paper']
+    # Beltrami: paper and a K_max = 8 pass (Addendum v2.2 2.7).
+    assert [r.name for r in runs if r.benchmark == 'beltrami'] == ['beltrami_P7984_cpu_paper',
+                                                                   'beltrami_P7984_cpu_kmax']
+    # Single-pass benchmarks: linear, one solve (Addendum v2.2 2.7.4).
     assert sum(r.benchmark == 'elasticity' for r in runs) == 5
     assert [r.config_label for r in runs if r.benchmark == 'darcy'] == ['S1', 'S2', 'S3', 'SPE10']
-    assert {r.pass_ for r in runs if r.benchmark in ('elasticity', 'beltrami', 'darcy')} == {'paper'}
+    assert {r.pass_ for r in runs if r.benchmark in ('elasticity', 'darcy')} == {'paper'}
 
 
 def test_kmax_only_pass_skips_single_pass_benchmarks():
     runs = cb.build_runs(passes=('kmax',), devices=('cpu',))
-    assert {r.benchmark for r in runs} == {'bratu', 'burgers', 'bl', 'bl_gravity', 'kovasznay'}
+    assert {r.benchmark for r in runs} == {'bratu', 'burgers', 'bl', 'bl_gravity', 'kovasznay', 'beltrami'}
 
 
 def test_smoke_runs_end_to_end_resume_and_index(tmp_path):
@@ -180,3 +182,35 @@ def test_reproduction_check_separates_round_off_from_violations(tmp_path, monkey
     with open(cb.reproduction_check(tmp_path), newline='') as f:
         status = {r['quantity']: r['status'] for r in csv.DictReader(f)}
     assert status == {'tiny error': 'round-off', 'real error': 'violation'}
+
+
+def test_kmax_pass_lengths():
+    """Addendum v2.2 Section 2.7: K_max = 60 in the kmax pass for the scalar
+    benchmarks and Kovasznay (the paper pass keeps its caps); 8 for Beltrami,
+    zero tolerance throughout."""
+    runs = {(r.benchmark, r.config_label, r.device, r.pass_): r for r in cb.build_runs(devices=('cpu',))}
+    for b in ('bratu', 'burgers', 'bl', 'bl_gravity'):
+        for (bench, label, _, pass_), run in runs.items():
+            if bench != b:
+                continue
+            opt = run.execute.__defaults__[1]
+            if pass_ == 'kmax':
+                assert opt.max_quasi_iters_lil == cb.KMAX_PASS_ITERS == 60 and opt.R_tol == 0.0
+            else:
+                assert opt.max_quasi_iters_lil < 60 and opt.R_tol > 0
+    kov = [r for k, r in runs.items() if k[0] == 'kovasznay']
+    assert {(r.pass_, r.execute.__defaults__[0].max_iter, r.execute.__defaults__[0].tol > 0) for r in kov} == \
+        {('paper', 20, True), ('kmax', 60, False)}
+    bel = {r.pass_: r.execute.__defaults__[0] for k, r in runs.items() if k[0] == 'beltrami'}
+    assert (bel['kmax'].max_iter, bel['kmax'].tol) == (cb.BELTRAMI_KMAX_PASS_ITERS, 0.0) == (8, 0.0)
+    assert bel['paper'].tol > 0 and bel['paper'].conditioning_every_iteration
+
+
+def test_bl_logs_retained_kappa_and_beta_norm():
+    from lilq.iteration_log import solve_rows
+    from problems.buckley_leverett import BLConfig, BLOptConfig, run_lil_q
+    logger = cb.IterationLogger()
+    run_lil_q(BLConfig(N_x=6, N_t=6), BLOptConfig(max_quasi_iters_lil=3), verbose=False, iteration_logger=logger)
+    rows = logger.rows
+    assert all(r["kappa_retained"] <= r["kappa_raw"] == r["kappa"] for r in solve_rows(rows))
+    assert all(r["norm_beta"] is not None for r in rows)          # terminal row too

@@ -17,6 +17,40 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- K_max = 60 pass; Beltrami conditioning every iteration and a K_max = 8 pass; retained kappa and ||beta|| logged (Addendum v2.2 Section 2.7)
+
+For the table of where the proposed stopping rule would stop:
+
+1. **The `kmax` pass runs K_max = 60** (`component_b.KMAX_PASS_ITERS`) for
+   Bratu, Burgers, both Buckley-Leverett cases and Kovasznay, with the
+   stopping rule disabled, instead of reusing the paper caps of 20-30. BL
+   gravity P = 64 reaches its plateau only at k ~ 41-45. The `paper` pass
+   is unchanged.
+2. **Beltrami, unpinned and pinned (Section 3.7):** the pivoted QR of the
+   weighted matrix at every iteration (`BeltramiConfig.
+   conditioning_every_iteration`, default on; off the clock, about 70 s per
+   iteration at P = 7,984), and a `kmax` pass of 8 iterations with a zero
+   coefficient-change tolerance for both (`component_b` for the unpinned
+   run, `run_beltrami_pinned.py --kmax` for the pinned one). Before, kappa
+   existed only at the final iterate above P = 3,200, so the round-off exit
+   could not be evaluated for the largest problem.
+3. **`iterations.csv` gains four columns after the spec's thirty**, which
+   keep their order: `kappa_raw` (sigma_max/sigma_min, or the pivoted QR's
+   |R_11|/|R_PP| over all diagonal entries), `kappa_retained` (sigma_1/
+   sigma_r with r the numerical rank, or the QR's retained-diagonal ratio),
+   `num_rank_qr` (the QR's retained diagonal entries), and `norm_beta` =
+   ||beta^(k)||_2, the iterate row k was assembled at (the terminal row:
+   the returned coefficients). At BL P = 1,024 the full kappa is about 1e17,
+   so kappa * eps_mach ~ 22 and the round-off comparison fires trivially;
+   the retained part's is the meaningful one. The `kappa` column keeps its
+   meaning (SVD: full ratio; QR: retained ratio).
+4. Elasticity and Darcy: no extra runs (linear, one solve).
+
+Job 10 now also runs the pinned K_max pass, and runs Beltrami pinned before
+check B3 (Section 2.12: under `set -e` a B3 failure would have skipped it).
+
+---
+
 ## 2026-09-29 -- Component A, F1: unweighted selection, best point in budget, criterion, logging, peak memory (Addendum v2.2 Section 2.5)
 
 1. **Selection on an unweighted loss.** `run.json` gains

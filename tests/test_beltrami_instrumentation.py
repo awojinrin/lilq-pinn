@@ -160,19 +160,29 @@ def test_produces_full_iterations_csv(tmp_path):
     assert len(csv_rows) == len(rows)
 
 
-def test_large_P_uses_pivoted_qr_at_final_iterate_only():
-    """Section 3.1 item 8: for Beltrami specifically, conditioning above
-    the SVD threshold uses pivoted QR at the final iterate only, not a
-    full per-iteration SVD. P_total=7984 here matches the manuscript's
-    own Beltrami configuration exactly."""
+def _large_P_rows(**kw):
     config = _small_config(N_vel=6, N_p=8, N_x=5, N_y=5, N_z=5, N_t=5,
-                            N_bc=4, N_t_bc=4, N_ic=4, max_iter=4)
-    assert 3 * 6 ** 4 + 8 ** 4 == 7984
+                           N_bc=4, N_t_bc=4, N_ic=4, max_iter=4, **kw)
+    assert 3 * 6 ** 4 + 8 ** 4 == 7984      # the manuscript's Beltrami P
     logger = IterationLogger()
-
     solve_beltrami(config, verbose=False, iteration_logger=logger)
+    return logger.rows
 
-    rows = logger.rows
+
+def test_large_P_uses_pivoted_qr_at_every_iteration():
+    """Section 3.1 item 8: above the SVD threshold Beltrami's conditioning is
+    the pivoted QR -- at every iteration (Addendum v2.2 Section 2.7), with
+    both kappa ratios and the numerical rank (retained diagonal entries)."""
+    rows = solve_rows(_large_P_rows())
+    assert all(row["kappa_method"] == "qr_pivoted" for row in rows)
+    for row in rows:
+        assert row["kappa"] == row["kappa_retained"] <= row["kappa_raw"]
+        assert 0 < row["num_rank_qr"] <= 7984 and row["num_rank_svd"] is None
+        assert row["norm_beta"] is not None
+
+
+def test_large_P_final_iterate_only_when_asked():
+    rows = _large_P_rows(conditioning_every_iteration=False)
     assert all(row["kappa_method"] is None for row in solve_rows(rows)[:-1])
     assert all(math.isnan(row["kappa"]) for row in solve_rows(rows)[:-1])
     assert last_solve_row(rows)["kappa_method"] == "qr_pivoted"

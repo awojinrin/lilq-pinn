@@ -54,7 +54,12 @@ from lilq.run_metadata import first_stall_iteration
 
 DEFAULT_OUT_ROOT = Path(__file__).resolve().parent.parent / 'results' / 'package1'
 BENCHMARKS = ('bratu', 'burgers', 'bl', 'bl_gravity', 'elasticity', 'kovasznay', 'beltrami', 'darcy')
-KMAX_BENCHMARKS = ('bratu', 'burgers', 'bl', 'bl_gravity', 'kovasznay')
+KMAX_BENCHMARKS = ('bratu', 'burgers', 'bl', 'bl_gravity', 'kovasznay', 'beltrami')
+# The kmax pass (stopping rule disabled): K_max = 60 for the scalar
+# benchmarks and Kovasznay, 8 for Beltrami -- long enough for every plateau
+# (BL gravity P = 64 reaches it only at k ~ 41-45). Addendum v2.2 2.7.
+KMAX_PASS_ITERS = 60
+BELTRAMI_KMAX_PASS_ITERS = 8
 DARCY_FIELDS = ('S1', 'S2', 'S3', 'SPE10')
 
 
@@ -113,8 +118,9 @@ def _scalar_runs(benchmark, smoke, passes):
     for P, config, opt in triples:
         for pass_ in passes:
             # K_max pass: a zero loss target can never be met, so the loop
-            # always runs max_quasi_iters_lil iterations.
-            run_opt = opt if pass_ == 'paper' else dataclasses.replace(opt, R_tol=0.0)
+            # always runs KMAX_PASS_ITERS iterations.
+            run_opt = opt if pass_ == 'paper' else dataclasses.replace(
+                opt, R_tol=0.0, max_quasi_iters_lil=KMAX_PASS_ITERS)
             if smoke:
                 run_opt = dataclasses.replace(run_opt, max_quasi_iters_lil=min(run_opt.max_quasi_iters_lil, 5))
 
@@ -140,9 +146,12 @@ def _kovasznay_runs(smoke, passes, devices):
         for device in devices:
             for pass_ in passes:
                 # K_max pass: a zero coefficient-change tolerance is never met.
-                config = KovasznayConfig(N_x=N, N_y=N, k_ratio=K_RATIO, max_iter=MAX_ITER,
+                config = KovasznayConfig(N_x=N, N_y=N, k_ratio=K_RATIO,
+                                         max_iter=MAX_ITER if pass_ == 'paper' else KMAX_PASS_ITERS,
                                          tol=TOL if pass_ == 'paper' else 0.0,
                                          use_gpu=(device == 'cuda'))
+                if smoke:
+                    config = dataclasses.replace(config, max_iter=min(config.max_iter, 5))
 
                 def execute(run_dir, config=config):
                     logger = IterationLogger()
@@ -176,25 +185,33 @@ def _elasticity_runs(smoke):
     return runs
 
 
-def _beltrami_runs(smoke):
+def _beltrami_runs(smoke, passes=('paper',)):
     from experiments.run_beltrami import COLLOC
     from problems.beltrami import BeltramiConfig, solve_beltrami
     if smoke:
-        config = BeltramiConfig(N_vel=3, N_p=3, N_x=4, N_y=4, N_z=4, N_t=4, N_bc=3, N_t_bc=3, N_ic=3)
+        base = BeltramiConfig(N_vel=3, N_p=3, N_x=4, N_y=4, N_z=4, N_t=4, N_bc=3, N_t_bc=3, N_ic=3)
     else:
-        config = BeltramiConfig(N_vel=6, N_p=8, **COLLOC[6])
-    P = 3 * config.N_vel ** 4 + config.N_p ** 4
+        base = BeltramiConfig(N_vel=6, N_p=8, **COLLOC[6])
+    P = 3 * base.N_vel ** 4 + base.N_p ** 4
+    runs = []
+    for pass_ in passes:
+        # kmax pass: a zero coefficient-change tolerance is never met, so it
+        # runs BELTRAMI_KMAX_PASS_ITERS iterations (Addendum v2.2 2.7).
+        config = base if pass_ == 'paper' else dataclasses.replace(
+            base, tol=0.0, max_iter=3 if smoke else BELTRAMI_KMAX_PASS_ITERS)
 
-    def execute(run_dir, config=config):
-        logger = IterationLogger()
-        r = solve_beltrami(config, verbose=False, iteration_logger=logger,
-                           run_json_path=run_dir / 'run.json')
-        logger.to_csv(run_dir / 'iterations.csv')
-        save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uvwp'}, config)
-        return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': r['solve_time_total'],
-                'rel_l2_u': r['rel_l2_u'], 'rel_l2_v': r['rel_l2_v'], 'rel_l2_w': r['rel_l2_w'],
-                'rel_l2_p': r['rel_l2_p'], 'snapshots': r['snapshots'], **_log_summary(logger)}
-    return [Run('beltrami', f'P{P}', 'cpu', 'paper', execute)]
+        def execute(run_dir, config=config):
+            logger = IterationLogger()
+            r = solve_beltrami(config, verbose=False, iteration_logger=logger,
+                               run_json_path=run_dir / 'run.json')
+            logger.to_csv(run_dir / 'iterations.csv')
+            save_solution(run_dir, {f: (r[f'basis_{f}'], r[f'theta_{f}']) for f in 'uvwp'}, config)
+            return {'n_outer_iters': r['n_outer_iters'], 'solve_time_total': r['solve_time_total'],
+                    'rel_l2_u': r['rel_l2_u'], 'rel_l2_v': r['rel_l2_v'], 'rel_l2_w': r['rel_l2_w'],
+                    'rel_l2_p': r['rel_l2_p'], 'snapshots': r['snapshots'],
+                    'tol': config.tol, 'K_max': config.max_iter, **_log_summary(logger)}
+        runs.append(Run('beltrami', f'P{P}', 'cpu', pass_, execute))
+    return runs
 
 
 def _darcy_runs(smoke):
@@ -230,9 +247,10 @@ def build_runs(benchmarks=BENCHMARKS, passes=('paper', 'kmax'), devices=('cpu', 
             runs += _scalar_runs(b, smoke, b_passes)
         elif b == 'kovasznay':
             runs += _kovasznay_runs(smoke, b_passes, devices)
+        elif b == 'beltrami':
+            runs += _beltrami_runs(smoke, b_passes)
         elif 'paper' in b_passes:
-            runs += {'elasticity': _elasticity_runs, 'beltrami': _beltrami_runs,
-                     'darcy': _darcy_runs}[b](smoke)
+            runs += {'elasticity': _elasticity_runs, 'darcy': _darcy_runs}[b](smoke)
     return runs
 
 

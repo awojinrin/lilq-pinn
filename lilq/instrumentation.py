@@ -198,8 +198,12 @@ def conditioning_via_svd(A: np.ndarray) -> dict:
 
     Returns
     -------
-    dict with keys ``kappa``, ``kappa_method`` (always ``"svd"``),
-    ``num_rank_svd``.
+    dict with keys ``kappa`` (sigma_max / sigma_min), ``kappa_method``
+    (always ``"svd"``), ``num_rank_svd``, ``kappa_raw`` (= ``kappa``) and
+    ``kappa_retained`` = sigma_1 / sigma_r with r the numerical rank
+    (Addendum v2.2 Section 2.7: at Buckley-Leverett P = 1,024 the full
+    kappa is about 1e17, so kappa * eps_mach is about 22 and the round-off
+    comparison would fire trivially; the retained part's is meaningful).
     """
     N, P = A.shape
     singular_values = np.linalg.svd(A, compute_uv=False)
@@ -208,8 +212,11 @@ def conditioning_via_svd(A: np.ndarray) -> dict:
 
     rank_tol = max(N, P) * sigma_max * EPS_MACH
     num_rank_svd = int(np.sum(singular_values > rank_tol))
+    kappa_retained = (float(sigma_max / singular_values[num_rank_svd - 1])
+                      if num_rank_svd > 0 else float("inf"))
 
-    return {"kappa": kappa, "kappa_method": "svd", "num_rank_svd": num_rank_svd}
+    return {"kappa": kappa, "kappa_method": "svd", "num_rank_svd": num_rank_svd,
+            "kappa_raw": kappa, "kappa_retained": kappa_retained}
 
 
 def conditioning_via_pivoted_qr(A: np.ndarray) -> dict:
@@ -262,4 +269,9 @@ def conditioning_via_pivoted_qr(A: np.ndarray) -> dict:
         "kappa_method": "qr_pivoted",
         "kappa_raw_ratio": raw_ratio,
         "num_rank_svd": None,
+        # The same two ratios under the names the log uses for both methods,
+        # and the number of retained diagonal entries (Addendum v2.2 2.7).
+        "kappa_raw": raw_ratio,
+        "kappa_retained": kappa,
+        "num_rank_qr": int(len(retained)),
     }

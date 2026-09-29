@@ -51,6 +51,11 @@ ITERATION_CSV_COLUMNS = (
     "eps_u", "eps_v", "eps_p", "eps_p_meanfree",
     "maxerr_u", "maxerr_v", "maxerr_p",
     "solver_path", "gpu_mem_peak_bytes",
+    # Addendum v2.2 Section 2.7, after the spec's thirty (which keep their
+    # order): kappa over all singular values or diagonal entries, kappa of
+    # the retained part (sigma_1/sigma_r, or the pivoted QR's retained
+    # diagonal), the pivoted QR's numerical rank, and ||beta^(k)||_2.
+    "kappa_raw", "kappa_retained", "num_rank_qr", "norm_beta",
 )
 
 
@@ -183,14 +188,21 @@ class LilQDiagnosticsTracker:
         n_interior_rows: Optional[int] = None,
         interior_weight: Optional[float] = None,
         test_error_fn: Optional[Callable[[np.ndarray], Dict[str, float]]] = None,
+        conditioning_every_iteration: bool = False,
     ) -> None:
         """``test_error_fn(beta)`` returns the test-error columns
         (``eps_u``, ``eps_v``, ``eps_p``, ``eps_p_meanfree``, ``maxerr_*``,
         any subset) of the iterate ``beta`` on the problem's test grid
         (Section 3.1 item 10: for the log only, never for stopping). Row
         ``k`` gets them at beta^(k), the terminal row at the returned
-        coefficients. Outside the timed phases."""
+        coefficients. Outside the timed phases.
+
+        ``conditioning_every_iteration``: above the SVD threshold, compute
+        the pivoted QR at every iteration rather than at the final iterate
+        only (Beltrami; Addendum v2.2 Section 2.7). Off the clock, like
+        every diagnostic here."""
         self._test_error_fn = test_error_fn
+        self._conditioning_every_iteration = conditioning_every_iteration
         self._final_beta: Optional[np.ndarray] = None
         self._norm_R_h_km1: Optional[float] = None
         self._norm_Rlin_h_km1: Optional[float] = None
@@ -295,9 +307,10 @@ class LilQDiagnosticsTracker:
         P = A_stacked.shape[1]
         if P <= self._conditioning_svd_threshold:
             cond_result = conditioning_via_svd(A_stacked)
-        elif is_final_iterate:
+        elif is_final_iterate or self._conditioning_every_iteration:
             cond_result = conditioning_via_pivoted_qr(A_stacked)
-            self.kappa_qr_raw_ratio = cond_result["kappa_raw_ratio"]
+            if is_final_iterate:
+                self.kappa_qr_raw_ratio = cond_result["kappa_raw_ratio"]
         else:
             cond_result = {"kappa": float("nan"), "kappa_method": None, "num_rank_svd": None}
 
@@ -321,6 +334,9 @@ class LilQDiagnosticsTracker:
             num_rank_gelsy=int(rank_gelsy) if rank_gelsy is not None else None,
             rcond=EPS_MACH,
             solver_path=solver_path, gpu_mem_peak_bytes=gpu_mem_peak_bytes,
+            kappa_raw=cond_result.get("kappa_raw"), kappa_retained=cond_result.get("kappa_retained"),
+            num_rank_qr=cond_result.get("num_rank_qr"),
+            norm_beta=float(np.linalg.norm(beta_prev)),
         )
         if self._test_error_fn is not None:
             row.update(self._test_error_fn(beta_prev))
@@ -343,6 +359,7 @@ class LilQDiagnosticsTracker:
             k=k, t_cum_s=self._t_cum_s,
             norm_R_h=self._final_norm_R_h,
             norm_R_interior=self._interior_norm(self._final_R_vector),
+            norm_beta=float(np.linalg.norm(self._final_beta)) if self._final_beta is not None else None,
         )
         if self._test_error_fn is not None and self._final_beta is not None:
             row.update(self._test_error_fn(self._final_beta))

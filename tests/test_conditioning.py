@@ -89,3 +89,26 @@ def test_qr_pivoted_and_svd_roughly_agree_on_a_well_conditioned_matrix():
     svd_kappa = conditioning_via_svd(A)["kappa"]
     qr_kappa = conditioning_via_pivoted_qr(A)["kappa"]
     assert qr_kappa == pytest.approx(svd_kappa, rel=2.0)  # same order of magnitude
+
+
+def test_svd_retained_kappa_ignores_the_numerically_zero_singular_values():
+    """Addendum v2.2 Section 2.7: kappa_retained = sigma_1 / sigma_r, r the
+    numerical rank, so a rank-deficient matrix still gets a meaningful
+    ratio while the full kappa is huge or infinite."""
+    rng = np.random.default_rng(0)
+    U, _ = np.linalg.qr(rng.standard_normal((40, 6)))
+    V, _ = np.linalg.qr(rng.standard_normal((6, 6)))
+    s = np.array([10.0, 5.0, 2.0, 1.0, 1e-20, 0.0])
+    result = conditioning_via_svd(U @ np.diag(s) @ V.T)
+    assert result["num_rank_svd"] == 4
+    assert result["kappa_retained"] == pytest.approx(10.0, rel=1e-8)
+    assert result["kappa_raw"] == result["kappa"] > 1e14
+
+
+def test_qr_reports_its_numerical_rank():
+    rng = np.random.default_rng(1)
+    A = rng.standard_normal((30, 5))
+    A = np.hstack([A, A[:, :1] + A[:, 1:2]])          # one dependent column
+    result = conditioning_via_pivoted_qr(A)
+    assert result["num_rank_qr"] == 5 and result["kappa_retained"] == result["kappa"]
+    assert result["kappa_raw"] == result["kappa_raw_ratio"] > 1e10

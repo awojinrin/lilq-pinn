@@ -14,5 +14,7 @@ set -euo pipefail
 
 python experiments/component_b.py --devices cpu --out-root "$PKG"
 python experiments/component_b.py --benchmarks kovasznay --devices cuda --out-root "$PKG"
-python experiments/component_b.py --gpu-equivalence --out-root "$PKG"
+# Beltrami pinned before check B3: under set -e a B3 failure would skip it (Addendum v2.2 2.12).
 python experiments/run_beltrami_pinned.py --out-dir "$B/beltrami_pinned"
+python experiments/run_beltrami_pinned.py --kmax --out-dir "$B/beltrami_pinned_kmax"
+python experiments/component_b.py --gpu-equivalence --out-root "$PKG"
