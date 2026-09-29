@@ -56,8 +56,8 @@ assembled. Wave 2 submits 20 and 21 with `--array=0-3`.
 **Wave 2 report (Section 3).** `wave_report.py` writes
 `A_calibration/run_endings.csv`: every Component A run's end reason,
 budget and wall time, with `ended_before_budget`, and lists those in the
-report log. The report already packs the search lists, the screening
-`run.json`s and selections, and the B root's CSVs, which now include
+report log. It now also packs each screening run's `log.csv`; it already
+packed the search lists, the screening `run.json`s and selections, and the B root's CSVs, which now include
 `four_method_controls.csv`.
 
 **Wave 3** compares the code with the last wave's commit (wave 2's when it
@@ -102,7 +102,9 @@ after a job's own runs, each of them that ended on `optimizer_stall`;
 (wave 1's Bratu); `--controls-only` skips the job's own runs. Each control
 has the original's benchmark, size, method, seed and device, and its
 budgets and caps; the configuration comes from the problem's paper settings
-and is checked against the row's collocation seed. Rows are logged with
+(every size, also on `--quick` budgets) and is checked against the row's
+collocation seed; a mismatch is logged as a failed control row and the other
+controls still run (found in a local rehearsal of wave 2 on wave 1's results). Rows are logged with
 `variant = f1_stall_rule`, the history and model saved like any other
 (model folder suffixed `_f1_stall_rule`). New columns: `variant`,
 `lbfgs_restarts`, `same_start` (iteration 0's loss equals the original's,
