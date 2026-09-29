@@ -95,6 +95,9 @@ class BLOptConfig:
     # None: 16x the method's own iteration budget (lilq.solvers.line_search_cap),
     # the same rule for every problem; an explicit value overrides it.
     max_line_searches: Optional[int] = None
+    # How an L-BFGS run may stop short (lilq.solvers.STALL_RULES): 'pytorch'
+    # for the published tables, 'f1' for the four-method stall control.
+    stall_rule: str = 'pytorch'
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -750,7 +753,7 @@ def run_lil_n(config: BLConfig, opt: BLOptConfig,
         loss_fn, init_coeffs, device,
         max_iterations=opt.max_iterations,
         max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
-        R_tol=opt.R_tol, verbose=verbose,
+        R_tol=opt.R_tol, verbose=verbose, stall_rule=opt.stall_rule,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
     return basis, coefficients, metrics, summary
@@ -802,7 +805,7 @@ def run_nil_n(config: BLConfig, opt: BLOptConfig,
         pde_fn, bc_fn, model, x_pde, t_pde, bc_data,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc, lambda_ic=opt.lambda_ic,
         max_iterations=opt.max_iterations, max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
-        R_tol=opt.R_tol, verbose=verbose,
+        R_tol=opt.R_tol, verbose=verbose, stall_rule=opt.stall_rule,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
     return model, metrics, summary
@@ -900,7 +903,7 @@ def run_nil_q(config: BLConfig, opt: BLOptConfig,
         max_quasi_iters=opt.max_quasi_iters_nn,
         max_inner_iters=opt.max_inner_iters_nn,
         max_line_searches=line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn, opt.max_line_searches),
-        R_tol=opt.R_tol, verbose=verbose,
+        R_tol=opt.R_tol, verbose=verbose, stall_rule=opt.stall_rule,
     )
     summary['pretrain_loss'] = float(pretrain_loss)
     return model, metrics, summary

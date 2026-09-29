@@ -34,6 +34,16 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 # ``training_time_s`` is the optimizer loop only (the solver's own clock);
 # ``wall_total_s`` also covers setup and pretraining. ``error`` holds the
 # traceback of a ``failure`` row.
+#
+# The stall control (the advisor's reply to wave 1, item 2.5) adds rows with
+# ``variant`` = ``f1_stall_rule`` (empty for the tables' own runs), rerunning
+# a run that ended on ``optimizer_stall`` from the same seed with tolerances 0
+# and F1's restart-once rule: ``lbfgs_restarts``; ``same_start`` (the loss
+# at iteration 0 equals the original's, bit for bit) and ``start_loss_rel_diff``
+# (how far apart they are otherwise); ``departs_at_iteration``
+# (the first logged iteration whose loss differs from the original's; empty
+# if none within the original's history); and the original's iterations and
+# final loss, so the control row can be read on its own.
 FOUR_METHOD_CSV_COLUMNS = (
     "benchmark", "P", "method", "seed", "collocation_seed", "device",
     "total_iterations", "total_line_searches", "training_time_s", "wall_total_s",
@@ -41,18 +51,44 @@ FOUR_METHOD_CSV_COLUMNS = (
     "iterations_cap", "line_searches_cap",
     "stall_iteration", "stall_evaluations", "stall_time_s",
     "loss_history_every_10", "commit", "error",
+    "variant", "lbfgs_restarts", "same_start", "start_loss_rel_diff", "departs_at_iteration",
+    "original_total_iterations", "original_final_loss",
 )
 
-RowKey = Tuple[str, int, str, str, str]
+CONTROL_VARIANT = "f1_stall_rule"
+
+RowKey = Tuple[str, int, str, str, str, str]
 
 
 def row_key(row: Dict[str, Any]) -> RowKey:
-    """Identity of one run -- (benchmark, P, method, seed, device) -- used to
-    skip already-completed runs on resume. Normalized so a row read back
-    from CSV (all strings, ``""`` for no seed) matches a freshly built one."""
+    """Identity of one run -- (benchmark, P, method, seed, device, variant) --
+    used to skip already-completed runs on resume. Normalized so a row read
+    back from CSV (all strings, ``""`` for no seed or variant, and no
+    ``variant`` column in files written before it existed) matches a
+    freshly built one."""
     seed = row.get("seed")
     return (str(row["benchmark"]), int(row["P"]), str(row["method"]),
-            "" if seed in (None, "") else str(int(seed)), str(row["device"]))
+            "" if seed in (None, "") else str(int(seed)), str(row["device"]),
+            str(row.get("variant") or ""))
+
+
+def compare_histories(original, control):
+    """``(same_start, start_loss_rel_diff, departs_at_iteration)`` of two
+    ``loss_history_every_10`` lists: whether iteration 0's loss is
+    identical, their relative difference, and the first iteration logged in
+    both whose loss differs (None if none does). The same seed on another
+    CPU or maths library starts within round-off (1e-16 relative, seen
+    between Grace and a laptop), not bit for bit, and the runs then
+    diverge."""
+    if not original or not control or int(original[0][0]) != 0 or int(control[0][0]) != 0:
+        return None, None, None
+    a, b = float(original[0][1]), float(control[0][1])
+    rel = abs(a - b) / abs(a) if a else abs(b)
+    by_iter = {int(it): float(loss) for it, loss, *_ in original}
+    for it, loss, *_ in control:
+        if int(it) in by_iter and by_iter[int(it)] != float(loss):
+            return a == b, rel, int(it)
+    return a == b, rel, None
 
 
 def classify_stopping_reason(

@@ -28,10 +28,23 @@ the largest size per benchmark. Use ``--quick`` for a fast correctness
 smoke test (1 size, 1 seed, tiny caps); the full run (no flags) is a
 real, possibly long-running job -- run it deliberately, not by default.
 
+Stall control (the advisor's reply to wave 1, item 2.5): ``--controls``
+reruns, after this job's own runs, every run of this job that ended on
+``optimizer_stall`` -- same seed, starting point, budgets and caps, with
+tolerances 0 and F1's restart-once rule (``stall_rule='f1'``) -- as a row
+with ``variant = f1_stall_rule``, its model and history saved like any
+other. ``--controls-from`` does the same for the stalled runs in earlier
+tables (wave 1's Bratu), and ``--controls-only`` skips this job's own runs.
+A control runs on its original's device, among this job's devices. The
+merged ``four_method_tables.csv`` keeps the tables' own runs; the controls
+go to ``four_method_controls.csv`` beside it.
+
 Usage::
 
     python experiments/four_method_tables.py --quick
     python experiments/four_method_tables.py
+    python experiments/four_method_tables.py --problems bratu --passes primary --controls-only \
+        --controls-from results/wave1/B_instrumentation/four_method_jobs/bratu_gpu
 """
 
 import sys
@@ -52,7 +65,7 @@ import torch
 
 from lilq.utils import DEVICE, clear_gpu_memory
 from lilq.four_method_log import (
-    FourMethodLogger, row_key, stopping_fields, subsample_loss_history,
+    CONTROL_VARIANT, FourMethodLogger, compare_histories, row_key, stopping_fields, subsample_loss_history,
 )
 from lilq.provenance import save_provenance
 from lilq.saved_models import save_history, save_network, save_solution
@@ -127,13 +140,16 @@ def _apply_quick_budgets(opt, max_iterations=15, max_line_searches=200,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def model_dir_name(row):
-    """``<benchmark>_P<P>_<method>_s<seed>_<device>``, the folder of a row's saved model."""
+    """``<benchmark>_P<P>_<method>_s<seed>_<device>[_<variant>]``, the folder
+    of a row's saved model."""
     seed = 'na' if row['seed'] in (None, '') else row['seed']
-    return f"{row['benchmark']}_P{row['P']}_{row['method']}_s{seed}_{row['device']}"
+    variant = f"_{row['variant']}" if row.get('variant') else ''
+    return f"{row['benchmark']}_P{row['P']}_{row['method']}_s{seed}_{row['device']}{variant}"
 
 
 def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
-                 seeds, devices, verbose=True, csv_path=None, skip_keys=frozenset()):
+                 seeds, devices, verbose=True, csv_path=None, skip_keys=frozenset(),
+                 variant=None, original=None):
     """One row per (seed, device). ``seeds=None`` means "run once at
     config.seed, log seed as None" -- LiL-N's deterministic case.
 
@@ -148,13 +164,16 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
     ``<csv_path's folder>/models/<benchmark>_P<P>_<method>_s<seed>_<device>/``
     (``lilq.saved_models``: ``network.pt`` for NiL-N/NiL-Q, ``solution.pt``
     for LiL-N), after the run's clock stops and before its row is written.
+
+    ``variant``/``original``: a stall control's row (:func:`run_controls`),
+    compared with the row of the run it controls.
     """
     actual_seeds = list(seeds) if seeds else [None]
 
     for device in devices:
         for seed in actual_seeds:
             base = dict(benchmark=benchmark, P=P, method=method_name, seed=seed,
-                        collocation_seed=config.seed, device=str(device))
+                        collocation_seed=config.seed, device=str(device), variant=variant)
             if row_key(base) in skip_keys:
                 if verbose:
                     print(f"    {method_name:6s} seed={seed} device={device} -- done, skipping")
@@ -190,6 +209,14 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                     save_error = {'error': 'model not saved: ' + traceback.format_exc()}
 
             stop = stopping_fields(method_name, summary, opt)
+            history = subsample_loss_history(metrics.to_dict())
+            control = {}
+            if original is not None:
+                same_start, start_diff, departs = compare_histories(original.get('loss_history_every_10'), history)
+                control = dict(lbfgs_restarts=summary.get('lbfgs_restarts'), same_start=same_start,
+                               start_loss_rel_diff=start_diff, departs_at_iteration=departs,
+                               original_total_iterations=original.get('total_iterations'),
+                               original_final_loss=original.get('final_loss'))
 
             logger.record(
                 **base,
@@ -202,8 +229,9 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
                 iterations_cap=stop['iterations_cap'], line_searches_cap=stop['evaluations_cap'],
                 stall_iteration=stop['stall_iteration'], stall_evaluations=stop['stall_evaluations'],
                 stall_time_s=stop['stall_time_s'],
-                loss_history_every_10=subsample_loss_history(metrics.to_dict()),
+                loss_history_every_10=history,
                 commit=current_commit(),
+                **control,
                 **save_error,
             )
             if csv_path is not None:
@@ -212,6 +240,8 @@ def _run_and_log(logger, benchmark, P, config, opt, method_name, runner,
             if verbose:
                 status = "CONVERGED" if summary['converged'] else stop['stopping_reason']
                 seed_label = f"seed={seed}" if seed is not None else "seed=n/a"
+                if variant:
+                    seed_label += f" [{variant}]"
                 print(f"    {method_name:6s} {seed_label:10s} device={device!s:6s} "
                       f"iters={summary['total_iterations']:6d} "
                       f"loss={summary['final_loss']:.3e} [{status}] ({elapsed:.1f}s)", flush=True)
@@ -287,10 +317,62 @@ def run_problem(benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn, logger,
                          csv_path=csv_path, skip_keys=skip_keys)
 
 
+def control_candidates(rows, devices, problems=None, P_values=None):
+    """The runs to control: the tables' own runs (no ``variant``) that ended
+    on ``optimizer_stall``, on one of ``devices``, optionally only of
+    ``problems`` and sizes ``P_values``; each once."""
+    devs = {str(d) for d in devices}
+    out, seen = [], set()
+    for r in rows:
+        if (r.get('variant') or r.get('stopping_reason') != 'optimizer_stall' or str(r['device']) not in devs
+                or (problems and r['benchmark'] not in problems) or (P_values and int(r['P']) not in P_values)):
+            continue
+        if row_key(r) not in seen:
+            seen.add(row_key(r))
+            out.append(r)
+    return out
+
+
+def run_controls(originals, logger, quick=False, verbose=True, csv_path=None, skip_keys=frozenset()):
+    """One stall control per row of ``originals`` (the advisor's reply to
+    wave 1, item 2.5): the same benchmark, size, method, seed, device,
+    budgets and caps -- the configuration rebuilt from the problem's paper
+    settings, and checked against the row's collocation seed -- with
+    ``stall_rule='f1'``. Logged as ``variant = f1_stall_rule``; a control
+    already in ``skip_keys`` is not rerun."""
+    problems = {p[0]: p for p in PROBLEMS}
+    for orig in originals:
+        benchmark, P, method = orig['benchmark'], int(orig['P']), orig['method']
+        _, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn = problems[benchmark]
+        match = [(c, o) for p, c, o in runs_fn(quick) if p == P]
+        if not match:
+            raise ValueError(f"no {benchmark} configuration with P={P}")
+        config, opt = match[0]
+        if orig.get('collocation_seed') not in (None, '') and int(orig['collocation_seed']) != config.seed:
+            raise ValueError(f"{benchmark} P={P}: collocation seed {orig['collocation_seed']} "
+                             f"is not the configuration's {config.seed}")
+        if quick:
+            opt = _apply_quick_budgets(opt)
+        opt = dataclasses.replace(opt, stall_rule='f1')
+        runner = {'NiL-N': nil_n_fn, 'NiL-Q': nil_q_fn, 'LiL-N': lil_n_fn}[method]
+        seed = orig.get('seed')
+        device = torch.device(str(orig['device']))
+        warm_up(device, verbose=verbose)
+        if verbose:
+            print(f"\n  control of {benchmark} P={P} {method} seed={seed} device={device} "
+                  f"(original: {orig.get('total_iterations')} iterations, optimizer_stall)")
+        _run_and_log(logger, benchmark, P, config, opt, method, runner,
+                     seeds=None if seed in (None, '') else [int(seed)], devices=[device],
+                     verbose=verbose, csv_path=csv_path, skip_keys=skip_keys,
+                     variant=CONTROL_VARIANT, original=orig)
+
+
 def merge_csvs(paths, out_path):
     """Combine per-job CSVs (split runs of this script) into one; a run
-    key appearing in two inputs is an error -- the jobs overlapped."""
-    merged = FourMethodLogger()
+    key appearing in two inputs is an error -- the jobs overlapped. The
+    tables' own runs go to ``out_path``; stall controls, when there are
+    any, to ``four_method_controls.csv`` beside it."""
+    merged, controls = FourMethodLogger(), FourMethodLogger()
     seen = set()
     for path in paths:
         if not Path(path).exists():
@@ -301,9 +383,11 @@ def merge_csvs(paths, out_path):
             if key in seen:
                 raise ValueError(f"run {key} appears in more than one input ({path})")
             seen.add(key)
-            merged.record(**row)
+            (controls if row.get('variant') else merged).record(**row)
     merged.to_csv(out_path)
-    return merged
+    if len(controls):
+        controls.to_csv(Path(out_path).with_name('four_method_controls.csv'))
+    return merged, controls
 
 
 def main():
@@ -330,6 +414,14 @@ def main():
                              "'cpu': extra CPU run at the largest size per benchmark.")
     parser.add_argument('--fresh', action='store_true',
                         help='Ignore an existing CSV in --out-dir instead of resuming from it.')
+    parser.add_argument('--controls', action='store_true',
+                        help="After this job's runs, run a stall control (tolerances 0, F1's "
+                             "restart-once rule) for each of them that ended on optimizer_stall.")
+    parser.add_argument('--controls-from', type=str, nargs='+', default=None,
+                        help='Also control the stalled runs in the four_method_tables.csv of these '
+                             "job directories (an earlier wave's), on this job's devices.")
+    parser.add_argument('--controls-only', action='store_true',
+                        help="Skip this job's own runs; run only the controls.")
     parser.add_argument('--merge-from', type=str, nargs='+', default=None,
                         help='Instead of running: combine the four_method_tables.csv of these '
                              'job directories into --out-dir (failure rows kept).')
@@ -340,8 +432,9 @@ def main():
     out_path = out_dir / 'four_method_tables.csv'
 
     if args.merge_from:
-        merged = merge_csvs([Path(d) / 'four_method_tables.csv' for d in args.merge_from], out_path)
-        print(f"Merged {len(merged)} rows from {len(args.merge_from)} job directories into {out_path}")
+        merged, controls = merge_csvs([Path(d) / 'four_method_tables.csv' for d in args.merge_from], out_path)
+        print(f"Merged {len(merged)} rows from {len(args.merge_from)} job directories into {out_path}"
+              + (f"; {len(controls)} stall controls into four_method_controls.csv" if len(controls) else ''))
         return
     save_provenance(out_dir)
 
@@ -358,12 +451,25 @@ def main():
     skip_keys = frozenset(logger.completed_keys())
     t_start = time.perf_counter()
 
-    for benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn in problems:
-        print(f"\n{'=' * 60}\n{benchmark}\n{'=' * 60}")
-        run_problem(benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn, logger,
-                    quick=args.quick, seeds=tuple(args.seeds), P_values=args.P,
-                    methods=args.methods, passes=args.passes,
-                    csv_path=out_path, skip_keys=skip_keys)
+    if not args.controls_only:
+        for benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn in problems:
+            print(f"\n{'=' * 60}\n{benchmark}\n{'=' * 60}")
+            run_problem(benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn, logger,
+                        quick=args.quick, seeds=tuple(args.seeds), P_values=args.P,
+                        methods=args.methods, passes=args.passes,
+                        csv_path=out_path, skip_keys=skip_keys)
+
+    if args.controls or args.controls_from:
+        # This job's devices: the primary pass's (the GPU when present) and the CPU pass's.
+        devices = ([DEVICE] if 'primary' in args.passes else []) + (
+            [torch.device('cpu')] if 'cpu' in args.passes else [])
+        names = [p[0] for p in problems]
+        sources = [logger.rows] if args.controls else []
+        sources += [FourMethodLogger.from_csv(Path(d) / 'four_method_tables.csv').rows
+                    for d in (args.controls_from or [])]
+        originals = control_candidates([r for rows in sources for r in rows], devices, names, args.P)
+        print(f"\n{'=' * 60}\nstall controls: {len(originals)} runs ended on optimizer_stall\n{'=' * 60}")
+        run_controls(originals, logger, quick=args.quick, csv_path=out_path, skip_keys=skip_keys)
 
     logger.to_csv(out_path)
     n_fail = sum(1 for r in logger.rows if r['stopping_reason'] == 'failure')

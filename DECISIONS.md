@@ -17,6 +17,77 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Four-method stall control (reply to wave 1, item 2.5)
+
+**Why.** At Bratu P = 100 and 225, wave 1's nonconvex runs ended on
+`optimizer_stall` while their loss was still falling (0.8-19% per 500
+iterations). The stop comes from PyTorch's absolute L-BFGS tolerances
+(`tolerance_grad` 1e-8, `tolerance_change` 1e-9) -- the settings behind the
+published tables, and the loss-scale dependence F1 no longer has. The
+control shows whether the stall, rather than the method, limits the
+reported loss.
+
+**The rule** (`lilq.solvers.STALL_RULES`; `stall_rule` on `solve_nil_n`,
+`solve_nil_q`, `solve_lil_n` and on the Bratu, Burgers and BL `OptConfig`s).
+`'pytorch'` is the default and unchanged: the golden-trajectory tests still
+pass bit for bit. `'f1'`: tolerances 0, and F1's rule -- a step that does not
+lower the loss is followed by a step with a fresh L-BFGS optimizer, and the
+run ends on `optimizer_stall` only if that step does not lower it either. A
+step that lowers the loss clears the restart, as in F1. "Lowers the loss"
+is the loss L-BFGS minimizes: the full loss for NiL-N and LiL-N; for NiL-Q
+the linearized loss of the current outer iteration. NiL-Q's inner loop ends
+on a second no-progress step in a row, the fresh optimizer serves the rest
+of the run, and each linearization starts with no restart used; the outer
+stall is unchanged (an outer iteration that leaves the parameters bitwise
+unchanged). F1's rule is per 500-iteration call; here it is per step, the
+unit at which these loops stop. The summary records `stall_rule` and
+`lbfgs_restarts`.
+
+**The runs** (`experiments/four_method_tables.py`). `--controls` reruns,
+after a job's own runs, each of them that ended on `optimizer_stall`;
+`--controls-from <job dirs>` does the same for an earlier table's rows
+(wave 1's Bratu); `--controls-only` skips the job's own runs. Each control
+has the original's benchmark, size, method, seed and device, and its
+budgets and caps; the configuration comes from the problem's paper settings
+and is checked against the row's collocation seed. Rows are logged with
+`variant = f1_stall_rule`, the history and model saved like any other
+(model folder suffixed `_f1_stall_rule`). New columns: `variant`,
+`lbfgs_restarts`, `same_start` (iteration 0's loss equals the original's,
+bit for bit -- the check that the control started from the same point),
+`departs_at_iteration` (the first logged iteration whose loss differs from
+the original's), and `original_total_iterations` / `original_final_loss`.
+`variant` is part of a row's key, so a control never collides with its
+original; wave 1's CSV, which has no such column, reads as the tables' own
+runs. `--merge-from` writes the tables' own runs to `four_method_tables.csv`
+and the controls to `four_method_controls.csv` beside it.
+
+**Device.** The reply says to run the controls on the GPU. Five of wave 1's
+fourteen stalled Bratu runs were on the CPU (the P = 225 CPU pass), and a
+CPU run's trajectory cannot be reproduced on the GPU (floating-point order;
+the review notes GPU and CPU runs from one seed diverge). So a control runs
+on its original's device: GPU rows in job 20, CPU rows in job 21, each after
+that job's own runs. For wave 1's Bratu rows: job 20's Bratu task (9 GPU
+controls) and job 21's Bratu task (5 CPU controls), both with
+`--controls-only --controls-from` wave 1's job folder. Stated in the note to
+the advisor.
+
+`same_start` also tests reproducibility across commits and nodes: a
+control of a wave-1 row runs in wave 2, on another commit (the solvers'
+default path is unchanged) and possibly another node of the same type. If
+it is false, the control is still a valid control of that seed, but not of
+that trajectory; it will be reported, with `start_loss_rel_diff`. A local
+check shows why this matters: the five stalled wave-1 Bratu CPU runs,
+controlled on this laptop's CPU with `--controls-only --controls-from`,
+start within 2e-16 to 9e-16 of Grace's iteration-0 loss but not bit for
+bit, and depart at once; their final losses then differ from the originals
+in both directions (e.g. seed 1 NiL-N 5.2e-4 against 1.7e-4). On Grace the
+controls run on the originals' node type and core count (jobs 20 and 21),
+where the start is expected to be identical.
+
+Tests: `tests/test_stall_control.py`.
+
+---
+
 ## 2026-09-29 -- Timing: a warm-up run before every timed run; elasticity's repeats; Beltrami flag removed (reply to wave 1, item 2.2 and Section 1)
 
 **Warm-up.** The advisor found in wave 1's logs that the first solve at

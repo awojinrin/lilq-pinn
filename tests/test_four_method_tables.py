@@ -265,8 +265,10 @@ def test_merge_combines_job_csvs_and_rejects_overlap(tmp_path):
                          seeds=seeds, devices=[torch.device('cpu')], verbose=False,
                          csv_path=tmp_path / job / 'four_method_tables.csv')
 
-    merged = fmt.merge_csvs([tmp_path / 'a' / 'four_method_tables.csv', tmp_path / 'b' / 'four_method_tables.csv'],
-                            tmp_path / 'four_method_tables.csv')
+    merged, controls = fmt.merge_csvs([tmp_path / 'a' / 'four_method_tables.csv',
+                                       tmp_path / 'b' / 'four_method_tables.csv'],
+                                      tmp_path / 'four_method_tables.csv')
+    assert len(controls) == 0 and not (tmp_path / 'four_method_controls.csv').exists()
     assert sorted(str(r['seed']) for r in merged.rows) == ['0', '1', '2']
     assert sum(r['stopping_reason'] == 'failure' for r in merged.rows) == 1  # failures kept
 

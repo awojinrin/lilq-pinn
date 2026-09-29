@@ -63,6 +63,9 @@ class BratuOptConfig:
     max_line_searches: Optional[int] = None
     R_tol: float = 1e-4
     lambda_pde: float = 1.0
+    # How an L-BFGS run may stop short (lilq.solvers.STALL_RULES): 'pytorch'
+    # for the published tables, 'f1' for the four-method stall control.
+    stall_rule: str = 'pytorch'
     lambda_bc: float = 10.0
     # NiL-Q specific
     max_quasi_iters_nn: int = 25
@@ -385,7 +388,7 @@ def run_nil_n(config: BratuConfig, opt: BratuOptConfig,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc,
         max_iterations=opt.max_iterations,
         max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
-        R_tol=opt.R_tol, verbose=verbose,
+        R_tol=opt.R_tol, verbose=verbose, stall_rule=opt.stall_rule,
     )
 
     summary['pretrain_loss'] = float(pretrain_loss)
@@ -439,7 +442,7 @@ def run_nil_q(config: BratuConfig, opt: BratuOptConfig,
         max_quasi_iters=opt.max_quasi_iters_nn,
         max_inner_iters=opt.max_inner_iters_nn,
         max_line_searches=line_search_cap(opt.max_quasi_iters_nn * opt.max_inner_iters_nn, opt.max_line_searches),
-        R_tol=opt.R_tol, verbose=verbose,
+        R_tol=opt.R_tol, verbose=verbose, stall_rule=opt.stall_rule,
     )
 
     summary['pretrain_loss'] = float(pretrain_loss)
@@ -493,7 +496,7 @@ def run_lil_n(config: BratuConfig, opt: BratuOptConfig,
         lambda_pde=opt.lambda_pde, lambda_bc=opt.lambda_bc,
         max_iterations=opt.max_iterations,
         max_line_searches=line_search_cap(opt.max_iterations, opt.max_line_searches),
-        R_tol=opt.R_tol, verbose=verbose,
+        R_tol=opt.R_tol, verbose=verbose, stall_rule=opt.stall_rule,
     )
 
     summary['pretrain_loss'] = float(pretrain_loss)

@@ -140,10 +140,28 @@ class LBFGSObjective:
         return total.item(), parts
 
 
-def _lbfgs(params):
+# How an L-BFGS run of NiL-N, NiL-Q or LiL-N may end short of its target and
+# caps. 'pytorch' (the published tables): PyTorch's absolute tolerances
+# (tolerance_grad 1e-8, tolerance_change 1e-9) turn a step into a no-op, and a
+# step that leaves the parameters bitwise unchanged is an optimizer_stall.
+# 'f1' (the control of the advisor's reply to wave 1, item 2.5): tolerances 0,
+# and F1's rule -- a step that does not lower the loss is followed by a step
+# with a fresh optimizer, and the run ends (optimizer_stall) only if that step
+# does not lower it either. A step that lowers the loss clears the restart.
+STALL_RULES = ('pytorch', 'f1')
+
+
+def _check_stall_rule(stall_rule):
+    if stall_rule not in STALL_RULES:
+        raise ValueError(f"stall_rule must be one of {STALL_RULES}, not {stall_rule!r}")
+
+
+def _lbfgs(params, stall_rule='pytorch'):
+    tolerance = 0.0 if stall_rule == 'f1' else None
     return optim.LBFGS(
         params, lr=1.0, max_iter=1, max_eval=15,
-        tolerance_grad=1e-8, tolerance_change=1e-9,
+        tolerance_grad=1e-8 if tolerance is None else tolerance,
+        tolerance_change=1e-9 if tolerance is None else tolerance,
         history_size=100, line_search_fn='strong_wolfe',
     )
 
@@ -156,13 +174,19 @@ def _stall_fields(stall, metrics):
             'stall_time_s': stall['time_s'] if stall else None}
 
 
-def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose):
+def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose,
+                new_optimizer=None):
     """The NiL-N / LiL-N loop: L-BFGS steps until the target, the iteration
-    cap, the evaluation cap, or an ``optimizer_stall`` -- a step that
+    cap, the evaluation cap, or an ``optimizer_stall``. Without
+    ``new_optimizer`` (``stall_rule='pytorch'``), a stall is a step that
     returns with the parameters bitwise unchanged (the optimizer state is
     then unchanged too, so every later step would repeat the same no-op).
-    Returns ``(iterations, converged, stall)``."""
+    With it (``'f1'``), a step that does not lower the loss is followed by a
+    step with the fresh optimizer ``new_optimizer()``, and a stall is two
+    such steps in a row. Returns ``(iterations, converged, stall, restarts)``."""
     iteration, converged, stall = 0, False, None
+    restarts, restarted = 0, False
+    last = objective.value()[0] if new_optimizer is not None else None   # stored: no evaluation
     while iteration < max_iterations and objective.n_evals < max_line_searches:
         x_before = objective.point()
         optimizer.step(objective.closure)
@@ -185,13 +209,23 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
                 print(f"  Converged at iter {iteration} ({objective.n_evals} evals)")
             converged = True
             break
-        if torch.equal(objective.point(), x_before):
+        if new_optimizer is None:
+            no_progress = torch.equal(objective.point(), x_before)
+        else:
+            no_progress = not loss < last
+            if no_progress and not restarted:
+                optimizer, restarted = new_optimizer(), True
+                restarts += 1
+                continue
+            if not no_progress:
+                last, restarted = loss, False
+        if no_progress:
             stall = {'iteration': iteration, 'evaluations': objective.n_evals,
                      'time_s': metrics.data['wall_time'][-1]}
             if verbose:
                 print(f"  Optimizer stalled at iter {iteration} ({objective.n_evals} evals)")
             break
-    return iteration, converged, stall
+    return iteration, converged, stall, restarts
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -213,6 +247,7 @@ def solve_nil_n(
     R_tol: float = 1e-4,
     verbose: bool = True,
     memoize: bool = True,
+    stall_rule: str = 'pytorch',
 ) -> Tuple[MLP, MetricsTracker, Dict]:
     """Standard PINN solver (NiL-N method).
 
@@ -239,11 +274,15 @@ def solve_nil_n(
     memoize : bool
         Evaluate each point once (:class:`LBFGSObjective`); ``False`` only
         for the tests' reference runs.
+    stall_rule : str
+        ``'pytorch'`` (the published tables) or ``'f1'`` (the stall
+        control); see :data:`STALL_RULES`.
 
     Returns
     -------
     model, metrics, summary
     """
+    _check_stall_rule(stall_rule)
     loss_fn = nn.MSELoss()
     metrics = MetricsTracker()
     metrics.start()
@@ -264,12 +303,15 @@ def solve_nil_n(
     loss, (pde_val, ic_val, bc_val) = objective.value(with_grad=True)   # initial state
     metrics.record(0, objective.n_evals, loss, pde_val, ic_val, bc_val)
 
-    optimizer = _lbfgs(model.parameters())
-    iterations, converged, stall = _lbfgs_loop(objective, optimizer, metrics, max_iterations,
-                                               max_line_searches, R_tol, verbose)
+    optimizer = _lbfgs(model.parameters(), stall_rule)
+    iterations, converged, stall, restarts = _lbfgs_loop(
+        objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose,
+        new_optimizer=(lambda: _lbfgs(model.parameters(), stall_rule)) if stall_rule == 'f1' else None)
 
     summary = {
         'method': 'NiL-N',
+        'stall_rule': stall_rule,
+        'lbfgs_restarts': int(restarts),
         'total_iterations': int(iterations),
         'total_line_searches': int(objective.n_evals),
         'final_loss': float(metrics.data['loss'][-1]),
@@ -303,6 +345,7 @@ def solve_nil_q(
     R_tol: float = 1e-4,
     verbose: bool = True,
     memoize: bool = True,
+    stall_rule: str = 'pytorch',
 ) -> Tuple[MLP, MetricsTracker, Dict]:
     """Quasilinear PINN solver (NiL-Q method).
 
@@ -316,6 +359,13 @@ def solve_nil_q(
     that outer iteration; an outer iteration that leaves them unchanged
     ends the run with ``optimizer_stall`` (Section 2.2).
 
+    With ``stall_rule='f1'`` (the stall control of the advisor's reply to
+    wave 1, item 2.5) the tolerances are 0 and an inner step that does not
+    lower the linearized loss -- the function L-BFGS minimizes -- is followed
+    by one inner step with a fresh optimizer (which then serves the rest of
+    the run); a second such step in a row ends that outer iteration. Each
+    linearization starts with no restart used.
+
     Parameters
     ----------
     compute_pde_residual : callable
@@ -328,6 +378,7 @@ def solve_nil_q(
     model : MLP
         Pre-initialized neural network.
     """
+    _check_stall_rule(stall_rule)
     loss_fn = nn.MSELoss()
     metrics = MetricsTracker()
     metrics.start()
@@ -360,7 +411,8 @@ def solve_nil_q(
     metrics.record(0, 0, total_loss.item(), pde_val, ic_val, bc_val)
 
     objective = LBFGSObjective(model.parameters(), evaluate_linearized, memoize=memoize)
-    optimizer = _lbfgs(model.parameters())
+    optimizer = _lbfgs(model.parameters(), stall_rule)
+    restarts = 0
 
     total_iterations = 0
     monitor_evals = 0
@@ -380,6 +432,10 @@ def solve_nil_q(
         model.train()
         objective.clear()
         x_outer = objective.point()
+        if stall_rule == 'f1':
+            # The linearized loss here; with its gradient, so the first
+            # step's own evaluation of this point is reused (not counted twice).
+            last_inner, restarted = objective.value(with_grad=True)[0], False
 
         # Inner L-BFGS loop on linearized problem
         for inner_iter in range(max_inner_iters):
@@ -395,6 +451,17 @@ def solve_nil_q(
             if not math.isfinite(total_loss.item()):       # diverged: stop (item 2.5 of the advisor's reply)
                 break
             if total_loss.item() < R_tol or objective.n_evals >= max_line_searches:
+                break
+            if stall_rule == 'f1':
+                inner_loss = objective.value()[0]          # the accepted point: stored
+                if inner_loss < last_inner:
+                    last_inner, restarted = inner_loss, False
+                    continue
+                if not restarted:
+                    optimizer, restarted = _lbfgs(model.parameters(), stall_rule), True
+                    restarts += 1
+                    continue
+                n_inner_stalls += 1
                 break
             if torch.equal(objective.point(), x_before):
                 n_inner_stalls += 1
@@ -428,6 +495,8 @@ def solve_nil_q(
 
     summary = {
         'method': 'NiL-Q',
+        'stall_rule': stall_rule,
+        'lbfgs_restarts': int(restarts),
         'total_iterations': int(total_iterations),
         'total_line_searches': int(objective.n_evals),
         'monitor_evaluations': int(monitor_evals),
@@ -460,6 +529,7 @@ def solve_lil_n(
     R_tol: float = 1e-4,
     verbose: bool = True,
     memoize: bool = True,
+    stall_rule: str = 'pytorch',
 ) -> Tuple[np.ndarray, MetricsTracker, Dict]:
     """Nonlinear LiL solver (LiL-N method).
 
@@ -481,6 +551,7 @@ def solve_lil_n(
     -------
     coefficients, metrics, summary
     """
+    _check_stall_rule(stall_rule)
     beta = torch.from_numpy(init_coeffs).to(device).requires_grad_(True)
     n_coefs = len(init_coeffs)
 
@@ -497,12 +568,15 @@ def solve_lil_n(
     loss, (pde_val, ic_val, bc_val) = objective.value(with_grad=True)   # initial state
     metrics.record(0, objective.n_evals, loss, pde_val, ic_val, bc_val)
 
-    optimizer = _lbfgs([beta])
-    iterations, converged, stall = _lbfgs_loop(objective, optimizer, metrics, max_iterations,
-                                               max_line_searches, R_tol, verbose)
+    optimizer = _lbfgs([beta], stall_rule)
+    iterations, converged, stall, restarts = _lbfgs_loop(
+        objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose,
+        new_optimizer=(lambda: _lbfgs([beta], stall_rule)) if stall_rule == 'f1' else None)
 
     summary = {
         'method': 'LiL-N',
+        'stall_rule': stall_rule,
+        'lbfgs_restarts': int(restarts),
         'total_iterations': int(iterations),
         'total_line_searches': int(objective.n_evals),
         'final_loss': float(metrics.data['loss'][-1]),
