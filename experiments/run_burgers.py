@@ -49,7 +49,7 @@ MAX_QUASI_ITERS = 20
 
 TARGET_LOSSES = {5: 6e-2, 10: 1e-3, 15: 2e-5, 20: 1e-7, 25: 5e-9}
 MAX_LBFGS_ITERS = {5: 1000, 10: 5000, 15: 7500, 20: 10000, 25: 15000}
-# Line-search caps: 3x each method's iteration budget (lilq.solvers.line_search_cap).
+# Line-search caps: 16x each method's iteration budget (lilq.solvers.line_search_cap).
 MAX_LBFGS_PER_QUASI = {5: 100, 10: 250, 15: 375, 20: 500, 25: 750}
 
 ALL_METHODS = ['NiL-N', 'NiL-Q', 'LiL-N', 'LiL-Q']

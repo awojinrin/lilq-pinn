@@ -1,6 +1,6 @@
 """Regression guard: run_bl.py must not pass an explicit
 max_line_searches, so every method gets the uniform cap of
-lilq.solvers.line_search_cap (3x its own iteration budget; DECISIONS.md,
+lilq.solvers.line_search_cap (16x its own iteration budget; DECISIONS.md,
 2026-09-24). Checked at the source level: executing run_experiment_for_N
 would do real file I/O and training.
 """

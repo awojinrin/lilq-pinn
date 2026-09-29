@@ -36,22 +36,158 @@ from .iteration_log import IterationLogger, LilQDiagnosticsTracker
 # dependent. See DECISIONS.md.
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# METHOD 1: NiL-N — Standard PINN (Nonlinear-in-Learnables, Nonlinear PDE)
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Line-search (function-evaluation) cap, uniform across problems and methods:
-# three evaluations per allowed iteration of the method's own budget (a
-# typical L-BFGS iteration uses about two). NiL-N and LiL-N budget
+# Evaluation cap, uniform across problems and methods (Addendum v2.2
+# Section 2.2): 16 evaluations per allowed iteration of the method's own
+# budget. With PyTorch >= 2.10 an L-BFGS step with max_eval=15 makes at most
+# 16 evaluations, so this cap cannot bind before the iteration cap; the
+# evaluation count stays a logged quantity. NiL-N and LiL-N budget
 # ``max_iterations``; NiL-Q budgets ``max_quasi_iters * max_inner_iters``.
-# An explicit cap overrides it (smoke tests, probes). DECISIONS.md, 2026-09-24.
-LINE_SEARCH_CAP_FACTOR = 3
+# An explicit cap overrides it (smoke tests, probes). DECISIONS.md, 2026-09-29.
+LINE_SEARCH_CAP_FACTOR = 16
 
 
 def line_search_cap(iteration_budget: int, override: Optional[int] = None) -> int:
     """The evaluation cap for a method whose iteration budget is ``iteration_budget``."""
     return int(override) if override is not None else LINE_SEARCH_CAP_FACTOR * int(iteration_budget)
 
+
+class LBFGSObjective:
+    """The loss as the L-BFGS loops see it, with every point evaluated once
+    (Addendum v2.2 Section 2.1).
+
+    ``evaluate()`` returns ``(total, parts)``: the loss tensor (with graph)
+    and a tuple of floats (its components). :meth:`closure` is what
+    ``optimizer.step`` calls; :meth:`value` is the loops' stopping test.
+
+    PyTorch's L-BFGS starts every ``step`` with a closure call at the point
+    the previous line search already evaluated, and the loops' stopping test
+    then evaluated the accepted point once more. With ``memoize=True`` both
+    reuse the stored loss (and gradient, restored into ``.grad``) of any
+    point evaluated at the same parameter values, bit for bit, and
+    ``n_evals`` counts only real evaluations. The optimizer sees exactly the
+    values it would have computed, so on a deterministic device the
+    trajectory is bitwise identical to recomputing (tests).
+
+    ``memoize=False`` reproduces the earlier loops exactly -- every closure
+    call evaluates and is counted, the stopping test evaluates and is not
+    counted -- for the tests' reference runs.
+    """
+
+    def __init__(self, params, evaluate: Callable, memoize: bool = True, keep: int = 32):
+        self.params = list(params)
+        self.evaluate = evaluate
+        self.memoize = memoize
+        self.keep = keep
+        self.n_evals = 0
+        self._entries = []
+
+    def point(self) -> torch.Tensor:
+        """The current parameter vector (a copy)."""
+        return torch.cat([p.detach().reshape(-1) for p in self.params])
+
+    def clear(self) -> None:
+        """Forget stored values (NiL-Q: the objective changes with each linearization)."""
+        self._entries = []
+
+    def _lookup(self, x, need_grad):
+        if not self.memoize:
+            return None
+        for e in reversed(self._entries):
+            if (e['grads'] is not None or not need_grad) and torch.equal(e['x'], x):
+                return e
+        return None
+
+    def _store(self, entry):
+        if self.memoize:
+            self._entries.append(entry)
+            del self._entries[:-self.keep]
+
+    def closure(self):
+        x = self.point()
+        e = self._lookup(x, need_grad=True)
+        if e is not None:
+            for p, g in zip(self.params, e['grads']):
+                p.grad = None if g is None else g.clone()
+            return e['loss']
+        for p in self.params:
+            p.grad = None
+        total, parts = self.evaluate()
+        total.backward()
+        self.n_evals += 1
+        self._store({'x': x, 'loss': total.detach(), 'parts': parts,
+                     'grads': [None if p.grad is None else p.grad.detach().clone() for p in self.params]})
+        return total
+
+    def value(self, with_grad: bool = False):
+        """``(loss, parts)`` at the current point: stored if the point was
+        evaluated, else one real evaluation (with its gradient when
+        ``with_grad``, so a following step can reuse it)."""
+        x = self.point()
+        e = self._lookup(x, need_grad=False)
+        if e is not None:
+            return float(e['loss']), e['parts']
+        if not self.memoize:                     # the earlier loops: evaluate, do not count
+            total, parts = self.evaluate()
+            return total.item(), parts
+        if with_grad:
+            self.closure()
+            e = self._entries[-1]
+            return float(e['loss']), e['parts']
+        total, parts = self.evaluate()
+        self.n_evals += 1
+        self._store({'x': x, 'loss': total.detach(), 'parts': parts, 'grads': None})
+        return total.item(), parts
+
+
+def _lbfgs(params):
+    return optim.LBFGS(
+        params, lr=1.0, max_iter=1, max_eval=15,
+        tolerance_grad=1e-8, tolerance_change=1e-9,
+        history_size=100, line_search_fn='strong_wolfe',
+    )
+
+
+def _stall_fields(stall, metrics):
+    """Summary fields of Addendum v2.2 Section 2.2's ``optimizer_stall``."""
+    return {'optimizer_stall': stall is not None,
+            'stall_iteration': stall['iteration'] if stall else None,
+            'stall_evaluations': stall['evaluations'] if stall else None,
+            'stall_time_s': stall['time_s'] if stall else None}
+
+
+def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose):
+    """The NiL-N / LiL-N loop: L-BFGS steps until the target, the iteration
+    cap, the evaluation cap, or an ``optimizer_stall`` -- a step that
+    returns with the parameters bitwise unchanged (the optimizer state is
+    then unchanged too, so every later step would repeat the same no-op).
+    Returns ``(iterations, converged, stall)``."""
+    iteration, converged, stall = 0, False, None
+    while iteration < max_iterations and objective.n_evals < max_line_searches:
+        x_before = objective.point()
+        optimizer.step(objective.closure)
+        iteration += 1
+        loss, (pde_val, ic_val, bc_val) = objective.value()
+        metrics.record(iteration, objective.n_evals, loss, pde_val, ic_val, bc_val)
+
+        if verbose and iteration % 500 == 0:
+            print(f"  Iter {iteration} (evals: {objective.n_evals}): loss={loss:.6e}")
+        if loss < R_tol:
+            if verbose:
+                print(f"  Converged at iter {iteration} ({objective.n_evals} evals)")
+            converged = True
+            break
+        if torch.equal(objective.point(), x_before):
+            stall = {'iteration': iteration, 'evaluations': objective.n_evals,
+                     'time_s': metrics.data['wall_time'][-1]}
+            if verbose:
+                print(f"  Optimizer stalled at iter {iteration} ({objective.n_evals} evals)")
+            break
+    return iteration, converged, stall
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# METHOD 1: NiL-N — Standard PINN (Nonlinear-in-Learnables, Nonlinear PDE)
+# ─────────────────────────────────────────────────────────────────────────────
 
 def solve_nil_n(
     compute_pde_residual: Callable,
@@ -67,6 +203,7 @@ def solve_nil_n(
     max_line_searches: int = 100000,
     R_tol: float = 1e-4,
     verbose: bool = True,
+    memoize: bool = True,
 ) -> Tuple[MLP, MetricsTracker, Dict]:
     """Standard PINN solver (NiL-N method).
 
@@ -85,11 +222,14 @@ def solve_nil_n(
     lambda_pde, lambda_bc, lambda_ic : float
         Loss weights.
     max_iterations, max_line_searches : int
-        Stopping criteria.
+        Iteration cap and evaluation cap.
     R_tol : float
         Convergence tolerance on total loss.
     verbose : bool
         Print progress.
+    memoize : bool
+        Evaluate each point once (:class:`LBFGSObjective`); ``False`` only
+        for the tests' reference runs.
 
     Returns
     -------
@@ -99,77 +239,37 @@ def solve_nil_n(
     metrics = MetricsTracker()
     metrics.start()
 
-    iteration_counter = [0]
-    func_eval_counter = [0]
-
-    def compute_loss():
+    def evaluate():
         residual = compute_pde_residual(model, x_pde, y_pde)
         pde_loss = loss_fn(residual, torch.zeros_like(residual))
-
         bc_loss, ic_loss = compute_bc_residual(model, bc_data)
-
         total = lambda_pde * pde_loss + lambda_bc * bc_loss
         ic_val = 0.0
         if ic_loss is not None:
             total = total + lambda_ic * ic_loss
             ic_val = ic_loss.item()
+        return total, (pde_loss.item(), ic_val, bc_loss.item())
 
-        return total, pde_loss.item(), ic_val, bc_loss.item()
-
-    # Record initial state
     model.train()
-    total_loss, pde_val, ic_val, bc_val = compute_loss()
-    metrics.record(0, 0, total_loss.item(), pde_val, ic_val, bc_val)
+    objective = LBFGSObjective(model.parameters(), evaluate, memoize=memoize)
+    loss, (pde_val, ic_val, bc_val) = objective.value(with_grad=True)   # initial state
+    metrics.record(0, objective.n_evals, loss, pde_val, ic_val, bc_val)
 
-    optimizer = optim.LBFGS(
-        model.parameters(), lr=1.0, max_iter=1, max_eval=15,
-        tolerance_grad=1e-8, tolerance_change=1e-9,
-        history_size=100, line_search_fn='strong_wolfe',
-    )
-
-    def closure():
-        func_eval_counter[0] += 1
-        optimizer.zero_grad()
-        total, _, _, _ = compute_loss()
-        total.backward()
-        return total
-
-    converged = False
-    while iteration_counter[0] < max_iterations and func_eval_counter[0] < max_line_searches:
-        optimizer.step(closure)
-        iteration_counter[0] += 1
-
-        total_loss, pde_val, ic_val, bc_val = compute_loss()
-        metrics.record(
-            iteration_counter[0], func_eval_counter[0],
-            total_loss.item(), pde_val, ic_val, bc_val,
-        )
-
-        if verbose and iteration_counter[0] % 500 == 0:
-            print(f"  Iter {iteration_counter[0]} (evals: {func_eval_counter[0]}): "
-                  f"loss={total_loss.item():.6e}")
-
-        if total_loss.item() < R_tol:
-            if verbose:
-                print(f"  Converged at iter {iteration_counter[0]} "
-                      f"({func_eval_counter[0]} evals)")
-            converged = True
-            break
-
-    total_time = metrics.data['wall_time'][-1]
-    n_params = sum(p.numel() for p in model.parameters())
+    optimizer = _lbfgs(model.parameters())
+    iterations, converged, stall = _lbfgs_loop(objective, optimizer, metrics, max_iterations,
+                                               max_line_searches, R_tol, verbose)
 
     summary = {
         'method': 'NiL-N',
-        'total_iterations': int(iteration_counter[0]),
-        'total_line_searches': int(func_eval_counter[0]),
+        'total_iterations': int(iterations),
+        'total_line_searches': int(objective.n_evals),
         'final_loss': float(metrics.data['loss'][-1]),
         'final_pde_loss': float(metrics.data['pde_loss'][-1]),
-        'training_time': float(total_time),
-        'n_params': int(n_params),
+        'training_time': float(metrics.data['wall_time'][-1]),
+        'n_params': int(sum(p.numel() for p in model.parameters())),
         'converged': bool(converged),
+        **_stall_fields(stall, metrics),
     }
-
     return model, metrics, summary
 
 
@@ -193,8 +293,19 @@ def solve_nil_q(
     max_line_searches: int = 100000,
     R_tol: float = 1e-4,
     verbose: bool = True,
+    memoize: bool = True,
 ) -> Tuple[MLP, MetricsTracker, Dict]:
     """Quasilinear PINN solver (NiL-Q method).
+
+    One L-BFGS object serves every outer iteration, so curvature pairs from
+    earlier linearizations carry over (the method behind the published
+    tables; Addendum v2.2 Section 1). Evaluations are memoized within each
+    linearization (:class:`LBFGSObjective`); the full nonlinear loss, the
+    stopping test after every inner step, is a different function and is
+    evaluated each time (``monitor_evaluations``, not in the evaluation
+    count). An inner step that leaves the parameters bitwise unchanged ends
+    that outer iteration; an outer iteration that leaves them unchanged
+    ends the run with ``optimizer_stall`` (Section 2.2).
 
     Parameters
     ----------
@@ -212,9 +323,6 @@ def solve_nil_q(
     metrics = MetricsTracker()
     metrics.start()
 
-    total_iterations = [0]
-    total_func_evals = [0]
-
     def compute_full_loss():
         residual = compute_pde_residual(model, x_pde, y_pde)
         pde_loss = loss_fn(residual, torch.zeros_like(residual))
@@ -226,18 +334,30 @@ def solve_nil_q(
             ic_val = ic_loss.item()
         return total, pde_loss.item(), ic_val, bc_loss.item()
 
+    linearization = {'frozen': None}
+
+    def evaluate_linearized():
+        lin_res = compute_linearized_residual_fn(model, x_pde, y_pde, linearization['frozen'])
+        lin_loss = loss_fn(lin_res, torch.zeros_like(lin_res))
+        bc_loss, ic_loss = compute_bc_residual(model, bc_data)
+        total = lambda_pde * lin_loss + lambda_bc * bc_loss
+        if ic_loss is not None:
+            total = total + lambda_ic * ic_loss
+        return total, ()
+
     # Record initial state
     model.train()
     total_loss, pde_val, ic_val, bc_val = compute_full_loss()
     metrics.record(0, 0, total_loss.item(), pde_val, ic_val, bc_val)
 
-    optimizer = optim.LBFGS(
-        model.parameters(), lr=1.0, max_iter=1, max_eval=15,
-        tolerance_grad=1e-8, tolerance_change=1e-9,
-        history_size=100, line_search_fn='strong_wolfe',
-    )
+    objective = LBFGSObjective(model.parameters(), evaluate_linearized, memoize=memoize)
+    optimizer = _lbfgs(model.parameters())
 
+    total_iterations = 0
+    monitor_evals = 0
+    n_inner_stalls = 0
     converged = False
+    stall = None
     n_quasi_iters = 0
 
     for quasi_iter in range(max_quasi_iters):
@@ -247,39 +367,31 @@ def solve_nil_q(
 
         # Freeze current iterate
         model.eval()
-        frozen_data = compute_linearized_residual_fn(model, x_pde, y_pde, None)
+        linearization['frozen'] = compute_linearized_residual_fn(model, x_pde, y_pde, None)
         model.train()
+        objective.clear()
+        x_outer = objective.point()
 
         # Inner L-BFGS loop on linearized problem
         for inner_iter in range(max_inner_iters):
-            def closure():
-                total_func_evals[0] += 1
-                optimizer.zero_grad()
-                lin_res = compute_linearized_residual_fn(model, x_pde, y_pde, frozen_data)
-                lin_loss = loss_fn(lin_res, torch.zeros_like(lin_res))
-                bc_loss, ic_loss = compute_bc_residual(model, bc_data)
-                total = lambda_pde * lin_loss + lambda_bc * bc_loss
-                if ic_loss is not None:
-                    total = total + lambda_ic * ic_loss
-                total.backward()
-                return total
-
-            optimizer.step(closure)
-            total_iterations[0] += 1
+            x_before = objective.point()
+            optimizer.step(objective.closure)
+            total_iterations += 1
 
             # Evaluate full nonlinear loss
             total_loss, pde_val, ic_val, bc_val = compute_full_loss()
-            metrics.record(
-                total_iterations[0], total_func_evals[0],
-                total_loss.item(), pde_val, ic_val, bc_val,
-            )
+            monitor_evals += 1
+            metrics.record(total_iterations, objective.n_evals, total_loss.item(), pde_val, ic_val, bc_val)
 
-            if total_loss.item() < R_tol or total_func_evals[0] >= max_line_searches:
+            if total_loss.item() < R_tol or objective.n_evals >= max_line_searches:
+                break
+            if torch.equal(objective.point(), x_before):
+                n_inner_stalls += 1
                 break
 
         if verbose:
             print(f"    Loss: {metrics.data['loss'][-1]:.6e} "
-                  f"(iter: {total_iterations[0]}, evals: {total_func_evals[0]})")
+                  f"(iter: {total_iterations}, evals: {objective.n_evals})")
 
         if metrics.data['loss'][-1] < R_tol:
             if verbose:
@@ -287,24 +399,31 @@ def solve_nil_q(
             converged = True
             break
 
-        if total_func_evals[0] >= max_line_searches:
+        if objective.n_evals >= max_line_searches:
             if verbose:
                 print("  Max line searches reached")
             break
 
-    total_time = metrics.data['wall_time'][-1]
-    n_params = sum(p.numel() for p in model.parameters())
+        if torch.equal(objective.point(), x_outer):
+            stall = {'iteration': total_iterations, 'evaluations': objective.n_evals,
+                     'time_s': metrics.data['wall_time'][-1]}
+            if verbose:
+                print(f"  Optimizer stalled for a whole outer iteration ({quasi_iter + 1})")
+            break
 
     summary = {
         'method': 'NiL-Q',
-        'total_iterations': int(total_iterations[0]),
-        'total_line_searches': int(total_func_evals[0]),
+        'total_iterations': int(total_iterations),
+        'total_line_searches': int(objective.n_evals),
+        'monitor_evaluations': int(monitor_evals),
         'n_quasi_iters': int(n_quasi_iters),
+        'n_inner_stalls': int(n_inner_stalls),
         'final_loss': float(metrics.data['loss'][-1]),
         'final_pde_loss': float(metrics.data['pde_loss'][-1]),
-        'training_time': float(total_time),
-        'n_params': int(n_params),
+        'training_time': float(metrics.data['wall_time'][-1]),
+        'n_params': int(sum(p.numel() for p in model.parameters())),
         'converged': bool(converged),
+        **_stall_fields(stall, metrics),
     }
 
     return model, metrics, summary
@@ -325,10 +444,12 @@ def solve_lil_n(
     max_line_searches: int = 100000,
     R_tol: float = 1e-4,
     verbose: bool = True,
+    memoize: bool = True,
 ) -> Tuple[np.ndarray, MetricsTracker, Dict]:
     """Nonlinear LiL solver (LiL-N method).
 
-    Optimizes basis coefficients using L-BFGS on the nonlinear PDE residual.
+    Optimizes basis coefficients using L-BFGS on the nonlinear PDE residual,
+    each point evaluated once (:class:`LBFGSObjective`).
 
     Parameters
     ----------
@@ -351,68 +472,33 @@ def solve_lil_n(
     metrics = MetricsTracker()
     metrics.start()
 
-    iteration_counter = [0]
-    func_eval_counter = [0]
+    def evaluate():
+        # No torch.no_grad -- some loss fns use autograd internally (e.g. BL flux_derivative)
+        total, pde_loss, ic_loss, bc_loss = compute_loss_fn(beta)
+        return total, (pde_loss.item(), ic_loss.item() if isinstance(ic_loss, torch.Tensor) else ic_loss,
+                       bc_loss.item())
 
-    # Record initial state (no torch.no_grad — some loss fns use autograd internally)
-    total_loss, pde_loss, ic_loss, bc_loss = compute_loss_fn(beta)
-    metrics.record(0, 0, total_loss.item(), pde_loss.item(),
-                  ic_loss.item() if isinstance(ic_loss, torch.Tensor) else ic_loss,
-                  bc_loss.item())
+    objective = LBFGSObjective([beta], evaluate, memoize=memoize)
+    loss, (pde_val, ic_val, bc_val) = objective.value(with_grad=True)   # initial state
+    metrics.record(0, objective.n_evals, loss, pde_val, ic_val, bc_val)
 
-    optimizer = optim.LBFGS(
-        [beta], lr=1.0, max_iter=1, max_eval=15,
-        tolerance_grad=1e-8, tolerance_change=1e-9,
-        history_size=100, line_search_fn='strong_wolfe',
-    )
-
-    def closure():
-        func_eval_counter[0] += 1
-        optimizer.zero_grad()
-        total, _, _, _ = compute_loss_fn(beta)
-        total.backward()
-        return total
-
-    converged = False
-    while iteration_counter[0] < max_iterations and func_eval_counter[0] < max_line_searches:
-        optimizer.step(closure)
-        iteration_counter[0] += 1
-
-        # No torch.no_grad — some loss fns use autograd internally (e.g. BL flux_derivative)
-        total_loss, pde_loss, ic_loss, bc_loss = compute_loss_fn(beta)
-        metrics.record(
-            iteration_counter[0], func_eval_counter[0],
-            total_loss.item(), pde_loss.item(),
-            ic_loss.item() if isinstance(ic_loss, torch.Tensor) else ic_loss,
-            bc_loss.item(),
-        )
-
-        if verbose and iteration_counter[0] % 500 == 0:
-            print(f"  Iter {iteration_counter[0]} (evals: {func_eval_counter[0]}): "
-                  f"loss={total_loss.item():.6e}")
-
-        if total_loss.item() < R_tol:
-            if verbose:
-                print(f"  Converged at iter {iteration_counter[0]} "
-                      f"({func_eval_counter[0]} evals)")
-            converged = True
-            break
-
-    coefficients = beta.detach().cpu().numpy()
-    total_time = metrics.data['wall_time'][-1]
+    optimizer = _lbfgs([beta])
+    iterations, converged, stall = _lbfgs_loop(objective, optimizer, metrics, max_iterations,
+                                               max_line_searches, R_tol, verbose)
 
     summary = {
         'method': 'LiL-N',
-        'total_iterations': int(iteration_counter[0]),
-        'total_line_searches': int(func_eval_counter[0]),
+        'total_iterations': int(iterations),
+        'total_line_searches': int(objective.n_evals),
         'final_loss': float(metrics.data['loss'][-1]),
         'final_pde_loss': float(metrics.data['pde_loss'][-1]),
-        'training_time': float(total_time),
+        'training_time': float(metrics.data['wall_time'][-1]),
         'n_params': int(n_coefs),
         'converged': bool(converged),
+        **_stall_fields(stall, metrics),
     }
 
-    return coefficients, metrics, summary
+    return beta.detach().cpu().numpy(), metrics, summary
 
 
 # ─────────────────────────────────────────────────────────────────────────────

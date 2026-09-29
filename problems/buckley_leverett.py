@@ -92,7 +92,7 @@ class BLOptConfig:
     # Pretraining fit grid, points per direction: one 50 x 50 grid for every
     # problem and size, NN and LiL fits alike (the GitHub reference; DECISIONS.md).
     pretrain_grid: int = 50
-    # None: 3x the method's own iteration budget (lilq.solvers.line_search_cap),
+    # None: 16x the method's own iteration budget (lilq.solvers.line_search_cap),
     # the same rule for every problem; an explicit value overrides it.
     max_line_searches: Optional[int] = None
 

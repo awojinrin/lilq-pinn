@@ -17,6 +17,47 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- L-BFGS: each point evaluated once; 16x evaluation cap; `optimizer_stall` (Addendum v2.2 Sections 2.1-2.2)
+
+**Each point evaluated once.** PyTorch's L-BFGS starts every `step` with a
+closure call at the point the previous line search already evaluated, and
+the loops' stopping test then evaluated the accepted point once more; both
+were on the clock and the first was counted. `lilq.solvers.LBFGSObjective`
+stores the loss and gradient of every evaluated point (up to 32) and
+returns them, gradient restored into `.grad`, whenever the parameters are
+bitwise equal to a stored point. The optimizer sees exactly the values it
+would have recomputed: on the CPU the loss trajectory and the final
+parameters are bitwise identical to the earlier loops over 300 iterations
+(Bratu P = 100, NiL-N and LiL-N; NiL-Q over 3 x 40), with real evaluations
+636 -> 337 and time 1.77 -> 0.97 s for NiL-N (the advisor measured 623 ->
+324, 5.11 -> 2.60 s). `total_line_searches` now counts real evaluations
+only. NiL-Q's store is cleared at each linearization (the objective
+changes); its stopping test is the full nonlinear loss, a different
+function, evaluated after every inner step and counted separately
+(`monitor_evaluations`). `memoize=False` reproduces the earlier loops, for
+the tests only. Every baseline time in the four-method tables drops by
+about half; LiL-Q is unaffected (no line search).
+
+**Cap.** `LINE_SEARCH_CAP_FACTOR` 3 -> 16. With PyTorch 2.10 a step with
+`max_eval=15` makes at most 16 evaluations (`_strong_wolfe` gets
+`max_ls=max_eval - current_evals`; checked in the installed 2.10.0), so
+the cap cannot bind before the iteration cap. The 3x cap left about one
+spare trial point per iteration and could only shorten the gradient-trained
+methods.
+
+**`optimizer_stall`.** NiL-N and LiL-N end when an L-BFGS step returns with
+the parameters bitwise unchanged (the optimizer state is then unchanged,
+so every later step would be the same no-op); the stall's iteration
+(counting the no-op step), evaluation count and time are recorded. In
+NiL-Q a stalled inner step ends that outer iteration (`n_inner_stalls`);
+the run ends with `optimizer_stall` only when a whole outer iteration
+leaves the parameters unchanged. The target test comes first. NiL-Q keeps
+one L-BFGS object across outer iterations, so curvature pairs carry over
+between linearizations -- the method behind the published tables, kept
+and to be stated in the report.
+
+---
+
 ## 2026-09-29 -- Stopping reasons: one rule for the four-method and B8 CSVs (Addendum v2.2 Section 2.3)
 
 `lilq.four_method_log.stopping_fields(method, summary, opt)` gives both

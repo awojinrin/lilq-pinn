@@ -62,7 +62,7 @@ N_HIDDEN_LAYERS = 2
 
 TARGET_LOSSES = {5: 2.5e-1, 10: 1e-4, 15: 2.5e-7}
 MAX_ITERATIONS = {5: 5000, 10: 10000, 15: 10000}
-# Line-search caps: 3x each method's iteration budget (lilq.solvers.line_search_cap).
+# Line-search caps: 16x each method's iteration budget (lilq.solvers.line_search_cap).
 MAX_QUASI_ITERS = 25
 # NiL-Q's iteration budget is MAX_QUASI_ITERS times this per-outer-iteration cap.
 MAX_LBFGS_PER_QUASI_ITER = {5: 300, 10: 400, 15: 400}

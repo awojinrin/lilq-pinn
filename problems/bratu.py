@@ -58,7 +58,7 @@ class BratuOptConfig:
     """Optimization settings for Bratu experiments."""
     # NiL methods
     max_iterations: int = 10000
-    # None: 3x the method's own iteration budget (lilq.solvers.line_search_cap),
+    # None: 16x the method's own iteration budget (lilq.solvers.line_search_cap),
     # the same rule for every problem; an explicit value overrides it.
     max_line_searches: Optional[int] = None
     R_tol: float = 1e-4

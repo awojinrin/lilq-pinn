@@ -92,7 +92,7 @@ def paper_setup(N, gravity, basis_type=None):
     inner_per_quasi = GRAVITY_MAX_LBFGS_PER_QUASI if gravity else MAX_LBFGS_PER_QUASI
     opt = BLOptConfig(
         max_iterations=MAX_LBFGS_ITERS.get(N, 10000),
-        # max_line_searches left unset: 3x each method's iteration budget
+        # max_line_searches left unset: 16x each method's iteration budget
         # (lilq.solvers.line_search_cap), as for every problem.
         R_tol=targets.get(N, 1e-3),
         max_quasi_iters_nn=quasi_iters,

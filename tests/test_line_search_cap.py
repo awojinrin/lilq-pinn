@@ -1,5 +1,6 @@
-"""The line-search (function-evaluation) cap is 3x each method's own
-iteration budget, for every problem (DECISIONS.md, 2026-09-24): NiL-N and
+"""The line-search (function-evaluation) cap is 16x each method's own
+iteration budget, for every problem, so it cannot bind before the
+iteration cap (Addendum v2.2 Section 2.2; DECISIONS.md, 2026-09-29): NiL-N and
 LiL-N budget ``max_iterations``, NiL-Q ``max_quasi_iters_nn *
 max_inner_iters_nn``. An explicit ``max_line_searches`` overrides it.
 
@@ -16,8 +17,8 @@ from lilq.solvers import LINE_SEARCH_CAP_FACTOR, line_search_cap
 
 
 def test_line_search_cap_rule():
-    assert LINE_SEARCH_CAP_FACTOR == 3
-    assert line_search_cap(10000) == 30000
+    assert LINE_SEARCH_CAP_FACTOR == 16
+    assert line_search_cap(10000) == 160000
     assert line_search_cap(10000, override=42) == 42
 
 
@@ -55,6 +56,6 @@ def _capture_caps(monkeypatch, module, config, opt):
     (bl, bl.BLConfig(N_x=3, N_t=3, k_ratio=2),
      bl.BLOptConfig(max_iterations=700, max_quasi_iters_nn=4, max_inner_iters_nn=50, pretrain_epochs=1)),
 ])
-def test_each_method_gets_three_times_its_own_budget(monkeypatch, module, config, opt):
+def test_each_method_gets_sixteen_times_its_own_budget(monkeypatch, module, config, opt):
     seen = _capture_caps(monkeypatch, module, config, opt)
-    assert seen == {'solve_nil_n': 2100, 'solve_nil_q': 600, 'solve_lil_n': 2100}
+    assert seen == {'solve_nil_n': 16 * 700, 'solve_nil_q': 16 * 4 * 50, 'solve_lil_n': 16 * 700}
