@@ -80,6 +80,15 @@ tolerances at 0; a call that does not lower the loss is followed by one call
 with a fresh optimizer, and the run ends only if that call does not lower it
 either (our reading of v2.0 Section 4.3's "the family's own criterion");
 F1 configurations are ranked and selected on the unweighted final loss.
+An L-BFGS call interrupted by the budget keeps its lowest-loss point,
+logged at the time its evaluation finished; an evaluation that finishes
+past the budget does not count as reached. A call (500 iterations, 625
+evaluations) runs in pieces of 10 iterations, a log row after each, with
+the optimizer state carried over and every point evaluated once, so the
+trajectory is that of one call; in the first call after Adam the pieces
+stop at 624 real evaluations rather than 625 when the evaluation limit
+binds, and iteration counts can differ by one in exact-zero edge cases
+(accepted by the advisor, reply to Addendum v2.2).
 
 ## Runs
 

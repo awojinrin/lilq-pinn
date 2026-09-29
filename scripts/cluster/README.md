@@ -59,7 +59,7 @@ one GPU or both (120 or 192 SU/h), which changes every estimate below.
 
 | Wave | Jobs | Requested (advisor's estimate) | Then |
 |---|---|---|---|
-| 1 | preflight; A1 gate; 10a, 10b; Component C; B6; B4 for Bratu (20, 21 `--array=0`) | ~2,000 SU | send `results/wave1_report.tar.gz` and the SUs charged per job; wait for the advisor's reply |
+| 1 | preflight; A1 gate; 10a, 10b; Component C; B6; B4 for Bratu (20 `--array=0 --time=03:00:00`, 21 `--array=0`) | ~1,410 SU (~1,770 if both GPUs are charged) | send `results/wave1_report.tar.gz` and the SUs charged per job; wait for the advisor's reply |
 | 2 | Component A (30 -> 31 -> 32, 33); B4 for the other three benchmarks (20, 21 `--array=1-3`) | ~10,000 SU | `results/wave2_report.tar.gz`; submit wave 3 once wave 2's charges have posted |
 | 3 | B9 (40); B8 (41); finalize | ~4,800 SU (from the walltimes; the advisor estimated ~7,700 with the larger B9 network) | `results/package1` (package1_results/), `results/wave3_report.tar.gz` |
 
@@ -81,6 +81,16 @@ reproduction table, the merged four-method table, `sacct` for its jobs, and
 (COMMIT, the check tables, the K_max and Beltrami logs, the four-method rows
 with their histories, the Component A checks, `oversampling.csv`, every
 `hardware.json`, the Slurm logs). Models stay on the cluster.
+
+**If the preflight fails.** Every job of the wave depends on it, and `sbatch.sh`
+submits with `--kill-on-invalid-dep=yes`, so they are cancelled rather than
+left queued with their SUs booked. The preflight writes only
+`results/wave<N>/COMMIT` into the wave folder (its smoke outputs go to
+`$SCRATCH/lilq-run/preflight/<job id>/`). To recover at a new commit: upload
+the fixed bundle, remove `results/wave<N>/COMMIT` (nothing else of that wave
+exists yet), and submit the wave again. Change walltimes only on the command
+line (`--time=...`): editing a `.slurm` file on the cluster changes the tree
+hash, and the lock refuses the job.
 
 To resubmit one script (after a walltime kill, say), use the wrapper with the
 wave set, so the profile's resources and the wave's folder apply:

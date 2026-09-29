@@ -17,6 +17,42 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- The advisor's reply to our Addendum v2.2 response: before wave 1
+
+The advisor accepted the implementation (a static reading of `2263cef`..
+`2c2d0fd`) and gave wave 1 the go-ahead after three changes:
+
+1. **A test needed a git checkout** (`test_bundle_records_a_tree_hash_its_
+   files_reproduce` builds a bundle, which runs `git`); on the cluster copy
+   it would have failed the preflight, and every wave-1 job waits on the
+   preflight. Now `@requires_git_checkout`. The whole suite was then run
+   from an extracted bundle on the laptop (no `.git`): 439 passed, 4
+   skipped (the four tests that need git), none failed.
+2. **A failed preflight no longer leaves the wave stuck.** `sbatch.sh`
+   submits with `--kill-on-invalid-dep=yes`, so jobs whose dependency can
+   never be met are cancelled rather than left queued with their SUs booked.
+   The preflight writes only `results/wave<N>/COMMIT` into the wave folder
+   (checked); recovery at a new commit is to remove it and resubmit (README).
+   The preflight's smoke outputs now go to a folder per job
+   (`$SCRATCH/lilq-run/preflight/<job id>/`): the drivers skip completed runs,
+   so a rerun after a fix would otherwise have reused the old smoke results.
+3. **Job 20 for Bratu only is submitted with `--time=03:00:00`** (the 8 h
+   is sized for the largest benchmark): wave 1 requests ~1,410 SU (~1,770
+   if both GPUs of an exclusive node are charged). Walltimes are changed
+   only on the command line; editing a `.slurm` file on the cluster would
+   change the tree hash and trip the lock.
+
+Records he asked for: our response's items 3.4 (an evaluation finishing
+past the budget does not count as reached) and 3.5 (L-BFGS calls in pieces
+of 10) are in the 2026-09-29 F1 entry and now also in the Component A
+tuning log's header, with his note that capped pieces stop at 624 real
+evaluations rather than 625 and iteration counts can differ by one in
+exact-zero edge cases; item 3.11 (Kovasznay's tracker and test grid off the
+clock, as diagnostics) is in the 2026-09-29 timing entry. The B9 decision:
+the manuscript's network, and the single formulation (next entry).
+
+---
+
 ## 2026-09-29 -- B9: the manuscript's NiL network; float32 runs beside float64
 
 **The network.** The repository's NiL Darcy network (GitHub `main` and
@@ -27,7 +63,8 @@ manuscript's is not (Table 13: three networks of 2 hidden layers x 32,
 identify the paper's runs exactly: the S2, S3 and SPE10 NiL rows of Table
 14 (e.g. S2 3.43e-2 / 4.21e-2 / 8.05e-10; SPE10 24.98 / 94.69 / 2.97e-7) come
 from the 2 x 32 cells; the 8 x 200 run is a later cell, not in the paper.
-The consolidation into the repository kept the large one. `DarcyPINN` and
+The consolidation into the repository kept the large one: GitHub `main` and
+this branch carried an 8 x 200 network that produced no number in the paper. `DarcyPINN` and
 `run_nil_n_darcy` now default to 2 x 32 (3,555 parameters, tested). The
 runtime confirms it: 150,000 epochs take ~19 min in float32 on the laptop
 GPU (the manuscript: ~16 min for S1), ~113 min in float64; the 8 x 200
@@ -41,8 +78,13 @@ fixed on both the top and bottom faces (as LiL and the FV reference have
 it; the paper's SPE10 NiL run differed here, below). The notebook's
 synthetic-field runs (S1-S3) used tanh networks with a sigmoid output for
 h*, unit loss weights and StepLR, and its SPE10 run a flux condition on
-the top face against a matching FV solve; those differences are reported to
-the advisor, not reproduced.
+the top face against a matching FV solve. **The advisor's decision
+(reply to our Addendum v2.2 response, Section 3): keep the single
+formulation for all four fields**, because delta_FV is meaningful only if
+NiL, LiL and the FV reference solve the same boundary-value problem; the
+report states the NiL recipe, notes that the manuscript's NiL residual MSEs
+came from per-field notebook formulations and are replaced, and reports
+delta_FV as the primary measure, with the 20% rule applied to delta_FV.
 
 **float32 beside float64.** Addendum v2.2's rule reports the float32 value
 where delta_FV differs by more than 20% from float64's, but no float32

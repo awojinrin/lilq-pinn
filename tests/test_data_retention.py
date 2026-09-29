@@ -15,6 +15,9 @@ from lilq import source_lock
 from lilq.four_method_log import FourMethodLogger
 from lilq.source_lock import REPO_ROOT, check_lock, normalized_bytes, source_identity, tree_hash
 
+# The cluster upload bundle ships without .git: tests that need git skip there.
+requires_git_checkout = pytest.mark.skipif(not (REPO_ROOT / ".git").exists(), reason="needs a git checkout")
+
 
 # ── histories ────────────────────────────────────────────────────────────────
 
@@ -114,6 +117,7 @@ def test_lock_refuses_unknown_or_dirty_provenance(tmp_path):
         check_lock(tmp_path / 'pkg2', root)
 
 
+@requires_git_checkout      # building a bundle needs git; the cluster copy has no .git
 def test_bundle_records_a_tree_hash_its_files_reproduce(tmp_path):
     import importlib.util
     spec = importlib.util.spec_from_file_location('bundle', REPO_ROOT / 'scripts' / 'make_hprc_bundle.py')

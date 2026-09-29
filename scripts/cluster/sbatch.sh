@@ -32,4 +32,7 @@ case "$class" in
                 res=(--partition="$CPU_PARTITION" --ntasks=1 --cpus-per-task=24 --mem=32G) ;;
     *)          echo "$script: no '# lilq-resources:' class" >&2; exit 1 ;;
 esac
-exec sbatch --account="$ACCOUNT" --export=ALL "${res[@]}" "$@" "$script"
+# --kill-on-invalid-dep: a job whose dependency can no longer be satisfied (the
+# preflight failed, say) is cancelled instead of staying queued with its SUs
+# booked (the advisor's reply to Addendum v2.2, item 1.2).
+exec sbatch --account="$ACCOUNT" --export=ALL --kill-on-invalid-dep=yes "${res[@]}" "$@" "$script"

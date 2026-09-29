@@ -11,11 +11,16 @@
 source scripts/cluster/env.sh
 set -euo pipefail
 
+# Smoke outputs outside the wave folder (which gets only COMMIT from this job),
+# in a folder of their own: the drivers skip completed runs, so a rerun after a
+# fix must not find the previous run's smoke results.
+PRE="$SCRATCH/lilq-run/preflight/${SLURM_JOB_ID:-manual}"
+
 python -c "from lilq.provenance import assert_torch_version; print('torch', assert_torch_version(), 'OK')"
 python -c "import threadpoolctl; print('threadpoolctl', threadpoolctl.__version__, 'OK')"   # hardware.json's thread pools (2.12)
 python -c "import numpy, scipy, torch; print('numpy', numpy.__version__, 'scipy', scipy.__version__, 'torch', torch.__version__, 'cuda', torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 python -m pytest tests/ -q $(printf -- '--ignore=%s ' $LILQ_COMPONENT_A_TESTS)
-python experiments/component_b.py --smoke --out-root "$SCRATCH/lilq-run/preflight"
-python experiments/component_b.py --gpu-equivalence --smoke --out-root "$SCRATCH/lilq-run/preflight"
-python experiments/four_method_tables.py --quick --out-dir "$SCRATCH/lilq-run/preflight/four_method"
+python experiments/component_b.py --smoke --out-root "$PRE"
+python experiments/component_b.py --gpu-equivalence --smoke --out-root "$PRE"
+python experiments/four_method_tables.py --quick --out-dir "$PRE/four_method"
 echo "PREFLIGHT OK"
