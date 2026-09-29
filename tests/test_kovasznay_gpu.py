@@ -87,6 +87,32 @@ def test_lstsq_gpu_qr_matches_cpu_on_synthetic_system():
 
 
 @requires_cuda
+def test_implicit_q_solve_matches_the_explicit_q_solve_it_replaced():
+    """Addendum v2.2 Section 2.10: geqrf + ormqr (Q^T b applied from the
+    reflectors, as LAPACK's gels does) instead of forming Q with
+    torch.linalg.qr -- the same solution and the same |R_pp| on a real
+    Kovasznay system, and on an inconsistent overdetermined system the
+    least-squares solution of CPU gels."""
+    import torch
+    from experiments.run_kovasznay import K_RATIO, MAX_ITER, TOL
+    from problems.kovasznay import _lstsq_cpu_gels
+    s = solve_kovasznay(KovasznayConfig(N_x=10, N_y=10, k_ratio=K_RATIO, max_iter=MAX_ITER, tol=TOL),
+                        verbose=False, return_final_system=True)
+    A, b = s['A_final'], s['b_final']
+    At = torch.as_tensor(A, dtype=torch.float64, device='cuda')
+    Q, R = torch.linalg.qr(At, mode='reduced')                  # the replaced explicit-Q solve
+    x_old = torch.linalg.solve_triangular(
+        R, (Q.T @ torch.as_tensor(b, dtype=torch.float64, device='cuda')).unsqueeze(1), upper=True)
+    x_new, R_diag, _ = _lstsq_gpu_qr(A, b)
+    x_old = x_old.squeeze(1).cpu().numpy()
+    assert np.linalg.norm(x_new - x_old) <= 1e-12 * np.linalg.norm(x_old)
+    np.testing.assert_allclose(np.abs(R_diag), np.abs(R.diagonal().cpu().numpy()), rtol=1e-10)
+    rng = np.random.default_rng(3)
+    A2, b2 = rng.standard_normal((500, 40)), rng.standard_normal(500)      # nonzero residual
+    np.testing.assert_allclose(_lstsq_gpu_qr(A2, b2)[0], _lstsq_cpu_gels(A2, b2), rtol=0, atol=1e-12)
+
+
+@requires_cuda
 def test_use_gpu_false_is_bit_identical_to_before_this_feature_existed():
     config = _small_config(use_gpu=False)
     r1 = solve_kovasznay(config, verbose=False)

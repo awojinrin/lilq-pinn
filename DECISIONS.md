@@ -17,6 +17,34 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Kovasznay GPU solve: Q applied implicitly, as `gels` does (Addendum v2.2 Section 2.10, optional item)
+
+`_lstsq_gpu_qr` used `torch.linalg.qr(mode='reduced')`, which forms the
+N x P matrix Q and then multiplies Q^T b; LAPACK's `gels`, the CPU side of
+check B3's same-algorithm timing, applies Q^T from the Householder
+reflectors and never forms Q. The GPU solve now does the same: `torch.geqrf`,
+`torch.ormqr` for Q^T b, then the triangular solve with R (whose diagonal
+still feeds the degeneracy flag). Measured on the laptop's RTX 5080 on
+Kovasznay's final systems (median of 5):
+
+| P | rows | explicit Q | implicit Q | solution vs old / vs CPU gelsy | peak memory |
+|---|---|---|---|---|---|
+| 75 | 381 | 0.93 ms | 1.76 ms | 9e-16 / 9e-16 | 16 -> 16 MB |
+| 300 | 929 | 5.28 ms | 4.28 ms | 2e-15 / 3e-15 | 23 -> 23 MB |
+| 675 | 2,089 | 20.7 ms | 14.6 ms | 8e-15 / 7e-15 | 60 -> 66 MB |
+| 1,200 | 3,524 | 81.6 ms | 56.6 ms | 1e-14 / 1e-14 | 148 -> 175 MB |
+| 1,875 | 5,564 | 226.7 ms | 143.5 ms | 1e-13 / 7e-14 | 336 -> 412 MB |
+
+The same |R_pp| at every size. Faster by 1.2-1.6x from P = 300; slower at
+P = 75, where both take about a millisecond. The peak memory is higher, not
+lower as first assumed (the reflector application's workspace), and
+immaterial on an A100. The laptop GPU runs float64 at a small fraction of
+its float32 rate, so the A100's ratio is measured in wave 1 (job 10b).
+Test: on a real Kovasznay system the new solve matches the replaced one to
+1e-12 with the same |R_pp|, and on an inconsistent system CPU `gels` to 1e-12.
+
+---
+
 ## 2026-09-29 -- Grace execution: CPU nodes for CPU-only timed work; three waves, one results folder each (Addendum v2.2 Section 4)
 
 - **`timed-cpu` resource class** (`sbatch.sh`): a whole CPU node,
@@ -110,7 +138,8 @@ row has weight sqrt(lambda_bc / 8).
    (`gpu_qr.h2d_s`, `qr_solve_s`, `d2h_s` per iteration; totals in the
    summary); `t_solve_s` stays the whole solve. Check B3 adds `t_h2d_gpu_s`
    and `t_qr_solve_gpu_s` beside `t_qr_gpu_s`. The optional `geqrf` +
-   `ormqr` rewrite of the GPU solve was not done.
+   `ormqr` rewrite of the GPU solve was done afterwards (entry "Kovasznay
+   GPU solve: Q applied implicitly", above).
 4. **`time.perf_counter()` for every duration**, replacing `time.time()`
    in `MetricsTracker`, the Kovasznay, Beltrami, elasticity and Darcy
    solvers, the Darcy PINN and the experiment scripts.

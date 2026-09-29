@@ -264,12 +264,16 @@ def _make_kovasznay_residual_vector_fn(
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray, timings: Optional[dict] = None):
-    """Full-rank GPU least-squares solve, float64:
-    ``torch.linalg.qr(A, mode='reduced')`` + ``solve_triangular`` (the
-    spec's first-listed option -- chosen over
-    ``torch.linalg.lstsq(driver='gels')`` because it needs R's diagonal
-    for the rank-degeneracy flag anyway, which the QR factorization
-    already produces as a byproduct).
+    """Full-rank GPU least-squares solve, float64, the same algorithm as
+    LAPACK's ``gels`` on the CPU: a Householder QR (``torch.geqrf``), Q^T b
+    applied implicitly from the reflectors (``torch.ormqr``), then the
+    triangular solve with R. Q is never formed. (Until Addendum v2.2
+    Section 2.10 this was ``torch.linalg.qr(mode='reduced')``, which forms
+    the N x P matrix Q and then multiplies by it: more work than ``gels``
+    does, which made the GPU-against-CPU timing of check B3 compare two
+    different algorithms. Same solution to 1e-13, same R; 1.2-1.6x faster
+    for P >= 300 on the laptop GPU. ``torch.linalg.lstsq(driver='gels')``
+    is not used because R's diagonal is needed for the degeneracy flag.)
 
     No rank-revealing step: this assumes ``A`` has full column rank, the
     same assumption LAPACK's ``gels`` makes -- the spec explicitly does
@@ -302,9 +306,11 @@ def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray, timings: Optional[dict] = None):
         torch.cuda.synchronize()
         t1 = time.perf_counter()
     torch.cuda.reset_peak_memory_stats()
-    Q, R = torch.linalg.qr(At, mode='reduced')
-    y = Q.transpose(0, 1) @ bt
-    x = torch.linalg.solve_triangular(R, y.unsqueeze(1), upper=True).squeeze(1)
+    n = At.shape[1]
+    reflectors, tau = torch.geqrf(At)            # R in the upper triangle, Householder vectors below
+    qtb = torch.ormqr(reflectors, tau, bt.unsqueeze(1), left=True, transpose=True)   # Q^T b
+    R = reflectors[:n, :n].triu()
+    x = torch.linalg.solve_triangular(R, qtb[:n], upper=True).squeeze(1)
     peak_mem_bytes = int(torch.cuda.max_memory_allocated())
     if timings is not None:
         torch.cuda.synchronize()
