@@ -17,6 +17,47 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Grace execution: CPU nodes for CPU-only timed work; three waves, one results folder each (Addendum v2.2 Section 4)
+
+- **`timed-cpu` resource class** (`sbatch.sh`): a whole CPU node,
+  `--exclusive --cpus-per-task=$CPU_NODE_CORES --mem=0` on `$CPU_PARTITION`
+  (Grace: 48 cores, `medium`). Grace's CPU nodes have the A100 nodes' CPU,
+  2 x Xeon Gold 6248R, and the same memory (`scontrol`, `lscpu`,
+  2026-09-29), without the GPU surcharge. Jobs 21 (B4 CPU pass) and 32
+  (Component A on the CPU) move to it, and job 10 is split: `10a`
+  (timed-cpu, 4 h: the Section 3.3 CPU runs with their K_max passes, then
+  Beltrami pinned and its K_max pass) and `10b` (timed A100 node, 2 h: the
+  Kovasznay GPU runs and check B3, whose CPU gelsy/gels timings therefore
+  come from the A100 node's CPU -- the same model). **Deviation:** Addendum
+  v2.1 Section 2's "one node" becomes "one node type per device".
+- **B4's CPU pass on a CPU-only node** used to be skipped: `run_problem`
+  added the CPU runs only when the primary device was not the CPU, which on a
+  CPU node it is. Fixed (a 'cpu'-only call always runs), with a test.
+- **Three waves** replace the single submission (`submit_wave1.sh`,
+  `submit_wave2.sh`, `submit_wave3.sh`, sharing `submit_lib.sh`, which shows
+  `myproject -l` and asks before submitting): wave 1 (~2,000 SU) is the
+  preflight, the A1 gate, 10a and 10b, Components C and B6, and B4 for Bratu;
+  wave 2 (~10,000 SU) Component A and B4 for the other benchmarks; wave 3
+  (~7,700 SU) B8, B9 and the finalize. `submit_all.sh` and
+  `submit_component_a.sh` are removed.
+- **One results folder per wave** (the user's choice, 2026-09-29):
+  `results/wave<N>`, each locked to its own commit by the provenance lock,
+  so a code change between waves (after the advisor's review of wave 1,
+  say) is allowed and recorded rather than mixed silently. A later wave on
+  new code reruns the preflight, and wave 2 the A1 gate; on wave 1's code,
+  wave 2 reuses wave 1's Component A search and checks. `sbatch.sh` refuses a
+  job without `LILQ_WAVE`. `90_finalize` assembles `results/package1` from
+  the three folders by hard links (`scripts/cluster/assemble_package.py`),
+  keeping identical files once and taking a differing one from the later
+  wave, with `WAVES.json` naming every wave's commit and every override.
+  Whether wave 1 must be rerun after a code change is decided if it arises.
+- **`91_wave_report`** ends every wave: the run index, check B1, the merged
+  four-method table, `sacct`, and `results/wave<N>_report.tar.gz` with what
+  the advisor asked to see after wave 1 (models and collocation files stay
+  on the cluster).
+
+---
+
 ## 2026-09-29 -- Lazy `lilq` imports; the thread pools in effect recorded (Addendum v2.2 Section 2.12)
 
 `lilq/__init__.py` imported every submodule, so `import lilq.blas_threads`

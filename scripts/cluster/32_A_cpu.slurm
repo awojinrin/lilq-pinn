@@ -1,7 +1,7 @@
 #!/bin/bash
-# Component A, Section 4.5: each family's representative on the node's CPU
+# Component A, Section 4.5: each family's representative on an exclusive CPU node (Addendum v2.2 4.1)
 # (all cores), seeds 0-4, full budget (5 h + evaluation).
-# lilq-resources: timed   (applied by scripts/cluster/sbatch.sh from the cluster profile)
+# lilq-resources: timed-cpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-A-cpu
 #SBATCH --array=0-1
 #SBATCH --time=07:00:00

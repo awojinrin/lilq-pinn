@@ -1,8 +1,10 @@
 #!/bin/bash
-# After everything else (not timed): reference/ and code/, the merged
-# four-method table, check B1, the residual-band figures (task B5), the
-# Section 4.6 Kovasznay comparison, the merged B8 and B9 tables, and the run index.
-# Minutes.
+# After wave 3 (not timed): assemble results/package1 (package1_results/)
+# from the three wave roots, each locked to its own commit, with WAVES.json
+# naming them (scripts/cluster/assemble_package.py); then reference/ and
+# code/, the merged four-method table, check B1, the residual-band figures
+# (task B5), the Section 4.6 Kovasznay comparison, the merged B8 and B9
+# tables, and the run index. Submitted with wave 3 (LILQ_WAVE=3). Minutes.
 # lilq-resources: cpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-finalize
 #SBATCH --time=01:00:00
@@ -10,6 +12,10 @@
 
 source scripts/cluster/env.sh
 set -euo pipefail
+
+python scripts/cluster/assemble_package.py --results "$RESULTS" --out "$RESULTS/package1"
+export PKG="$RESULTS/package1"
+export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"
 
 python experiments/component_b.py --save-reference --save-code --out-root "$PKG"
 python experiments/four_method_tables.py --out-dir "$B" --merge-from "$B"/four_method_jobs/*/

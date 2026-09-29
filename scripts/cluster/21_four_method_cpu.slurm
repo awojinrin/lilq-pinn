@@ -1,7 +1,7 @@
 #!/bin/bash
 # Section 3.4 / task B4, CPU pass: the same three methods at the largest
-# size of each benchmark, on the same node type's CPU, all its cores.
-# lilq-resources: timed   (applied by scripts/cluster/sbatch.sh from the cluster profile)
+# size of each benchmark, on an exclusive CPU node (the A100 nodes' CPU model; Addendum v2.2 4.1), all its cores.
+# lilq-resources: timed-cpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-b4-cpu
 #SBATCH --array=0-3
 #SBATCH --time=03:00:00

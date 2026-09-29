@@ -1,0 +1,53 @@
+# Shared by submit_wave1.sh, submit_wave2.sh, submit_wave3.sh (sourced, with
+# LILQ_WAVE set). Run the wave scripts from a login node:
+#   bash scripts/cluster/submit_wave1.sh            (CLUSTER=grace is the default)
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+mkdir -p logs   # sbatch does not create the --output directory
+S=scripts/cluster
+RESULTS="$PWD/results"
+
+# Check the profile before submitting anything (a failure halfway would leave
+# part of a wave queued).
+CLUSTER="${CLUSTER:-grace}"
+[[ -f $S/profiles/$CLUSTER.sh ]] || { echo "no profile $S/profiles/$CLUSTER.sh" >&2; exit 1; }
+source $S/profiles/$CLUSTER.sh
+[[ -n "$CPU_PARTITION" && -n "${CPU_NODE_CORES:-}" ]] || { echo "the profile needs CPU_PARTITION and CPU_NODE_CORES" >&2; exit 1; }
+export CLUSTER CPU_PARTITION LILQ_WAVE
+
+# The code's commit (the bundle's, on the cluster) and a wave's locked commit.
+code_commit() {
+    python3 -c "import json; print(json.load(open('PROVENANCE.json'))['commit'])" 2>/dev/null \
+        || git rev-parse HEAD 2>/dev/null || echo unknown
+}
+wave_commit() {   # wave_commit <N>: the commit results/wave<N> is locked to, or nothing
+    python3 -c "import json, sys; print(json.load(open(sys.argv[1]))['commit'])" "$RESULTS/wave$1/COMMIT" 2>/dev/null || true
+}
+
+# Before each wave: the balance, then an explicit go-ahead (YES=1 skips the question).
+confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave>
+    echo "Wave $LILQ_WAVE of 3 (results/wave$LILQ_WAVE), code at $(code_commit)."
+    echo "Estimated request: $1. Read the 'Requested SUs' line sbatch prints for each job."
+    if command -v myproject >/dev/null; then myproject -l || true; else echo "(myproject not found: check the balance another way)"; fi
+    if [[ "${YES:-0}" != 1 ]]; then
+        read -r -p "Balance checked; submit wave $LILQ_WAVE? [y/N] " answer
+        [[ "$answer" =~ ^[yY] ]] || { echo "Nothing submitted."; exit 1; }
+    fi
+}
+
+# sbatch can fail without a usable job ID (e.g. "Socket timed out"); stop at
+# the first such failure. A timeout may still have queued the job, so check
+# `squeue -u $USER` (and `sacct`) before resubmitting anything.
+submitted=""
+submit() {   # submit <variable> <job script> [sbatch options...]: sets <variable> to the job ID
+    local var=$1 script=$2 id; shift 2
+    id=$(bash $S/sbatch.sh "$script" --parsable "$@" | cut -d';' -f1) || true
+    if [[ ! "$id" =~ ^[0-9]+$ ]]; then
+        echo "submission failed for $script; submitted so far:${submitted:- none}." >&2
+        echo "Check squeue -u \$USER before resubmitting." >&2
+        exit 1
+    fi
+    submitted="$submitted $id"
+    printf -v "$var" '%s' "$id"
+    printf '  %-28s %s %s\n' "$(basename "$script")" "$id" "$*"
+}

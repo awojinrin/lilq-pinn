@@ -272,3 +272,20 @@ def test_merge_combines_job_csvs_and_rejects_overlap(tmp_path):
 
     with pytest.raises(ValueError, match="more than one input"):
         fmt.merge_csvs([tmp_path / 'a' / 'four_method_tables.csv'] * 2, tmp_path / 'dup.csv')
+
+
+def test_cpu_pass_runs_on_a_cpu_only_node(monkeypatch):
+    """Job 21 runs on a CPU node (Addendum v2.2 Section 4.1), where DEVICE
+    is the CPU: the 'cpu' pass must still run its largest size (it used to
+    be skipped whenever DEVICE was the CPU), and 'primary' + 'cpu' together
+    must not run the CPU twice."""
+    seen = []
+    monkeypatch.setattr(fmt, 'DEVICE', torch.device('cpu'))
+    monkeypatch.setattr(fmt, 'warm_up', lambda device, verbose=True: None)
+    monkeypatch.setattr(fmt, '_run_and_log', lambda logger, b, P, config, opt, method, runner, seeds, devices, **kw:
+                        seen.append((P, method, tuple(str(d) for d in devices))))
+    fmt.run_problem('bratu', fmt._bratu_runs, None, None, None, FourMethodLogger(), passes=('cpu',))
+    assert seen and all(P == 225 and devs == ('cpu',) for P, _, devs in seen)
+    seen.clear()
+    fmt.run_problem('bratu', fmt._bratu_runs, None, None, None, FourMethodLogger(), passes=('primary', 'cpu'))
+    assert all(devs == ('cpu',) for _, _, devs in seen) and len({P for P, _, _ in seen}) == 3

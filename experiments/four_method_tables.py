@@ -264,7 +264,11 @@ def run_problem(benchmark, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn, logger,
         devices = []
         if 'primary' in passes:
             devices.append(DEVICE)
-        if 'cpu' in passes and is_largest and str(DEVICE) != 'cpu':
+        # The CPU pass at the largest size -- unless the primary pass already
+        # ran there on the CPU in this call. On a CPU-only node (job 21 on a
+        # timed-cpu node, Addendum v2.2 Section 4.1) DEVICE is the CPU, and a
+        # 'cpu'-only call must still run.
+        if 'cpu' in passes and is_largest and not ('primary' in passes and str(DEVICE) == 'cpu'):
             devices.append(cpu)
         if not devices:
             continue

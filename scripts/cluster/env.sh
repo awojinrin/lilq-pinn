@@ -30,7 +30,12 @@ export LILQ_COMPONENT_A_TESTS="tests/test_f1_pinn.py tests/test_lm_kovasznay.py 
 export MPLBACKEND=Agg        # compute nodes have no display
 export PYTHONUNBUFFERED=1    # progress lines reach the .out file as they happen
 
-export PKG="$SCRATCH/lilq-run/lilq-pinn/results/package1"   # package1_results/
+# Each wave writes its own package root, locked to its own commit (Addendum
+# v2.2 Section 4.2; results/wave<N>); 90_finalize assembles results/package1
+# (package1_results/) from the three.
+export RESULTS="$SCRATCH/lilq-run/lilq-pinn/results"
+: "${LILQ_WAVE:?LILQ_WAVE is not set: submit through scripts/cluster/sbatch.sh or submit_wave<N>.sh}"
+export PKG="$RESULTS/wave$LILQ_WAVE"
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"
 mkdir -p "$PKG"
 
