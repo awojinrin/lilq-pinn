@@ -178,8 +178,11 @@ def full(root, family, device, budget_s=FULL_BUDGET_S, seeds=FULL_SEEDS):
             for cid in selection['top'] for s in seeds}
     medians = {cid: statistics.median(_final_loss(runs[(cid, s)]) for s in seeds) for cid in selection['top']}
     rep = min(medians, key=medians.get)
+    # F1 has no pressure condition, so its pressure is only ever reported
+    # mean-free (Addendum v2.2 Section 1, item 9); F2 keeps the corner pin.
+    keys = ('eps_u', 'eps_v', 'eps_p_meanfree') if family == 'F1' else ('eps_u', 'eps_v', 'eps_p', 'eps_p_meanfree')
     best = {k: min((r.get(k) for r in runs.values() if isinstance(r.get(k), (int, float))), default=None)
-            for k in ('eps_u', 'eps_v', 'eps_p', 'eps_p_meanfree')}
+            for k in keys}
     summary = {'representative': rep, 'representative_config': by_id[rep], 'median_final_loss': medians,
                'best_test_errors_over_all_full_runs': best, 'seeds': list(seeds)}
     (Path(root) / 'full' / f'{family}_representative.json').write_text(json.dumps(summary, indent=2))

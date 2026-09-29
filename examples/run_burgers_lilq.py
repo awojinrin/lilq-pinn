@@ -48,9 +48,9 @@ def main():
           f"nu=0.1, basis={args.basis}, R_tol={R_tol:.1e}")
     print("-" * 50)
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     basis, coefficients, metrics, summary = run_lil_q(config, opt, verbose=True)
-    elapsed = time.time() - t0
+    elapsed = time.perf_counter() - t0
 
     print(f"\nFinal loss:     {summary['final_loss']:.4e}")
     print(f"Outer iters:    {summary['total_iterations']}")

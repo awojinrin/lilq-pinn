@@ -67,6 +67,24 @@ def test_wave_report_packs_the_small_files_not_the_models(tmp_path):
     assert not any(n.endswith(('.pt', '.npz')) for n in names)
 
 
+def test_wave_report_builds_the_index_and_check_b1_from_real_runs(tmp_path):
+    """The report's own steps on real (smoke) Component B output: the run
+    index, check B1's table, and both in the tarball, with no failed step."""
+    import experiments.component_b as cb
+    report = _load('wave_report')
+    res = tmp_path / 'results'
+    root = res / 'wave1'
+    runs = cb.build_runs(benchmarks=('bratu',), passes=('paper', 'kmax'), devices=('cpu',), smoke=True)
+    assert [cb.execute_run(r, root / 'B_instrumentation', verbose=False) for r in runs] == ['ok'] * len(runs)
+    report.main(['--wave', '1', '--results', str(res)])
+    log = (root / 'report_log.txt').read_text()
+    assert 'exit 1' not in log and log.count('exit 0') == 2
+    with tarfile.open(res / 'wave1_report.tar.gz') as tar:
+        names = set(tar.getnames())
+    assert {'wave1/B_instrumentation/runs_index.csv', 'wave1/B_instrumentation/reproduction_check.csv',
+            'wave1/B_instrumentation/bratu_P25_cpu_kmax/iterations.csv'} <= names
+
+
 def test_every_job_script_names_a_resource_class_and_waves_use_them():
     classes = {}
     for script in (REPO / 'scripts' / 'cluster').glob('*.slurm'):

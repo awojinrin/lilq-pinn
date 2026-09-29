@@ -33,9 +33,9 @@ def main():
     print(f"Elasticity LiL-Q: N={args.N}, P={args.N**2} per field")
     print("-" * 50)
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     result = solve_elasticity(config, verbose=True)
-    elapsed = time.time() - t0
+    elapsed = time.perf_counter() - t0
 
     print(f"\nDOFs:           {result['n_params']}")
     print(f"QR time:        {result['solve_time_qr']:.4f}s")

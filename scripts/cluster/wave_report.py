@@ -87,7 +87,8 @@ def main(argv=None):
     log = [f"wave {args.wave} report, {datetime.datetime.now(datetime.timezone.utc).isoformat()}"]
 
     if list(B.glob('*/summary.json')):
-        _run([sys.executable, '-c', f"from experiments.component_b import write_index; write_index({str(B)!r})"], log)
+        _run([sys.executable, '-c', "from pathlib import Path; from experiments.component_b import write_index; "
+                                    f"write_index(Path({str(B)!r}))"], log)
         _run([sys.executable, 'experiments/component_b.py', '--reproduction-check', '--out-root', str(root)], log)
     jobs = sorted(glob.glob(str(B / 'four_method_jobs' / '*') + os.sep))
     if jobs:

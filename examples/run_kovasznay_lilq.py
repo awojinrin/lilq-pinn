@@ -42,9 +42,9 @@ def main():
     print(f"Kovasznay LiL-Q: N={args.N}, Re={args.Re}, basis={args.basis}")
     print("-" * 50)
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     result = solve_kovasznay(config, verbose=True)
-    elapsed = time.time() - t0
+    elapsed = time.perf_counter() - t0
 
     print(f"\nOuter iters:    {result['n_outer_iters']}")
     print(f"Elapsed time:   {elapsed:.3f}s")

@@ -34,7 +34,7 @@ mkdir -p $SCRATCH/lilq-run && tar -xzf lilq-pinn-<sha>.tar.gz -C $SCRATCH/lilq-r
 cd $SCRATCH/lilq-run
 module load <LILQ_MODULES from the profile>
 python -m venv --system-site-packages venv
-source venv/bin/activate && pip install matplotlib pytest
+source venv/bin/activate && pip install matplotlib pytest threadpoolctl   # threadpoolctl: thread pools in hardware.json (Addendum v2.2 2.12)
 pip install --no-cache-dir torch==2.10.0 --index-url https://download.pytorch.org/whl/cu126   # about 3 GB
 export PYTHONPATH=$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'):$PYTHONPATH
 python -c "import torch, numpy; print(torch.__version__, numpy.__version__)"   # 2.10.0+cu126, and the module's numpy

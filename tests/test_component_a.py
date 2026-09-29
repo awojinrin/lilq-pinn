@@ -40,7 +40,9 @@ def test_every_stage_end_to_end(root, monkeypatch):
         assert len(sel["top"]) == 2 and sel["ranking"][0]["loss"] <= sel["ranking"][1]["loss"]
         summary = ca.full(root, fam, "cpu", budget_s=2, seeds=(0, 1))
         assert summary["representative"] in sel["top"]
-        assert set(summary["best_test_errors_over_all_full_runs"]) == {"eps_u", "eps_v", "eps_p", "eps_p_meanfree"}
+        # F1: pressure only mean-free (Addendum v2.2 Section 1, item 9); F2 keeps the pinned one too.
+        expected = {"eps_u", "eps_v", "eps_p_meanfree"} | ({"eps_p"} if fam == "F2" else set())
+        assert set(summary["best_test_errors_over_all_full_runs"]) == expected
         assert len(ca.cpu_reruns(root, fam, budget_s=2, seeds=(0,))) == 1
     assert ca.float32_run(root, "cpu", budget_s=2)["precision"] == "adam32"
     monkeypatch.setattr(f1, "A1_CONFIG", dict(F1_TINY[1], id="A1_tiny"))

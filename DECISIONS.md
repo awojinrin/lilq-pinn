@@ -17,6 +17,35 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Audit against Addendum v2.2 before wave 1: four fixes
+
+A pass through every item of Addendum v2.2 against the code found:
+
+1. **The wave report's run index failed** (`wave_report.py` passed a string
+   where `write_index` takes a path), so `runs_index.csv`, one of the files
+   the advisor asked for after wave 1, would have been missing. Fixed; a
+   test now runs the report on real (smoke) Component B output.
+2. **F1's pressure only mean-free** (Section 1, item 9): Component A's
+   summary of the best test errors over the full runs no longer lists F1's
+   pinned-gauge `eps_p`; F2, which has the corner pin, keeps both.
+3. **`threadpoolctl`**, which records the thread pools in `hardware.json`
+   (Section 2.12), is now in `requirements.txt` and the cluster install
+   line, and the preflight fails if it cannot be imported (without it the
+   record would say "unavailable").
+4. **`time.perf_counter()`** also in the example scripts and the demo
+   notebook (Section 2.10.4: "everywhere a duration is measured").
+
+Raised with the advisor, not changed (both concern B9, wave 3): the
+repository's NiL Darcy network (three 8 x 200 SiLU ResNet MLPs, cosine
+annealing, about 1M parameters -- GitHub `main` and this branch alike) is
+not the manuscript's (Table 13: 2 hidden layers of 32, tanh/SiLU, sigmoid
+output for h*, Adam with StepLR, 3,555 parameters; the pre-GitHub notebook
+has both variants); and no float32 delta_FV exists for the NiL runs (the
+manuscript reports only residual MSEs), so the 20% float32/float64 rule
+has nothing to compare with unless float32 runs are made.
+
+---
+
 ## 2026-09-29 -- Kovasznay GPU solve: Q applied implicitly, as `gels` does (Addendum v2.2 Section 2.10, optional item)
 
 `_lstsq_gpu_qr` used `torch.linalg.qr(mode='reduced')`, which forms the
