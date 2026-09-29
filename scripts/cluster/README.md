@@ -64,14 +64,15 @@ it off the cluster: the models are what later figures are made from.
 
 | Script | What | Class | Rough duration |
 |---|---|---|---|
-| `00_preflight` | tests, smoke runs, checks F2 and A2 on the A100, saves the Component A search | shared-gpu | < 1 h |
+| `00_preflight` | torch version, tests (not the Component A ones), smoke runs of B and C | shared-gpu | < 1 h |
+| `29_A1_gate` | Component A search and tests; checks F2, A2 and A1 (the plain PINN, 1 h budget); gates Component A only | shared-gpu | ~1.5 h |
 | `10_timed_lilq` | Section 3.3 CPU runs; Kovasznay GPU runs; check B3 with its timings; Section 3.7 | timed | ~1.5 h |
 | `20_four_method_gpu` | B4 GPU pass, one task per benchmark | timed x 4 | 1-4 h each |
 | `21_four_method_cpu` | B4 CPU pass at the largest sizes | timed x 4 | < 1 h each |
 | `30_A_screen` | Component A: 24 configurations x 10 min per family | timed x 2 | ~4.5 h each |
 | `31_A_full` | selection, top 3 x 5 seeds x 60 min per family, representative | timed x 2 | ~16 h each |
 | `32_A_cpu` | each representative on the CPU, 5 seeds x 60 min | timed x 2 | ~5.5 h each |
-| `33_A_float32_and_a1` | F1 float32-Adam run; check A1 | timed | ~2.5 h |
+| `33_A_float32` | F1 float32-Adam run | timed | ~1.2 h |
 | `40_b9_nil_darcy` | B9: NiL Darcy in float64, 4 fields x 3 seeds (LiL alongside) | shared-gpu x 12 | est. 2-4 h each (23 h on the laptop GPU) |
 | `41_b8_initial_guess` | B8: 128 runs, one task per (case, guess); networks on the A100 | shared-gpu x 4 | ~2-3 h each |
 | `42_component_c` | Component C: 196 LiL-Q runs | cpu | a few hours |

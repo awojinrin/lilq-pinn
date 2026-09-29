@@ -291,7 +291,9 @@ def main():
     elif args.stage == 'float32':
         float32_run(root, args.device, budget(FULL_BUDGET_S))
     elif args.stage == 'a1':
-        print(json.dumps(check_a1(root, args.device, budget(FULL_BUDGET_S))))
+        result = check_a1(root, args.device, budget(FULL_BUDGET_S))
+        print(json.dumps(result))
+        sys.exit(0 if result['passed'] else 1)       # a gate: Component A waits for it (Addendum v2.2 2.6)
     elif args.stage == 'a2':
         result = check_a2(root, args.device)
         print(json.dumps(result))

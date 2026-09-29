@@ -103,7 +103,11 @@ def test_budget_holds_inside_an_lbfgs_call(tmp_path):
     run = f1.f1_train(cfg, 0, 3.0, tmp_path, test_every=10 ** 6)
     rows = _read(tmp_path / "log.csv")
     assert run["end_reason"] == "budget" and rows[-1]["phase"] == "lbfgs"
-    assert run["wall_s"] < 3.0 + 1.0
+    # At most one evaluation past the budget (a 500-iteration call would be
+    # far more). The margin is loose because a loaded machine slows the
+    # evaluation itself (4.4 s was seen against a 1 s margin: Addendum v2.2 2.6).
+    assert run["wall_s"] < 3.0 + 3.0
+    assert float(rows[-1]["t_cum_s"]) <= 3.0
     assert run["final_loss"] <= float(rows[-1]["loss_total"]) + 1e-15
 
 

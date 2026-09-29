@@ -1,5 +1,5 @@
 #!/bin/bash
-# Component A screening (the search itself is saved by the preflight, so the
+# Component A screening (the search itself is saved by 29_A1_gate, so the
 # two array tasks never race on it): all 24 configurations of one family, seed 0, 10 minutes each (~4 h + evaluation).
 # lilq-resources: timed   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-A-screen

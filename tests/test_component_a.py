@@ -64,3 +64,27 @@ def test_f2_jacobian_check(tmp_path):
 def test_check_a2(tmp_path, monkeypatch):
     result = ca.check_a2(tmp_path, "cpu", steps=5)
     assert result["passed"] and result["steps"] == [5, 5] and result["max_relative_difference"] <= 1e-12
+
+
+def test_a1_is_a_gate(tmp_path, monkeypatch):
+    """Addendum v2.2 Section 2.6: ``component_a.py a1`` exits non-zero when
+    the plain PINN misses eps_u <= 1e-3 (and zero when it reaches it)."""
+    import sys
+    for passed, code in ((False, 1), (True, 0)):
+        monkeypatch.setattr(ca, "check_a1", lambda root, device, budget_s, p=passed: {"passed": p})
+        monkeypatch.setattr(sys, "argv", ["component_a.py", "a1", "--root", str(tmp_path)])
+        with pytest.raises(SystemExit) as exit_info:
+            ca.main()
+        assert exit_info.value.code == code
+
+
+def test_component_a_test_list_names_real_files():
+    """env.sh's list of Component A-only tests (run by 29_A1_gate, skipped by
+    the preflight) must name files that exist."""
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    env = (root / "scripts" / "cluster" / "env.sh").read_text()
+    files = re.search(r'LILQ_COMPONENT_A_TESTS="([^"]+)"', env).group(1).split()
+    assert files and all((root / f).is_file() for f in files)
+    assert "tests/test_component_a.py" in files

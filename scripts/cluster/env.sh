@@ -24,6 +24,9 @@ export OMP_NUM_THREADS="$NCORES"
 export OPENBLAS_NUM_THREADS="$NCORES"
 export MKL_NUM_THREADS="$NCORES"
 
+# Tests that concern only Component A: run by 29_A1_gate, skipped by the preflight.
+export LILQ_COMPONENT_A_TESTS="tests/test_f1_pinn.py tests/test_lm_kovasznay.py tests/test_component_a.py tests/test_baseline_search.py tests/test_kovasznay_comparison.py"
+
 export MPLBACKEND=Agg        # compute nodes have no display
 export PYTHONUNBUFFERED=1    # progress lines reach the .out file as they happen
 
