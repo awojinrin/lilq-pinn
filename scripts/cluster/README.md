@@ -32,8 +32,15 @@ cd $SCRATCH/lilq-run
 module load <LILQ_MODULES from the profile>
 python -m venv --system-site-packages venv
 source venv/bin/activate && pip install matplotlib pytest
-python -c "import numpy; print(numpy.__version__)"   # must be the module's numpy, not a pip upgrade
+pip install --no-cache-dir torch==2.10.0 --index-url https://download.pytorch.org/whl/cu126   # about 3 GB
+export PYTHONPATH=$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'):$PYTHONPATH
+python -c "import torch, numpy; print(torch.__version__, numpy.__version__)"   # 2.10.0+cu126, and the module's numpy
 ```
+
+The PyTorch module puts its own torch (2.9.1) on `PYTHONPATH`, ahead of the
+venv. `env.sh` puts the venv first in every job, and the preflight fails
+unless torch is 2.10.0 (Addendum v2.2 Section 2.4: 2.9.1's line search
+ignores `max_eval`, which changes the L-BFGS evaluation counts).
 
 ## 3. Submit
 

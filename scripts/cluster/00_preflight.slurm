@@ -12,6 +12,7 @@
 source scripts/cluster/env.sh
 set -euo pipefail
 
+python -c "from lilq.provenance import assert_torch_version; print('torch', assert_torch_version(), 'OK')"
 python -c "import numpy, scipy, torch; print('numpy', numpy.__version__, 'scipy', scipy.__version__, 'torch', torch.__version__, 'cuda', torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 python -m pytest tests/ -q
 python experiments/component_b.py --smoke --out-root "$SCRATCH/lilq-run/preflight"

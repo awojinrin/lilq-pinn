@@ -245,7 +245,8 @@ def capture_hardware_json(repo_root: Optional[Path] = None) -> dict:
 def capture_environment_text() -> str:
     """Verbatim ``numpy.show_config()`` and ``scipy.show_config()`` output
     -- the BLAS/LAPACK backend detail the package spec asks for, which
-    doesn't reduce cleanly to JSON.
+    doesn't reduce cleanly to JSON -- and PyTorch's version and
+    ``torch.__config__.show()`` (Addendum v2.2 Section 2.4).
     """
     parts = []
     for label, module in (("numpy.show_config()", np), ("scipy.show_config()", scipy)):
@@ -253,7 +254,25 @@ def capture_environment_text() -> str:
         with contextlib.redirect_stdout(buf):
             module.show_config()
         parts.append(f"{'=' * 20} {label} {'=' * 20}\n{buf.getvalue()}")
+    parts.append(f"{'=' * 20} torch {torch.__version__} (from {torch.__file__}) {'=' * 20}\n"
+                 f"{torch.__config__.show()}")
     return "\n\n".join(parts)
+
+
+# Addendum v2.2 Section 2.4: the L-BFGS evaluation counts and the 16x cap
+# (lilq.solvers) assume PyTorch 2.10, whose strong-Wolfe line search is
+# bounded by the step's remaining max_eval; 2.9.1's is not (checked on Grace).
+REQUIRED_TORCH_VERSION = "2.10.0"
+
+
+def assert_torch_version(required: str = REQUIRED_TORCH_VERSION) -> str:
+    """Raise unless the imported torch is ``required`` (a local build suffix
+    such as ``+cu126`` is allowed); returns the version."""
+    version = torch.__version__
+    if not (version == required or version.startswith(required + "+")):
+        raise RuntimeError(f"torch {version} imported from {torch.__file__}; {required} is required "
+                           f"(Addendum v2.2 Section 2.4). Is the venv first on PYTHONPATH?")
+    return version
 
 
 def save_provenance(output_dir: Path, repo_root: Optional[Path] = None) -> None:

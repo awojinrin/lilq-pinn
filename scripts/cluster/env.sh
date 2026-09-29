@@ -10,6 +10,10 @@ LILQ_MODULES="${LILQ_MODULES:-GCC/13.3.0 OpenMPI/5.0.3 PyTorch/2.9.1-CUDA-12.6.0
 module purge
 module load $LILQ_MODULES || { echo "module load failed: $LILQ_MODULES"; exit 1; }
 source "$SCRATCH/lilq-run/venv/bin/activate" || { echo "venv missing: $SCRATCH/lilq-run/venv"; exit 1; }
+# The PyTorch module puts its own torch 2.9.1 on PYTHONPATH, which Python
+# searches before the venv; the venv's torch 2.10.0 (Addendum v2.2 Section
+# 2.4) must come first. numpy and scipy still come from the modules.
+export PYTHONPATH="$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')${PYTHONPATH:+:$PYTHONPATH}"
 cd "$SCRATCH/lilq-run/lilq-pinn" || { echo "repo missing: $SCRATCH/lilq-run/lilq-pinn"; exit 1; }
 
 # One thread per core the job holds: all of the node's for the timed

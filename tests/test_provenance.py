@@ -190,3 +190,24 @@ def test_scheduler_info_records_node_type_and_exclusivity(monkeypatch):
     info = prov.capture_scheduler_info()
     assert info["node"]["AvailableFeatures"] == "a100,gpu" and info["node"]["Gres"] == "gpu:a100:2"
     assert info["job"]["Account"] == "132698954494" and info["exclusive"] is True
+
+
+def test_environment_text_records_torch_version_and_build_config():
+    import torch
+    from lilq.provenance import capture_environment_text
+    text = capture_environment_text()
+    assert f"torch {torch.__version__}" in text and torch.__config__.show().strip()[:40] in text
+
+
+def test_torch_version_is_enforced(monkeypatch):
+    """Addendum v2.2 Section 2.4: the preflight fails unless torch is 2.10.0."""
+    import pytest
+    import torch
+    from lilq.provenance import assert_torch_version
+    for ok in ("2.10.0", "2.10.0+cu126", "2.10.0+cpu"):
+        monkeypatch.setattr(torch, "__version__", ok)
+        assert assert_torch_version() == ok
+    for bad in ("2.9.1", "2.10.1", "2.1.0", "2.100.0"):
+        monkeypatch.setattr(torch, "__version__", bad)
+        with pytest.raises(RuntimeError, match="2.10.0 is required"):
+            assert_torch_version()

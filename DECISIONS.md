@@ -17,6 +17,23 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- PyTorch 2.10.0 on the cluster, enforced (Addendum v2.2 Section 2.4)
+
+Grace's newest module is `PyTorch/2.9.1-CUDA-12.6.0`. Its L-BFGS calls the
+strong-Wolfe line search without `max_ls`, so a step can make up to about
+27 evaluations regardless of `max_eval`; 2.10.0 passes `max_ls=max_eval -
+current_evals` (both checked on Grace by reading `LBFGS.step`). The
+evaluation counts and the 16x cap above assume 2.10. The job venv
+therefore gets `torch==2.10.0` (CUDA 12.6 wheel) by pip. The module
+still supplies Python, numpy 1.26.4 and scipy 1.13.1, but it also puts
+its own torch on `PYTHONPATH` ahead of the venv (installing 2.10.0 alone
+still imported 2.9.1), so `env.sh` puts the venv's site-packages first.
+The preflight fails unless the imported torch is 2.10.0
+(`lilq.provenance.assert_torch_version`); `environment.txt` records the
+version, the path it was imported from, and `torch.__config__.show()`.
+
+---
+
 ## 2026-09-29 -- L-BFGS: each point evaluated once; 16x evaluation cap; `optimizer_stall` (Addendum v2.2 Sections 2.1-2.2)
 
 **Each point evaluated once.** PyTorch's L-BFGS starts every `step` with a
