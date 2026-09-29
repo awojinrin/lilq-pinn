@@ -1,0 +1,20 @@
+provenance lock OK: commit 8a3f5f7cc4c2, tree ead9b37f635f
+job 19898417 on c794: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+
+============================================================
+bratu
+============================================================
+  warm-up on cpu: 58.2s (untimed)
+
+  P=225 (devices=['cpu'])
+    NiL-N  seed=0     device=cpu    iters=  9198 loss=9.067e-04 [optimizer_stall] (99.1s)
+    NiL-N  seed=1     device=cpu    iters=  7723 loss=5.224e-04 [optimizer_stall] (80.2s)
+    NiL-N  seed=2     device=cpu    iters= 10000 loss=1.247e-04 [iteration_cap] (104.2s)
+    NiL-Q  seed=0     device=cpu    iters=  7433 loss=3.174e-04 [optimizer_stall] (103.4s)
+    NiL-Q  seed=1     device=cpu    iters=  7728 loss=3.457e-04 [optimizer_stall] (104.7s)
+    NiL-Q  seed=2     device=cpu    iters=  8452 loss=2.768e-04 [optimizer_stall] (115.0s)
+    LiL-N  seed=n/a   device=cpu    iters= 10000 loss=2.581e-04 [iteration_cap] (53.8s)
+
+Wrote 7 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/four_method_jobs/bratu_cpu/four_method_tables.csv (0 failures)
+Total elapsed: 726.8s

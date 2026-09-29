@@ -1,0 +1,132 @@
+provenance lock OK: commit 8a3f5f7cc4c2, tree ead9b37f635f
+job 19898412 on c620: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+53 runs -> /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation
+  bratu_P25_cpu_paper: 2 iterations, t_cum=0.000s, wall=0.3s
+  bratu_P25_cpu_kmax: 60 iterations, t_cum=0.013s, wall=0.1s
+  bratu_P100_cpu_paper: 3 iterations, t_cum=0.031s, wall=0.4s
+  bratu_P100_cpu_kmax: 60 iterations, t_cum=0.599s, wall=1.4s
+  bratu_P225_cpu_paper: 4 iterations, t_cum=0.191s, wall=1.8s
+  bratu_P225_cpu_kmax: 60 iterations, t_cum=2.806s, wall=5.1s
+  burgers_P25_cpu_paper: 2 iterations, t_cum=0.001s, wall=0.0s
+  burgers_P25_cpu_kmax: 60 iterations, t_cum=0.014s, wall=0.1s
+  burgers_P100_cpu_paper: 3 iterations, t_cum=0.030s, wall=0.4s
+  burgers_P100_cpu_kmax: 60 iterations, t_cum=0.588s, wall=1.4s
+  burgers_P225_cpu_paper: 3 iterations, t_cum=0.144s, wall=1.4s
+  burgers_P225_cpu_kmax: 60 iterations, t_cum=2.785s, wall=5.1s
+  burgers_P400_cpu_paper: 4 iterations, t_cum=0.424s, wall=3.5s
+  burgers_P400_cpu_kmax: 60 iterations, t_cum=6.671s, wall=12.7s
+  burgers_P625_cpu_paper: 4 iterations, t_cum=1.148s, wall=2.3s
+  burgers_P625_cpu_kmax: 60 iterations, t_cum=16.876s, wall=31.3s
+  bl_P64_cpu_paper: 10 iterations, t_cum=0.055s, wall=10.8s
+  bl_P64_cpu_kmax: 60 iterations, t_cum=0.260s, wall=0.6s
+  bl_P256_cpu_paper: 4 iterations, t_cum=0.226s, wall=2.0s
+  bl_P256_cpu_kmax: 60 iterations, t_cum=3.392s, wall=6.6s
+  bl_P576_cpu_paper: 4 iterations, t_cum=0.875s, wall=7.6s
+  bl_P576_cpu_kmax: 60 iterations, t_cum=14.876s, wall=27.4s
+  bl_P1024_cpu_paper: 4 iterations, t_cum=3.840s, wall=7.2s
+  bl_P1024_cpu_kmax: 60 iterations, t_cum=61.072s, wall=102.8s
+  bl_gravity_P64_cpu_paper: 20 iterations, t_cum=0.099s, wall=1.6s
+  bl_gravity_P64_cpu_kmax: 60 iterations, t_cum=0.598s, wall=1.4s
+  bl_gravity_P256_cpu_paper: 12 iterations, t_cum=0.877s, wall=5.6s
+  bl_gravity_P256_cpu_kmax: 60 iterations, t_cum=3.259s, wall=6.4s
+  bl_gravity_P576_cpu_paper: 5 iterations, t_cum=1.122s, wall=2.5s
+  bl_gravity_P576_cpu_kmax: 60 iterations, t_cum=13.836s, wall=27.5s
+  bl_gravity_P1024_cpu_paper: 5 iterations, t_cum=4.055s, wall=7.7s
+  bl_gravity_P1024_cpu_kmax: 60 iterations, t_cum=53.442s, wall=92.1s
+  elasticity_P50_cpu_paper: 1 iterations, t_cum=0.039s, wall=0.6s
+  elasticity_P200_cpu_paper: 1 iterations, t_cum=0.043s, wall=1.2s
+  elasticity_P450_cpu_paper: 1 iterations, t_cum=0.153s, wall=2.8s
+  elasticity_P800_cpu_paper: 1 iterations, t_cum=0.442s, wall=5.8s
+  elasticity_P1250_cpu_paper: 1 iterations, t_cum=1.047s, wall=2.7s
+  kovasznay_P75_cpu_paper: 16 iterations, t_cum=0.059s, wall=0.6s
+  kovasznay_P75_cpu_kmax: 60 iterations, t_cum=0.196s, wall=0.6s
+  kovasznay_P300_cpu_paper: 9 iterations, t_cum=0.286s, wall=2.5s
+  kovasznay_P300_cpu_kmax: 60 iterations, t_cum=1.908s, wall=6.1s
+  kovasznay_P675_cpu_paper: 6 iterations, t_cum=0.626s, wall=5.8s
+  kovasznay_P675_cpu_kmax: 60 iterations, t_cum=6.875s, wall=17.8s
+  kovasznay_P1200_cpu_paper: 6 iterations, t_cum=1.636s, wall=4.4s
+  kovasznay_P1200_cpu_kmax: 60 iterations, t_cum=16.026s, wall=41.5s
+  kovasznay_P1875_cpu_paper: 6 iterations, t_cum=4.843s, wall=11.0s
+  kovasznay_P1875_cpu_kmax: 60 iterations, t_cum=41.514s, wall=105.6s
+  beltrami_P7984_cpu_paper: 4 iterations, t_cum=284.775s, wall=609.7s
+  beltrami_P7984_cpu_kmax: 8 iterations, t_cum=595.291s, wall=1199.7s
+  darcy_S1_cpu_paper: 1 iterations, t_cum=26.904s, wall=35.0s
+  darcy_S2_cpu_paper: 1 iterations, t_cum=28.659s, wall=35.5s
+  darcy_S3_cpu_paper: 1 iterations, t_cum=24.039s, wall=31.0s
+  darcy_SPE10_cpu_paper: 1 iterations, t_cum=27.671s, wall=36.9s
+
+ok=53 skipped=0 failed=0 in 2545.4s; index: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/runs_index.csv
+======================================================================
+BELTRAMI, PRESSURE PINNED AT 8 TEMPORAL LEVELS (Section 3.7)
+  N_vel=6, N_p=8, basis=chebyshev
+======================================================================
+======================================================================
+LiL-Q SOLVE: 3D Beltrami Flow
+  P_u=1296, P_v=1296, P_w=1296, P_p=4096, P_total=7984
+======================================================================
+  Precomputing basis matrices... 0.90s
+  Iter   0: delta=1.000e+00  PDE=5.740e+00  div=3.536e-06  QR=68.493s  rank=7984/7984
+  Iter   1: delta=7.931e-01  PDE=1.357e-06  div=3.556e-06  QR=62.691s  rank=7984/7984
+  Iter   2: delta=6.746e-07  PDE=1.357e-06  div=3.556e-06  QR=57.401s  rank=7984/7984
+  Iter   3: delta=6.633e-10  PDE=1.357e-06  div=3.556e-06  QR=76.470s  rank=7984/7984
+  Converged at iteration 3.
+
+  Total time: 266.886s,  Iters: 4
+  rel_l2_u: 3.445e-04
+  rel_l2_v: 3.445e-04
+  rel_l2_w: 3.445e-04
+  rel_l2_p: 2.614e-03
+
+  Solver time: 266.9s (diagnostics 263.5s, process wall-clock 533.2s), iters: 4
+  Full column rank (7984/7984): True
+  kappa: 18166.085993956378 (qr_pivoted)
+
+       t          u          v          w          p
+    0.00  1.356e-04  1.356e-04  1.356e-04  1.463e-03
+    0.25  4.141e-04  4.141e-04  4.141e-04  2.822e-03
+    0.50  3.737e-04  3.737e-04  3.737e-04  3.153e-03
+    0.75  3.819e-04  3.819e-04  3.819e-04  4.511e-03
+    1.00  3.430e-04  3.430e-04  3.430e-04  7.515e-03
+
+  t=1 pressure error: 0.7515% (paper baseline: 0.752%, improved: True)
+
+  Report written to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/beltrami_pinned/report.json
+======================================================================
+BELTRAMI, PRESSURE PINNED AT 8 TEMPORAL LEVELS (Section 3.7)
+  N_vel=6, N_p=8, basis=chebyshev
+======================================================================
+======================================================================
+LiL-Q SOLVE: 3D Beltrami Flow
+  P_u=1296, P_v=1296, P_w=1296, P_p=4096, P_total=7984
+======================================================================
+  Precomputing basis matrices... 0.92s
+  Iter   0: delta=1.000e+00  PDE=5.740e+00  div=3.536e-06  QR=61.309s  rank=7984/7984
+  Iter   1: delta=7.931e-01  PDE=1.357e-06  div=3.556e-06  QR=72.198s  rank=7984/7984
+  Iter   2: delta=6.746e-07  PDE=1.357e-06  div=3.556e-06  QR=49.400s  rank=7984/7984
+  Iter   3: delta=6.633e-10  PDE=1.357e-06  div=3.556e-06  QR=59.610s  rank=7984/7984
+  Iter   4: delta=2.356e-13  PDE=1.357e-06  div=3.556e-06  QR=53.357s  rank=7984/7984
+  Iter   5: delta=1.311e-14  PDE=1.357e-06  div=3.556e-06  QR=60.538s  rank=7984/7984
+  Iter   6: delta=1.554e-14  PDE=1.357e-06  div=3.556e-06  QR=79.854s  rank=7984/7984
+  Iter   7: delta=1.540e-14  PDE=1.357e-06  div=3.556e-06  QR=63.310s  rank=7984/7984
+
+  Total time: 502.584s,  Iters: 8
+  rel_l2_u: 3.445e-04
+  rel_l2_v: 3.445e-04
+  rel_l2_w: 3.445e-04
+  rel_l2_p: 2.614e-03
+
+  Solver time: 502.6s (diagnostics 589.0s, process wall-clock 1094.5s), iters: 8
+  Full column rank (7984/7984): True
+  kappa: 18166.085993955043 (qr_pivoted)
+
+       t          u          v          w          p
+    0.00  1.356e-04  1.356e-04  1.356e-04  1.463e-03
+    0.25  4.141e-04  4.141e-04  4.141e-04  2.822e-03
+    0.50  3.737e-04  3.737e-04  3.737e-04  3.153e-03
+    0.75  3.819e-04  3.819e-04  3.819e-04  4.511e-03
+    1.00  3.430e-04  3.430e-04  3.430e-04  7.515e-03
+
+  t=1 pressure error: 0.7515% (paper baseline: 0.752%, improved: True)
+
+  Report written to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/beltrami_pinned_kmax/report.json

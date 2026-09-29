@@ -1,0 +1,11 @@
+JobID                         JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ ------------------------ ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+19898410               lilq-preflight        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:11:07  COMPLETED      0:0 
+19898411                 lilq-A1-gate        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   01:06:04  COMPLETED      0:0 
+19898412          lilq-timed-lilq-cpu     medium                            billing=48,cpu=48,mem=360G,node=1   01:18:37  COMPLETED      0:0 
+19898413          lilq-timed-lilq-gpu        gpu billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1   00:06:45  COMPLETED      0:0 
+19898414                       lilq-C     medium                             billing=24,cpu=24,mem=32G,node=1   00:12:41  COMPLETED      0:0 
+19898415                      lilq-B6     medium                             billing=24,cpu=24,mem=32G,node=1   00:05:18  COMPLETED      0:0 
+19898416_0                lilq-b4-gpu        gpu billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1   00:37:20  COMPLETED      0:0 
+19898417_0                lilq-b4-cpu     medium                            billing=48,cpu=48,mem=360G,node=1   00:15:18  COMPLETED      0:0 
+19898418             lilq-wave-report     medium                             billing=24,cpu=24,mem=32G,node=1   00:03:03    RUNNING      0:0 

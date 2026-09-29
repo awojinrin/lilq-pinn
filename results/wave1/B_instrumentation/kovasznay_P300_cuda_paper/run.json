@@ -1,0 +1,119 @@
+{
+  "N_total": 929,
+  "N_composition": {
+    "x_momentum": 256,
+    "y_momentum": 256,
+    "continuity": 256,
+    "bc_u": 80,
+    "bc_v": 80,
+    "pressure_pin": 1
+  },
+  "P_total": 300,
+  "P_composition": {
+    "u": 100,
+    "v": 100,
+    "p": 100
+  },
+  "row_weights": {
+    "momentum": 0.0625,
+    "continuity": 0.0625,
+    "bc": {
+      "bot": 0.7071067811865476,
+      "top": 0.7071067811865476,
+      "left": 0.7071067811865476,
+      "right": 0.7071067811865476
+    },
+    "pressure_pin": 3.1622776601683795
+  },
+  "collocation_construction": {
+    "method": "equispaced tensor grid",
+    "sampling": "uniform",
+    "seed": null,
+    "collocation_floor": 10,
+    "n_interior": 256,
+    "n_per_edge": 20,
+    "N_x": 10,
+    "N_y": 10,
+    "k_ratio": 4,
+    "collocation_ratios": [
+      0.6,
+      0.2,
+      0.2
+    ]
+  },
+  "basis_description": {
+    "family": "chebyshev",
+    "u": {
+      "modes_x": 10,
+      "modes_y": 10,
+      "total": 100
+    },
+    "v": {
+      "modes_x": 10,
+      "modes_y": 10,
+      "total": 100
+    },
+    "p": {
+      "modes_x": 10,
+      "modes_y": 10,
+      "total": 100
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gpu_qr",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "rel_coeff_change",
+    "tolerance": 1e-09
+  },
+  "K_max": 20,
+  "stopping_reason": "target",
+  "first_stall_iteration": 3,
+  "device": "cuda",
+  "thread_count": 48,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 1.5271735074620746e-15,
+    "max_rel_err_over_run": 2.842104097597237e-14
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": {
+    "mem_estimate_bytes": 6688800,
+    "min_diag_ratio": 0.024785515824918142,
+    "flagged_iterations": [],
+    "h2d_s": [
+      0.0007285475730895996,
+      0.0007721893489360809,
+      0.0006482545286417007,
+      0.000632384791970253,
+      0.0006239656358957291,
+      0.0006332527846097946,
+      0.000632384791970253,
+      0.0006313230842351913,
+      0.0006246995180845261
+    ],
+    "qr_solve_s": [
+      1.353541200980544,
+      0.004307853057980537,
+      0.004207707941532135,
+      0.0041852109134197235,
+      0.004191575571894646,
+      0.004194095730781555,
+      0.0041942596435546875,
+      0.004190512001514435,
+      0.004195736721158028
+    ],
+    "d2h_s": [
+      0.00013962388038635254,
+      0.00012675300240516663,
+      9.41641628742218e-05,
+      9.240582585334778e-05,
+      8.895806968212128e-05,
+      9.733252227306366e-05,
+      9.159184992313385e-05,
+      8.813105523586273e-05,
+      8.694268763065338e-05
+    ]
+  },
+  "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+}

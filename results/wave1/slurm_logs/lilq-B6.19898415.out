@@ -1,0 +1,39 @@
+provenance lock OK: commit 8a3f5f7cc4c2, tree ead9b37f635f
+job 19898415 on c179: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+======================================================================
+SECTION 3.6: TABLE 3 (BURGERS BASIS STUDY) COMPLETION
+======================================================================
+  P=625, PDE=5329, IC=313, BC=313, K_max=50
+
+  Running: T_0..24(x) x T_0..24(t)  (625 coefficients)
+    final ||R||_h^2=7.822267e-05  kappa=2451.108963629629  rank_svd=625
+
+  Running: sin(1..25)(x) x T_0..24(t)  (625 coefficients)
+    final ||R||_h^2=4.908480e-09  kappa=341.1447090948104  rank_svd=625
+
+  Running: sin(1..25)(x) x sin(1..25)(t)  (625 coefficients)
+    final ||R||_h^2=4.984026e+00  kappa=54.684532453457784  rank_svd=625
+
+  Running: cos(0..24)(x) x T_0..24(t)  (625 coefficients)
+    final ||R||_h^2=1.714691e-01  kappa=338.06133599672756  rank_svd=625
+
+  Running: [1, x, sin(1..23)](x) x T_0..24(t)  (625 coefficients)
+    final ||R||_h^2=3.141902e-08  kappa=521.7470249352883  rank_svd=625
+
+  Running: cos+sin(25)(x) x T_0..24(t)  (625 coefficients)
+    final ||R||_h^2=1.274340e-05  kappa=4326450585.959348  rank_svd=625
+
+  Running: cos+sin(25)(x) x cos+sin(25)(t)  (625 coefficients)
+    final ||R||_h^2=1.274351e-05  kappa=2.2005894675923916e+16  rank_svd=610
+
+  Running: ELM(tanh, 625 neurons, Xavier-scaled)  (625 coefficients)
+    final ||R||_h^2=4.943679e-02  kappa=1.2502445404820014e+18  rank_svd=43
+
+  Running: sin(1..25)(x) x cos+sin(25)(t)  (625 coefficients)
+    final ||R||_h^2=4.908538e-09  kappa=963021567.9978925  rank_svd=625
+
+Table 3 CSV written: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/basis_study/table3_basis_study.csv
+
+All outputs: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/basis_study
+DONE.

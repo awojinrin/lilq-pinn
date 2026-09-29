@@ -1,0 +1,82 @@
+{
+  "N_total": 3524,
+  "N_composition": {
+    "x_momentum": 961,
+    "y_momentum": 961,
+    "continuity": 961,
+    "bc_u": 320,
+    "bc_v": 320,
+    "pressure_pin": 1
+  },
+  "P_total": 1200,
+  "P_composition": {
+    "u": 400,
+    "v": 400,
+    "p": 400
+  },
+  "row_weights": {
+    "momentum": 0.03225806451612903,
+    "continuity": 0.03225806451612903,
+    "bc": {
+      "bot": 0.3535533905932738,
+      "top": 0.3535533905932738,
+      "left": 0.3535533905932738,
+      "right": 0.3535533905932738
+    },
+    "pressure_pin": 3.1622776601683795
+  },
+  "collocation_construction": {
+    "method": "uniform random scattered points",
+    "sampling": "scattered",
+    "seed": 2,
+    "collocation_floor": 1,
+    "n_interior": 961,
+    "n_per_edge": 80,
+    "N_x": 20,
+    "N_y": 20,
+    "k_ratio": 3.955,
+    "collocation_ratios": [
+      0.6,
+      0.2,
+      0.2
+    ]
+  },
+  "basis_description": {
+    "family": "chebyshev",
+    "u": {
+      "modes_x": 20,
+      "modes_y": 20,
+      "total": 400
+    },
+    "v": {
+      "modes_x": 20,
+      "modes_y": 20,
+      "total": 400
+    },
+    "p": {
+      "modes_x": 20,
+      "modes_y": 20,
+      "total": 400
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "rel_coeff_change",
+    "tolerance": 1e-09
+  },
+  "K_max": 20,
+  "stopping_reason": "target",
+  "first_stall_iteration": 5,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 3.750376492518211e-15,
+    "max_rel_err_over_run": 1.6823147031854636e-07
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+}

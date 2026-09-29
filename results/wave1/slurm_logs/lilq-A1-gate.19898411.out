@@ -1,0 +1,44 @@
+provenance lock OK: commit 8a3f5f7cc4c2, tree ead9b37f635f
+job 19898411 on g062: 8 threads, 8 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/A_calibration/search
+...................................                                      [100%]
+=============================== warnings summary ===============================
+tests/test_f1_pinn.py: 18 warnings
+  /scratch/user/gbenga-awojinrin/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+tests/test_f1_pinn.py::test_short_run_logs_both_phases_and_is_deterministic
+  /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    value = float(loss)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+35 passed, 19 warnings in 206.87s (0:03:26)
+{"device": "cuda", "max_relative_fd_error": 3.771305842607749e-09, "columns_checked": 16, "passed": true, "gpu": "NVIDIA A100-PCIE-40GB"}
+n_theta = 1467, rows = 1801, normal-equation memory ~ 0.06 GB
+{
+  "end_reason": "max_steps",
+  "steps": 20,
+  "final_loss": 8.619473398815412e-08,
+  "eps_u": 0.00011153862669999927,
+  "eps_v": 0.0007699948312101411,
+  "eps_p_meanfree": 0.0004974479680768539,
+  "wall_s": 2.576063236221671
+}
+n_theta = 1467, rows = 1801, normal-equation memory ~ 0.06 GB
+{
+  "end_reason": "max_steps",
+  "steps": 20,
+  "final_loss": 8.619473398815412e-08,
+  "eps_u": 0.00011153862669999927,
+  "eps_v": 0.0007699948312101411,
+  "eps_p_meanfree": 0.0004974479680768539,
+  "wall_s": 0.9872089847922325
+}
+{"device": "cuda", "steps": [20, 20], "max_relative_difference": 0.0, "bit_identical": true, "passed": true}
+/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  value = float(loss)
+{"eps_u": 5.798993885675638e-05, "target": 0.001, "budget_s": 3600.0, "passed": true}
+A1 GATE OK

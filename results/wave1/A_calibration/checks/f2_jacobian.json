@@ -1,0 +1,7 @@
+{
+  "device": "cuda",
+  "max_relative_fd_error": 3.771305842607749e-09,
+  "columns_checked": 16,
+  "passed": true,
+  "gpu": "NVIDIA A100-PCIE-40GB"
+}

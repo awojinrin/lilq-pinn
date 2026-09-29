@@ -1,0 +1,66 @@
+{
+  "N_vel": 6,
+  "N_p": 8,
+  "n_pressure_pin_levels": 8,
+  "P_total": 7984,
+  "n_outer_iters": 4,
+  "solver_time_s": 266.8859593886882,
+  "diagnostics_time_s": 263.5400231704116,
+  "wall_clock_s": 533.151971489191,
+  "full_column_rank": true,
+  "num_rank_svd": null,
+  "num_rank_gelsy": 7984,
+  "kappa": 18166.085993956378,
+  "kappa_method": "qr_pivoted",
+  "snapshots": [
+    {
+      "t": 0.0,
+      "u": 0.00013555135145263257,
+      "v": 0.0001355513514525718,
+      "w": 0.00013555135145262872,
+      "p": 0.0014625029274975376,
+      "p_pin_gauge": 0.0039131338188883
+    },
+    {
+      "t": 0.25,
+      "u": 0.0004141399867786174,
+      "v": 0.0004141399867789002,
+      "w": 0.0004141399867786951,
+      "p": 0.0028215465753508237,
+      "p_pin_gauge": 0.004352725810996929
+    },
+    {
+      "t": 0.5,
+      "u": 0.000373702620107787,
+      "v": 0.0003737026201082598,
+      "w": 0.0003737026201079966,
+      "p": 0.0031525244012570288,
+      "p_pin_gauge": 0.0038786562147808397
+    },
+    {
+      "t": 0.75,
+      "u": 0.00038193048114188924,
+      "v": 0.0003819304811423051,
+      "w": 0.0003819304811420838,
+      "p": 0.004511102153605991,
+      "p_pin_gauge": 0.011145522227088077
+    },
+    {
+      "t": 1.0,
+      "u": 0.00034302610072553215,
+      "v": 0.0003430261007264297,
+      "w": 0.0003430261007261474,
+      "p": 0.0075145309883891745,
+      "p_pin_gauge": 0.01828306159748527
+    }
+  ],
+  "t1_pressure_error_pct": 0.7514530988389174,
+  "t1_pressure_error_pin_gauge_pct": 1.8283061597485268,
+  "rel_l2_p_pin_gauge": 0.0053665566262740055,
+  "deviations_from_spec": [
+    "the pins are at Chebyshev-Gauss-Lobatto times in [0, 1], not at the temporal collocation levels",
+    "the pin rows have weight sqrt(lambda_bc / 8) each (the single pin had sqrt(lambda_bc))"
+  ],
+  "paper_t1_pressure_error_pct": 0.752,
+  "improved_over_paper_baseline": true
+}

@@ -1,0 +1,86 @@
+{
+  "N_total": 21809,
+  "N_composition": {
+    "x_momentum": 4096,
+    "y_momentum": 4096,
+    "z_momentum": 4096,
+    "continuity": 4096,
+    "bc_u": 1296,
+    "bc_v": 1296,
+    "bc_w": 1296,
+    "ic_u": 512,
+    "ic_v": 512,
+    "ic_w": 512,
+    "pressure_pin": 1
+  },
+  "P_total": 7984,
+  "P_composition": {
+    "u": 1296,
+    "v": 1296,
+    "w": 1296,
+    "p": 4096
+  },
+  "row_weights": {
+    "momentum": 0.015625,
+    "continuity": 0.015625,
+    "bc": {
+      "x_lo": 0.2151657414559676,
+      "x_hi": 0.2151657414559676,
+      "y_lo": 0.2151657414559676,
+      "y_hi": 0.2151657414559676,
+      "z_lo": 0.2151657414559676,
+      "z_hi": 0.2151657414559676
+    },
+    "ic": 0.13975424859373686,
+    "pressure_pin": 3.1622776601683795
+  },
+  "collocation_construction": {
+    "method": "equispaced tensor grid",
+    "N_x": 8,
+    "N_y": 8,
+    "N_z": 8,
+    "N_t": 8,
+    "N_bc": 6,
+    "N_t_bc": 6,
+    "N_ic": 8
+  },
+  "basis_description": {
+    "family": "chebyshev",
+    "u": {
+      "modes": 6,
+      "dims": 4
+    },
+    "v": {
+      "modes": 6,
+      "dims": 4
+    },
+    "w": {
+      "modes": 6,
+      "dims": 4
+    },
+    "p": {
+      "modes": 8,
+      "dims": 4
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "rel_coeff_change",
+    "tolerance": 1e-09
+  },
+  "K_max": 20,
+  "stopping_reason": "target",
+  "first_stall_iteration": 1,
+  "device": "cpu",
+  "thread_count": 48,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 4.2730915557267735e-15,
+    "max_rel_err_over_run": 5.7433553609692405e-12
+  },
+  "kappa_qr_raw_ratio": 5.568030930851375e+17,
+  "gpu_qr": null,
+  "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+}

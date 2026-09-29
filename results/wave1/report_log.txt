@@ -1,0 +1,13 @@
+wave 1 report, 2026-09-29T10:36:48.753936+00:00
+
+$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python -c from pathlib import Path; from experiments.component_b import write_index; write_index(Path('/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation'))
+  exit 0
+
+
+$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python experiments/component_b.py --reproduction-check --out-root /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1
+  exit 0
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/reproduction_check.csv: violation=15, missing=0, round-off=10, reported=31, ok=84
+
+$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python experiments/four_method_tables.py --out-dir /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation --merge-from /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/four_method_jobs/bratu_cpu/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/four_method_jobs/bratu_gpu/
+  exit 0
+Merged 28 rows from 2 job directories into /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/four_method_tables.csv

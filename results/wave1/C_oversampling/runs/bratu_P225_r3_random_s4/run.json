@@ -1,0 +1,49 @@
+{
+  "N_total": 676,
+  "N_composition": {
+    "pde": 576,
+    "bc": 100
+  },
+  "P_total": 225,
+  "P_composition": {
+    "u": 225
+  },
+  "row_weights": {
+    "pde": 0.041666666666666664,
+    "bc": 0.31622776601683794
+  },
+  "collocation_construction": {
+    "method": "scattered",
+    "seed": 4,
+    "N_x": 15,
+    "N_y": 15,
+    "k_ratio": 2.845
+  },
+  "basis_description": {
+    "family": "fourier",
+    "u": {
+      "modes_x": 15,
+      "modes_y": 15
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "loss_target",
+    "value": 2.5e-07
+  },
+  "K_max": 25,
+  "stopping_reason": "target",
+  "first_stall_iteration": 3,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 1.0194829730622704e-12,
+    "max_rel_err_over_run": 1.3907572778540405e-09
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+}
