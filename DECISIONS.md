@@ -17,6 +17,27 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Wave-1 preflight failed on a test import; tests share helpers through conftest
+
+The wave-1 preflight at `111dddc` (job 19898134, 14 min) failed on two of
+its tests: 412 passed, 4 skipped (git), and the two lock-race tests of
+`test_advisor_reply_fixes.py` failed with `ModuleNotFoundError: No module
+named 'tests.test_data_retention'`. They borrowed a helper by importing
+another test file (`from tests.test_data_retention import _fake_bundle`),
+which works only when Python resolves the name `tests` to this folder; on
+the laptop it did (also from an extracted bundle), in Grace's Python it did
+not -- most likely a site-packages package named `tests` came first. The
+science code was not involved. As designed, the eight dependent jobs were
+cancelled (`--kill-on-invalid-dep`); the preflight had written
+`results/wave1/COMMIT` (111dddc), removed for the rerun as the README says.
+
+Fix: the helper is a pytest fixture (`fake_bundle`) in `tests/conftest.py`,
+and a new test fails if any test file imports another. Checked by running
+the whole suite from an extracted bundle with a decoy package named `tests`
+first on `PYTHONPATH`, reproducing the likely Grace condition.
+
+---
+
 ## 2026-09-29 -- Grace refuses `--mem=0`; a dry-run mode for the wave scripts
 
 The first wave-1 submission (at `e69dbf7`) stopped at job 10a: Grace's

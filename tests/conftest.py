@@ -12,3 +12,25 @@ import sys
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
+
+
+import json  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture
+def fake_bundle(tmp_path):
+    """A minimal upload bundle (two source files and a PROVENANCE.json with
+    their tree hash, commit 'abc123') in ``tmp_path/bundle``; returns its root.
+    Shared here, not imported from another test file: ``from tests.x import``
+    depends on how the interpreter resolves ``tests`` and failed on Grace."""
+    from lilq.source_lock import REPO_ROOT, normalized_bytes, tree_hash
+    files = ('lilq/source_lock.py', 'scripts/cluster/env.sh')
+    root = tmp_path / 'bundle'
+    for rel in files:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel).write_bytes(normalized_bytes(REPO_ROOT / rel))
+    record = {'commit': 'abc123', 'dirty': False, 'files': list(files), 'tree_hash': tree_hash(root, list(files))}
+    (root / 'PROVENANCE.json').write_text(json.dumps(record))
+    return root

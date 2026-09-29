@@ -25,16 +25,11 @@ def test_non_finite_selection_losses_rank_last():
     assert [r[0] for r in ranked] == ['c', 'b', 'a']
 
 
-def _bundle(tmp_path):
-    from tests.test_data_retention import _fake_bundle
-    return _fake_bundle(tmp_path)
-
-
-def test_lock_is_created_once_by_concurrent_jobs(tmp_path):
+def test_lock_is_created_once_by_concurrent_jobs(tmp_path, fake_bundle):
     """Item 2.2: jobs starting together each write their own temporary file;
     exactly one lock is created, and every job reads a whole record."""
     from lilq.source_lock import check_lock
-    root, pkg = _bundle(tmp_path), tmp_path / 'pkg'
+    root, pkg = fake_bundle, tmp_path / 'pkg'
     results, errors = [], []
 
     def job():
@@ -52,13 +47,13 @@ def test_lock_is_created_once_by_concurrent_jobs(tmp_path):
     assert sorted(p.name for p in pkg.iterdir()) == ['COMMIT']          # no temporary files left
 
 
-def test_lock_is_created_once_by_concurrent_processes(tmp_path):
+def test_lock_is_created_once_by_concurrent_processes(tmp_path, fake_bundle):
     """The cluster case: separate job processes checking one package root at
     once all succeed with the same record, and leave only COMMIT behind."""
     import subprocess
     import sys
     from lilq.source_lock import REPO_ROOT
-    root, pkg = _bundle(tmp_path), tmp_path / 'pkg'
+    root, pkg = fake_bundle, tmp_path / 'pkg'
     code = (f"import sys, json; sys.path.insert(0, {str(REPO_ROOT)!r}); from lilq.source_lock import check_lock; "
             f"print(json.dumps(check_lock({str(pkg)!r}, {str(root)!r}), sort_keys=True))")
     procs = [subprocess.Popen([sys.executable, '-c', code], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -140,3 +135,15 @@ def test_pinned_beltrami_skips_a_completed_run(tmp_path):
     import experiments.run_beltrami_pinned as rbp
     (tmp_path / 'report.json').write_text('{"done": true}')
     assert rbp.run_beltrami_pinned(verbose=False, out_dir=tmp_path) == {'done': True}
+
+
+def test_no_test_file_imports_another():
+    """Test files share helpers through conftest.py fixtures, never by
+    importing each other: ``from tests.x import ...`` depends on how the
+    interpreter resolves the name ``tests``, and on Grace it did not resolve
+    to this folder (the wave-1 preflight failed on it)."""
+    import re
+    from pathlib import Path
+    offenders = [p.name for p in Path(__file__).parent.glob('test_*.py')
+                 if re.search(r'^\s*(from|import)\s+tests[.\s]', p.read_text(encoding='utf-8'), re.M)]
+    assert offenders == []

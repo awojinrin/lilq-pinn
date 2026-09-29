@@ -71,18 +71,8 @@ def test_tree_hash_ignores_line_endings(tmp_path):
     assert tree_hash(tmp_path / 'c', ['b.py']) == tree_hash(tmp_path, ['b.py'])
 
 
-def _fake_bundle(tmp_path, files=('lilq/source_lock.py', 'scripts/cluster/env.sh')):
-    root = tmp_path / 'bundle'
-    for rel in files:
-        (root / rel).parent.mkdir(parents=True, exist_ok=True)
-        (root / rel).write_bytes(normalized_bytes(REPO_ROOT / rel))
-    record = {'commit': 'abc123', 'dirty': False, 'files': list(files), 'tree_hash': tree_hash(root, list(files))}
-    (root / 'PROVENANCE.json').write_text(json.dumps(record))
-    return root
-
-
-def test_lock_is_created_then_enforced(tmp_path):
-    root = _fake_bundle(tmp_path)
+def test_lock_is_created_then_enforced(tmp_path, fake_bundle):
+    root = fake_bundle
     pkg = tmp_path / 'pkg'
     first = check_lock(pkg, root)
     assert first['commit'] == 'abc123' and (pkg / 'COMMIT').exists()
@@ -93,8 +83,8 @@ def test_lock_is_created_then_enforced(tmp_path):
         check_lock(pkg, root)
 
 
-def test_lock_refuses_a_different_version(tmp_path):
-    root = _fake_bundle(tmp_path)
+def test_lock_refuses_a_different_version(tmp_path, fake_bundle):
+    root = fake_bundle
     pkg = tmp_path / 'pkg'
     check_lock(pkg, root)
     record = json.loads((root / 'PROVENANCE.json').read_text())
@@ -104,12 +94,12 @@ def test_lock_refuses_a_different_version(tmp_path):
         check_lock(pkg, root)
 
 
-def test_lock_refuses_unknown_or_dirty_provenance(tmp_path):
+def test_lock_refuses_unknown_or_dirty_provenance(tmp_path, fake_bundle):
     empty = tmp_path / 'nothing'
     empty.mkdir()
     with pytest.raises(RuntimeError, match='unknown'):
         check_lock(tmp_path / 'pkg', empty)
-    root = _fake_bundle(tmp_path)
+    root = fake_bundle
     record = json.loads((root / 'PROVENANCE.json').read_text())
     record['dirty'] = True
     (root / 'PROVENANCE.json').write_text(json.dumps(record))
