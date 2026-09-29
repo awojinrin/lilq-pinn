@@ -74,7 +74,11 @@ def test_short_run_logs_both_phases_and_is_deterministic(tmp_path):
             for name in ("a", "b")]
     rows = _read(tmp_path / "a" / "log.csv")
     assert tuple(rows[0]) == f1.LOG_COLUMNS
-    assert [r["phase"] for r in rows] == ["adam", "adam", "lbfgs"]
+    phases = [r["phase"] for r in rows]
+    assert phases[:2] == ["adam", "adam"] and set(phases[2:]) == {"lbfgs"}
+    # One L-BFGS row every 10 iterations inside a call (Addendum v2.2 2.5).
+    iters = [int(r["iter"]) for r in rows[2:]]
+    assert len(iters) > 1 and all(b - a == f1.LBFGS_LOG_EVERY for a, b in zip(iters, iters[1:-1]))
     assert rows[0]["eps_u"] != "" and rows[0]["loss_bc"] == ""
     assert [r["loss_total"] for r in rows] == [r["loss_total"] for r in _read(tmp_path / "b" / "log.csv")]
     run = json.loads((tmp_path / "a" / "run.json").read_text())
@@ -101,3 +105,68 @@ def test_budget_holds_inside_an_lbfgs_call(tmp_path):
     assert run["end_reason"] == "budget" and rows[-1]["phase"] == "lbfgs"
     assert run["wall_s"] < 3.0 + 1.0
     assert run["final_loss"] <= float(rows[-1]["loss_total"]) + 1e-15
+
+
+# ── Addendum v2.2 Section 2.5 ────────────────────────────────────────────────
+
+def test_logging_every_10_iterations_leaves_the_trajectory_unchanged(tmp_path, monkeypatch):
+    """A call run in 10-iteration pieces (state carried over, each point
+    evaluated once) ends at the same parameters, bit for bit, as one piece."""
+    cfg = dict(TINY, n_int=128)
+    states = {}
+    for piece in (500, f1.LBFGS_LOG_EVERY):
+        monkeypatch.setattr(f1, "LBFGS_LOG_EVERY", piece)
+        run = f1.f1_train(cfg, 0, 600, tmp_path / str(piece), max_adam_iters=50, max_lbfgs_calls=1,
+                          test_every=10 ** 6)
+        states[piece] = (torch.load(tmp_path / str(piece) / "model.pt"), run)
+    (a, run_a), (b, run_b) = states[500], states[f1.LBFGS_LOG_EVERY]
+    assert run_a["lbfgs_iters"] == run_b["lbfgs_iters"] > 0
+    assert all(torch.equal(a[k], b[k]) for k in a)
+    assert run_a["lbfgs_evaluations"] == run_b["lbfgs_evaluations"]
+
+
+def test_interrupted_call_logs_its_best_point_inside_the_budget(tmp_path):
+    cfg = dict(TINY, n_int=4096, width=64)
+    run = f1.f1_train(cfg, 0, 3.0, tmp_path, max_adam_iters=20, test_every=10 ** 6)
+    rows = _read(tmp_path / "log.csv")
+    assert run["end_reason"] == "budget" and rows[-1]["phase"] == "lbfgs"
+    assert float(rows[-1]["t_cum_s"]) <= 3.0                 # logged when evaluated, not after the budget
+    assert float(rows[-1]["eps_u"]) == pytest.approx(run["eps_u"], rel=1e-12)   # the restored point
+
+
+def test_no_progress_restarts_once_then_ends(tmp_path, monkeypatch):
+    """A loss with zero gradient: L-BFGS can never lower it. The second call
+    makes no progress, a fresh optimizer is tried once, and the run ends."""
+    real = f1.loss_terms
+    monkeypatch.setattr(f1, "loss_terms", lambda m, a, b: {k: 0.0 * v + 1.0 for k, v in real(m, a, b).items()})
+    run = f1.f1_train(TINY, 0, 60, tmp_path, max_adam_iters=5, test_every=10 ** 6)
+    assert run["end_reason"].startswith("criterion") and run["lbfgs_restarts"] == 1
+    assert run["lbfgs_calls"] == 3
+
+
+def test_lbfgs_tolerances_are_off():
+    opt = f1.new_lbfgs([torch.nn.Parameter(torch.zeros(2))])
+    group = opt.param_groups[0]
+    assert group["tolerance_grad"] == 0.0 and group["tolerance_change"] == 0.0
+
+
+def test_unweighted_final_loss_is_stored(tmp_path):
+    cfg = dict(TINY, bc="soft", lambda_bc=10.0)
+    run = f1.f1_train(cfg, 0, 60, tmp_path, max_adam_iters=20, max_lbfgs_calls=1, test_every=10 ** 6)
+    model = f1.F1Model(8, 2, 8, 1.0, "shared", "soft")
+    del model
+    terms = run["final_loss"] - run["final_loss_unweighted"]      # weights 1, 1, 1, 10 without balancing
+    assert run["final_loss_unweighted"] > 0 and terms > 0
+    rows = _read(tmp_path / "log.csv")
+    last = {k: float(rows[-1][f"loss_{k}"]) for k in ("xmom", "ymom", "cont", "bc")}
+    assert terms == pytest.approx(9 * last["bc"], rel=1e-9)
+    assert run["final_loss_unweighted"] == pytest.approx(sum(last.values()), rel=1e-9)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="needs a GPU")
+def test_peak_memory_is_per_run(tmp_path):
+    big = torch.empty(64 * 2 ** 20, device="cuda")          # 256 MB before the run
+    del big
+    run = f1.f1_train(TINY, 0, 60, tmp_path, device="cuda", max_adam_iters=5, max_lbfgs_calls=1,
+                      test_every=10 ** 6)
+    assert run["peak_gpu_bytes"] < 200 * 2 ** 20

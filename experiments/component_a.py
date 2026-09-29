@@ -7,7 +7,7 @@ each run appended to ``tuning_log.md`` in the order tried::
 
     search          save the 24 + 24 configurations (generator seed 12345)
     screen          every configuration of a family, seed 0, 10-minute budget
-    select          rank the screening runs by final training loss; keep the top 3
+    select          rank the screening runs by final training loss (F1: unweighted); keep the top 3
     full            the top 3 x seeds 0-4, 60-minute budget; then the
                     representative (lowest median training loss) and the best
                     test errors among the 15 runs
@@ -73,7 +73,12 @@ package is open are recorded in the repository's DECISIONS.md (2026-09-24,
 "Component A, F1 ..." and "Component A, F2 ..."): the gradient-norm balancing
 form, the learning-rate schedule's reference point, no pressure pin in F1,
 the L-BFGS stopping criterion, test errors off the clock for both families,
-the check-A1 configuration, and the hard/soft draw.
+the check-A1 configuration, and the hard/soft draw. Changed by Addendum v2.2
+Section 2.5 (DECISIONS.md, 2026-09-29): F1's L-BFGS runs with its
+tolerances at 0; a call that does not lower the loss is followed by one call
+with a fresh optimizer, and the run ends only if that call does not lower it
+either (our reading of v2.0 Section 4.3's "the family's own criterion");
+F1 configurations are ranked and selected on the unweighted final loss.
 
 ## Runs
 
@@ -125,13 +130,17 @@ def run_one(root, stage, family, config, seed, budget_s, out_dir, device, precis
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
     fmt = lambda v: f'{v:.3e}' if isinstance(v, (int, float)) else str(v)  # noqa: E731
     _log(root, f"- {stamp} | {stage} | {family} {config['id']} seed {seed} | {device}, {precision}, "
-               f"budget {budget_s:.0f} s | end: {run.get('end_reason')} | final loss {fmt(run.get('final_loss'))}"
+               f"budget {budget_s:.0f} s | end: {run.get('end_reason')} | final loss {fmt(run.get('final_loss'))} (unweighted {fmt(run.get('final_loss_unweighted'))})"
                f" | eps_u {fmt(run.get('eps_u'))}")
     return run
 
 
 def _final_loss(run):
-    v = run.get('final_loss')
+    """The selection loss (Addendum v2.2 Section 2.5): F1's unweighted final
+    loss (``final_loss_unweighted``: its balanced or lambda_bc-weighted loss
+    is not comparable across configurations); F2's final loss, whose row
+    weights are the same for every configuration."""
+    v = run.get('final_loss_unweighted', run.get('final_loss'))
     return v if isinstance(v, (int, float)) else float('inf')
 
 
@@ -150,7 +159,8 @@ def select(root, family):
             raise FileNotFoundError(f"screening run missing: {path}")
         runs.append((c['id'], _final_loss(json.loads(path.read_text()))))
     ranking = sorted(runs, key=lambda r: r[1])
-    selection = {'ranking': [{'id': i, 'final_loss': l} for i, l in ranking],
+    selection = {'selection_loss': 'final_loss_unweighted' if family == 'F1' else 'final_loss',
+                 'ranking': [{'id': i, 'loss': l} for i, l in ranking],
                  'top': [i for i, _ in ranking[:TOP_K]]}
     (Path(root) / 'screening' / f'{family}_selection.json').write_text(json.dumps(selection, indent=2))
     return selection

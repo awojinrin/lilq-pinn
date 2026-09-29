@@ -37,7 +37,7 @@ def test_every_stage_end_to_end(root, monkeypatch):
         runs = ca.screen(root, fam, "cpu", budget_s=2)
         assert len(runs) == 2 and all("final_loss" in r for r in runs.values())
         sel = ca.select(root, fam)
-        assert len(sel["top"]) == 2 and sel["ranking"][0]["final_loss"] <= sel["ranking"][1]["final_loss"]
+        assert len(sel["top"]) == 2 and sel["ranking"][0]["loss"] <= sel["ranking"][1]["loss"]
         summary = ca.full(root, fam, "cpu", budget_s=2, seeds=(0, 1))
         assert summary["representative"] in sel["top"]
         assert set(summary["best_test_errors_over_all_full_runs"]) == {"eps_u", "eps_v", "eps_p", "eps_p_meanfree"}

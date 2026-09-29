@@ -19,7 +19,8 @@ Gaussian, standard deviation sigma_FF, m features; m = 0 turns it off):
   weights are frozen during L-BFGS;
 * Adam with a 1,000-iteration linear warm-up to eta and decay x0.9 every
   2,000 iterations, for T_Adam iterations; then L-BFGS (strong Wolfe,
-  history 50, max_iter 500 per call) until the budget;
+  history 50, calls of up to 500 iterations and 625 evaluations, PyTorch's
+  convergence tolerances off) until the budget;
 * optional resampling of the interior points every 1,000 Adam iterations.
 
 No pressure condition: the pressure is determined up to a constant, and
@@ -27,11 +28,25 @@ baselines are compared with the mean-free pressure error (Section 2).
 The exact solution is used only for boundary data and test errors.
 
 The budget is wall-clock from the first optimizer step, enforced inside an
-L-BFGS call as well (a call interrupted by the budget keeps the lowest-loss
-point it evaluated); a run ends on the budget, on L-BFGS making no progress
-(``criterion``), or on a non-finite loss (``failure``). Test errors are computed off the clock. Logs follow
-the Section 6 baseline ``log.csv`` format; ``run.json`` holds the
-configuration, seed, n_theta, peak GPU memory and end reason.
+L-BFGS call as well: a call interrupted by the budget keeps the lowest-loss
+point it evaluated, logged at the time it was evaluated (Addendum v2.2
+Section 2.5). A run ends on the budget, on a non-finite loss (``failure``),
+or on the family's criterion: an L-BFGS call that does not lower the loss
+is followed by one call with a fresh optimizer, and the run ends only if
+that one does not lower it either. ``tolerance_grad`` and
+``tolerance_change`` are 0: PyTorch's defaults are absolute, and loss
+scales differ about 100-fold across configurations.
+
+Each call runs in pieces of 10 iterations with the optimizer state carried
+over, so ``log.csv`` has a row every 10 L-BFGS iterations (v2.0 Section
+4.4); every point is evaluated once (``lilq.solvers.LBFGSObjective``), so the
+piece boundaries cost nothing and change nothing. Test errors are computed
+off the clock. Logs follow the Section 6 baseline ``log.csv`` format;
+``run.json`` holds the configuration, seed, n_theta, peak GPU memory, end
+reason, and ``final_loss_unweighted`` -- momentum and continuity mean
+squares plus the soft boundary mean square with weight 1 -- on which
+Component A ranks and selects (Section 2.5: the weighted loss is not
+comparable across configurations).
 
 ``precision='adam32'`` runs Adam in float32 and L-BFGS in float64 (the
 Section 4.5 sensitivity run); the default is float64 throughout.
@@ -48,6 +63,7 @@ import numpy as np
 import torch
 
 from baselines.lm_kovasznay import NU, X0, X1, Y0, Y1, coons, ell, exact, g_u, g_v
+from lilq.solvers import LBFGSObjective
 
 LOG_COLUMNS = ("iter", "phase", "t_cum_s", "loss_total", "loss_xmom", "loss_ymom", "loss_cont",
                "loss_bc", "w_xmom", "w_ymom", "w_cont", "w_bc", "lr_or_mu", "grad_norm",
@@ -60,6 +76,23 @@ BALANCE_EVERY, BALANCE_ALPHA = 100, 0.9
 RESAMPLE_EVERY = 1000
 LOG_EVERY = 100
 N_BC_PER_FACE = 400
+LBFGS_CALL_ITERS, LBFGS_CALL_EVALS = 500, 625    # one call: PyTorch's max_iter=500 and its default max_eval
+LBFGS_LOG_EVERY = 10                             # a log.csv row every 10 L-BFGS iterations
+
+
+def unweighted_loss(terms):
+    """Momentum and continuity mean squares, plus the soft boundary mean
+    square with weight 1: comparable across configurations, unlike the
+    balanced or lambda_bc-weighted training loss."""
+    return float(sum(float(v.detach()) if torch.is_tensor(v) else float(v) for v in terms.values()))
+
+
+def new_lbfgs(params):
+    """L-BFGS for one piece of a call: tolerances off, so only the budget,
+    the iteration and evaluation limits and the family's criterion stop it."""
+    return torch.optim.LBFGS(params, lr=1.0, max_iter=LBFGS_LOG_EVERY, max_eval=LBFGS_CALL_EVALS,
+                             tolerance_grad=0.0, tolerance_change=0.0, history_size=50,
+                             line_search_fn="strong_wolfe")
 
 
 def adam_lr(it, eta):
@@ -204,6 +237,8 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
     if xy_bc is not None:
         weights["bc"] = float(config["lambda_bc"])
 
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
     run = dict(config=config, seed=seed, device=str(device), precision=precision, n_theta=n_theta,
                budget_s=budget_s, torch=torch.__version__, threads=torch.get_num_threads())
     log_f = open(os.path.join(out_dir, "log.csv"), "w", newline="")
@@ -215,16 +250,19 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
     def elapsed():
         return time.perf_counter() - clock["start"] - clock["excluded"]
 
-    def write_row(it, phase, terms, lr, grad_norm):
+    def write_row(it, phase, terms, lr, grad_norm, t=None, force_eps=False):
+        """``t``: the time to log (default now); ``force_eps``: test errors
+        whatever ``test_every`` says (the last row of a run)."""
+        t = elapsed() if t is None else t
         eps = [""] * 4
-        if n_logged[0] % test_every == 0:
+        if force_eps or n_logged[0] % test_every == 0:
             t0 = time.perf_counter()
             eps = list(test_errors(model, device, dtype))
             clock["excluded"] += time.perf_counter() - t0
         n_logged[0] += 1
-        vals = {k: float(v.detach()) for k, v in terms.items()}
+        vals = {k: float(v.detach()) if torch.is_tensor(v) else float(v) for k, v in terms.items()}
         total = sum(weights[k] * vals[k] for k in vals)
-        log.writerow([it, phase, f"{elapsed():.3f}", repr(total)]
+        log.writerow([it, phase, f"{t:.3f}", repr(total)]
                      + [repr(vals[k]) if k in vals else "" for k in TERMS]
                      + [repr(weights[k]) if k in weights else "" for k in TERMS]
                      + [repr(lr), repr(grad_norm), *eps])
@@ -234,7 +272,8 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
     def weighted(terms):
         return sum(weights[k] * terms[k] for k in terms)
 
-    end_reason, it, adam_iters, lbfgs_calls = "budget", 0, 0, 0
+    end_reason, it, adam_iters, lbfgs_calls, lbfgs_iters, lbfgs_restarts = "budget", 0, 0, 0, 0, 0
+    objective = None
     params = list(model.parameters())
     try:
         adam = torch.optim.Adam(params, lr=adam_lr(0, config["eta"]))
@@ -271,53 +310,84 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
                 params = list(model.parameters())
                 xy_int = xy_int.to(dtype)
                 xy_bc = xy_bc.to(dtype) if xy_bc is not None else None
-            lbfgs = torch.optim.LBFGS(params, lr=1.0, max_iter=500, history_size=50,
-                                      line_search_fn="strong_wolfe")
-            last = None
-            best = {"loss": math.inf, "params": None}
+
+            def evaluate():
+                terms = loss_terms(model, xy_int, xy_bc)
+                return weighted(terms), {k: float(v.detach()) for k, v in terms.items()}
+
+            objective = LBFGSObjective(params, evaluate)
+            best = {"loss": math.inf, "params": None, "t": None}
 
             def closure():
                 # The budget holds inside a call too (a call can run 500
                 # iterations): past it, stop at the next evaluation.
                 if elapsed() >= budget_s:
                     raise _BudgetReached
-                lbfgs.zero_grad()
-                loss = weighted(loss_terms(model, xy_int, xy_bc))
-                loss.backward()
-                value = float(loss.detach())
+                loss = objective.closure()
+                t = elapsed()
+                if t > budget_s:        # finished past the budget: not a point reached within it
+                    raise _BudgetReached
+                value = float(loss)
                 if value < best["loss"]:
-                    best["loss"], best["params"] = value, [q.detach().clone() for q in params]
+                    best.update(loss=value, params=[q.detach().clone() for q in params], t=t)
                 return loss
 
+            def log_current(t=None, force_eps=False):
+                """A log row at the current point; its loss, terms and gradient
+                come from the evaluation L-BFGS already made there."""
+                value = float(objective.closure())
+                parts = objective.value()[1]
+                gn = torch.linalg.norm(torch.cat([q.grad.reshape(-1) for q in params])).item()
+                write_row(adam_iters + lbfgs_iters, "lbfgs", parts, 1.0, gn, t=t, force_eps=force_eps)
+                return value
+
+            lbfgs, last, restarted = new_lbfgs(params), None, False
             while elapsed() < budget_s and (max_lbfgs_calls is None or lbfgs_calls < max_lbfgs_calls):
-                budget_hit = False
-                try:
-                    lbfgs.step(closure)
-                except _BudgetReached:
-                    # Interrupted mid-call, the parameters may sit at a line-search
-                    # trial point: keep the lowest-loss point L-BFGS evaluated
-                    # (none yet: the call never evaluated, parameters untouched).
-                    budget_hit = True
-                    if best["params"] is not None:
-                        with torch.no_grad():
-                            for q, b in zip(params, best["params"]):
-                                q.copy_(b)
+                # One call: up to 500 iterations and 625 evaluations, in pieces of 10.
+                call_iters, call_evals0, budget_hit = 0, objective.n_evals, False
+                while call_iters < LBFGS_CALL_ITERS:
+                    remaining = LBFGS_CALL_EVALS - (objective.n_evals - call_evals0)
+                    if remaining < 1:
+                        break
+                    lbfgs.param_groups[0]["max_eval"] = remaining
+                    lbfgs.param_groups[0]["max_iter"] = min(LBFGS_LOG_EVERY, LBFGS_CALL_ITERS - call_iters)
+                    n0 = lbfgs.state[params[0]].get("n_iter", 0)
+                    try:
+                        lbfgs.step(closure)
+                    except _BudgetReached:
+                        # Interrupted mid-call, the parameters may sit at a line-search
+                        # trial point: keep the lowest-loss point L-BFGS evaluated
+                        # (none yet: the call never evaluated, parameters untouched),
+                        # logged at the time it was evaluated, inside the budget.
+                        budget_hit = True
+                        if best["params"] is not None:
+                            with torch.no_grad():
+                                for q, bp in zip(params, best["params"]):
+                                    q.copy_(bp)
+                    done = lbfgs.state[params[0]].get("n_iter", 0) - n0
+                    call_iters += done
+                    lbfgs_iters += done
+                    if budget_hit:
+                        total_now = log_current(t=best["t"], force_eps=True)
+                        break
+                    total_now = log_current()
+                    if not math.isfinite(total_now) or done < lbfgs.param_groups[0]["max_iter"]:
+                        break                     # non-finite, or L-BFGS stopped inside the piece
                 lbfgs_calls += 1
-                it = adam_iters + lbfgs.state[params[0]].get("n_iter", 0)   # cumulative over calls
-                terms = loss_terms(model, xy_int, xy_bc)
-                total = weighted(terms)
-                total_now = float(total.detach())
-                gn = torch.linalg.norm(torch.cat([g.reshape(-1) for g in torch.autograd.grad(total, params)])).item()
-                write_row(it, "lbfgs", terms, 1.0, gn)
+                it = adam_iters + lbfgs_iters
                 if not math.isfinite(total_now):
                     end_reason = "failure: non-finite loss"
                     break
                 if budget_hit:
                     break
                 if last is not None and total_now >= last:
-                    end_reason = "criterion: L-BFGS made no progress"
-                    break
-                last = total_now
+                    if restarted:
+                        end_reason = "criterion: L-BFGS made no progress, also after a restart"
+                        break
+                    lbfgs, restarted = new_lbfgs(params), True     # one retry with a fresh optimizer
+                    lbfgs_restarts += 1
+                    continue
+                last, restarted = total_now, False
     except Exception:
         end_reason = "failure"
         run["traceback"] = traceback.format_exc()
@@ -327,12 +397,16 @@ def f1_train(config, seed, budget_s, out_dir, device="cpu", precision="float64",
     wall = elapsed() if clock["start"] else 0.0
     try:
         eu, ev, ep, epm = test_errors(model, device, dtype)
-        final_loss = float(weighted(loss_terms(model, xy_int, xy_bc)).detach())
+        final_terms = loss_terms(model, xy_int, xy_bc)
+        final_loss = float(weighted(final_terms).detach())
+        final_unweighted = unweighted_loss(final_terms)
     except Exception:
-        eu = ev = ep = epm = final_loss = None
+        eu = ev = ep = epm = final_loss = final_unweighted = None
     run.update(end_reason=end_reason, iterations=it, adam_iters=adam_iters, lbfgs_calls=lbfgs_calls,
+               lbfgs_iters=lbfgs_iters, lbfgs_restarts=lbfgs_restarts,
+               lbfgs_evaluations=objective.n_evals if objective is not None else 0,
                wall_s=wall, eps_u=eu, eps_v=ev, eps_p=ep, eps_p_meanfree=epm, final_loss=final_loss,
-               weights=weights,
+               final_loss_unweighted=final_unweighted, weights=weights,
                peak_gpu_bytes=torch.cuda.max_memory_allocated() if device.type == "cuda" else None)
     # The model before run.json: run.json marks the run complete, so a run
     # marked complete always has its model (lilq.saved_models.load_f1).

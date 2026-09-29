@@ -356,6 +356,8 @@ def test_errors(model, res, theta, device, nx=301, ny=401, chunk=20000):
 def lm_train(args):
     torch.set_default_dtype(torch.float64)
     device = torch.device(args.device)
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)     # peak memory of this run only (Addendum v2.2 2.5)
     torch.manual_seed(args.seed); np.random.seed(args.seed)
 
     model = FourierMLP(args.width, args.depth, args.m, args.sigma_ff, args.seed).to(device)

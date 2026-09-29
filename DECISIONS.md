@@ -17,6 +17,43 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Component A, F1: unweighted selection, best point in budget, criterion, logging, peak memory (Addendum v2.2 Section 2.5)
+
+1. **Selection on an unweighted loss.** `run.json` gains
+   `final_loss_unweighted`: the x-momentum, y-momentum and continuity mean
+   squares, plus the soft boundary mean square with weight 1. `component_a.py`
+   ranks the screening runs and picks the representative on it for F1 (the
+   balanced weights are each at least 1 and soft runs carry up to 100x the
+   boundary term, so the weighted loss is not comparable across
+   configurations); F2 keeps its final loss, whose weights are the same for
+   every configuration. `<family>_selection.json` names the loss used.
+2. **An interrupted call's best point is logged inside the budget.** The
+   restored lowest-loss point is logged at the time its evaluation
+   finished (`best["t"]`), with test errors, not after the budget, so it
+   counts in "best within budget" and time-to-accuracy. An evaluation that
+   finishes past the budget does not count as reached.
+3. **Criterion.** L-BFGS runs with `tolerance_grad = tolerance_change = 0`
+   (PyTorch's defaults are absolute and ended runs early, with budget left,
+   at configuration-dependent accuracy). A call that does not lower the
+   loss is followed by one call with a fresh optimizer; the run ends only
+   if that call does not lower it either. A later call that makes progress
+   re-arms the retry. `run.json`: `lbfgs_restarts`. This is our reading of
+   v2.0 Section 4.3's "the family's own criterion", with the advisor's
+   agreement.
+4. **Logging inside calls.** A call (up to 500 iterations and 625
+   evaluations, PyTorch's `max_iter` and default `max_eval`) now runs in
+   pieces of 10 iterations with the optimizer state carried over, and
+   `log.csv` gets a row after each piece (v2.0 Section 4.4). Every point is
+   evaluated once (`LBFGSObjective`), so the piece boundaries add no
+   evaluations and the rows' loss, terms and gradient norm come from
+   evaluations L-BFGS already made; a test checks that a call run in pieces
+   ends at bitwise the same parameters, with the same evaluation count, as
+   one piece. `run.json`: `lbfgs_iters`, `lbfgs_evaluations`.
+5. **Peak memory.** `torch.cuda.reset_peak_memory_stats()` at the start of
+   every F1 and F2 run, so `peak_gpu_bytes` is that run's own.
+
+---
+
 ## 2026-09-29 -- PyTorch 2.10.0 on the cluster, enforced (Addendum v2.2 Section 2.4)
 
 Grace's newest module is `PyTorch/2.9.1-CUDA-12.6.0`. Its L-BFGS calls the
