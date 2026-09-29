@@ -1,13 +1,15 @@
 # Wave 1 results (Computational Package 1, Addendum v2.2 Section 4.2)
 
 These are the results of wave 1, run on TAMU Grace on 2026-09-29 at commit
-`8a3f5f7`: the parent of this branch's only commit, and the head of `v3-dev`.
-`COMMIT` records the commit and the source-tree hash that every job checked
-before running. The code is this branch's code outside `results/`.
+`8a3f5f7`, the code this branch starts from. Its commits add only
+`results/`. `COMMIT` records the commit and the source-tree hash that every
+job checked before running.
 
-The folder holds every file the wave wrote except the binary files: trained
-models (`*.pt`, 301 files) and collocation point sets (`*.npz`, 196 files).
-Those are kept on Grace and offline and are available on request. The folder
+The folder holds every file the wave wrote except the trained models
+(`*.pt`, 301 files), which are kept on Grace and offline and are available
+on request. The 196 Component C collocation point sets
+(`C_oversampling/runs/*/collocation.npz`) were added in a second commit, at
+the advisor's request (reply of 29 Sept, item 2.6). The folder
 contains all 458 files of `wave1_report.tar.gz`, byte for byte, plus each
 run's own logs (`iterations.csv`, `run.json`, `summary.json`,
 `environment.txt`).
