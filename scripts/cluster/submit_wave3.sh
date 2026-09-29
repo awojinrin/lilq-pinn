@@ -1,5 +1,6 @@
 #!/bin/bash
-# Wave 3 of 3 (Addendum v2.2 Section 4.2): B8 and B9, requested ~7,700 SU,
+# Wave 3 of 3 (Addendum v2.2 Section 4.2): B8 and B9, requested ~4,800 SU
+# (the advisor estimated ~7,700 with the larger B9 network),
 # once wave 2's charges have posted. Into results/wave3:
 #   [00 preflight, only if the code differs from wave 1's]
 #   40 B9 NiL Darcy (12 tasks), 41 B8 (4 tasks)
@@ -8,7 +9,7 @@
 LILQ_WAVE=3
 source "$(dirname "$0")/submit_lib.sh"
 now=$(code_commit); w1=$(wave_commit 1)
-confirm_balance "~7,700 SU (advisor's estimate)"
+confirm_balance "~4,800 SU (from the walltimes)"
 
 deps=()
 if [[ "$now" != "$w1" ]]; then

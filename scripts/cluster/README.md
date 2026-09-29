@@ -61,7 +61,7 @@ one GPU or both (120 or 192 SU/h), which changes every estimate below.
 |---|---|---|---|
 | 1 | preflight; A1 gate; 10a, 10b; Component C; B6; B4 for Bratu (20, 21 `--array=0`) | ~2,000 SU | send `results/wave1_report.tar.gz` and the SUs charged per job; wait for the advisor's reply |
 | 2 | Component A (30 -> 31 -> 32, 33); B4 for the other three benchmarks (20, 21 `--array=1-3`) | ~10,000 SU | `results/wave2_report.tar.gz`; submit wave 3 once wave 2's charges have posted |
-| 3 | B9 (40); B8 (41); finalize | ~7,700 SU | `results/package1` (package1_results/), `results/wave3_report.tar.gz` |
+| 3 | B9 (40); B8 (41); finalize | ~4,800 SU (from the walltimes; the advisor estimated ~7,700 with the larger B9 network) | `results/package1` (package1_results/), `results/wave3_report.tar.gz` |
 
 **One results folder per wave.** Wave N writes `results/wave<N>` only, and
 the first job of a wave locks that folder to the code's commit and
@@ -105,7 +105,7 @@ copying them off the cluster: the models are what later figures are made from.
 | `31_A_full` | selection, top 3 x 5 seeds x 60 min per family, representative | timed x 2 | 18 h each |
 | `32_A_cpu` | each representative on the CPU, 5 seeds x 60 min | timed-cpu x 2 | 7 h each |
 | `33_A_float32` | F1 float32-Adam run | timed | 2 h |
-| `40_b9_nil_darcy` | B9: NiL Darcy in float64, 4 fields x 3 seeds (LiL alongside) | shared-gpu x 12 | 6 h each |
+| `40_b9_nil_darcy` | B9: NiL Darcy, the manuscript's network (3,555 parameters), float64 and float32, 4 fields x 3 seeds (LiL alongside) | shared-gpu x 12 | 3 h each |
 | `41_b8_initial_guess` | B8: 128 runs, one task per (case, guess); networks on the A100 | shared-gpu x 4 | 6 h each |
 | `42_component_c` | Component C: 196 LiL-Q runs | cpu | 6 h |
 | `43_basis_study` | B6: the Burgers basis study | cpu | 3 h |

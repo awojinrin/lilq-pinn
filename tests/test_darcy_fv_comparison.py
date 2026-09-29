@@ -48,3 +48,22 @@ def test_darcy_pinn_is_float64_by_default_and_seeded(s1):
                        dtype=torch.float32, seed=3)
     assert all(p.dtype == torch.float32 for p in single.net_P.parameters())
     assert single.predict(np.array([[10.0]]), np.array([[20.0]]))['P'].dtype == np.float32
+
+
+def test_nil_network_is_the_manuscripts(s1):
+    """Table 13: three networks of 2 hidden layers x 32 neurons, 3,555
+    parameters in total (the repository had 8 x 200, ~847,000)."""
+    physics, _ = s1
+    pinn = DarcyPINN(physics.config, physics, device='cpu', seed=0)
+    assert sum(p.numel() for net in (pinn.net_P, pinn.net_U, pinn.net_V) for p in net.parameters()) == 3555
+
+
+def test_b9_trains_nil_in_both_precisions(tmp_path):
+    """Addendum v2.2's 20% rule needs a float32 delta_FV beside the float64
+    one: B9 trains each NiL seed in both, from the same code."""
+    import experiments.darcy_fv_comparison as b9
+    rows = b9.compare_field('S1', order=6, nil_seeds=(0,), nil_epochs=2, verbose=False, model_root=tmp_path)
+    assert [(r['method'], r['dtype']) for r in rows] == [('LiL', 'float64'), ('NiL', 'float64'), ('NiL', 'float32')]
+    assert all(np.isfinite(r['delta_fv']) for r in rows)
+    assert (tmp_path / 'NiL_S1_s0_float64' / 'network.pt').exists()
+    assert (tmp_path / 'NiL_S1_s0_float32' / 'network.pt').exists()

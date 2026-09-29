@@ -806,9 +806,12 @@ class DarcyPINN:
     config : DarcyConfig
     physics : DarcyPhysics
     hidden_dim : int
-        Width of hidden layers (default 200).
+        Width of hidden layers (default 32).
     num_layers : int
-        Number of hidden layers (default 8).
+        Number of hidden layers (default 2). The defaults are the
+        manuscript's network (Table 13: 3 x 1,185 = 3,555 parameters, close
+        to LiL's 3,169); the repository had 8 x 200 (~847,000), a later
+        experiment in the pre-GitHub notebook that is not in the paper.
     device : str or torch.device or None
         Compute device; auto-detected if None.
     dtype : torch.dtype
@@ -820,7 +823,7 @@ class DarcyPINN:
     """
 
     def __init__(self, config: DarcyConfig, physics: DarcyPhysics,
-                 hidden_dim: int = 200, num_layers: int = 8,
+                 hidden_dim: int = 32, num_layers: int = 2,
                  device=None, dtype=torch.float64, seed=None):
         import torch
         import torch.nn as nn
@@ -1063,8 +1066,8 @@ def load_darcy_pinn(path, config: DarcyConfig = None, physics: DarcyPhysics = No
 
 
 def run_nil_n_darcy(config: DarcyConfig, physics: DarcyPhysics,
-                    max_epochs: int = 150000, hidden_dim: int = 200,
-                    num_layers: int = 8, device=None,
+                    max_epochs: int = 150000, hidden_dim: int = 32,
+                    num_layers: int = 2, device=None,
                     verbose: bool = True, dtype=torch.float64, seed=None,
                     model_dir=None) -> Dict:
     """Convenience wrapper: create, train, and evaluate a DarcyPINN.

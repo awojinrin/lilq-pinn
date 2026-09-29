@@ -17,6 +17,44 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- B9: the manuscript's NiL network; float32 runs beside float64
+
+**The network.** The repository's NiL Darcy network (GitHub `main` and
+this branch alike) was three 8 x 200 networks, about 847,000 parameters. The
+manuscript's is not (Table 13: three networks of 2 hidden layers x 32,
+3,555 parameters, close to LiL's 3,169). The pre-GitHub notebook
+(`SPE10/PINN_3_network_for_SEP10.ipynb`) has both, and its printed outputs
+identify the paper's runs exactly: the S2, S3 and SPE10 NiL rows of Table
+14 (e.g. S2 3.43e-2 / 4.21e-2 / 8.05e-10; SPE10 24.98 / 94.69 / 2.97e-7) come
+from the 2 x 32 cells; the 8 x 200 run is a later cell, not in the paper.
+The consolidation into the repository kept the large one. `DarcyPINN` and
+`run_nil_n_darcy` now default to 2 x 32 (3,555 parameters, tested). The
+runtime confirms it: 150,000 epochs take ~19 min in float32 on the laptop
+GPU (the manuscript: ~16 min for S1), ~113 min in float64; the 8 x 200
+network took 3.2 h in float32 and ~23 h in float64.
+
+Kept from the repository's formulation (the one LiL and the FV reference
+solve, and B9 compares against): the SiLU networks with the sqrt(K)
+normalization, the loss weights 50 / 20, Adam with cosine annealing and
+gradient clipping (all as in the paper's SPE10 NiL run), and pressure
+fixed on both the top and bottom faces (as LiL and the FV reference have
+it; the paper's SPE10 NiL run differed here, below). The notebook's
+synthetic-field runs (S1-S3) used tanh networks with a sigmoid output for
+h*, unit loss weights and StepLR, and its SPE10 run a flux condition on
+the top face against a matching FV solve; those differences are reported to
+the advisor, not reproduced.
+
+**float32 beside float64.** Addendum v2.2's rule reports the float32 value
+where delta_FV differs by more than 20% from float64's, but no float32
+delta_FV existed (the manuscript reports only residual MSEs). Each B9 task
+now trains its seed in float64 (the result) and float32 (the manuscript's
+precision), from the same code: rows carry `dtype`, models are saved in
+`NiL_<field>_s<seed>_<dtype>/`. Job 40's walltime: 6 h -> 3 h per task
+(~2.2 h measured on the laptop GPU for both precisions); wave 3's request
+drops from ~7,700 to ~4,800 SU.
+
+---
+
 ## 2026-09-29 -- Audit against Addendum v2.2 before wave 1: four fixes
 
 A pass through every item of Addendum v2.2 against the code found:
@@ -35,14 +73,9 @@ A pass through every item of Addendum v2.2 against the code found:
 4. **`time.perf_counter()`** also in the example scripts and the demo
    notebook (Section 2.10.4: "everywhere a duration is measured").
 
-Raised with the advisor, not changed (both concern B9, wave 3): the
-repository's NiL Darcy network (three 8 x 200 SiLU ResNet MLPs, cosine
-annealing, about 1M parameters -- GitHub `main` and this branch alike) is
-not the manuscript's (Table 13: 2 hidden layers of 32, tanh/SiLU, sigmoid
-output for h*, Adam with StepLR, 3,555 parameters; the pre-GitHub notebook
-has both variants); and no float32 delta_FV exists for the NiL runs (the
-manuscript reports only residual MSEs), so the 20% float32/float64 rule
-has nothing to compare with unless float32 runs are made.
+The same pass found two B9 issues, resolved in the next entry above: the
+NiL Darcy network was not the manuscript's, and no float32 delta_FV existed
+for the advisor's 20% rule.
 
 ---
 

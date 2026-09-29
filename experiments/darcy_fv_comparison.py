@@ -36,6 +36,7 @@ if _proj not in sys.path:
 
 from lilq.blas_threads import pin_torch  # first: sets the BLAS threads before numpy/scipy load
 import numpy as np
+import torch
 
 from lilq.provenance import save_provenance
 from lilq.saved_models import save_solution
@@ -68,11 +69,17 @@ def _row(field, method, seed, P_h, P_fvm, p_bot, tpfa, time_s, final_loss, dtype
     }
 
 
-def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=True, model_root=None):
-    """Rows for one field: LiL, then NiL once per seed in ``nil_seeds``.
+def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=True, model_root=None,
+                  nil_dtypes=('float64', 'float32')):
+    """Rows for one field: LiL, then NiL once per seed in ``nil_seeds`` and
+    per precision in ``nil_dtypes``. The NiL network is the manuscript's
+    (Table 13: three networks of 2 hidden layers x 32, 3,555 parameters;
+    ``problems.darcy`` defaults). float64 is the result (v2.0 Section 2);
+    float32, the manuscript's precision, gives the value Addendum v2.2's 20%
+    rule compares with (report both where delta_FV differs by more than 20%).
 
     With ``model_root``, the LiL solution is saved in ``<model_root>/LiL_<field>/``
-    and each NiL run keeps ``<model_root>/NiL_<field>_s<seed>/``: a checkpoint
+    and each NiL run keeps ``<model_root>/NiL_<field>_s<seed>_<dtype>/``: a checkpoint
     every 5,000 epochs while it trains (a rerun resumes from it), then the
     trained networks (``network.pt``, ``problems.darcy.load_darcy_pinn``),
     which a rerun loads instead of training again."""
@@ -96,13 +103,15 @@ def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=T
               f"(TPFA residual {tpfa['tpfa_residual_rel']:.1e} relative)", flush=True)
 
     for seed in nil_seeds:
-        nil = run_nil_n_darcy(config, physics, max_epochs=nil_epochs, seed=seed, verbose=False,
-                              model_dir=Path(model_root) / f'NiL_{field}_s{seed}' if model_root else None)
-        rows.append(_row(field, 'NiL', seed, nil['fields']['P'], P_fvm, p_bot, tpfa,
-                         nil['training_time'], nil['final_loss'], 'float64'))
-        if verbose:
-            print(f"  {field} NiL seed {seed}: delta_FV = {rows[-1]['delta_fv']:.3e}  "
-                  f"({nil['training_time']:.0f} s)", flush=True)
+        for dtype in nil_dtypes:
+            nil = run_nil_n_darcy(config, physics, max_epochs=nil_epochs, seed=seed, verbose=False,
+                                  dtype=getattr(torch, dtype),
+                                  model_dir=Path(model_root) / f'NiL_{field}_s{seed}_{dtype}' if model_root else None)
+            rows.append(_row(field, 'NiL', seed, np.asarray(nil['fields']['P'], dtype=np.float64), P_fvm, p_bot,
+                             tpfa, nil['training_time'], nil['final_loss'], dtype))
+            if verbose:
+                print(f"  {field} NiL seed {seed} {dtype}: delta_FV = {rows[-1]['delta_fv']:.3e}  "
+                      f"({nil['training_time']:.0f} s)", flush=True)
     return rows
 
 
@@ -113,6 +122,7 @@ def main():
     parser.add_argument('--nil', action='store_true', help='Also train NiL (expensive).')
     parser.add_argument('--seeds', type=int, nargs='+', default=[0, 1, 2])
     parser.add_argument('--nil-epochs', type=int, default=150000)
+    parser.add_argument('--nil-dtypes', nargs='+', default=['float64', 'float32'], choices=['float64', 'float32'])
     parser.add_argument('--out-dir', type=str, default=str(OUTPUT_DIR))
     args = parser.parse_args()
 
@@ -125,7 +135,7 @@ def main():
             print(f"  [SKIP] perm_field_{field}.txt not found in {DATA_DIR}")
             continue
         rows += compare_field(field, args.order, args.seeds if args.nil else (), args.nil_epochs,
-                              model_root=out_dir / 'models')
+                              model_root=out_dir / 'models', nil_dtypes=args.nil_dtypes)
         with open(out_dir / 'darcy_fv_comparison.csv', 'w', newline='') as f:  # after every field
             writer = csv.DictWriter(f, fieldnames=COLUMNS)
             writer.writeheader()
