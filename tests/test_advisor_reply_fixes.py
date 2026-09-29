@@ -52,6 +52,23 @@ def test_lock_is_created_once_by_concurrent_jobs(tmp_path):
     assert sorted(p.name for p in pkg.iterdir()) == ['COMMIT']          # no temporary files left
 
 
+def test_lock_is_created_once_by_concurrent_processes(tmp_path):
+    """The cluster case: separate job processes checking one package root at
+    once all succeed with the same record, and leave only COMMIT behind."""
+    import subprocess
+    import sys
+    from lilq.source_lock import REPO_ROOT
+    root, pkg = _bundle(tmp_path), tmp_path / 'pkg'
+    code = (f"import sys, json; sys.path.insert(0, {str(REPO_ROOT)!r}); from lilq.source_lock import check_lock; "
+            f"print(json.dumps(check_lock({str(pkg)!r}, {str(root)!r}), sort_keys=True))")
+    procs = [subprocess.Popen([sys.executable, '-c', code], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+             for _ in range(8)]
+    outs = [p.communicate(timeout=120) for p in procs]
+    assert all(p.returncode == 0 for p in procs), [err for _, err in outs]
+    assert len({out.strip() for out, _ in outs}) == 1
+    assert sorted(p.name for p in pkg.iterdir()) == ['COMMIT']
+
+
 def test_lock_read_waits_for_a_half_written_file(tmp_path):
     from lilq.source_lock import _read_lock
     lock = tmp_path / 'COMMIT'

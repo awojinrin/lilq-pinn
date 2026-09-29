@@ -27,9 +27,13 @@ gate). Each has a test (`tests/test_advisor_reply_fixes.py`).
    (NaN from a diverged run, as well as None) to inf, so a failed
    configuration can never enter the top 3 or become the representative.
 2. **The lock's creation** (`source_lock.py`): each job writes its own
-   temporary file and creates `COMMIT` by a hard link, which fails if it
-   already exists, so the first job's lock is never overwritten; reading
-   retries a half-written file. (Jobs 30, 20 and 21 of wave 2 start together.)
+   temporary file (named by host, process and a random token) and creates
+   `COMMIT` by a hard link, which fails if it already exists, so the first
+   job's lock is never overwritten; reading retries a half-written file.
+   (Jobs 30, 20 and 21 of wave 2 start together.) Tested with 8 threads and
+   with 8 separate processes; the suite run from the extracted bundle caught
+   a first version whose temporary name (host and process only) collided
+   between threads of one process.
 3. **PyTorch version in every job:** `env.sh` runs `assert_torch_version`
    after the lock check (waves 2 and 3 skip the preflight on unchanged code).
 4. **B8's LiL-Q rows:** a non-finite final loss is `failure`, as 2.3's rule.

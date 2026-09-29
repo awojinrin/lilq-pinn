@@ -35,6 +35,7 @@ import platform
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -147,10 +148,10 @@ def check_lock(pkg: Path, root: Path = REPO_ROOT) -> dict:
                   "locked_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                   "locked_on_host": platform.node()}
         # Jobs of a wave can start together: each writes its own temporary
-        # file, and the lock is created by a hard link, which fails if it
+        # file (host, process and a random token: unique even across threads), and the lock is created by a hard link, which fails if it
         # already exists -- the first job's lock stands, never overwritten,
         # and never read half-written (the advisor's reply, item 2.2).
-        tmp = lock.with_name(f"{LOCK_FILE}.{platform.node()}.{os.getpid()}.tmp")
+        tmp = lock.with_name(f"{LOCK_FILE}.{platform.node()}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
         tmp.write_text(json.dumps(record, indent=2))
         try:
             os.link(tmp, lock)
