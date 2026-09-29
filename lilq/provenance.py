@@ -182,10 +182,20 @@ def capture_scheduler_info() -> dict:
 
 
 def capture_thread_info() -> dict:
-    """Threads actually in effect: PyTorch's intra- and inter-op pools
-    (BLAS's are in ``blas_thread_env``)."""
-    return {"torch_num_threads": torch.get_num_threads(),
+    """Threads actually in effect: PyTorch's intra- and inter-op pools, and
+    every native thread pool loaded in the process (BLAS, OpenMP) as
+    ``threadpoolctl`` reports it -- what the libraries use, not only what the
+    environment asked for (``blas_thread_env``; Addendum v2.2 Section 2.12)."""
+    info = {"torch_num_threads": torch.get_num_threads(),
             "torch_num_interop_threads": torch.get_num_interop_threads()}
+    try:
+        from threadpoolctl import threadpool_info
+        info["threadpools"] = [{k: pool.get(k) for k in ("user_api", "internal_api", "num_threads",
+                                                        "version", "filepath")}
+                               for pool in threadpool_info()]
+    except Exception as e:           # threadpoolctl missing or failing: say so, never crash a run
+        info["threadpools"] = f"unavailable: {type(e).__name__}"
+    return info
 
 
 def capture_gpu_info() -> dict:

@@ -173,27 +173,27 @@ def test_verify_gpu_cpu_equivalence_passes_on_real_solve():
     assert result['rlin_ok'] is True
     assert result['beta_rel_diff'] <= 1e-8
     assert result['rlin_rel_diff'] <= 5e-7
-    # Well above the round-off floor, so the amended rule is the spec's rule.
-    assert result['rlin_at_floor'] is False
+    # The spec's rule passes, so the amended rule does too.
+    assert isinstance(result['rlin_diff_within_floor'], bool)
     assert result['equivalent_amended'] is True
 
 
 @requires_cuda
-def test_equivalence_amended_rule_waives_six_figures_only_at_round_off_floor():
+def test_equivalence_amended_rule_waives_six_figures_only_within_round_off_floor():
     """The FASTER case (DECISIONS.md, 2026-09-24): at P = 1,875 both
-    residuals are ~6e-13, below kappa * eps * ||f|| ~ 9e-10, and differ in
-    the third digit -- a spec-rule failure the amended rule waives, while
-    beta still agrees far below 1e-8. At P = 1,200 (residual 4.7e-8) the
-    residual is above the floor, so the spec rule decides."""
+    residuals are ~6e-13 and differ in the third digit, but by far less than
+    the CPU run's floor kappa * eps * ||f|| ~ 9e-10 -- a spec-rule failure
+    the amended rule waives (Addendum v2.2 tightened it: the difference, not
+    each residual, is compared with the floor), while beta still agrees far
+    below 1e-8. At P = 1,200 the spec rule passes by itself."""
     from experiments.run_kovasznay import K_RATIO, MAX_ITER, TOL
     big = verify_gpu_cpu_equivalence(
         KovasznayConfig(N_x=25, N_y=25, k_ratio=K_RATIO, max_iter=MAX_ITER, tol=TOL))
-    assert big['beta_ok'] and big['rlin_at_floor']
-    assert big['rlin_cpu'] <= big['rlin_floor_cpu'] and big['rlin_gpu'] <= big['rlin_floor_gpu']
+    assert big['beta_ok'] and big['rlin_diff_within_floor']
+    assert abs(big['rlin_gpu'] - big['rlin_cpu']) <= big['rlin_floor_cpu']
     assert big['equivalent_amended'] is True
     mid = verify_gpu_cpu_equivalence(
         KovasznayConfig(N_x=20, N_y=20, k_ratio=K_RATIO, max_iter=MAX_ITER, tol=TOL))
-    assert mid['rlin_at_floor'] is False
     assert mid['equivalent_amended'] == mid['equivalent'] is True
 
 

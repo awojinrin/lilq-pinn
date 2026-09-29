@@ -24,19 +24,20 @@ Submodules:
 
 __version__ = "0.1.0"
 
-from . import basis
-from . import nn
-from . import metrics
-from . import collocation
-from . import pretraining
-from . import solvers
-from . import style
-from . import plotting
-from . import analysis
-from . import properties
-from . import utils
+# Submodules load on first use (PEP 562), not here: importing any lilq
+# module -- above all ``lilq.blas_threads``, which must set the BLAS thread
+# counts before NumPy, SciPy or PyTorch load -- must not pull those libraries
+# in first (Addendum v2.2 Section 2.12). ``lilq.basis`` and
+# ``from lilq import basis`` work as before.
+import importlib as _importlib
 
 __all__ = [
     "basis", "nn", "metrics", "collocation", "pretraining",
     "solvers", "style", "plotting", "analysis", "properties", "utils",
 ]
+
+
+def __getattr__(name):
+    if name in __all__:
+        return _importlib.import_module(f".{name}", __name__)
+    raise AttributeError(f"module 'lilq' has no attribute {name!r}")

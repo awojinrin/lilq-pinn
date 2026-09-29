@@ -371,8 +371,10 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
     check ``||beta_GPU - beta_CPU||_2 / ||beta_CPU||_2 <= 1e-8`` and that
     the final ``||R_lin||_h`` agree to six significant figures
     (``equivalent``). ``equivalent_amended`` waives the six figures when
-    both residuals are at or below Algorithm 1's round-off floor
-    ``kappa * eps_mach * ||f||_h``, where their digits are noise. Returns a
+    the two residuals differ by no more than the CPU run's round-off floor
+    ``kappa * eps_mach * ||f||_h`` (Algorithm 1), below which their digits
+    are noise (Addendum v2.2 Section 1, item 6, tightening the earlier
+    "both at or below the floor"). Returns a
     dict with both raw results and the pass/fail verdicts; does **not**
     raise on failure itself -- "if it fails, stop and report" is the
     caller's decision (the experiment-script layer), not something a
@@ -403,15 +405,15 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
     beta_ok = beta_rel_diff <= 1e-8
     rlin_ok = rlin_rel_diff <= 5e-7
 
-    # Amended rule (DECISIONS.md, 2026-09-24): a residual at or below
-    # Algorithm 1's round-off floor kappa * eps_mach * ||f||_h is rounding
-    # noise, whose digits no two machines share, so the six-figure test is
-    # waived when both runs are there. beta must still agree to 1e-8. A
-    # NaN kappa (not computed) never waives it.
+    # Amended rule (DECISIONS.md, 2026-09-24; tightened by Addendum v2.2):
+    # differences within Algorithm 1's round-off floor kappa * eps_mach *
+    # ||f||_h of the CPU run are rounding noise, so the six-figure test is
+    # waived when |R_lin^GPU - R_lin^CPU| is at most that floor. beta must
+    # still agree to 1e-8. A NaN kappa (not computed) never waives it.
     def floor(row):
         return row['kappa'] * EPS_MACH * row['norm_f_h']
-    at_floor = bool(rlin_cpu <= floor(cpu_row) and rlin_gpu <= floor(gpu_row))
-    rlin_ok_amended = rlin_ok or at_floor
+    diff_within_floor = bool(abs(rlin_gpu - rlin_cpu) <= floor(cpu_row))
+    rlin_ok_amended = rlin_ok or diff_within_floor
 
     return {
         'beta_rel_diff': beta_rel_diff, 'beta_ok': beta_ok,
@@ -419,7 +421,7 @@ def verify_gpu_cpu_equivalence(config: KovasznayConfig, verbose: bool = False) -
         'rlin_rel_diff': rlin_rel_diff, 'rlin_ok': rlin_ok,
         'equivalent': beta_ok and rlin_ok,
         'rlin_floor_cpu': floor(cpu_row), 'rlin_floor_gpu': floor(gpu_row),
-        'rlin_at_floor': at_floor, 'rlin_ok_amended': rlin_ok_amended,
+        'rlin_diff_within_floor': diff_within_floor, 'rlin_ok_amended': rlin_ok_amended,
         'equivalent_amended': beta_ok and rlin_ok_amended,
         'cpu_result': cpu_result, 'gpu_result': gpu_result,
         'cpu_logger': cpu_logger, 'gpu_logger': gpu_logger,

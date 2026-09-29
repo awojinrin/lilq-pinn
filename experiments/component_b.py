@@ -353,7 +353,7 @@ def execute_run(run: Run, root: Path, fresh=False, verbose=True) -> str:
 EQUIVALENCE_COLUMNS = (
     'P', 'N_rows', 'iterations_cpu', 'iterations_gpu',
     'beta_rel_diff', 'beta_ok', 'rlin_cpu', 'rlin_gpu', 'rlin_rel_diff', 'rlin_ok', 'equivalent',
-    'rlin_floor_cpu', 'rlin_floor_gpu', 'rlin_at_floor', 'rlin_ok_amended', 'equivalent_amended',
+    'rlin_floor_cpu', 'rlin_floor_gpu', 'rlin_diff_within_floor', 'rlin_ok_amended', 'equivalent_amended',
     't_gelsy_cpu_s', 't_gels_cpu_s', 't_qr_gpu_s', 't_h2d_gpu_s', 't_qr_solve_gpu_s', 'timing_repeats',
     'gpu_mem_estimate_bytes', 'gpu_mem_peak_bytes', 'gpu_min_diag_ratio', 'gpu_flagged_iterations',
 )
@@ -417,7 +417,7 @@ def run_gpu_equivalence(root: Path, smoke=False, repeats=3, verbose=True) -> Pat
             'iterations_gpu': eq['gpu_result']['n_outer_iters'],
             **{k: eq[k] for k in ('beta_rel_diff', 'beta_ok', 'rlin_cpu', 'rlin_gpu',
                                   'rlin_rel_diff', 'rlin_ok', 'equivalent', 'rlin_floor_cpu',
-                                  'rlin_floor_gpu', 'rlin_at_floor', 'rlin_ok_amended',
+                                  'rlin_floor_gpu', 'rlin_diff_within_floor', 'rlin_ok_amended',
                                   'equivalent_amended')},
             't_gelsy_cpu_s': _median_time(
                 lambda: scipy.linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy'), repeats),

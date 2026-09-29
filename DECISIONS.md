@@ -17,6 +17,27 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Lazy `lilq` imports; the thread pools in effect recorded (Addendum v2.2 Section 2.12)
+
+`lilq/__init__.py` imported every submodule, so `import lilq.blas_threads`
+loaded NumPy, SciPy and PyTorch before it set the BLAS thread counts;
+harmless on the cluster, where `env.sh` exports them first, but the
+record should be right. Submodules now load on first use (PEP 562);
+`lilq.basis` and `from lilq import basis` work as before (tested: importing
+`lilq.blas_threads` loads none of the three). `hardware.json`'s `threads`
+adds `threadpools`: every native pool loaded (BLAS, OpenMP) with its
+library and thread count, from `threadpoolctl`.
+
+**Check B3's amended rule, tightened** (Section 1, item 6): the six-figure
+test on ||R_lin||_h is waived when |R_lin^GPU - R_lin^CPU| is at most the
+CPU run's round-off floor kappa * eps_mach * ||f||_h
+(`rlin_diff_within_floor`), instead of when both residuals are at or below
+their floors (`rlin_at_floor`, 2026-09-24). beta must still agree to 1e-8
+at every size; both verdicts are reported. The other item of Section 2.12 (Beltrami pinned before
+check B3 in job 10) went in with Section 2.7.
+
+---
+
 ## 2026-09-29 -- Beltrami pinned: the pressure error in the pin gauge too (Addendum v2.2 Section 2.11)
 
 The snapshot and global pressure errors subtract the mean at each time

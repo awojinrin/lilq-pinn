@@ -211,3 +211,24 @@ def test_torch_version_is_enforced(monkeypatch):
         monkeypatch.setattr(torch, "__version__", bad)
         with pytest.raises(RuntimeError, match="2.10.0 is required"):
             assert_torch_version()
+
+
+def test_importing_blas_threads_loads_no_numerical_library():
+    """Addendum v2.2 Section 2.12: ``import lilq.blas_threads`` must set the
+    thread counts before NumPy, SciPy or PyTorch load, so the lilq package
+    must not import them itself."""
+    import subprocess, sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    code = ("import sys; sys.path.insert(0, %r); import lilq.blas_threads; "
+            "print(sorted(m for m in ('numpy', 'scipy', 'torch') if m in sys.modules))" % str(root))
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == "[]"
+
+
+def test_thread_info_reports_the_pools_in_effect():
+    import numpy  # noqa: F401  (loads BLAS)
+    from lilq.provenance import capture_thread_info
+    info = capture_thread_info()
+    assert isinstance(info["threadpools"], list) and info["threadpools"]
+    assert all("num_threads" in pool for pool in info["threadpools"])
