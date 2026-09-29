@@ -21,4 +21,4 @@ submit b9  $S/40_b9_nil_darcy.slurm      ${deps[@]+"${deps[@]}"}
 submit b8  $S/41_b8_initial_guess.slurm  ${deps[@]+"${deps[@]}"}
 submit rep $S/91_wave_report.slurm       --dependency=afterany:$b9:$b8
 submit fin $S/90_finalize.slurm          --dependency=afterany:$b9:$b8:$rep
-echo "Wave 3 submitted. When job $fin finishes: results/package1 (package1_results) and results/wave3_report.tar.gz."
+[[ "$DRY_RUN" == 1 ]] || echo "Wave 3 submitted. When job $fin finishes: results/package1 (package1_results) and results/wave3_report.tar.gz."

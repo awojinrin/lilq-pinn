@@ -4,6 +4,8 @@ report, and package1 assembled from the waves."""
 import importlib.util
 import json
 import tarfile
+
+import pytest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -95,3 +97,28 @@ def test_every_job_script_names_a_resource_class_and_waves_use_them():
     waves = ''.join((REPO / 'scripts' / 'cluster' / f'submit_wave{n}.sh').read_text() for n in (1, 2, 3))
     for job in classes:
         assert f'$S/{job}.slurm' in waves, job              # every job belongs to a wave
+
+
+@pytest.mark.skipif(__import__('os').name == 'nt', reason='runs the bash submission scripts')
+def test_dry_run_checks_every_job_and_submits_nothing(tmp_path):
+    """DRY_RUN=1 puts each wave-1 job through `sbatch --test-only` with the
+    profile's resources, and fails for a job the scheduler would refuse (Grace
+    refuses --mem=0, so whole-node jobs must request the memory)."""
+    import os
+    import subprocess
+    fake = tmp_path / 'sbatch'
+    fake.write_text('#!/bin/bash\n'
+                    'for a in "$@"; do [[ "$a" == --mem=0 ]] && { echo "refused: --mem can NOT be 0" >&2; exit 1; }; done\n'
+                    'for a in "$@"; do [[ "$a" == --test-only ]] && { echo "$*" >> "$(dirname "$0")/log"; '
+                    'echo "sbatch: Job 1 to start at soon" >&2; exit 0; }; done\nexit 1\n')
+    fake.chmod(0o755)
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1')
+    out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave1.sh')], env=env,
+                         capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    log = (tmp_path / 'log').read_text().splitlines()
+    assert len(log) == 9 and not any('--dependency' in l for l in log)
+    assert all('--mem=360G' in l for l in log if '10a_timed_lilq_cpu' in l or '10b_timed_lilq_gpu' in l)
+    out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave1.sh')],
+                         env=dict(env, CLUSTER='faster'), capture_output=True, text=True)
+    assert out.returncode != 0 and 'DRY RUN FAILED' in out.stdout

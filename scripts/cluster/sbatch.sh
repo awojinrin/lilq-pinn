@@ -4,6 +4,7 @@
 # CLUSTER (grace, the default, or faster) picks profiles/$CLUSTER.sh. Each job
 # script declares its class in a "# lilq-resources:" line:
 #   timed       the whole A100 node (--exclusive), all its cores and memory
+#               (--mem=$NODE_MEM: Grace refuses --mem=0, "all of it")
 #   timed-cpu   a whole CPU node (--exclusive): CPU-only timed work, same CPU
 #               as the A100 nodes, no GPU surcharge (Addendum v2.2 Section 4.1)
 #   shared-gpu  one A100, 8 cores, 32 GB (untimed GPU work)
@@ -23,10 +24,10 @@ script="$1"; shift
 class=$(sed -n 's/^# lilq-resources: \([a-z-]*\).*/\1/p' "$script")
 case "$class" in
     timed)      res=(--partition="$GPU_PARTITION" --gres="$GPU_GRES" --exclusive --ntasks=1
-                     --cpus-per-task="$NODE_CORES" --mem=0) ;;
-    timed-cpu)  [[ -n "$CPU_PARTITION" && -n "${CPU_NODE_CORES:-}" ]] || { echo "profile needs CPU_PARTITION and CPU_NODE_CORES" >&2; exit 1; }
+                     --cpus-per-task="$NODE_CORES" --mem="$NODE_MEM") ;;
+    timed-cpu)  [[ -n "$CPU_PARTITION" && -n "${CPU_NODE_CORES:-}" && -n "${CPU_NODE_MEM:-}" ]] || { echo "profile needs CPU_PARTITION, CPU_NODE_CORES and CPU_NODE_MEM" >&2; exit 1; }
                 res=(--partition="$CPU_PARTITION" --exclusive --ntasks=1
-                     --cpus-per-task="$CPU_NODE_CORES" --mem=0) ;;
+                     --cpus-per-task="$CPU_NODE_CORES" --mem="$CPU_NODE_MEM") ;;
     shared-gpu) res=(--partition="$GPU_PARTITION" --gres="$GPU_GRES" --ntasks=1 --cpus-per-task=8 --mem=32G) ;;
     cpu)        [[ -n "$CPU_PARTITION" ]] || { echo "set CPU_PARTITION (see sinfo -s)" >&2; exit 1; }
                 res=(--partition="$CPU_PARTITION" --ntasks=1 --cpus-per-task=24 --mem=32G) ;;

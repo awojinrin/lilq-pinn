@@ -17,6 +17,31 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Grace refuses `--mem=0`; a dry-run mode for the wave scripts
+
+The first wave-1 submission (at `e69dbf7`) stopped at job 10a: Grace's
+job_submit plugin refuses `--mem=0` ("all of the node's memory"), which the
+whole-node classes (`timed`, `timed-cpu`) used; FASTER had accepted it.
+Jobs 00 and 29 had been queued; they were cancelled while pending, before
+the preflight wrote `results/wave1/COMMIT`, so nothing ran or was charged
+and the wave folder stayed empty. The profiles now give the memory:
+`NODE_MEM` and `CPU_NODE_MEM` = 360G on Grace (RealMemory 368,640 MB, the
+same on the A100 and CPU nodes), 0 on FASTER, where it works.
+
+`DRY_RUN=1 bash scripts/cluster/submit_wave<N>.sh` now puts every job of a
+wave through `sbatch --test-only` -- the scheduler's own checks and an
+estimated start -- with the profile's resources, leaving out the
+dependencies and submitting, charging and writing nothing; it reports each
+job and fails if any would be refused. The README asks for it before every
+wave. Tested with a stand-in `sbatch` that refuses `--mem=0` as Grace does.
+
+Also in the README: the venv install keeps the module's numpy
+(`-c constraints.txt` with `numpy==1.26.4`). On Grace the newest matplotlib
+pulled numpy 2.5.3 into the venv, which the module's scipy 1.13.1 cannot
+import; caught before submission by the version check, and removed.
+
+---
+
 ## 2026-09-29 -- The advisor's reply, Section 2: fixes for waves 2 and 3, made before wave 1
 
 Made now rather than before waves 2 and 3, so all three waves run on one

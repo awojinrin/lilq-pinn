@@ -23,10 +23,12 @@ A1_JSON="$RESULTS/wave1/A_calibration/checks/a1.json"
 a1_passed=$(python3 -c "import json, sys; print(json.load(open(sys.argv[1]))['passed'])" "$A1_JSON" 2>/dev/null || echo False)
 if [[ "$now" == "$w1" && "$a1_passed" == True ]]; then
     echo "Same code as wave 1, and check A1 passed there: its search and checks are reused."
-    mkdir -p "$RESULTS/wave2/A_calibration"
-    for item in search checks tuning_log.md; do
-        [[ -e "$RESULTS/wave2/A_calibration/$item" ]] || cp -r "$RESULTS/wave1/A_calibration/$item" "$RESULTS/wave2/A_calibration/"
-    done
+    if [[ "$DRY_RUN" != 1 ]]; then
+        mkdir -p "$RESULTS/wave2/A_calibration"
+        for item in search checks tuning_log.md; do
+            [[ -e "$RESULTS/wave2/A_calibration/$item" ]] || cp -r "$RESULTS/wave1/A_calibration/$item" "$RESULTS/wave2/A_calibration/"
+        done
+    fi
     adeps=(${deps[@]+"${deps[@]}"})
 else
     if [[ "$now" == "$w1" ]]; then
@@ -43,5 +45,5 @@ submit af32 $S/33_A_float32.slurm        --dependency=afterok:$full
 submit fmg  $S/20_four_method_gpu.slurm  ${deps[@]+"${deps[@]}"} --array=1-3
 submit fmc  $S/21_four_method_cpu.slurm  ${deps[@]+"${deps[@]}"} --array=1-3
 submit rep  $S/91_wave_report.slurm      --dependency=afterany:$scr:$full:$acpu:$af32:$fmg:$fmc
-echo "Wave 2 submitted. When job $rep finishes: results/wave2_report.tar.gz."
-echo "Submit wave 3 once wave 2's charges have posted."
+[[ "$DRY_RUN" == 1 ]] || echo "Wave 2 submitted. When job $rep finishes: results/wave2_report.tar.gz."
+[[ "$DRY_RUN" == 1 ]] || echo "Submit wave 3 once wave 2's charges have posted."

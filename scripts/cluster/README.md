@@ -34,10 +34,15 @@ mkdir -p $SCRATCH/lilq-run && tar -xzf lilq-pinn-<sha>.tar.gz -C $SCRATCH/lilq-r
 cd $SCRATCH/lilq-run
 module load <LILQ_MODULES from the profile>
 python -m venv --system-site-packages venv
-source venv/bin/activate && pip install matplotlib pytest threadpoolctl   # threadpoolctl: thread pools in hardware.json (Addendum v2.2 2.12)
+source venv/bin/activate
+echo "numpy==1.26.4" > constraints.txt   # keep the module's numpy: the newest matplotlib pulls numpy 2.x,
+                                         # which the module's scipy 1.13.1 cannot import
+pip install --no-cache-dir -c constraints.txt matplotlib pytest threadpoolctl   # threadpoolctl: thread pools in hardware.json (2.12)
 pip install --no-cache-dir torch==2.10.0 --index-url https://download.pytorch.org/whl/cu126   # about 3 GB
 export PYTHONPATH=$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'):$PYTHONPATH
-python -c "import torch, numpy; print(torch.__version__, numpy.__version__)"   # 2.10.0+cu126, and the module's numpy
+python -c "import numpy, scipy.linalg, torch; print(numpy.__version__, numpy.__file__, torch.__version__)"
+# expect 1.26.4 from /sw/eb/sw/SciPy-bundle/... (not the venv) and 2.10.0+cu126. If the venv has its own
+# numpy, remove it with the venv first on PYTHONPATH (pip uninstall -y numpy), or pip finds the module's.
 ```
 
 The PyTorch module puts its own torch (2.9.1) on `PYTHONPATH`, ahead of the
@@ -49,8 +54,14 @@ ignores `max_eval`, which changes the L-BFGS evaluation counts).
 
 ```bash
 cd $SCRATCH/lilq-run/lilq-pinn
+DRY_RUN=1 bash scripts/cluster/submit_wave1.sh    # every job through sbatch --test-only; submits nothing
 bash scripts/cluster/submit_wave1.sh
 ```
+
+Run the dry run first, before every wave: it puts each job through the
+scheduler's own checks (on Grace, `--mem=0` is refused, so whole-node jobs
+request `--mem=360G`, all of a node's 368,640 MB) and prints an estimated
+start, without submitting, charging or writing anything.
 
 Each script shows the balance (`myproject -l`) and asks before submitting
 anything (`YES=1` skips the question). Read the "Requested SUs" line sbatch

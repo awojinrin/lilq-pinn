@@ -20,5 +20,5 @@ submit b6   $S/43_basis_study.slurm      --dependency=afterok:$pre
 submit fmg  $S/20_four_method_gpu.slurm  --dependency=afterok:$pre --array=0 --time=03:00:00   # Bratu only (8 h is for the largest benchmark)
 submit fmc  $S/21_four_method_cpu.slurm  --dependency=afterok:$pre --array=0
 submit rep  $S/91_wave_report.slurm      --dependency=afterany:$gate:$lcpu:$lgpu:$cc:$b6:$fmg:$fmc
-echo "Wave 1 submitted. When job $rep finishes, send the advisor results/wave1_report.tar.gz,"
-echo "with the SUs charged per job (myproject -l, or the AMS report)."
+[[ "$DRY_RUN" == 1 ]] || echo "Wave 1 submitted. When job $rep finishes, send the advisor results/wave1_report.tar.gz,"
+[[ "$DRY_RUN" == 1 ]] || echo "with the SUs charged per job (myproject -l, or the AMS report)."
