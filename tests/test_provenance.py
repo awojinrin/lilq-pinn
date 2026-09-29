@@ -192,6 +192,44 @@ def test_scheduler_info_records_node_type_and_exclusivity(monkeypatch):
     assert info["job"]["Account"] == "132698954494" and info["exclusive"] is True
 
 
+def test_scheduler_info_records_a_whole_node_held_without_exclusive(monkeypatch):
+    """Wave 2's timed jobs (the advisor's reply to wave 1, item 2.3): one
+    A100, every core and all the memory, no --exclusive."""
+    import lilq.provenance as prov
+    monkeypatch.setenv("SLURM_JOB_ID", "124")
+    monkeypatch.setenv("SLURMD_NODENAME", "g002")
+    monkeypatch.setenv("SLURM_MEM_PER_NODE", "368640")
+    outputs = {
+        ("scontrol", "show", "node", "g002"): "NodeName=g002 CPUTot=48 Gres=gpu:a100:2 RealMemory=368640",
+        ("scontrol", "show", "job", "124"):
+            "JobId=124 NumCPUs=48 OverSubscribe=OK AllocTRES=cpu=48,mem=360G,node=1,billing=48,gres/gpu=1",
+    }
+    monkeypatch.setattr(prov, "_run", lambda args, **kw: outputs.get(tuple(args)))
+    info = prov.capture_scheduler_info()
+    assert info["exclusive"] is False and info["holds_whole_node"] is True and info["gpus_allocated"] == 1
+    monkeypatch.setenv("SLURM_MEM_PER_NODE", "32768")
+    assert prov.capture_scheduler_info()["holds_whole_node"] is False
+
+
+def test_scheduler_info_records_a_whole_node_held_without_exclusive(monkeypatch):
+    """Wave 2's timed jobs (the advisor's reply to wave 1, item 2.3): one
+    A100, every core and all the memory, no --exclusive."""
+    import lilq.provenance as prov
+    monkeypatch.setenv("SLURM_JOB_ID", "124")
+    monkeypatch.setenv("SLURMD_NODENAME", "g002")
+    monkeypatch.setenv("SLURM_MEM_PER_NODE", "368640")
+    outputs = {
+        ("scontrol", "show", "node", "g002"): "NodeName=g002 CPUTot=48 Gres=gpu:a100:2 RealMemory=368640",
+        ("scontrol", "show", "job", "124"):
+            "JobId=124 NumCPUs=48 OverSubscribe=OK AllocTRES=cpu=48,mem=360G,node=1,billing=48,gres/gpu=1",
+    }
+    monkeypatch.setattr(prov, "_run", lambda args, **kw: outputs.get(tuple(args)))
+    info = prov.capture_scheduler_info()
+    assert info["exclusive"] is False and info["holds_whole_node"] is True and info["gpus_allocated"] == 1
+    monkeypatch.setenv("SLURM_MEM_PER_NODE", "32768")
+    assert prov.capture_scheduler_info()["holds_whole_node"] is False
+
+
 def test_environment_text_records_torch_version_and_build_config():
     import torch
     from lilq.provenance import capture_environment_text

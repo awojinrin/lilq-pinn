@@ -2,8 +2,12 @@
 
 Every job of Package 1 v2.0 and Addendums v2.1-v2.2 runs on the cluster, in
 three waves (Addendum v2.2 Section 4). Timed work (everything whose times go
-into the paper) holds a whole node (`--exclusive`): an A100 node when it uses
-the GPU, a CPU node -- the same CPU, no GPU surcharge -- when it does not.
+into the paper) holds a whole node: on an A100 node, one A100 with all 48
+cores and all 360G of memory, without `--exclusive` -- no other job fits on
+the node, and Grace charges one GPU (120 SU/h; `--exclusive` allocated and
+charged both A100s, 192 SU/h, in wave 1; the advisor's reply to wave 1, item
+2.3); a CPU node (`--exclusive`) -- the same CPU, no GPU surcharge -- when it
+does not use the GPU.
 Untimed work runs on a shared A100 or on CPU cores. The same job scripts
 serve both clusters: the cluster-specific values live in `profiles/grace.sh`
 and `profiles/faster.sh`, and `sbatch.sh` applies them according to each
@@ -64,15 +68,17 @@ request `--mem=360G`, all of a node's 368,640 MB) and prints an estimated
 start, without submitting, charging or writing anything.
 
 Each script shows the balance (`myproject -l`) and asks before submitting
-anything (`YES=1` skips the question). Read the "Requested SUs" line sbatch
-prints for each job: it shows whether an exclusive A100 node is charged for
-one GPU or both (120 or 192 SU/h), which changes every estimate below.
+anything (`YES=1` skips the question). Grace printed no "Requested SUs" line
+in wave 1: its booking covers cores only, and the GPU surcharge is charged
+at run time. When wave 2's first timed GPU job starts, check that it holds
+one GPU (`sacct -X -j <job> --format=JobID,JobName%24,AllocTRES%70` shows
+`gres/gpu=1`), and after it ends, its charge in `myproject`.
 
 | Wave | Jobs | Requested (advisor's estimate) | Then |
 |---|---|---|---|
-| 1 | preflight; A1 gate; 10a, 10b; Component C; B6; B4 for Bratu (20 `--array=0 --time=03:00:00`, 21 `--array=0`) | ~1,410 SU (~1,770 if both GPUs are charged) | send `results/wave1_report.tar.gz` and the SUs charged per job; wait for the advisor's reply |
-| 2 | Component A (30 -> 31 -> 32, 33); B4 for the other three benchmarks (20, 21 `--array=1-3`) | ~10,000 SU | `results/wave2_report.tar.gz`; submit wave 3 once wave 2's charges have posted |
-| 3 | B9 (40); B8 (41); finalize | ~4,800 SU (from the walltimes; the advisor estimated ~7,700 with the larger B9 network) | `results/package1` (package1_results/), `results/wave3_report.tar.gz` |
+| 1 | preflight; A1 gate; 10a, 10b; Component C; B6; B4 for Bratu (20 `--array=0 --time=03:00:00`, 21 `--array=0`) | ~1,410 SU (charged: 332) | done at `8a3f5f7`; results on branch `wave1-results` |
+| 2 | preflight and A1 gate (new code); Component A (30 -> 31 -> 32, 33); B4 for the other three benchmarks with stall controls, and wave 1's Bratu controls (20, 21 `--array=0-3`); timing reruns (11a, 11b) | ~5,900-6,700 SU expected; ~11,700 if every job hit its walltime | `results/wave2_report.tar.gz`; check `gres/gpu=1` on the first timed job; submit wave 3 once wave 2's charges have posted |
+| 3 | B9 (40); B8 (41); finalize | ~2,500-4,200 SU (advisor's estimate) | `results/package1` (package1_results/), `results/wave3_report.tar.gz` |
 
 **One results folder per wave.** Wave N writes `results/wave<N>` only, and
 the first job of a wave locks that folder to the code's commit and
@@ -120,8 +126,10 @@ copying them off the cluster: the models are what later figures are made from.
 | `29_A1_gate` | Component A search and tests; checks F2, A2 and A1 (the plain PINN, 1 h budget); gates Component A only | shared-gpu | 2 h |
 | `10a_timed_lilq_cpu` | Section 3.3 CPU runs incl. the K_max = 60 and Beltrami K_max = 8 passes; Section 3.7 and its K_max pass | timed-cpu | 4 h |
 | `10b_timed_lilq_gpu` | Section 3.3 Kovasznay GPU runs (both passes); check B3 with its timings | timed | 2 h |
-| `20_four_method_gpu` | B4 GPU pass, one task per benchmark | timed | 8 h each |
-| `21_four_method_cpu` | B4 CPU pass at the largest sizes | timed-cpu | 3 h each |
+| `11a_timing_reruns_cpu` | wave 2: the paper passes of Bratu, Burgers, both BL, elasticity, Kovasznay, with warm-up runs | timed-cpu | 1 h |
+| `11b_timing_reruns_gpu` | wave 2: the Kovasznay GPU paper passes and check B3, with warm-up runs | timed | 1 h |
+| `20_four_method_gpu` | B4 GPU pass, one task per benchmark, then its stall controls; wave 2's Bratu task: wave 1's Bratu controls | timed | 8 h each |
+| `21_four_method_cpu` | B4 CPU pass at the largest sizes, then its stall controls; wave 2's Bratu task: wave 1's | timed-cpu | 4 h each |
 | `30_A_screen` | Component A: 24 configurations x 10 min per family | timed x 2 | 6 h each |
 | `31_A_full` | selection, top 3 x 5 seeds x 60 min per family, representative | timed x 2 | 18 h each |
 | `32_A_cpu` | each representative on the CPU, 5 seeds x 60 min | timed-cpu x 2 | 7 h each |
@@ -138,11 +146,12 @@ HPRC books pending SUs from the requested walltimes at submission. Revise
 them from wave 1's measured runtimes.
 
 **SUs.** Charged for time used: cores x hours plus a GPU surcharge per GPU-hour
-(Grace A100 72; FASTER A100 128). On Grace an exclusive A100 node is 48 core-SU
-plus 72 or 144 per hour, depending on whether both of its A100s are charged:
-120-192 SU per node-hour. An exclusive CPU node is 48 SU per hour; a shared
-A100 job 80; a 24-core CPU job 24. Expected total: about 10,000-15,000 SU at
-120 SU/h, about 17,000 if both GPUs of an exclusive node are charged. On
+(Grace A100 72; FASTER A100 128). On Grace a timed A100 job is 48 core-SU plus
+72 for its one A100: 120 SU per node-hour (an `--exclusive` A100 node is
+allocated and charged both A100s: 192; wave 1, `sacct`). An exclusive CPU node
+is 48 SU per hour; a shared A100 job 80; a 24-core CPU job 24. Wave 1 was
+charged 332 SU; the advisor expects 5,900-6,700 for wave 2 and 2,500-4,200
+for wave 3. On
 FASTER, A100s sit in 4-16-GPU nodes, so an exclusive node holds several A100s
 at 128 SU each: the timed GPU jobs there would cost several times more.
 
@@ -150,5 +159,7 @@ at 128 SU each: the timed GPU jobs there would cost several times more.
 
 Timed jobs hold the whole node and start one thread per core for BLAS,
 OpenMP and PyTorch; `hardware.json` in every run directory records the node's
-CPU model and GPUs, the thread counts in effect, and whether the job held the
-node exclusively. Never run experiments or tests on a login node.
+CPU model and GPUs, the thread counts in effect, whether the job held the
+node exclusively (`exclusive`), whether it held every core and all the memory
+(`holds_whole_node`) and its GPU count (`gpus_allocated`). Never run
+experiments or tests on a login node.

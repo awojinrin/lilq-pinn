@@ -3,7 +3,7 @@
 ACCOUNT=132698954494
 GPU_PARTITION=gpu
 GPU_GRES=gpu:a100:1
-NODE_CORES=48                # all cores of an A100 node (the timed jobs hold the whole node)
+NODE_CORES=48                # all cores of an A100 node: with all its memory, a timed job holds the node (one GPU charged)
 NODE_MEM=360G                # all its memory (RealMemory 368,640 MB = 360 GiB); Grace's job_submit refuses --mem=0
 CPU_NODE_MEM=360G            # the same memory as the A100 nodes (scontrol, 2026-09-29)
 CPU_NODE_CORES=48            # regular compute nodes c001-c800: 2 x Xeon Gold 6248R, the A100 nodes' CPU (lscpu, 2026-09-29)

@@ -167,7 +167,14 @@ def capture_scheduler_info() -> dict:
     on a workstation) -- what a timing on a shared cluster node actually
     had to work with, which the node's hardware alone doesn't say. Adds the
     node's type (its features, GPUs, cores, memory) and whether the job held
-    the node exclusively (``OverSubscribe=NO``), from ``scontrol``."""
+    the node exclusively (``OverSubscribe=NO``), from ``scontrol``.
+
+    ``holds_whole_node``: the job has every core and all the memory of its
+    node, so no other job can be placed there -- the timing condition. From
+    wave 2 on, the ``timed`` class gets it without ``--exclusive`` (one A100,
+    48 cores, 360G: 120 SU/h instead of 192; the advisor's reply to wave 1,
+    item 2.3), so ``exclusive`` is then false and ``holds_whole_node`` true.
+    ``gpus_allocated`` is the job's ``gres/gpu`` count from ``AllocTRES``."""
     if "SLURM_JOB_ID" not in os.environ:
         return {"slurm": False}
     info = {"slurm": True, **{k: os.environ.get(k) for k in _SLURM_ENV_VARS}}
@@ -175,10 +182,26 @@ def capture_scheduler_info() -> dict:
                                     ("NodeName", "AvailableFeatures", "ActiveFeatures", "Gres",
                                      "CPUTot", "RealMemory", "Partitions"))
     job = _scontrol_fields("job", os.environ.get("SLURM_JOB_ID"),
-                           ("OverSubscribe", "Account", "Partition", "TRES", "NumCPUs"))
+                           ("OverSubscribe", "Account", "Partition", "TRES", "ReqTRES", "AllocTRES",
+                            "NumCPUs", "MinMemoryNode"))
     info["job"] = job
     info["exclusive"] = (job or {}).get("OverSubscribe") == "NO" if job else None
+    info["holds_whole_node"] = _holds_whole_node(info)
+    tres = (job or {}).get("AllocTRES") or (job or {}).get("TRES") or ""
+    gpus = [t.split("=", 1)[1] for t in tres.split(",") if t.startswith("gres/gpu=")]
+    info["gpus_allocated"] = int(gpus[0]) if gpus and gpus[0].isdigit() else None
     return info
+
+
+def _holds_whole_node(info: dict) -> Optional[bool]:
+    """Every core and all the memory of the node (None if unknown)."""
+    node, job = info.get("node") or {}, info.get("job") or {}
+    try:
+        cores = int(job.get("NumCPUs") or info.get("SLURM_CPUS_ON_NODE")) == int(node["CPUTot"])
+        memory = int(info.get("SLURM_MEM_PER_NODE")) >= int(node["RealMemory"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return cores and memory
 
 
 def capture_thread_info() -> dict:

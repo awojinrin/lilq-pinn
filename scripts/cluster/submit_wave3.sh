@@ -2,18 +2,18 @@
 # Wave 3 of 3 (Addendum v2.2 Section 4.2): B8 and B9, requested ~4,800 SU
 # (the advisor estimated ~7,700 with the larger B9 network),
 # once wave 2's charges have posted. Into results/wave3:
-#   [00 preflight, only if the code differs from wave 1's]
+#   [00 preflight, only if the code differs from the last wave's]
 #   40 B9 NiL Darcy (12 tasks), 41 B8 (4 tasks)
 #   -> 91 wave report, and 90 finalize: results/package1 assembled from the
 #      three waves (WAVES.json names each wave's commit).
 LILQ_WAVE=3
 source "$(dirname "$0")/submit_lib.sh"
-now=$(code_commit); w1=$(wave_commit 1)
+now=$(code_commit); w1=$(wave_commit 2); [[ -n "$w1" ]] || w1=$(wave_commit 1)   # the last wave run
 confirm_balance "~4,800 SU (from the walltimes)"
 
 deps=()
 if [[ "$now" != "$w1" ]]; then
-    echo "Code $now differs from wave 1's ($w1): the preflight runs again."
+    echo "Code $now differs from the last wave's ($w1): the preflight runs again."
     submit pre $S/00_preflight.slurm
     deps=(--dependency=afterok:$pre)
 fi

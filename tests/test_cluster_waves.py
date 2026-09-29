@@ -122,3 +122,83 @@ def test_dry_run_checks_every_job_and_submits_nothing(tmp_path):
     out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave1.sh')],
                          env=dict(env, CLUSTER='faster'), capture_output=True, text=True)
     assert out.returncode != 0 and 'DRY RUN FAILED' in out.stdout
+
+
+def test_timing_reruns_and_classes_of_wave_2():
+    """The reply to wave 1: timing reruns in timed jobs (item 2.2) and job
+    21 at 4 h (item 2.4)."""
+    classes = {s.stem: next(l for l in s.read_text().splitlines() if l.startswith('# lilq-resources:')).split()[2]
+               for s in (REPO / 'scripts' / 'cluster').glob('*.slurm')}
+    assert classes['11a_timing_reruns_cpu'] == 'timed-cpu' and classes['11b_timing_reruns_gpu'] == 'timed'
+    assert '#SBATCH --time=04:00:00' in (REPO / 'scripts/cluster/21_four_method_cpu.slurm').read_text()
+    wave2 = (REPO / 'scripts/cluster/submit_wave2.sh').read_text()
+    assert '11a_timing_reruns_cpu.slurm' in wave2 and '11b_timing_reruns_gpu.slurm' in wave2
+    assert sum(l.startswith('submit') and '--array=0-3' in l for l in wave2.splitlines()) == 2
+
+
+def test_timed_class_holds_the_node_with_one_gpu_and_no_exclusive():
+    """Item 2.3: --exclusive allocated (and charged) both A100s."""
+    sbatch = (REPO / 'scripts/cluster/sbatch.sh').read_text()
+    timed = next(l for l in sbatch.splitlines() if l.strip().startswith('timed)'))
+    assert '--exclusive' not in timed and '--cpus-per-task="$NODE_CORES"' in sbatch
+    assert 'GPU_GRES=gpu:a100:1' in (REPO / 'scripts/cluster/profiles/grace.sh').read_text()
+
+
+def test_component_a_endings_flag_runs_that_stopped_before_their_budget(tmp_path):
+    report = _load('wave_report')
+    root = tmp_path / 'wave2'
+    _write(root / 'A_calibration' / 'screening' / 'F1_00_s0' / 'run.json',
+           json.dumps({'end_reason': 'budget', 'budget_s': 600.0, 'wall_s': 600.0}))
+    _write(root / 'A_calibration' / 'screening' / 'F2_03_s0' / 'run.json',
+           json.dumps({'end_reason': 'converged', 'budget_s': 600.0, 'wall_s': 212.5}))
+    _write(root / 'A_calibration' / 'full' / 'F1_07_s2' / 'run.json',
+           json.dumps({'end_reason': 'failure: non-finite loss', 'budget_s': 3600.0, 'wall_s': 50.0}))
+    early = report.component_a_endings(root)
+    assert sorted(r['run'] for r in early) == ['full/F1_07_s2', 'screening/F2_03_s0']
+    import csv
+    rows = list(csv.DictReader(open(root / 'A_calibration' / 'run_endings.csv')))
+    assert len(rows) == 3 and {r['family'] for r in rows} == {'F1', 'F2'}
+    assert 'A_calibration/run_endings.csv' in {p.as_posix() for p in report.report_files(root)}
+
+
+@pytest.mark.skipif(__import__('os').name == 'nt', reason='runs the bash submission scripts')
+def test_wave_2_dry_run_requests_one_gpu_per_timed_job(tmp_path):
+    """Wave 2 on new code: preflight, A1 gate, Component A, 20/21 with all
+    four tasks, the timing reruns and the report -- every timed GPU job one
+    A100, all 48 cores and 360G, without --exclusive."""
+    import os
+    import subprocess
+    fake = tmp_path / 'sbatch'
+    fake.write_text('#!/bin/bash\n'
+                    'for a in "$@"; do [[ "$a" == --test-only ]] && { echo "$*" >> "$(dirname "$0")/log"; '
+                    'echo "sbatch: Job 1 to start at soon" >&2; exit 0; }; done\nexit 1\n')
+    fake.chmod(0o755)
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1')
+    out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave2.sh')], env=env,
+                         capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    log = (tmp_path / 'log').read_text().splitlines()
+    assert len(log) == 11
+    gpu_timed = [l for l in log if '--partition=gpu' in l and '--cpus-per-task=48' in l]
+    assert len(gpu_timed) == 5                      # 30, 31, 33, 20, 11b
+    assert all('--gres=gpu:a100:1' in l and '--mem=360G' in l and '--exclusive' not in l for l in gpu_timed)
+    assert all('--array=0-3' in l for l in log if 'four_method' in l)
+
+
+@pytest.mark.skipif(__import__('os').name == 'nt', reason='runs bash')
+@pytest.mark.parametrize('script, device', [('20_four_method_gpu', 'gpu'), ('21_four_method_cpu', 'cpu')])
+def test_b4_tasks_run_controls_and_wave_2_bratu_controls_wave_1(script, device):
+    """Item 2.5: every task runs its own stall controls; in wave 2 the Bratu
+    task runs only wave 1's Bratu controls, into a folder of its own."""
+    import subprocess
+    text = (REPO / 'scripts' / 'cluster' / f'{script}.slurm').read_text()
+    block = text[text.index('PROBLEMS='):text.index('\nfi\n') + 4]
+
+    def resolve(wave, task):
+        cmd = (f'B=/R/wave{wave}/B RESULTS=/R LILQ_WAVE={wave} SLURM_ARRAY_TASK_ID={task}\n{block}'
+               'echo "$OUT|${MODE[*]}"')
+        return subprocess.run(['bash', '-c', cmd], capture_output=True, text=True).stdout.strip()
+    assert resolve(2, 1) == f'/R/wave2/B/four_method_jobs/burgers_{device}|--controls'
+    assert resolve(2, 0) == (f'/R/wave2/B/four_method_jobs/bratu_{device}_controls|--controls-only '
+                             f'--controls-from /R/wave1/B_instrumentation/four_method_jobs/bratu_{device}')
+    assert resolve(1, 0) == f'/R/wave1/B/four_method_jobs/bratu_{device}|--controls'

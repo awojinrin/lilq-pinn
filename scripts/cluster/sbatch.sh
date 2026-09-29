@@ -3,8 +3,11 @@
 #   bash scripts/cluster/sbatch.sh <job.slurm> [extra sbatch options...]
 # CLUSTER (grace, the default, or faster) picks profiles/$CLUSTER.sh. Each job
 # script declares its class in a "# lilq-resources:" line:
-#   timed       the whole A100 node (--exclusive), all its cores and memory
-#               (--mem=$NODE_MEM: Grace refuses --mem=0, "all of it")
+#   timed       one A100 and all of the node's cores and memory, without
+#               --exclusive: no other job fits on the node, and Grace charges
+#               one GPU (120 SU/h; --exclusive allocated and charged both,
+#               192 SU/h -- the advisor's reply to wave 1, item 2.3).
+#               --mem=$NODE_MEM: Grace refuses --mem=0, "all of it".
 #   timed-cpu   a whole CPU node (--exclusive): CPU-only timed work, same CPU
 #               as the A100 nodes, no GPU surcharge (Addendum v2.2 Section 4.1)
 #   shared-gpu  one A100, 8 cores, 32 GB (untimed GPU work)
@@ -23,7 +26,7 @@ export CLUSTER LILQ_MODULES LILQ_WAVE
 script="$1"; shift
 class=$(sed -n 's/^# lilq-resources: \([a-z-]*\).*/\1/p' "$script")
 case "$class" in
-    timed)      res=(--partition="$GPU_PARTITION" --gres="$GPU_GRES" --exclusive --ntasks=1
+    timed)      res=(--partition="$GPU_PARTITION" --gres="$GPU_GRES" --ntasks=1
                      --cpus-per-task="$NODE_CORES" --mem="$NODE_MEM") ;;
     timed-cpu)  [[ -n "$CPU_PARTITION" && -n "${CPU_NODE_CORES:-}" && -n "${CPU_NODE_MEM:-}" ]] || { echo "profile needs CPU_PARTITION, CPU_NODE_CORES and CPU_NODE_MEM" >&2; exit 1; }
                 res=(--partition="$CPU_PARTITION" --exclusive --ntasks=1

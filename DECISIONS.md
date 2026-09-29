@@ -17,6 +17,59 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-09-29 -- Wave 2's cluster setup: one GPU per timed job, job 21 at 4 h, timing reruns, controls (reply to wave 1, items 2.2-2.5 and Section 3)
+
+**Timed GPU jobs at 120 SU/h (item 2.3).** Wave 1's `sacct` showed that
+`--exclusive` on an A100 node allocates both A100s (`gres/gpu=2`) and Grace
+charges both: 192 SU/h. The `timed` class (`sbatch.sh`) now requests
+`--gres=gpu:a100:1 --ntasks=1 --cpus-per-task=48 --mem=360G` without
+`--exclusive`: the job holds every core and all the memory, so no other
+job can be placed on the node, and the timing conditions are those of wave
+1, at 120 SU/h. The advisor estimates the saving at 3,300-3,600 SU in wave 2.
+`hardware.json`'s `scheduler` now records `holds_whole_node` (every core and
+all the memory of the node), `gpus_allocated` (from `AllocTRES`) and the
+job's `ReqTRES`/`AllocTRES`; `exclusive` stays, and is false from wave 2 on
+for the A100 jobs. The `timed-cpu` class keeps `--exclusive` (CPU nodes
+carry no GPU surcharge). To verify on wave 2's first timed job: `sacct`
+shows `gres/gpu=1`, and its charge in `myproject` is 120 SU/h
+(`submit_wave2.sh` prints the command).
+
+**Job 21 at 4 h (item 2.4):** gravity BL's worst case reached 3 h.
+
+**Timing reruns (item 2.2).** `11a_timing_reruns_cpu` (timed-cpu): the paper
+passes of Bratu, Burgers, both BL, elasticity and Kovasznay on the CPU;
+`11b_timing_reruns_gpu` (timed): the Kovasznay GPU paper passes and check
+B3. Both 1 h, both in wave 2, both with the warm-up runs of the entry below.
+They write to `results/wave2` under the same run folder names as wave 1, so
+`assemble_package.py` takes wave 2's and lists every replaced file in
+`WAVES.json` (`overrides`); `90_finalize` rebuilds the run index, check B1
+and the merged four-method tables from the assembled package.
+
+**Stall controls in jobs 20 and 21 (item 2.5).** Every task runs its own
+controls after its runs (`--controls`). In wave 2 the Bratu task (index 0)
+runs only the controls of wave 1's stalled Bratu runs
+(`--controls-only --controls-from results/wave1/.../bratu_<device>`), into
+`four_method_jobs/bratu_<device>_controls` -- its own folder, so that wave
+1's `bratu_<device>` tables are not overridden when the package is
+assembled. Wave 2 submits 20 and 21 with `--array=0-3`.
+
+**Wave 2 report (Section 3).** `wave_report.py` writes
+`A_calibration/run_endings.csv`: every Component A run's end reason,
+budget and wall time, with `ended_before_budget`, and lists those in the
+report log. The report already packs the search lists, the screening
+`run.json`s and selections, and the B root's CSVs, which now include
+`four_method_controls.csv`.
+
+**Wave 3** compares the code with the last wave's commit (wave 2's when it
+exists) to decide whether the preflight runs again, not with wave 1's.
+
+Tests: `tests/test_cluster_waves.py`, `tests/test_provenance.py`. The wave 2
+dry run was checked locally with a stand-in `sbatch`: 11 jobs, the five
+timed GPU jobs each `--gres=gpu:a100:1 --cpus-per-task=48 --mem=360G`
+without `--exclusive`.
+
+---
+
 ## 2026-09-29 -- Four-method stall control (reply to wave 1, item 2.5)
 
 **Why.** At Bratu P = 100 and 225, wave 1's nonconvex runs ended on

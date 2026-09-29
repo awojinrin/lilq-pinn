@@ -13,8 +13,13 @@ waves 2 and 3:
 * ``reproduction_check.csv``, ``gpu_cpu_equivalence.csv``, ``runs_index.csv``;
 * ``iterations.csv`` / ``run.json`` / ``summary.json`` of the K_max passes and
   of both Beltrami runs (and their Section 3.7 reports);
-* the four-method rows with the saved per-iteration histories;
-* Component A's check results, selection, representative and tuning log;
+* the four-method rows with the saved per-iteration histories, and the
+  stall controls (``four_method_controls.csv``; the advisor's reply to wave 1,
+  item 2.5);
+* Component A's check results, search lists, screening and selection
+  files, representative and tuning log, and ``run_endings.csv``: how every
+  Component A run ended, flagging any that ended before its budget (the
+  reply to wave 1, Section 3);
 * ``oversampling.csv``, the B8 and B9 tables;
 * every ``hardware.json``, the Slurm logs, and ``sacct`` for the wave's jobs
   (elapsed time and resources per job; the SUs charged come from
@@ -30,8 +35,10 @@ Usage::
 """
 
 import argparse
+import csv
 import datetime
 import glob
+import json
 import os
 import subprocess
 import sys
@@ -65,6 +72,7 @@ def report_files(root: Path):
         'B_instrumentation/darcy_fv/*/darcy_fv_comparison.csv',
         'B_instrumentation/basis_study/*.csv', 'B_instrumentation/basis_study/runs/*/iterations.csv',
         'A_calibration/checks/*', 'A_calibration/tuning_log.md', 'A_calibration/search/*',
+        'A_calibration/run_endings.csv',
         'A_calibration/screening/*_selection.json', 'A_calibration/full/*_representative.json',
         'A_calibration/*/*/run.json',
         'C_oversampling/results/*', 'C_oversampling/figures/*',
@@ -74,6 +82,34 @@ def report_files(root: Path):
         files.update(p for p in root.glob(pat) if p.is_file())
     skip = ('.pt', '.npz', '.tmp')
     return sorted(p.relative_to(root) for p in files if not p.name.endswith(skip))
+
+
+ENDINGS_COLUMNS = ('stage', 'run', 'family', 'end_reason', 'budget_s', 'wall_s', 'ended_before_budget')
+
+
+def component_a_endings(root: Path):
+    """``A_calibration/run_endings.csv``: one row per Component A run
+    (screening, full, CPU, float32 and the checks) with its end reason,
+    budget and wall time; ``ended_before_budget`` when it stopped for any
+    reason other than its budget (the F1 criterion, a failure, F2's
+    convergence or step limit). Returns the rows that did."""
+    A = root / 'A_calibration'
+    rows = []
+    for path in sorted(A.glob('*/**/run.json')):
+        run = json.loads(path.read_text())
+        name = path.parent.name
+        rows.append({'stage': path.relative_to(A).parts[0], 'run': path.parent.relative_to(A).as_posix(),
+                     'family': (run.get('config') or {}).get('family')
+                               or (name[:2] if name[:2] in ('F1', 'F2') else ''),
+                     'end_reason': run.get('end_reason'), 'budget_s': run.get('budget_s'),
+                     'wall_s': run.get('wall_s'),
+                     'ended_before_budget': run.get('end_reason') != 'budget'})
+    if rows:
+        with open(A / 'run_endings.csv', 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=ENDINGS_COLUMNS)
+            writer.writeheader()
+            writer.writerows(rows)
+    return [r for r in rows if r['ended_before_budget']]
 
 
 def main(argv=None):
@@ -93,6 +129,11 @@ def main(argv=None):
     jobs = sorted(glob.glob(str(B / 'four_method_jobs' / '*') + os.sep))
     if jobs:
         _run([sys.executable, 'experiments/four_method_tables.py', '--out-dir', str(B), '--merge-from', *jobs], log)
+
+    if (root / 'A_calibration').is_dir():
+        early = component_a_endings(root)
+        log.append(f"Component A runs ended before their budget: {len(early)}"
+                   + ''.join(f"\n  {r['run']}: {r['end_reason']} after {r['wall_s']} s" for r in early))
 
     job_ids = sorted({p.stem.rsplit('.', 1)[-1].split('_')[0] for p in (REPO / 'logs').glob('*.out')})
     sacct = subprocess.run(['sacct', '-X', '-j', ','.join(job_ids), '--format',
