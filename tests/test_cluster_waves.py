@@ -153,12 +153,16 @@ def test_component_a_endings_flag_runs_that_stopped_before_their_budget(tmp_path
            json.dumps({'end_reason': 'converged', 'budget_s': 600.0, 'wall_s': 212.5}))
     _write(root / 'A_calibration' / 'full' / 'F1_07_s2' / 'run.json',
            json.dumps({'end_reason': 'failure: non-finite loss', 'budget_s': 3600.0, 'wall_s': 50.0}))
+    _write(root / 'A_calibration' / 'screening' / 'F1_00_s0' / 'log.csv', 'it,loss\n')
+    _write(root / 'A_calibration' / 'screening' / 'F1_selection.json', '{}')
     early = report.component_a_endings(root)
     assert sorted(r['run'] for r in early) == ['full/F1_07_s2', 'screening/F2_03_s0']
     import csv
     rows = list(csv.DictReader(open(root / 'A_calibration' / 'run_endings.csv')))
     assert len(rows) == 3 and {r['family'] for r in rows} == {'F1', 'F2'}
-    assert 'A_calibration/run_endings.csv' in {p.as_posix() for p in report.report_files(root)}
+    packed = {p.as_posix() for p in report.report_files(root)}
+    assert {'A_calibration/run_endings.csv', 'A_calibration/screening/F1_00_s0/log.csv',
+            'A_calibration/screening/F1_00_s0/run.json', 'A_calibration/screening/F1_selection.json'} <= packed
 
 
 @pytest.mark.skipif(__import__('os').name == 'nt', reason='runs the bash submission scripts')

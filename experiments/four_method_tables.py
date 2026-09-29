@@ -344,13 +344,23 @@ def run_controls(originals, logger, quick=False, verbose=True, csv_path=None, sk
     for orig in originals:
         benchmark, P, method = orig['benchmark'], int(orig['P']), orig['method']
         _, runs_fn, nil_n_fn, nil_q_fn, lil_n_fn = problems[benchmark]
-        match = [(c, o) for p, c, o in runs_fn(quick) if p == P]
-        if not match:
-            raise ValueError(f"no {benchmark} configuration with P={P}")
+        # Every paper size (not the quick subset), so any original is found.
+        match = [(c, o) for p, c, o in runs_fn(False) if p == P]
+        problem = (f"no {benchmark} configuration with P={P}" if not match else
+                   f"{benchmark} P={P}: collocation seed {orig['collocation_seed']} is not the "
+                   f"configuration's {match[0][0].seed}"
+                   if orig.get('collocation_seed') not in (None, '')
+                   and int(orig['collocation_seed']) != match[0][0].seed else None)
+        if problem:
+            # Logged as a failed control; the other controls still run.
+            base = {k: orig.get(k) for k in ('benchmark', 'P', 'method', 'seed', 'collocation_seed', 'device')}
+            if row_key({**base, 'variant': CONTROL_VARIANT}) not in skip_keys:
+                logger.record(**base, variant=CONTROL_VARIANT, stopping_reason='failure', error=problem)
+                if csv_path is not None:
+                    logger.to_csv(csv_path)
+            print(f"  control not run: {problem}")
+            continue
         config, opt = match[0]
-        if orig.get('collocation_seed') not in (None, '') and int(orig['collocation_seed']) != config.seed:
-            raise ValueError(f"{benchmark} P={P}: collocation seed {orig['collocation_seed']} "
-                             f"is not the configuration's {config.seed}")
         if quick:
             opt = _apply_quick_budgets(opt)
         opt = dataclasses.replace(opt, stall_rule='f1')

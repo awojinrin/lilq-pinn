@@ -122,3 +122,32 @@ def test_controls_rerun_stalled_runs_from_the_same_start(tmp_path):
     merged, merged_controls = fmt.merge_csvs([job / 'four_method_tables.csv', out], tmp_path / 'm.csv')
     assert len(merged) == 2 and len(merged_controls) == 2
     assert (tmp_path / 'four_method_controls.csv').exists()
+
+
+def test_a_control_that_cannot_be_matched_is_logged_and_the_rest_still_run(tmp_path):
+    """A configuration mismatch (here a collocation seed that is not the
+    paper configuration's) is a failed control row, not the end of the job."""
+    (P, config, opt), = fmt._bratu_runs(quick=True)
+    bad = dict(benchmark='bratu', P=P, method='LiL-N', seed='', collocation_seed=config.seed + 1,
+               device='cpu', stopping_reason='optimizer_stall', total_iterations=5, final_loss=1.0,
+               loss_history_every_10=[[0, 1.0, 0.0]])
+    good = {**bad, 'collocation_seed': config.seed, 'method': 'NiL-N', 'seed': '0'}
+    logger = FourMethodLogger()
+    fmt.run_controls([bad, good], logger, quick=True, verbose=False, csv_path=tmp_path / 't.csv')
+    rows = logger.rows
+    assert [(r['method'], r['stopping_reason']) for r in rows][0] == ('LiL-N', 'failure')
+    assert 'collocation seed' in rows[0]['error'] and rows[1]['method'] == 'NiL-N'
+    assert rows[1]['stopping_reason'] != 'failure'
+
+
+def test_controls_find_every_paper_size_on_quick_budgets():
+    """The quick subset has only the smallest size; a control of a larger
+    original still finds its configuration."""
+    logger = FourMethodLogger()
+    (P0, config, opt), = fmt._bratu_runs(quick=True)
+    P_large = fmt._bratu_runs(quick=False)[-1][0]
+    orig = dict(benchmark='bratu', P=P_large, method='LiL-N', seed='', collocation_seed=config.seed,
+                device='cpu', stopping_reason='optimizer_stall', total_iterations=5, final_loss=1.0,
+                loss_history_every_10=[[0, 1.0, 0.0]])
+    fmt.run_controls([orig], logger, quick=True, verbose=False)
+    assert logger.rows[0]['P'] == P_large and logger.rows[0]['stopping_reason'] != 'failure'

@@ -16,8 +16,8 @@ waves 2 and 3:
 * the four-method rows with the saved per-iteration histories, and the
   stall controls (``four_method_controls.csv``; the advisor's reply to wave 1,
   item 2.5);
-* Component A's check results, search lists, screening and selection
-  files, representative and tuning log, and ``run_endings.csv``: how every
+* Component A's check results, search lists, screening files (each run's
+  ``run.json`` and ``log.csv``) and selections, representative and tuning log, and ``run_endings.csv``: how every
   Component A run ended, flagging any that ended before its budget (the
   reply to wave 1, Section 3);
 * ``oversampling.csv``, the B8 and B9 tables;
@@ -74,6 +74,7 @@ def report_files(root: Path):
         'A_calibration/checks/*', 'A_calibration/tuning_log.md', 'A_calibration/search/*',
         'A_calibration/run_endings.csv',
         'A_calibration/screening/*_selection.json', 'A_calibration/full/*_representative.json',
+        'A_calibration/screening/*/log.csv',
         'A_calibration/*/*/run.json',
         'C_oversampling/results/*', 'C_oversampling/figures/*',
     ]
