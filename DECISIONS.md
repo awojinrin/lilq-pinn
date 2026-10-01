@@ -17,6 +17,96 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- Wave 4's cluster setup (the advisor's reply to wave 2, Section 4; his follow-up; Addendum v2.3)
+
+**One new commit, the advisor's order:** he reviews the commit; then the
+preflight and the gate (29: the search, A1, A2, the F2 Jacobian on the new
+code); then the jobs. `submit_wave4.sh`; `LILQ_WAVE` may now be 4
+(`sbatch.sh`), the wave report takes `--wave 4`, and `assemble_package.py`
+assembles waves 1-4.
+
+**Component A from wave 2's runs (option 3).** Before submitting,
+`submit_wave4.sh` copies into `results/wave4/A_calibration`:
+- wave 2's `search/`, `screening/` (all 24 + 24 runs) and `tuning_log.md`
+  (wave 4's runs are appended to it, as wave 2's were to wave 1's);
+- the full runs of F1's finalists F1_04, F1_15, F1_18.
+
+Not F2's: F2_16, F2_03 and F2_17 are not wave 4's finalists. Wave 2's
+selection and representative files stay in `results/wave2`; wave 4 writes
+its own, which replace them in `package1` (`WAVES.json` overrides).
+- `34_A_f1_repick` (shared GPU, 1 h): `select --family F1 --keep-top F1_04
+  F1_15 F1_18`, then `full`, which finds the 15 runs, trains nothing, and
+  picks F1_18 (rehearsed on wave 2's data: entry "Component A selects by
+  validation residual").
+- `35_A_f2_full` (timed, 18 h): `select --family F2` -- F2_10, F2_05, F2_14
+  -- then `full`: 15 runs of 60 minutes on the allocation of wave 2's job 31
+  (one A100, 48 cores; 192 SU/h), the representative by median validation
+  residual.
+- `32_A_cpu` is submitted once per family (`--array=0` after 34, `--array=1`
+  after 35), so F1's CPU reruns do not wait for F2's full stage.
+- `33_A_float32` (F1_18) runs after 34.
+
+**The other jobs**, each after the preflight:
+- `13a_clean_timing_cpu` (timed-cpu, 1.5 h): first gravity BL P = 64's
+  logged paper pass again, now with K_max = 60, for its monitor values; then
+  `clean_timing.py` on the CPU for every quoted time, with the logged times
+  looked up in wave 4, then wave 2's run folders, then wave 1's (the pinned
+  run);
+- `13b_clean_timing_gpu` (timed, 1 h): Kovasznay on the GPU;
+- `43_basis_study` (cpu): Table 3 again, with the default-init ELM row and
+  the new columns;
+- `44_b10_cgl_cc` (cpu, 2 h): B10's 16 runs and the comparison with wave 1's
+  paper-grid runs;
+- `45_b8_kmax60` (cpu, 1 h): wave 3's three capped LiL-Q rows with K_max =
+  60, into `b8_jobs/lilq_kmax60/`.
+
+Then `91_wave_report`, after all of them, and `90_finalize`, after the
+report. Finalize was moved here from wave 3, where it was submitted and
+cancelled; `submit_wave3.sh` no longer submits it. It now fills B9's
+`allocation` / `resumed_at` before merging.
+
+**The wave report** adds `A_calibration/representative_thresholds.csv` (the
+reply's Section 2). For each family's representative and each of its runs
+-- full stage, CPU reruns, float32 -- it gives:
+- the first logged time (`t_cum_s`) at which eps_u <= 1e-4, 1e-6, 1e-8 and
+  1e-9 (empty if never);
+- the final eps_u and the mean-free pressure error;
+
+all read from the runs' `log.csv`. It also packs the validation files, the
+clean-timing table, B10's table and logs, and the paper-pass run files.
+
+**Expected cost** (rates of waves 2 and 3), about 3,900 SU, the advisor's
+estimate; about 5,300 if every job ran to its walltime:
+
+| Item | Hours | Rate (SU/h) | SU |
+|---|---|---|---|
+| F2 full stage | ~15.5 | 192 | ~2,980 |
+| CPU reruns (F1, F2) | 2 x 5.2 | 48 | ~500 |
+| F1 float32 | ~1.15 | 192 | ~220 |
+| Preflight and gate | | 80 | ~110 |
+| Clean timing | | | ~50 |
+| B10, Table 3, B8, report, finalize | | 24 | ~20 |
+
+`submit_lib.sh`'s results folder can be overridden with `LILQ_RESULTS`, so
+that the tests can exercise the copy step on a temporary folder. The local
+fake-`sbatch` submission: the copies as above (F2_16 not copied), 14 jobs
+with the dependencies above.
+
+**Local rehearsal of the clean-timing jobs** (this laptop, with the logged
+times of waves 1 and 2 from the downloaded results):
+the gravity BL P = 64 logged rerun reached its target at 43 iterations;
+`clean_timing.py` wrote 42 rows (CPU and GPU), every one with its logged
+time found -- wave 4's gravity rerun, wave 2's run folders, wave 1's pinned
+run. The laptop's times are not comparable with Grace's logged ones; the
+rehearsal tests the jobs, not the numbers. One observation: on this laptop
+Beltrami's timed and warm-up runs agree (301 and 300 s), whereas in wave 2
+on Grace the logged run took 303 s and its warm-up 227 s; wave 4's clean run
+on Grace settles it.
+
+Tests: `tests/test_cluster_waves.py`.
+
+---
+
 ## 2026-10-01 -- The advisor's follow-up items: the default-init ELM row, B9's time records, B8's K_max = 60 reruns, the four-method history cost
 
 **Table 3, default-initialization ELM (item 3).**

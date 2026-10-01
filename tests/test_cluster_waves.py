@@ -94,7 +94,7 @@ def test_every_job_script_names_a_resource_class_and_waves_use_them():
         classes[script.stem] = line.split()[2]
     assert classes['10a_timed_lilq_cpu'] == classes['21_four_method_cpu'] == classes['32_A_cpu'] == 'timed-cpu'
     assert classes['10b_timed_lilq_gpu'] == classes['20_four_method_gpu'] == 'timed'
-    waves = ''.join((REPO / 'scripts' / 'cluster' / f'submit_wave{n}.sh').read_text() for n in (1, 2, 3))
+    waves = ''.join((REPO / 'scripts' / 'cluster' / f'submit_wave{n}.sh').read_text() for n in (1, 2, 3, 4))
     for job in classes:
         assert f'$S/{job}.slurm' in waves, job              # every job belongs to a wave
 
@@ -207,3 +207,85 @@ def test_b4_tasks_run_controls_and_wave_2_bratu_controls_wave_1(script, device):
     assert resolve(2, 0) == (f'/R/wave2/B/four_method_jobs/bratu_{device}_controls|--controls-only '
                              f'--controls-from /R/wave1/B_instrumentation/four_method_jobs/bratu_{device}')
     assert resolve(1, 0) == f'/R/wave1/B/four_method_jobs/bratu_{device}|--controls'
+
+
+def test_wave_4_scripts_and_classes():
+    """Wave 4 (the advisor's reply to wave 2, his follow-up, Addendum v2.3)."""
+    classes = {s.stem: next(l for l in s.read_text().splitlines() if l.startswith('# lilq-resources:')).split()[2]
+               for s in (REPO / 'scripts' / 'cluster').glob('*.slurm')}
+    assert classes['13a_clean_timing_cpu'] == 'timed-cpu' and classes['13b_clean_timing_gpu'] == 'timed'
+    assert classes['35_A_f2_full'] == 'timed' and classes['34_A_f1_repick'] == 'shared-gpu'
+    assert classes['44_b10_cgl_cc'] == classes['45_b8_kmax60'] == 'cpu'
+    f1 = (REPO / 'scripts/cluster/34_A_f1_repick.slurm').read_text()
+    assert '--keep-top F1_04 F1_15 F1_18' in f1
+    wave3 = (REPO / 'scripts/cluster/submit_wave3.sh').read_text()
+    assert '90_finalize' not in [l.split()[2].split('/')[-1].replace('.slurm', '') for l in wave3.splitlines()
+                                 if l.startswith('submit ')]
+    assert '$S/90_finalize.slurm' in (REPO / 'scripts/cluster/submit_wave4.sh').read_text()
+
+
+def test_representative_thresholds(tmp_path):
+    """For each representative run: the first logged time eps_u <= 1e-4,
+    1e-6, 1e-8, 1e-9, and the final errors (the reply to wave 2, Section 2)."""
+    report = _load('wave_report')
+    A = tmp_path / 'wave4' / 'A_calibration'
+    _write(A / 'full' / 'F2_representative.json', json.dumps({'representative': 'F2_05'}))
+    for stage, seed, trace in (('full', 0, [(1.0, 1e-3), (2.0, 5e-5), (3.0, 1e-7), (4.0, 5e-9)]),
+                               ('full_cpu', 0, [(2.0, 1e-3), (9.0, 2e-6)])):
+        d = A / stage / f'F2_05_s{seed}'
+        _write(d / 'run.json', json.dumps({'seed': seed, 'device': 'cuda' if stage == 'full' else 'cpu',
+                                           'eps_u': trace[-1][1], 'eps_p_meanfree': 1e-6, 'wall_s': 3600.0,
+                                           'end_reason': 'budget'}))
+        _write(d / 'log.csv', 'iter,t_cum_s,eps_u\n' + ''.join(f'{i},{t},{e}\n' for i, (t, e) in enumerate(trace))
+               + '9,9.5,\n')
+    _write(A / 'full' / 'F2_03_s0' / 'log.csv', 'iter,t_cum_s,eps_u\n0,1.0,1e-12\n')       # not the representative
+    rows = {r['stage']: r for r in report.representative_thresholds(tmp_path / 'wave4')}
+    assert set(rows) == {'full', 'full_cpu'}
+    full = rows['full']
+    assert (full['t_eps_u_le_0.0001'], full['t_eps_u_le_1e-06'], full['t_eps_u_le_1e-08'],
+            full['t_eps_u_le_1e-09']) == (2.0, 3.0, 4.0, None)
+    assert rows['full_cpu']['t_eps_u_le_1e-06'] is None and rows['full_cpu']['t_eps_u_le_0.0001'] == 9.0
+    assert (tmp_path / 'wave4' / 'A_calibration' / 'representative_thresholds.csv').exists()
+
+
+def test_package_assembles_four_waves(tmp_path):
+    assemble = _load('assemble_package')
+    res = tmp_path / 'results'
+    for n, commit in ((1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')):
+        _write(res / f'wave{n}' / 'COMMIT', json.dumps({'commit': commit}))
+    _write(res / 'wave2' / 'A_calibration' / 'full' / 'F2_representative.json', '{"representative": "F2_16"}')
+    _write(res / 'wave4' / 'A_calibration' / 'full' / 'F2_representative.json', '{"representative": "F2_05"}')
+    record = assemble.assemble(res, res / 'package1')
+    assert record['waves']['4']['commit'] == 'd'
+    assert json.loads((res / 'package1' / 'A_calibration/full/F2_representative.json').read_text())['representative'] == 'F2_05'
+    assert record['overrides'] == [{'path': 'A_calibration/full/F2_representative.json', 'from_wave': 4}]
+
+
+@pytest.mark.skipif(__import__('os').name == 'nt', reason='runs the bash submission scripts')
+def test_wave_4_submission_copies_component_a_and_chains_the_jobs(tmp_path):
+    """A real (fake-sbatch) submission: wave 2's search, screening runs and
+    F1 finalist runs are copied into wave 4, and 15 jobs are submitted with
+    the right dependencies."""
+    import os
+    import subprocess
+    res = tmp_path / 'results'
+    w2 = res / 'wave2' / 'A_calibration'
+    for p in ('search/F2_configs.json', 'screening/F2_05_s0/run.json', 'full/F1_18_s0/run.json',
+              'full/F1_04_s4/run.json', 'full/F2_16_s0/run.json', 'tuning_log.md'):
+        _write(w2 / p, '{}')
+    _write(res / 'wave3' / 'COMMIT', json.dumps({'commit': 'c'}))
+    fake = tmp_path / 'sbatch'
+    fake.write_text('#!/bin/bash\nn=$(cat "$(dirname "$0")/n" 2>/dev/null || echo 100); echo $((n+1)) > "$(dirname "$0")/n"\n'
+                    'echo "$*" >> "$(dirname "$0")/log"; echo $((n+1))\n')
+    fake.chmod(0o755)
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", LILQ_RESULTS=str(res), YES='1')
+    out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave4.sh')], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    w4 = res / 'wave4' / 'A_calibration'
+    assert (w4 / 'search' / 'F2_configs.json').exists() and (w4 / 'screening' / 'F2_05_s0' / 'run.json').exists()
+    assert (w4 / 'full' / 'F1_18_s0').exists() and (w4 / 'full' / 'F1_04_s4').exists()
+    assert not (w4 / 'full' / 'F2_16_s0').exists() and (w4 / 'tuning_log.md').exists()
+    log = (tmp_path / 'log').read_text().splitlines()
+    assert len(log) == 14
+    assert sum('32_A_cpu' in l for l in log) == 2 and any('--array=1' in l and '32_A_cpu' in l for l in log)
+    assert 'afterany' in log[-1] and '90_finalize' in log[-1]

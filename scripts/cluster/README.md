@@ -78,7 +78,8 @@ one GPU (`sacct -X -j <job> --format=JobID,JobName%24,AllocTRES%70` shows
 |---|---|---|---|
 | 1 | preflight; A1 gate; 10a, 10b; Component C; B6; B4 for Bratu (20 `--array=0 --time=03:00:00`, 21 `--array=0`) | ~1,410 SU (charged: 332) | done at `8a3f5f7`; results on branch `wave1-results` |
 | 2 | preflight and A1 gate (new code); Component A (30 -> 31 -> 32, 33); B4 for the other three benchmarks with stall controls, and wave 1's Bratu controls (20, 21 `--array=0-3`); timing reruns (11a, 11b) | ~5,900-6,700 SU expected; ~11,700 if every job hit its walltime | `results/wave2_report.tar.gz`; check `gres/gpu=1` on the first timed job; submit wave 3 once wave 2's charges have posted |
-| 3 | B9 (40); B8 (41); finalize | ~2,500-4,200 SU (advisor's estimate) | `results/package1` (package1_results/), `results/wave3_report.tar.gz` |
+| 3 | B9 (40); B8 (41) | ~2,500-4,200 SU (charged: 1,019) | done at `905e58c`; results on branch `wave3-results` |
+| 4 | preflight and A1 gate (new code); Component A: F1 re-pick (34), F2 full stage (35), CPU reruns (32, one task each), F1 float32 (33); clean timing (13a, 13b); Table 3 (43); B10 (44); B8 K_max = 60 reruns (45); finalize | ~3,900 SU (advisor's estimate); ~5,300 if every job hit its walltime | `results/wave4_report.tar.gz`; `results/package1` (package1_results/) from the four waves |
 
 **One results folder per wave.** Wave N writes `results/wave<N>` only, and
 the first job of a wave locks that folder to the code's commit and
@@ -128,6 +129,8 @@ copying them off the cluster: the models are what later figures are made from.
 | `10b_timed_lilq_gpu` | Section 3.3 Kovasznay GPU runs (both passes); check B3 with its timings | timed | 2 h |
 | `11a_timing_reruns_cpu` | wave 2: the paper passes of Bratu, Burgers, both BL, elasticity, Kovasznay, with warm-up runs | timed-cpu | 1 h |
 | `11b_timing_reruns_gpu` | wave 2: the Kovasznay GPU paper passes and check B3, with warm-up runs | timed | 1 h |
+| `13a_clean_timing_cpu` | wave 4: gravity BL P = 64 logged paper pass (K_max = 60); clean timing (warm-up, diagnostics off) of every quoted CPU LiL-Q time, the pinned Beltrami run included | timed-cpu | 1.5 h |
+| `13b_clean_timing_gpu` | wave 4: clean timing of the Kovasznay GPU paper passes | timed | 1 h |
 | `20_four_method_gpu` | B4 GPU pass, one task per benchmark, then its stall controls; wave 2's Bratu task: wave 1's Bratu controls | timed | 8 h each |
 | `21_four_method_cpu` | B4 CPU pass at the largest sizes, then its stall controls; wave 2's Bratu task: wave 1's | timed-cpu | 4 h each |
 | `30_A_screen` | Component A: 24 configurations x 10 min per family | timed x 2 | 6 h each |
@@ -137,7 +140,11 @@ copying them off the cluster: the models are what later figures are made from.
 | `40_b9_nil_darcy` | B9: NiL Darcy, the manuscript's network (3,555 parameters), float64 and float32, 4 fields x 3 seeds (LiL alongside) | shared-gpu x 12 | 3 h each |
 | `41_b8_initial_guess` | B8: 128 runs, one task per (case, guess); networks on the A100 | shared-gpu x 4 | 6 h each |
 | `42_component_c` | Component C: 196 LiL-Q runs | cpu | 6 h |
-| `43_basis_study` | B6: the Burgers basis study | cpu | 3 h |
+| `43_basis_study` | B6: the Burgers basis study (wave 4: with the default-init ELM row, the test error and both kappas) | cpu | 3 h |
+| `34_A_f1_repick` | wave 4: F1's representative re-picked among wave 2's finalists by validation residual (no training) | shared-gpu | 1 h |
+| `35_A_f2_full` | wave 4: F2's validation top three x 5 seeds x 60 min, representative by validation residual | timed | 18 h |
+| `44_b10_cgl_cc` | wave 4: B10, Kovasznay on CGL grids with Clenshaw-Curtis weights (16 runs) | cpu | 2 h |
+| `45_b8_kmax60` | wave 4: B8's capped LiL-Q rows of wave 3, rerun with K_max = 60 | cpu | 1 h |
 | `91_wave_report` | the wave's tables and report tarball | cpu | 45 min |
 | `90_finalize` | package1 from the waves; reference/, code/, merged tables (B4, B8, B9), B1, B5 figures, Section 4.6 comparison | cpu | 1 h |
 

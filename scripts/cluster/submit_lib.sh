@@ -1,11 +1,11 @@
-# Shared by submit_wave1.sh, submit_wave2.sh, submit_wave3.sh (sourced, with
+# Shared by submit_wave1.sh ... submit_wave4.sh (sourced, with
 # LILQ_WAVE set). Run the wave scripts from a login node:
 #   bash scripts/cluster/submit_wave1.sh            (CLUSTER=grace is the default)
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 mkdir -p logs   # sbatch does not create the --output directory
 S=scripts/cluster
-RESULTS="$PWD/results"
+RESULTS="${LILQ_RESULTS:-$PWD/results}"   # LILQ_RESULTS: tests only
 
 # Check the profile before submitting anything (a failure halfway would leave
 # part of a wave queued).
@@ -37,7 +37,7 @@ fi
 
 # Before each wave: the balance, then an explicit go-ahead (YES=1 skips the question).
 confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave>
-    echo "Wave $LILQ_WAVE of 3 (results/wave$LILQ_WAVE), code at $(code_commit)."
+    echo "Wave $LILQ_WAVE of 4 (results/wave$LILQ_WAVE), code at $(code_commit)."
     echo "Estimated request: $1. Read the 'Requested SUs' line sbatch prints for each job."
     if command -v myproject >/dev/null; then myproject -l || true; else echo "(myproject not found: check the balance another way)"; fi
     [[ "$DRY_RUN" == 1 ]] && { echo "DRY RUN: checking each job with sbatch --test-only."; return 0; }

@@ -12,15 +12,15 @@
 #               as the A100 nodes, no GPU surcharge (Addendum v2.2 Section 4.1)
 #   shared-gpu  one A100, 8 cores, 32 GB (untimed GPU work)
 #   cpu         24 cores, 32 GB, no GPU (untimed CPU work)
-# LILQ_WAVE (1, 2 or 3) must be set: it picks the wave's results folder,
+# LILQ_WAVE (1, 2, 3 or 4) must be set: it picks the wave's results folder,
 # results/wave<N>, each locked to one commit (env.sh). Use this for
 # resubmissions too (e.g. LILQ_WAVE=1 bash scripts/cluster/sbatch.sh job.slurm --array=2).
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER="${CLUSTER:-grace}"
 source "$here/profiles/$CLUSTER.sh"
-: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2 or 3 (the wave this job belongs to)}"
-[[ "$LILQ_WAVE" =~ ^[123]$ ]] || { echo "LILQ_WAVE must be 1, 2 or 3, not '$LILQ_WAVE'" >&2; exit 1; }
+: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3 or 4 (the wave this job belongs to)}"
+[[ "$LILQ_WAVE" =~ ^[1234]$ ]] || { echo "LILQ_WAVE must be 1, 2, 3 or 4, not '$LILQ_WAVE'" >&2; exit 1; }
 export CLUSTER LILQ_MODULES LILQ_WAVE
 
 script="$1"; shift

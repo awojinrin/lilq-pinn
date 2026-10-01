@@ -26,7 +26,7 @@ import shutil
 from pathlib import Path
 
 
-def assemble(results: Path, out: Path, waves=(1, 2, 3)) -> dict:
+def assemble(results: Path, out: Path, waves=(1, 2, 3, 4)) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     record = {'waves': {}, 'overrides': [], 'files': 0}
     for n in waves:

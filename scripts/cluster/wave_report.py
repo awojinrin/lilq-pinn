@@ -72,7 +72,12 @@ def report_files(root: Path):
         'B_instrumentation/darcy_fv/*/darcy_fv_comparison.csv',
         'B_instrumentation/basis_study/*.csv', 'B_instrumentation/basis_study/runs/*/iterations.csv',
         'A_calibration/checks/*', 'A_calibration/tuning_log.md', 'A_calibration/search/*',
-        'A_calibration/run_endings.csv',
+        'A_calibration/run_endings.csv', 'A_calibration/representative_thresholds.csv',
+        'A_calibration/*/*/validation.json',
+        # wave 4: clean timing, B10, the logged gravity BL rerun
+        'B_instrumentation/clean_timing/*', 'B_instrumentation/b10/*.csv', 'B_instrumentation/b10/*/iterations.csv',
+        'B_instrumentation/b10/*/run.json', 'B_instrumentation/*_paper/summary.json',
+        'B_instrumentation/*_paper/iterations.csv', 'B_instrumentation/*_paper/run.json',
         'A_calibration/screening/*_selection.json', 'A_calibration/full/*_representative.json',
         'A_calibration/screening/*/log.csv',
         'A_calibration/*/*/run.json',
@@ -113,9 +118,57 @@ def component_a_endings(root: Path):
     return [r for r in rows if r['ended_before_budget']]
 
 
+THRESHOLDS = (1e-4, 1e-6, 1e-8, 1e-9)
+THRESHOLD_COLUMNS = ('family', 'representative', 'stage', 'run', 'seed', 'device', 'precision') + tuple(
+    f't_eps_u_le_{t:g}' for t in THRESHOLDS) + ('final_eps_u', 'final_eps_p_meanfree', 'wall_s', 'end_reason')
+
+
+def representative_thresholds(root: Path):
+    """``A_calibration/representative_thresholds.csv`` (the advisor's reply to
+    wave 2, Section 2): for each family's representative and each of its
+    runs -- the full stage (GPU), the CPU reruns and the float32 run -- the
+    first logged time (``t_cum_s``) at which eps_u <= 1e-4, 1e-6, 1e-8 and
+    1e-9 (empty if never), and the final eps_u and mean-free pressure error.
+    Read from the runs' ``log.csv``. Returns the rows."""
+    A = root / 'A_calibration'
+    rows = []
+    for family in ('F1', 'F2'):
+        rep_path = A / 'full' / f'{family}_representative.json'
+        if not rep_path.exists():
+            continue
+        rep = json.loads(rep_path.read_text())['representative']
+        for stage in ('full', 'full_cpu', 'float32'):
+            for run_dir in sorted((A / stage).glob(f'{rep}_s*')):
+                log, run_json = run_dir / 'log.csv', run_dir / 'run.json'
+                if not log.exists() or not run_json.exists():
+                    continue
+                run = json.loads(run_json.read_text())
+                first = {t: None for t in THRESHOLDS}
+                with open(log, newline='') as f:
+                    for r in csv.DictReader(f):
+                        try:
+                            eps, t_cum = float(r['eps_u']), float(r['t_cum_s'])
+                        except (KeyError, TypeError, ValueError):
+                            continue
+                        for t in THRESHOLDS:
+                            if first[t] is None and eps <= t:
+                                first[t] = t_cum
+                rows.append({'family': family, 'representative': rep, 'stage': stage, 'run': run_dir.name,
+                             'seed': run.get('seed'), 'device': run.get('device'), 'precision': run.get('precision', ''),
+                             **{f't_eps_u_le_{t:g}': first[t] for t in THRESHOLDS},
+                             'final_eps_u': run.get('eps_u'), 'final_eps_p_meanfree': run.get('eps_p_meanfree'),
+                             'wall_s': run.get('wall_s'), 'end_reason': run.get('end_reason')})
+    if rows:
+        with open(A / 'representative_thresholds.csv', 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=THRESHOLD_COLUMNS)
+            writer.writeheader()
+            writer.writerows(rows)
+    return rows
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Build and pack a wave's report.")
-    ap.add_argument('--wave', type=int, required=True, choices=(1, 2, 3))
+    ap.add_argument('--wave', type=int, required=True, choices=(1, 2, 3, 4))
     ap.add_argument('--results', default=str(REPO / 'results'))
     args = ap.parse_args(argv)
     results = Path(args.results)
@@ -131,6 +184,8 @@ def main(argv=None):
     if jobs:
         _run([sys.executable, 'experiments/four_method_tables.py', '--out-dir', str(B), '--merge-from', *jobs], log)
 
+    if (root / 'A_calibration' / 'full').is_dir():
+        log.append(f"Representative threshold times: {len(representative_thresholds(root))} runs")
     if (root / 'A_calibration').is_dir():
         early = component_a_endings(root)
         log.append(f"Component A runs ended before their budget: {len(early)}"

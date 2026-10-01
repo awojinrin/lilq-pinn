@@ -1,10 +1,11 @@
 #!/bin/bash
-# After wave 3 (not timed): assemble results/package1 (package1_results/)
-# from the three wave roots, each locked to its own commit, with WAVES.json
+# After wave 4 (not timed): assemble results/package1 (package1_results/)
+# from the four wave roots, each locked to its own commit, with WAVES.json
 # naming them (scripts/cluster/assemble_package.py); then reference/ and
 # code/, the merged four-method table, check B1, the residual-band figures
 # (task B5), the Section 4.6 Kovasznay comparison, the merged B8 and B9
-# tables, and the run index. Submitted with wave 3 (LILQ_WAVE=3). Minutes.
+# tables (B9's allocation and resume columns filled first), and the run
+# index. Submitted with wave 4 (LILQ_WAVE=4). Minutes.
 # lilq-resources: cpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-finalize
 #SBATCH --time=01:00:00
@@ -23,6 +24,9 @@ python experiments/component_b.py --reproduction-check --out-root "$PKG"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass paper --out-dir "$B/residual_band_figures/paper"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass kmax  --out-dir "$B/residual_band_figures/kmax"
 python experiments/kovasznay_comparison.py --package "$PKG"
+# B9 tables written before the allocation / resumed_at columns (wave 3): fill them
+# (the advisor's follow-up of 1 October, item 4).
+python experiments/darcy_fv_comparison.py --annotate "$B/darcy_fv"
 python - <<'PY'
 import csv, glob, os
 from pathlib import Path
@@ -52,5 +56,6 @@ fm = list(csv.DictReader(open(B / "four_method_tables.csv")))
 print(f"Section 3.3 runs: {len(index)} ({sum(r['status'] != 'ok' for r in index)} failed)")
 print(f"four-method rows: {len(fm)} ({sum(r['stopping_reason'] == 'failure' for r in fm)} failures)")
 print(f"B9 rows: {len(rows)} (NiL: {sum(r['method'] == 'NiL' for r in rows)} of 24: 4 fields x 3 seeds x 2 precisions)")
-print(f"B8 rows: {len(b8)} of 128 ({sum(r['stopping_reason'] == 'failure' for r in b8)} failures)")
+print(f"B8 rows: {len(b8)}: 128 of wave 3 and its LiL-Q reruns with K_max = 60 "
+      f"({sum(r['stopping_reason'] == 'failure' for r in b8)} failures)")
 PY
