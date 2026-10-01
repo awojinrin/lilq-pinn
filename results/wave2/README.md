@@ -89,7 +89,7 @@ The full stage's results are kept as they are. The CPU reruns and the float32 ru
 `B_instrumentation/four_method_controls.csv` has **54 controls**: the 40 stalled runs of wave 2 and wave 1's 14 stalled Bratu runs. Each ran on its original's device, with tolerances 0 and F1's restart-once rule.
 
 - All 54 have `same_start = True`: iteration 0's loss equals the original's bit for bit, on GPU and CPU, including wave 1's runs (another commit and node).
-- 48 retrace the original's logged history exactly up to its stall. The other 6 depart from it at iterations 5,560–8,140. With `tolerance_change = 0`, the line search's own bracketing test also changes, which is the likely cause.
+- **All 54 retrace their original exactly up to the stall.** For 48 the logged loss history matches the original's to the end. For the other 6, `departs_at_iteration` (1,320; 5,240; 5,560; 5,800; 6,400; 8,140) is the original's last logged row, i.e. the departure lies within the 10-iteration piece in which the original stalled, where the original made its no-op step. *Corrected 1 October 2026, following the advisor's reply to wave 2, Section 5: the first version of this README said the 6 "depart late".*
 - No control needed the restart (`lbfgs_restarts = 0` everywhere): with tolerances 0, every step lowered the loss.
 - 46 end on `iteration_cap` and 8 reach the target.
 
