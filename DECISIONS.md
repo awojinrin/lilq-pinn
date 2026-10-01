@@ -17,6 +17,71 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- Component A selects by validation residual (the advisor's reply to wave 2)
+
+**Why.** Wave 2 selected each family's top three and representative by
+final training loss (Package 1 v2.0 Section 4.3; F1 by its unweighted
+loss). In both families that chose the configuration that generalizes
+worst: F1_04 (median eps_u 7.4e-2, pressure about 100%) and F2_16 (7.6e-3),
+against 3e-5 to 1e-4 (F1) and 4e-9 to 2e-6 (F2) for the other finalists.
+These configurations fit their collocation points without learning the
+solution: the six lowest-training-loss F2 configurations have fewer residual
+rows than parameters, and F1_04 has sigma_FF = 5 with 2,000 points. The
+residual on fresh points ranks the 24 screening runs of each family in
+nearly the order of the test error (Spearman 0.93 / 0.94, against 0.70 /
+0.11 for the training loss; on the 15 full runs 0.90 / 0.95 against -0.62 /
+-0.86). The advisor checked this with his own code and a different design (a
+96 x 96 Gauss-Legendre quadrature: 0.92 / 0.95, the same leaders) and
+adopted our design as the protocol.
+
+**The protocol** (`baselines/validation.py`): F1's unweighted loss on points
+no run trained on -- the x-momentum, y-momentum and continuity mean squares
+on 20,000 uniform interior points (`torch.Generator().manual_seed(20261001)`,
+float64, drawn on the CPU so the points do not depend on the device; chunks
+of 2,500), plus, for soft-BC F1 runs, the u and v boundary mean square on
+400 points per face. Hard-BC F1 runs and every F2 run satisfy the boundary
+data exactly. No exact solution is used beyond the boundary data. On wave
+2's saved models the module reproduces the analysis of `wave2-results`
+(`results/wave2/analysis/`) bit for bit on the GPU and to round-off (1e-10
+relative at 4e-16) on the CPU.
+
+**Selection** (`component_a.select`): the top three distinct configurations
+by the screening runs' validation residual. The selection file records the
+validation ranking (with each run's training loss), the training-loss
+ranking (`ranking_by_training_loss`, `top_by_training_loss`: the paper shows
+all 24 screening runs under both criteria), `top_by_validation`, and the
+protocol (seed and counts). `--keep-top` keeps given configurations as the
+top three instead, recording why (`top_kept`) and the validation top three
+beside them.
+
+**Representative** (`component_a.full`): the lowest median validation
+residual over the five seeds. The file records the medians of both
+criteria and every run's validation residual. Full runs that exist are not
+retrained.
+
+**Where the residual is kept.** A run made by this code records
+`val_residual`, `val_terms` and `val_protocol` in its `run.json`, computed
+off the budget clock after training. An older run's `run.json` is left as it
+was written, and the residual goes into `validation.json` beside it. Either
+is read back, never recomputed. A run without a saved model (a failure)
+ranks last, with `inf`.
+
+**Wave 4, per the advisor's decision (option 3).** F2: `select --family F2`
+on wave 2's screening runs gives F2_10, F2_05 and F2_14, the advisor's three;
+a new full stage, then the CPU reruns of its representative. F1: no new full
+stage; `select --family F1 --keep-top F1_04 F1_15 F1_18`, then `full`, which
+finds wave 2's 15 runs and re-picks the representative: F1_18 (median
+validation residual 3.4e-6, against 2.3e-5 for F1_15 and 3.8 for F1_04).
+Then its CPU reruns and its float32 run. Both were rehearsed on a copy of
+wave 2's Component A folder: the selections and F1_18 as above, nothing
+retrained. F1_04's and F2_16's runs and their wave-2 selection files stay
+in `results/wave2`.
+
+Tests: `tests/test_validation_residual.py`; `tests/test_component_a.py` and
+`tests/test_baseline_search.py` updated.
+
+---
+
 ## 2026-09-30 -- Beltrami and Darcy timing reruns (the advisor's reply to our note before wave 2)
 
 The advisor accepted the note's three departures but one: every reported

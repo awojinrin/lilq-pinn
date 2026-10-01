@@ -70,7 +70,7 @@ def test_f2_draw_stops_when_the_cap_leaves_too_few_configurations():
 
 def test_selection_takes_three_distinct_configurations(tmp_path):
     """Even from a list with repeats, `select` returns three different
-    configurations, ranked by screening loss."""
+    configurations, ranked by the screening runs' validation residual."""
     import experiments.component_a as ca
     same = {'family': 'F2', 'width': 32, 'depth': 3, 'm': 32, 'sigma_ff': 1.0, 'n_int': 2000, 'n_theta': 4291}
     configs = [{'id': 'F2_00', **same}, {'id': 'F2_01', **same},
@@ -81,5 +81,5 @@ def test_selection_takes_three_distinct_configurations(tmp_path):
     for c, loss in zip(configs, (0.1, 0.2, 0.3, 0.4, 0.05)):
         d = tmp_path / 'screening' / f"{c['id']}_s0"
         d.mkdir(parents=True)
-        (d / 'run.json').write_text(json.dumps({'final_loss': loss}))
+        (d / 'run.json').write_text(json.dumps({'final_loss': loss, 'val_residual': loss}))
     assert ca.select(tmp_path, 'F2')['top'] == ['F2_04', 'F2_00', 'F2_02']

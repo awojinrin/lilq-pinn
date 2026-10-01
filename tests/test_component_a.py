@@ -36,10 +36,14 @@ def test_every_stage_end_to_end(root, monkeypatch):
     for fam in ca.FAMILIES:
         runs = ca.screen(root, fam, "cpu", budget_s=2)
         assert len(runs) == 2 and all("final_loss" in r for r in runs.values())
+        # Every run made by this code records its validation residual in run.json.
+        assert all(isinstance(r["val_residual"], float) for r in runs.values())
         sel = ca.select(root, fam)
-        assert len(sel["top"]) == 2 and sel["ranking"][0]["loss"] <= sel["ranking"][1]["loss"]
+        assert len(sel["top"]) == 2 and sel["ranking"][0]["val_residual"] <= sel["ranking"][1]["val_residual"]
+        assert sel["selection_criterion"] == "validation_residual" and len(sel["ranking_by_training_loss"]) == 2
         summary = ca.full(root, fam, "cpu", budget_s=2, seeds=(0, 1))
         assert summary["representative"] in sel["top"]
+        assert summary["representative"] == min(summary["median_val_residual"], key=summary["median_val_residual"].get)
         # F1: pressure only mean-free (Addendum v2.2 Section 1, item 9); F2 keeps the pinned one too.
         expected = {"eps_u", "eps_v", "eps_p_meanfree"} | ({"eps_p"} if fam == "F2" else set())
         assert set(summary["best_test_errors_over_all_full_runs"]) == expected

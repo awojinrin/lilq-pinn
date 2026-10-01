@@ -7,10 +7,11 @@ each run appended to ``tuning_log.md`` in the order tried::
 
     search          save the 24 + 24 configurations (generator seed 12345)
     screen          every configuration of a family, seed 0, 10-minute budget
-    select          rank the screening runs by final training loss (F1: unweighted); keep the top 3
+    select          rank the screening runs by validation residual; keep the top 3
+                    (or, with --keep-top, the configurations given)
     full            the top 3 x seeds 0-4, 60-minute budget; then the
-                    representative (lowest median training loss) and the best
-                    test errors among the 15 runs
+                    representative (lowest median validation residual) and the
+                    best test errors among the 15 runs
     cpu             the representative, CPU, seeds 0-4, full budget
     float32         F1's representative with Adam in float32, L-BFGS in float64, seed 0
     a1              check A1: the plain PINN must reach eps_u <= 1e-3 in the full budget
@@ -26,7 +27,14 @@ Layout under ``--root`` (the package's ``A_calibration/``)::
     tuning_log.md
 
 Budgets are wall-clock from the first optimizer step, never stopped on test
-error; selection uses training loss only (Section 4.3).
+error. Selection uses the validation residual (``baselines.validation``:
+F1's unweighted loss on 20,000 fresh interior points, seed 20261001, plus the
+soft boundary term), never the test error. Until wave 2 it used the final
+training loss, which in both families chose the configuration that
+generalizes worst (the advisor's reply to wave 2, 1 October 2026); the
+training-loss ranking is kept beside the validation ranking in every
+selection file. A run made by this code records its validation residual in
+``run.json``; an older run gets ``validation.json`` beside it.
 
 Usage::
 
@@ -56,6 +64,7 @@ pin_torch()   # PyTorch's threads = the BLAS allocation
 
 import baselines.f1_pinn as f1
 import baselines.lm_kovasznay as lm
+from baselines import validation
 from baselines.search import save_search
 from lilq.provenance import save_provenance
 from lilq.source_lock import current_commit
@@ -81,6 +90,10 @@ tolerances at 0; a call that does not lower the loss is followed by one call
 with a fresh optimizer, and the run ends only if that call does not lower it
 either (our reading of v2.0 Section 4.3's "the family's own criterion");
 F1 configurations are ranked and selected on the unweighted final loss.
+Changed by the advisor's reply to wave 2 (DECISIONS.md, 2026-10-01): from
+wave 4 on, configurations are ranked and the representative chosen by the
+validation residual (F1's unweighted loss on 20,000 fresh interior points,
+seed 20261001), with the training-loss ranking kept beside it.
 An L-BFGS call interrupted by the budget keeps its lowest-loss point,
 logged at the time its evaluation finished; an evaluation that finishes
 past the budget does not count as reached. A call (500 iterations, 625
@@ -140,12 +153,15 @@ def run_one(root, stage, family, config, seed, budget_s, out_dir, device, precis
     if 'commit' not in run:           # the code's commit in every run.json (Addendum v2.2 2.8.4)
         run['commit'] = current_commit()
         (out_dir / 'run.json').write_text(json.dumps(run, indent=2, default=str))
+    # The validation residual, off the clock, into run.json (the advisor's reply to wave 2).
+    validation.ensure(out_dir, device, record_in_run_json=True)
+    run = json.loads((out_dir / 'run.json').read_text())
     save_provenance(out_dir)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
     fmt = lambda v: f'{v:.3e}' if isinstance(v, (int, float)) else str(v)  # noqa: E731
     _log(root, f"- {stamp} | {stage} | {family} {config['id']} seed {seed} | {device}, {precision}, "
                f"budget {budget_s:.0f} s | end: {run.get('end_reason')} | final loss {fmt(run.get('final_loss'))} (unweighted {fmt(run.get('final_loss_unweighted'))})"
-               f" | eps_u {fmt(run.get('eps_u'))}")
+               f" | validation residual {fmt(run.get('val_residual'))} | eps_u {fmt(run.get('eps_u'))}")
     return run
 
 
@@ -173,27 +189,59 @@ def _config_key(c):
     return json.dumps({k: v for k, v in c.items() if k != 'id'}, sort_keys=True)
 
 
-def select(root, family):
-    """The top three *distinct* configurations by screening loss (the
-    advisor's reply to wave 1, item 2.1: the saved lists are distinct, and
-    selection does not rely on it)."""
-    configs = load_configs(root, family)
-    keys = {c['id']: _config_key(c) for c in configs}
-    runs = []
-    for c in configs:
-        path = Path(root) / 'screening' / f"{c['id']}_s0" / 'run.json'
-        if not path.exists():
-            raise FileNotFoundError(f"screening run missing: {path}")
-        runs.append((c['id'], _final_loss(json.loads(path.read_text()))))
-    ranking = sorted(runs, key=lambda r: r[1])
+def _distinct_top(ids, keys, k=None):
+    """The first ``k`` (default ``TOP_K``) distinct configurations of ``ids``."""
     top, chosen = [], set()
-    for i, _ in ranking:
-        if keys[i] not in chosen and len(top) < TOP_K:
+    for i in ids:
+        if keys[i] not in chosen and len(top) < (k or TOP_K):
             top.append(i)
             chosen.add(keys[i])
-    selection = {'selection_loss': 'final_loss_unweighted' if family == 'F1' else 'final_loss',
-                 'ranking': [{'id': i, 'loss': l} for i, l in ranking],
-                 'top': top}
+    return top
+
+
+def _validation(run_dir, device):
+    """A run's validation residual (computed once; ``inf`` if not finite)."""
+    v = validation.ensure(run_dir, device)
+    return v if math.isfinite(v) else float('inf')
+
+
+def select(root, family, device='cpu', keep_top=None):
+    """The top three *distinct* configurations by the validation residual of
+    their screening run (the advisor's reply to wave 2), with the
+    training-loss ranking beside it (``ranking_by_training_loss``, the rule
+    until wave 2) and the validation protocol. ``keep_top`` keeps the given
+    configurations as the top three instead (F1 in wave 4: the advisor kept
+    wave 2's finalists and re-picks only the representative); the
+    validation top three is then recorded as ``top_by_validation``."""
+    configs = load_configs(root, family)
+    keys = {c['id']: _config_key(c) for c in configs}
+    rows = []
+    for c in configs:
+        run_dir = Path(root) / 'screening' / f"{c['id']}_s0"
+        if not (run_dir / 'run.json').exists():
+            raise FileNotFoundError(f"screening run missing: {run_dir / 'run.json'}")
+        rows.append({'id': c['id'], 'val_residual': _validation(run_dir, device),
+                     'training_loss': _final_loss(json.loads((run_dir / 'run.json').read_text()))})
+    by_val = sorted(rows, key=lambda r: r['val_residual'])
+    by_train = sorted(rows, key=lambda r: r['training_loss'])
+    top_by_validation = _distinct_top([r['id'] for r in by_val], keys)
+    selection = {
+        'selection_criterion': 'validation_residual',
+        'validation_protocol': validation.PROTOCOL,
+        'training_loss': 'final_loss_unweighted' if family == 'F1' else 'final_loss',
+        'ranking': by_val,
+        'ranking_by_training_loss': [{'id': r['id'], 'training_loss': r['training_loss']} for r in by_train],
+        'top_by_training_loss': _distinct_top([r['id'] for r in by_train], keys),
+        'top_by_validation': top_by_validation,
+        'top': top_by_validation,
+    }
+    if keep_top:
+        unknown = [i for i in keep_top if i not in keys]
+        if unknown:
+            raise ValueError(f"--keep-top: no configurations {unknown} in {family}")
+        selection.update(top=list(keep_top), top_kept=(
+            "kept from wave 2's finalists by the advisor's decision of 1 October 2026; "
+            "the representative among them is chosen by validation residual"))
     (Path(root) / 'screening' / f'{family}_selection.json').write_text(json.dumps(selection, indent=2))
     return selection
 
@@ -204,14 +252,20 @@ def full(root, family, device, budget_s=FULL_BUDGET_S, seeds=FULL_SEEDS):
     runs = {(cid, s): run_one(root, 'full', family, by_id[cid], s, budget_s,
                               Path(root) / 'full' / f'{cid}_s{s}', device)
             for cid in selection['top'] for s in seeds}
+    val = {cid: [_validation(Path(root) / 'full' / f'{cid}_s{s}', device) for s in seeds]
+           for cid in selection['top']}
+    medians_val = {cid: statistics.median(v) for cid, v in val.items()}
     medians = {cid: statistics.median(_final_loss(runs[(cid, s)]) for s in seeds) for cid in selection['top']}
-    rep = min(medians, key=medians.get)
+    rep = min(medians_val, key=medians_val.get)
     # F1 has no pressure condition, so its pressure is only ever reported
     # mean-free (Addendum v2.2 Section 1, item 9); F2 keeps the corner pin.
     keys = ('eps_u', 'eps_v', 'eps_p_meanfree') if family == 'F1' else ('eps_u', 'eps_v', 'eps_p', 'eps_p_meanfree')
     best = {k: min((r.get(k) for r in runs.values() if isinstance(r.get(k), (int, float))), default=None)
             for k in keys}
-    summary = {'representative': rep, 'representative_config': by_id[rep], 'median_final_loss': medians,
+    summary = {'representative': rep, 'representative_config': by_id[rep],
+               'representative_criterion': 'lowest median validation residual',
+               'median_val_residual': medians_val, 'val_residual': val, 'median_final_loss': medians,
+               'validation_protocol': validation.PROTOCOL,
                'best_test_errors_over_all_full_runs': best, 'seeds': list(seeds)}
     (Path(root) / 'full' / f'{family}_representative.json').write_text(json.dumps(summary, indent=2))
     return summary
@@ -300,6 +354,8 @@ def main():
     ap.add_argument('--root', required=True, help="The package's A_calibration/ directory.")
     ap.add_argument('--family', choices=FAMILIES)
     ap.add_argument('--device', default='cuda' if torch.cuda.is_available() else 'cpu')
+    ap.add_argument('--keep-top', nargs='+', default=None,
+                    help='select: keep these configurations as the top three (F1 in wave 4).')
     ap.add_argument('--budget-s', type=float, default=None,
                     help='Override the stage budget (smoke tests only; the package fixes 600 / 3600 s).')
     args = ap.parse_args()
@@ -318,7 +374,7 @@ def main():
     elif args.stage == 'screen':
         screen(root, args.family, args.device, budget(SCREEN_BUDGET_S))
     elif args.stage == 'select':
-        print(json.dumps(select(root, args.family)['top']))
+        print(json.dumps(select(root, args.family, args.device, keep_top=args.keep_top)['top']))
     elif args.stage == 'full':
         print(json.dumps(full(root, args.family, args.device, budget(FULL_BUDGET_S)), indent=2))
     elif args.stage == 'cpu':
