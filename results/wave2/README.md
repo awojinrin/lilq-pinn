@@ -2,7 +2,7 @@
 
 Wave 2 ran on TAMU Grace on 29–30 September 2026 at commit `905e58c`. `COMMIT` holds that commit and the source-tree hash every job checked. This branch starts from `bc241bf`, which adds only job 12's script (`scripts/cluster/12_timing_reruns_beltrami_darcy.slurm`) to `905e58c`. Job 12 was submitted by hand from a copy of that file, so the code it ran is `905e58c`'s. The branch's own commit adds `results/wave2/` and nothing else.
 
-The folder holds every file the wave wrote except the trained models (`*.pt`, 294 files), which are kept on Grace and offline. It contains all 490 files of `wave2_report.tar.gz`, byte for byte, plus each run's own logs and the per-iteration histories. `analysis/` holds a post-hoc computation made on the laptop after the wave (Section 2).
+The folder holds every file the wave wrote except the trained models of Component B (`*.pt`, 202 files), which are kept on Grace and offline. Component A's 92 models (`A_calibration/**/model.pt` for F1, `theta.pt` for F2; 76 MB) were added in a second commit, so that the validation-residual analysis of Section 2 can be rerun from this branch. It contains all 490 files of `wave2_report.tar.gz`, byte for byte, plus each run's own logs and the per-iteration histories. `analysis/` holds a post-hoc computation made on the laptop after the wave (Section 2).
 
 Wave 1's results are on branch `wave1-results`.
 
@@ -61,12 +61,14 @@ Screening, full and CPU runs, the float32 run and the checks all completed (`A_c
 
 **F1.** F1_04 combines σ_FF = 5 with 2,000 interior points. F1_09, the only other σ_FF = 5 configuration with 2,000 points, also generalizes badly. The hard boundary conditions are not the cause: hard-BC configurations with σ_FF ≤ 2 are accurate, e.g. F1_10 and F1_12 at about 9e-5.
 
-**Validation residual** (`analysis/validation_residuals.csv`, `analysis/validation_residual.py`). For every Component A model (89 runs), F1's unweighted loss was evaluated on points no run trained on: the momentum and continuity mean squares on 20,000 fresh uniform interior points, plus the boundary mean square on 400 points per face for soft-BC F1 runs. No exact solution is used except the boundary data. Spearman rank correlation with the test error ε_u across the 24 screening runs of each family:
+**Validation residual** (`analysis/validation_residuals.csv`, `analysis/validation_residual.py`; to rerun it from a checkout of this branch: `python results/wave2/analysis/validation_residual.py results/wave2/A_calibration out.csv`, a few minutes on one GPU, longer on a CPU). For every Component A model (89 runs), F1's unweighted loss was evaluated on points no run trained on: the momentum and continuity mean squares on 20,000 fresh uniform interior points, plus the boundary mean square on 400 points per face for soft-BC F1 runs. No exact solution is used except the boundary data. Spearman rank correlation with the test error ε_u across the 24 screening runs of each family:
 
 | Criterion | F1 | F2 |
 |---|---|---|
 | Final training loss (the rule used) | 0.70 | 0.11 |
 | Validation residual | 0.93 | 0.94 |
+
+On the 15 full-stage runs of each family (other seeds, 60-minute budgets), the training loss correlates *negatively* with ε_u (F1 −0.62, F2 −0.86); the validation residual correlates 0.90 and 0.95. The configuration with the lowest screening training loss has the worst ε_u of the 24 in both families; the one with the lowest validation residual ranks 1st (F1_19) and 5th (F2_10). The five CPU reruns of each representative are one configuration each and too few to rank. The criterion was chosen once, as the family's own unweighted loss on fresh points, and not tuned; the test errors were used only to evaluate it, never to select.
 
 Between the two criteria, among the finalists:
 - **F1_04:** validation residual 3.8, against a training loss of 5e-8.
