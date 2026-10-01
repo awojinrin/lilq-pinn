@@ -1,0 +1,7 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19925489 on g036: 8 threads, 8 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+  S3 LiL: delta_FV = 6.736e-04  (TPFA residual 6.6e-16 relative)
+  S3 NiL seed 0 float64: delta_FV = 5.123e-02  (1752 s)
+  S3 NiL seed 0 float32: delta_FV = 5.458e-02  (1705 s)
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave3/B_instrumentation/darcy_fv/S3_s0/darcy_fv_comparison.csv (3 rows)

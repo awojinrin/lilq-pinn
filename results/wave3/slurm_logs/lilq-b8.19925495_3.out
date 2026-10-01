@@ -1,0 +1,39 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19925495 on g054: 8 threads, 8 cores usable, OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+  gravity  ic   P=   64 LiL-Q  seed=   iters=    14 loss=2.374e-01 [target reached] (9.4s)
+  gravity  ic   P=   64 LiL-N  seed=   iters=    75 loss=2.392e-01 [target reached] (44.5s)
+  gravity  ic   P=   64 NiL-N  seed=0  iters=    40 loss=2.245e-01 [target reached] (1.2s)
+  gravity  ic   P=   64 NiL-N  seed=1  iters=    27 loss=2.318e-01 [target reached] (1.2s)
+  gravity  ic   P=   64 NiL-N  seed=2  iters=    27 loss=2.164e-01 [target reached] (0.9s)
+  gravity  ic   P=   64 NiL-Q  seed=0  iters=    79 loss=2.212e-01 [target reached] (1.8s)
+  gravity  ic   P=   64 NiL-Q  seed=1  iters=    69 loss=1.851e-01 [target reached] (1.8s)
+  gravity  ic   P=   64 NiL-Q  seed=2  iters=    67 loss=1.630e-01 [target reached] (1.6s)
+  gravity  ic   P=  256 LiL-Q  seed=   iters=    20 loss=9.882e-02 [iteration_cap] (2.1s)
+  gravity  ic   P=  256 LiL-N  seed=   iters=   861 loss=7.500e-02 [target reached] (13.1s)
+  gravity  ic   P=  256 NiL-N  seed=0  iters=  2563 loss=7.500e-02 [target reached] (60.3s)
+  gravity  ic   P=  256 NiL-N  seed=1  iters=   514 loss=7.330e-02 [target reached] (12.6s)
+  gravity  ic   P=  256 NiL-N  seed=2  iters=   188 loss=7.488e-02 [target reached] (5.3s)
+  gravity  ic   P=  256 NiL-Q  seed=0  iters=   715 loss=7.389e-02 [target reached] (18.3s)
+  gravity  ic   P=  256 NiL-Q  seed=1  iters=  1243 loss=7.000e-02 [target reached] (32.2s)
+  gravity  ic   P=  256 NiL-Q  seed=2  iters=  2380 loss=7.480e-02 [target reached] (56.6s)
+  gravity  ic   P=  576 LiL-Q  seed=   iters=    20 loss=1.255e-01 [iteration_cap] (9.4s)
+  gravity  ic   P=  576 LiL-N  seed=   iters=   984 loss=4.500e-02 [target reached] (15.4s)
+  gravity  ic   P=  576 NiL-N  seed=0  iters=  3258 loss=4.499e-02 [target reached] (72.4s)
+  gravity  ic   P=  576 NiL-N  seed=1  iters=  1654 loss=4.497e-02 [target reached] (34.6s)
+  gravity  ic   P=  576 NiL-N  seed=2  iters=   566 loss=4.479e-02 [target reached] (12.7s)
+  gravity  ic   P=  576 NiL-Q  seed=0  iters=   524 loss=4.487e-02 [target reached] (12.6s)
+  gravity  ic   P=  576 NiL-Q  seed=1  iters=  3607 loss=4.468e-02 [target reached] (84.9s)
+  gravity  ic   P=  576 NiL-Q  seed=2  iters=   495 loss=4.491e-02 [target reached] (12.8s)
+  gravity  ic   P= 1024 LiL-Q  seed=   iters=    11 loss=1.054e-02 [target reached] (20.2s)
+  gravity  ic   P= 1024 LiL-N  seed=   iters= 16512 loss=1.290e-02 [optimizer_stall] (260.6s)
+  gravity  ic   P= 1024 NiL-N  seed=0  iters=  4150 loss=1.100e-02 [target reached] (96.7s)
+  gravity  ic   P= 1024 NiL-N  seed=1  iters=  4178 loss=1.099e-02 [target reached] (88.9s)
+  gravity  ic   P= 1024 NiL-N  seed=2  iters= 10381 loss=1.100e-02 [target reached] (219.8s)
+  gravity  ic   P= 1024 NiL-Q  seed=0  iters= 10000 loss=1.876e-02 [iteration_cap] (235.4s)
+  gravity  ic   P= 1024 NiL-Q  seed=1  iters=  8962 loss=1.100e-02 [target reached] (200.0s)
+  gravity  ic   P= 1024 NiL-Q  seed=2  iters=  5906 loss=1.097e-02 [target reached] (136.7s)
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave3/B_instrumentation/b8_jobs/gravity_ic/b8_initial_guess.csv

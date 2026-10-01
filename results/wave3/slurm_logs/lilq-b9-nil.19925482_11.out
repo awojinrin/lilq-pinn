@@ -1,0 +1,18 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19925482 on g046: 8 threads, 8 cores usable, OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+  SPE10 LiL: delta_FV = 3.421e-02  (TPFA residual 9.5e-14 relative)
+  SPE10 NiL seed 2 float64: delta_FV = 8.993e-02  (1592 s)
+  SPE10 NiL seed 2 float32: delta_FV = 9.047e-02  (1451 s)
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave3/B_instrumentation/darcy_fv/SPE10_s2/darcy_fv_comparison.csv (3 rows)
