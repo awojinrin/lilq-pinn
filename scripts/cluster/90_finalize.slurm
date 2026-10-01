@@ -20,6 +20,7 @@ export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"
 
 python experiments/component_b.py --save-reference --save-code --out-root "$PKG"
 python experiments/four_method_tables.py --out-dir "$B" --merge-from "$B"/four_method_jobs/*/
+python experiments/four_method_tables.py --out-dir "$B" --lilq-from-clean-timing   # LiL-Q's rows (clean times)
 python experiments/component_b.py --reproduction-check --out-root "$PKG"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass paper --out-dir "$B/residual_band_figures/paper"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass kmax  --out-dir "$B/residual_band_figures/kmax"
@@ -47,9 +48,16 @@ if rows:
         w.writeheader(); w.writerows(rows)
 b8 = [r for path in sorted(glob.glob(str(B / "b8_jobs" / "*" / "b8_initial_guess.csv")))
       for r in csv.DictReader(open(path))]
+# Wave 3's tables have no K_max column, wave 4's K_max = 60 reruns do: the union
+# of the columns, and wave 3's LiL-Q K_max from its iterations_cap.
+b8_cols = []
+for r in b8:
+    if r["method"] == "LiL-Q" and not r.get("K_max"):
+        r["K_max"] = r.get("iterations_cap", "")
+    b8_cols += [c for c in r if c not in b8_cols]
 if b8:
     with open(B / "b8_initial_guess.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(b8[0]))
+        w = csv.DictWriter(f, fieldnames=b8_cols, restval="")
         w.writeheader(); w.writerows(b8)
 index = list(csv.DictReader(open(B / "runs_index.csv")))
 fm = list(csv.DictReader(open(B / "four_method_tables.csv")))

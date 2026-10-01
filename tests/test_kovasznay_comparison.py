@@ -58,3 +58,19 @@ def test_rows_past_the_budget_are_ignored(tmp_path):
     rows = list(csv.DictReader(open(kc.build(tmp_path) / 'results' / 'kovasznay_comparison.csv')))
     f2 = next(r for r in rows if r['family'] == 'F2')
     assert float(f2['eps_u_median']) == 0.2            # the 605 s row and the overrunning final value excluded
+
+
+def test_lilq_times_come_from_the_clean_timing_runs(tmp_path):
+    """The rule for every quoted LiL-Q time (the advisor's reply to wave 2,
+    Section 3): the clean time where there is one, the logged one beside it."""
+    b = tmp_path / 'B_instrumentation'
+    _lilq(b, 'cuda', 300, 1e-2, 1.42)
+    _lilq(b, 'cuda', 1200, 1e-6, 1.10)
+    (b / 'clean_timing').mkdir(parents=True)
+    with open(b / 'clean_timing' / 'clean_timing.csv', 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=['run', 'quantity', 'clean_time_s'])
+        w.writeheader()
+        w.writerow({'run': 'kovasznay_P300_cuda_paper', 'quantity': 'solve_time_total', 'clean_time_s': 0.061})
+    lil = kc.load_lilq(b, 'cuda')
+    assert (lil[300]['time_s'], lil[300]['time_s_logged'], lil[300]['time_source']) == (0.061, 1.42, 'clean')
+    assert (lil[1200]['time_s'], lil[1200]['time_source']) == (1.10, 'logged')

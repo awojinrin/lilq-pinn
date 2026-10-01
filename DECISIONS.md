@@ -17,6 +17,59 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- Wave 4 audit: four fixes, and a rehearsal of the package assembly on real data
+
+An audit of the wave 4 commit against the advisor's reply to wave 2, his
+follow-up and Addendum v2.3 found four things to fix.
+
+1. **Section 4.6 used logged LiL-Q times.** `kovasznay_comparison.load_lilq`
+   read `solve_time_total` from the logged runs. Every quoted LiL-Q time now
+   follows the clean-timing rule, so it takes the clean time from
+   `B_instrumentation/clean_timing/clean_timing.csv`, keeps the logged one
+   beside it (`time_s_logged`), and says which it used (`time_source`). It
+   falls back to the logged time only where there is no clean time.
+2. **The four-method tables had no LiL-Q rows from the clean-timing runs.**
+   The follow-up says those rows "come from them".
+   `four_method_tables.lilq_rows` (`--lilq-from-clean-timing`; run by
+   `90_finalize`) writes `four_method_lilq.csv` in the four-method schema:
+   - time and iterations from `clean_timing.csv`;
+   - final loss and convergence from the logged paper pass of the same
+     configuration, which follows the same solver path.
+3. **The B8 merge in `90_finalize` would have failed.** It took its columns
+   from the first table (wave 3's, without `K_max`), and `csv.DictWriter`
+   raises on the K_max = 60 rerun rows' extra field. It now takes the union
+   of the columns, and gives wave 3's LiL-Q rows their K_max from
+   `iterations_cap`: 20 for gravity BL, 50 for viscous.
+4. **Table 3's solutions stored a `ComparisonConfig`, a class defined in a
+   script run as `__main__`**, so they loaded only with that class made
+   visible (wave 1's B6 solutions; the note to the advisor after wave 1).
+   Since wave 4 reruns Table 3, the configuration is now saved as a plain
+   dict (`dataclasses.asdict`). A test loads one in a separate process.
+
+**Rehearsal of `90_finalize`**, every command, on four waves:
+- waves 1-3: the real downloaded results;
+- wave 4: this laptop's rehearsal outputs -- clean timing, the gravity BL
+  rerun, B10, the B8 K_max = 60 reruns, Table 3, and F1's re-pick
+  (selections, F1_18).
+
+Results, all steps completed:
+- **Assembly:** 210 files replaced by later waves, all intended. Wave 2:
+  the timing reruns and the gate checks. Wave 3: the root `sacct.txt` and
+  `report_log.txt`, as every wave writes them (each wave's own copies stay
+  in its folder). Wave 4: F1's representative, both selection files, Table
+  3, and the gravity BL P = 64 rerun.
+- **Check B1:** the same 15 violations.
+- **Four-method tables:** 140 rows, 54 controls, and 16 LiL-Q rows (gravity
+  BL P = 64: 43 iterations, target).
+- **Section 4.6:** LiL-Q on clean times.
+- **B8:** 131 rows, K_max 20 / 50 / 60.
+- **B9:** 28 rows, the allocation filled.
+- **Table 3:** 10 rows, each with `eps_u`.
+
+Tests: `tests/test_kovasznay_comparison.py`, `tests/test_followup_items.py`.
+
+---
+
 ## 2026-10-01 -- Wave 4's cluster setup (the advisor's reply to wave 2, Section 4; his follow-up; Addendum v2.3)
 
 **One new commit, the advisor's order:** he reviews the commit; then the

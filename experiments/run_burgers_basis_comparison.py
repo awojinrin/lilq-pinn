@@ -48,6 +48,7 @@ import json
 import math
 import argparse
 from pathlib import Path
+import dataclasses
 from dataclasses import dataclass, field
 from typing import Tuple, List, Dict, Optional
 
@@ -723,7 +724,10 @@ def run_table3_study(
             if run_root is not None:
                 from lilq.saved_models import save_solution
                 logger.to_csv(Path(run_root) / bk / 'iterations.csv')
-                save_solution(Path(run_root) / bk, {'u': (basis, res['coefficients'])}, config,
+                # The configuration as a plain dict: the ComparisonConfig class lives in
+                # this script, which runs as __main__, so a pickled instance loads only
+                # with that class made visible (wave 1's B6 solutions; DECISIONS.md).
+                save_solution(Path(run_root) / bk, {'u': (basis, res['coefficients'])}, dataclasses.asdict(config),
                               extra={'basis_key': bk, 'description': desc})
             if verbose:
                 final = logger.rows[-1]

@@ -3,8 +3,11 @@ Kovasznay: LiL-Q against the Component A baselines (Package 1 v2.0 Section 4.6)
 ===============================================================================
 
 Reads LiL-Q's Section 3.3 Kovasznay runs (``B_instrumentation/kovasznay_P<P>_
-<device>_paper/summary.json``: test-grid errors, and ``solve_time_total``,
-the method's own time with the diagnostics off the clock) and each baseline
+<device>_paper/summary.json``: test-grid errors) with their time from the
+clean-timing runs (``B_instrumentation/clean_timing/clean_timing.csv``:
+warm-up, then diagnostics off -- the rule for every quoted LiL-Q time, the
+advisor's reply to wave 2, Section 3; the logged ``solve_time_total`` is
+kept beside it, and used only where there is no clean time), and each baseline
 family's representative runs (``A_calibration/full/`` on the GPU,
 ``A_calibration/full_cpu/`` on the CPU), and writes:
 
@@ -51,15 +54,30 @@ def _num(x):
         return None
 
 
+def load_clean_times(b_root):
+    """``{run: solve_time_total}`` from the clean-timing table, if any."""
+    path = Path(b_root) / 'clean_timing' / 'clean_timing.csv'
+    if not path.exists():
+        return {}
+    with open(path, newline='') as f:
+        return {r['run']: float(r['clean_time_s']) for r in csv.DictReader(f)
+                if r['quantity'] == 'solve_time_total' and r['clean_time_s'] not in ('', None)}
+
+
 def load_lilq(b_root, device):
     out = {}
+    clean = load_clean_times(b_root)
     for P in KOVASZNAY_P:
-        path = Path(b_root) / f'kovasznay_P{P}_{device}_paper' / 'summary.json'
+        name = f'kovasznay_P{P}_{device}_paper'
+        path = Path(b_root) / name / 'summary.json'
         if path.exists():
             s = json.loads(path.read_text())
             out[P] = {'eps_u': s.get('test_eps_u'), 'eps_v': s.get('test_eps_v'),
                       'eps_p_meanfree': s.get('test_eps_p_meanfree'), 'eps_p': s.get('test_eps_p'),
-                      'time_s': s.get('solve_time_total'), 'iterations': s.get('iterations')}
+                      'time_s': clean.get(name, s.get('solve_time_total')),
+                      'time_s_logged': s.get('solve_time_total'),
+                      'time_source': 'clean' if name in clean else 'logged',
+                      'iterations': s.get('iterations')}
     return out
 
 
@@ -115,7 +133,8 @@ def build(package, out_root=None):
         lilq = load_lilq(b_root, lil_device)
         for P, r in lilq.items():
             summary_rows.append({'family': 'LiL-Q', 'device': label, 'config': f'P={P}', 'n_seeds': 1,
-                                 **{f'{k}_median': r[k] for k in EPS}, 'time_s': r['time_s']})
+                                 **{f'{k}_median': r[k] for k in EPS}, 'time_s': r['time_s'],
+                                 'time_s_logged': r['time_s_logged'], 'time_source': r['time_source']})
             curves.append({'family': 'LiL-Q', 'device': label, 'seed': '', 'P': P,
                            't': r['time_s'], 'eps_u': r['eps_u']})
         for family in FAMILIES:

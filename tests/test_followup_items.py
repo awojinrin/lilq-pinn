@@ -94,3 +94,45 @@ def test_b8_reruns_only_the_capped_lilq_rows_with_k_max_60(tmp_path):
     (row,) = list(csv.DictReader(open(path)))
     assert int(row['K_max']) == LILQ_PAPER_KMAX == 60 and row['stopping_reason'] == 'target'
     assert int(row['iterations']) > 20                     # it needed more than the old cap
+
+
+def test_four_method_lilq_rows_come_from_the_clean_timing_runs(tmp_path):
+    """The follow-up's item 1: the four-method tables' LiL-Q rows take their
+    time and iterations from the clean-timing runs, their final loss from
+    the logged paper pass."""
+    import experiments.four_method_tables as fmt
+    b = tmp_path / 'B'
+    (b / 'clean_timing').mkdir(parents=True)
+    with open(b / 'clean_timing' / 'clean_timing.csv', 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=['run', 'benchmark', 'config', 'device', 'quantity', 'clean_time_s',
+                                          'iterations', 'K_max', 'commit'])
+        w.writeheader()
+        w.writerow({'run': 'bl_gravity_P64_cpu_paper', 'benchmark': 'bl_gravity', 'config': 'P64', 'device': 'cpu',
+                    'quantity': 'training_time', 'clean_time_s': 0.13, 'iterations': 43, 'K_max': 60, 'commit': 'c'})
+        w.writerow({'run': 'kovasznay_P75_cpu_paper', 'benchmark': 'kovasznay', 'config': 'P75', 'device': 'cpu',
+                    'quantity': 'solve_time_total', 'clean_time_s': 0.05, 'iterations': 16, 'K_max': 60, 'commit': 'c'})
+    (b / 'bl_gravity_P64_cpu_paper').mkdir()
+    (b / 'bl_gravity_P64_cpu_paper' / 'summary.json').write_text(json.dumps({'final_loss': 0.2367, 'converged': True}))
+    rows = fmt.lilq_rows(b, b / 'four_method_lilq.csv')
+    assert len(rows) == 1
+    r = rows[0]
+    assert (r['benchmark'], r['P'], r['method'], r['total_iterations'], r['training_time_s']) == \
+        ('bl_gravity', 64, 'LiL-Q', 43, 0.13)
+    assert (r['final_loss'], r['stopping_reason'], r['iterations_cap']) == (0.2367, 'target', 60)
+    assert (b / 'four_method_lilq.csv').exists()
+
+
+def test_table3_solutions_load_without_the_main_module_shim(tmp_path):
+    """Wave 1's B6 solutions pickled a ComparisonConfig defined in a script
+    run as __main__; the configuration is now a plain dict, so a solution
+    loads in any process."""
+    import subprocess
+    import sys
+    import experiments.run_burgers_basis_comparison as rb
+    config = rb.ComparisonConfig(N_x=4, N_t=4, disable_stopping_rule=True, max_quasi_iters=2)
+    rb.run_table3_study(config, basis_keys=['sin_cheb'], verbose=False, run_root=tmp_path)
+    code = ("import sys; sys.path.insert(0, %r); from lilq.saved_models import load_solution; "
+            "s = load_solution(%r); print(type(s['config']).__name__, s['config']['N_x'])"
+            % (str(__import__('pathlib').Path(rb.__file__).parents[1]), str(tmp_path / 'sin_cheb')))
+    out = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+    assert out.returncode == 0 and out.stdout.split() == ['dict', '4'], out.stderr

@@ -400,6 +400,39 @@ def merge_csvs(paths, out_path):
     return merged, controls
 
 
+def lilq_rows(b_root, out_path=None):
+    """The four-method tables' LiL-Q rows (the advisor's follow-up of 1
+    October 2026, item 1): time and iterations from the clean-timing runs
+    (``<b_root>/clean_timing/clean_timing.csv``: warm-up, diagnostics off,
+    K_max = 60), final loss and convergence from the logged paper pass of the
+    same configuration (``<b_root>/<benchmark>_P<P>_cpu_paper/summary.json``;
+    the clean run follows the same solver path), in this table's schema.
+    LiL-Q runs on the CPU, once (deterministic). With ``out_path`` the rows
+    are written there (``four_method_lilq.csv``)."""
+    import csv as _csv
+    import json as _json
+    path = Path(b_root) / 'clean_timing' / 'clean_timing.csv'
+    if not path.exists():
+        return []
+    rows = FourMethodLogger()
+    with open(path, newline='') as f:
+        clean = [r for r in _csv.DictReader(f)
+                 if r['benchmark'] in ('bratu', 'burgers', 'bl', 'bl_gravity') and r['quantity'] == 'training_time']
+    for r in clean:
+        s_path = Path(b_root) / r['run'] / 'summary.json'
+        s = _json.loads(s_path.read_text()) if s_path.exists() else {}
+        converged = s.get('converged')
+        rows.record(benchmark=r['benchmark'], P=int(r['config'].lstrip('P')), method='LiL-Q', seed=None,
+                    device=r['device'], total_iterations=int(r['iterations']),
+                    total_line_searches=int(r['iterations']), training_time_s=float(r['clean_time_s']),
+                    final_loss=s.get('final_loss'), converged=converged,
+                    stopping_reason='target' if converged else ('iteration_cap' if converged is False else None),
+                    iterations_cap=int(r['K_max']) if r['K_max'] else None, commit=r['commit'])
+    if out_path is not None:
+        rows.to_csv(out_path)
+    return rows.rows
+
+
 def main():
     parser = argparse.ArgumentParser(description="Section 3.4 four-method tables")
     parser.add_argument('--quick', action='store_true',
@@ -432,6 +465,9 @@ def main():
                              "job directories (an earlier wave's), on this job's devices.")
     parser.add_argument('--controls-only', action='store_true',
                         help="Skip this job's own runs; run only the controls.")
+    parser.add_argument('--lilq-from-clean-timing', action='store_true',
+                        help="Instead of running: write --out-dir's four_method_lilq.csv, LiL-Q's rows from "
+                             "the clean-timing runs under --out-dir (package1's B_instrumentation).")
     parser.add_argument('--merge-from', type=str, nargs='+', default=None,
                         help='Instead of running: combine the four_method_tables.csv of these '
                              'job directories into --out-dir (failure rows kept).')
@@ -441,6 +477,10 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / 'four_method_tables.csv'
 
+    if args.lilq_from_clean_timing:
+        rows = lilq_rows(out_dir, out_dir / 'four_method_lilq.csv')
+        print(f"Wrote {len(rows)} LiL-Q rows to {out_dir / 'four_method_lilq.csv'}")
+        return
     if args.merge_from:
         merged, controls = merge_csvs([Path(d) / 'four_method_tables.csv' for d in args.merge_from], out_path)
         print(f"Merged {len(merged)} rows from {len(args.merge_from)} job directories into {out_path}"
