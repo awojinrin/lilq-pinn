@@ -1,0 +1,33 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905487 on c273: 48 threads, 48 cores usable, OverSubscribe=NO
+OverSubscribe=NO
+OverSubscribe=NO
+OverSubscribe=NO
+no GPU visible
+
+============================================================
+bl_gravity
+============================================================
+  warm-up on cpu: 22.8s (untimed)
+
+  P=1024 (devices=['cpu'])
+    NiL-N  seed=0     device=cpu    iters= 17185 loss=1.100e-02 [CONVERGED] (617.1s)
+    NiL-N  seed=1     device=cpu    iters=  9091 loss=2.611e-02 [optimizer_stall] (335.6s)
+    NiL-N  seed=2     device=cpu    iters= 20000 loss=2.703e-02 [iteration_cap] (750.2s)
+    NiL-Q  seed=0     device=cpu    iters= 10000 loss=1.133e-02 [iteration_cap] (421.1s)
+    NiL-Q  seed=1     device=cpu    iters= 10000 loss=6.822e-02 [iteration_cap] (404.4s)
+    NiL-Q  seed=2     device=cpu    iters= 10000 loss=4.019e-02 [iteration_cap] (400.3s)
+    LiL-N  seed=n/a   device=cpu    iters= 16698 loss=1.288e-02 [optimizer_stall] (297.8s)
+
+============================================================
+stall controls: 2 runs ended on optimizer_stall
+============================================================
+
+  control of bl_gravity P=1024 NiL-N seed=1 device=cpu (original: 9091 iterations, optimizer_stall)
+    NiL-N  seed=1 [f1_stall_rule] device=cpu    iters= 20000 loss=1.584e-02 [iteration_cap] (737.0s)
+
+  control of bl_gravity P=1024 LiL-N seed=None device=cpu (original: 16698 iterations, optimizer_stall)
+    LiL-N  seed=n/a [f1_stall_rule] device=cpu    iters= 20000 loss=1.285e-02 [iteration_cap] (371.0s)
+
+Wrote 9 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gravity_cpu/four_method_tables.csv (0 failures)
+Total elapsed: 4372.1s

@@ -1,0 +1,57 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905486 on g077: 48 threads, 48 cores usable, OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+
+============================================================
+bl_gravity
+============================================================
+  warm-up on cuda: 60.4s (untimed)
+
+  P=64 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=   136 loss=2.380e-01 [CONVERGED] (2.6s)
+    NiL-N  seed=1     device=cuda   iters=   234 loss=2.400e-01 [CONVERGED] (4.8s)
+    NiL-N  seed=2     device=cuda   iters=   344 loss=2.365e-01 [CONVERGED] (7.5s)
+    NiL-Q  seed=0     device=cuda   iters=   200 loss=2.392e-01 [CONVERGED] (4.2s)
+    NiL-Q  seed=1     device=cuda   iters=   211 loss=2.387e-01 [CONVERGED] (4.5s)
+    NiL-Q  seed=2     device=cuda   iters=   182 loss=2.371e-01 [CONVERGED] (3.9s)
+    LiL-N  seed=n/a   device=cuda   iters=    81 loss=2.396e-01 [CONVERGED] (0.9s)
+
+  P=256 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=  1348 loss=7.493e-02 [CONVERGED] (24.7s)
+    NiL-N  seed=1     device=cuda   iters=  1893 loss=7.486e-02 [CONVERGED] (35.4s)
+    NiL-N  seed=2     device=cuda   iters=  2529 loss=7.499e-02 [CONVERGED] (46.5s)
+    NiL-Q  seed=0     device=cuda   iters=  2057 loss=7.498e-02 [CONVERGED] (39.5s)
+    NiL-Q  seed=1     device=cuda   iters=  4000 loss=1.591e-01 [iteration_cap] (79.1s)
+    NiL-Q  seed=2     device=cuda   iters=  2679 loss=7.499e-02 [CONVERGED] (52.8s)
+    LiL-N  seed=n/a   device=cuda   iters=   867 loss=7.499e-02 [CONVERGED] (12.1s)
+
+  P=576 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=  1088 loss=4.499e-02 [CONVERGED] (19.7s)
+    NiL-N  seed=1     device=cuda   iters=  1832 loss=4.500e-02 [CONVERGED] (33.0s)
+    NiL-N  seed=2     device=cuda   iters=  5880 loss=4.499e-02 [CONVERGED] (107.7s)
+    NiL-Q  seed=0     device=cuda   iters=  5413 loss=4.497e-02 [CONVERGED] (103.1s)
+    NiL-Q  seed=1     device=cuda   iters=  5944 loss=4.500e-02 [CONVERGED] (113.2s)
+    NiL-Q  seed=2     device=cuda   iters=  4958 loss=4.499e-02 [CONVERGED] (94.0s)
+    LiL-N  seed=n/a   device=cuda   iters=  1233 loss=4.500e-02 [CONVERGED] (17.7s)
+
+  P=1024 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters= 15114 loss=1.100e-02 [CONVERGED] (273.6s)
+    NiL-N  seed=1     device=cuda   iters= 20000 loss=2.081e-02 [iteration_cap] (410.7s)
+    NiL-N  seed=2     device=cuda   iters= 20000 loss=2.454e-02 [iteration_cap] (398.1s)
+    NiL-Q  seed=0     device=cuda   iters= 10000 loss=3.627e-02 [iteration_cap] (198.3s)
+    NiL-Q  seed=1     device=cuda   iters= 10000 loss=4.303e-02 [iteration_cap] (200.2s)
+    NiL-Q  seed=2     device=cuda   iters= 10000 loss=3.565e-02 [iteration_cap] (185.5s)
+    LiL-N  seed=n/a   device=cuda   iters= 14206 loss=1.293e-02 [optimizer_stall] (199.6s)
+
+============================================================
+stall controls: 1 runs ended on optimizer_stall
+============================================================
+
+  control of bl_gravity P=1024 LiL-N seed=None device=cuda (original: 14206 iterations, optimizer_stall)
+    LiL-N  seed=n/a [f1_stall_rule] device=cuda   iters= 20000 loss=1.287e-02 [iteration_cap] (277.1s)
+
+Wrote 29 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gravity_gpu/four_method_tables.csv (0 failures)
+Total elapsed: 3028.0s

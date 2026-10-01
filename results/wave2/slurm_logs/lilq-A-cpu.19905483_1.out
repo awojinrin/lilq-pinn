@@ -1,0 +1,54 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905483 on c027: 48 threads, 48 cores usable, OverSubscribe=NO
+OverSubscribe=NO
+no GPU visible
+n_theta = 16835, rows = 6001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "mu_overflow",
+  "steps": 55,
+  "final_loss": 8.753117971721584e-31,
+  "eps_u": 0.014357580846304846,
+  "eps_v": 0.08154027614404352,
+  "eps_p_meanfree": 0.15456570428408353,
+  "wall_s": 575.3913019411266
+}
+n_theta = 16835, rows = 6001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "mu_overflow",
+  "steps": 37,
+  "final_loss": 4.593505250981241e-31,
+  "eps_u": 0.009132409675689512,
+  "eps_v": 0.059750976266553534,
+  "eps_p_meanfree": 0.06487134144521155,
+  "wall_s": 396.01154520735145
+}
+n_theta = 16835, rows = 6001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "mu_overflow",
+  "steps": 42,
+  "final_loss": 1.2933277652911853e-30,
+  "eps_u": 0.00758309413582746,
+  "eps_v": 0.058644553747430855,
+  "eps_p_meanfree": 0.12902863685513363,
+  "wall_s": 458.4842550288886
+}
+n_theta = 16835, rows = 6001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "budget",
+  "steps": 352,
+  "final_loss": 7.245412726005708e-14,
+  "eps_u": 9.693874342236902e-05,
+  "eps_v": 0.0005282245483819797,
+  "eps_p_meanfree": 0.000422573791708037,
+  "wall_s": 3605.1866577435285
+}
+n_theta = 16835, rows = 6001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "mu_overflow",
+  "steps": 44,
+  "final_loss": 2.8535579778725595e-31,
+  "eps_u": 0.0016252795444516989,
+  "eps_v": 0.009776954196894633,
+  "eps_p_meanfree": 0.007747909486880339,
+  "wall_s": 470.5404277089983
+}

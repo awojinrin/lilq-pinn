@@ -1,0 +1,26 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905622 on c212: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+
+============================================================
+stall controls: 5 runs ended on optimizer_stall
+============================================================
+  warm-up on cpu: 22.7s (untimed)
+
+  control of bratu P=225 NiL-N seed=0 device=cpu (original: 9198 iterations, optimizer_stall)
+    NiL-N  seed=0 [f1_stall_rule] device=cpu    iters= 10000 loss=8.186e-04 [iteration_cap] (106.5s)
+
+  control of bratu P=225 NiL-N seed=1 device=cpu (original: 7723 iterations, optimizer_stall)
+    NiL-N  seed=1 [f1_stall_rule] device=cpu    iters= 10000 loss=4.593e-04 [iteration_cap] (104.4s)
+
+  control of bratu P=225 NiL-Q seed=0 device=cpu (original: 7433 iterations, optimizer_stall)
+    NiL-Q  seed=0 [f1_stall_rule] device=cpu    iters= 10000 loss=2.225e-04 [iteration_cap] (136.1s)
+
+  control of bratu P=225 NiL-Q seed=1 device=cpu (original: 7728 iterations, optimizer_stall)
+    NiL-Q  seed=1 [f1_stall_rule] device=cpu    iters= 10000 loss=2.717e-04 [iteration_cap] (137.1s)
+
+  control of bratu P=225 NiL-Q seed=2 device=cpu (original: 8452 iterations, optimizer_stall)
+    NiL-Q  seed=2 [f1_stall_rule] device=cpu    iters= 10000 loss=1.922e-04 [iteration_cap] (144.3s)
+
+Wrote 5 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bratu_cpu_controls/four_method_tables.csv (0 failures)
+Total elapsed: 660.5s

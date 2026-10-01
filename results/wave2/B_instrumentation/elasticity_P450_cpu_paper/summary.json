@@ -1,0 +1,58 @@
+{
+  "run": "elasticity_P450_cpu_paper",
+  "benchmark": "elasticity",
+  "config": "P450",
+  "device": "cpu",
+  "pass": "paper",
+  "wall_total_s": 3.2399052623659372,
+  "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0",
+  "solve_time_total": 0.441993473097682,
+  "pde_mse": 3.7515285552281486e-28,
+  "rel_l2_ux": 6.688821303888881e-16,
+  "rel_l2_uy": 1.0067176346793489e-15,
+  "rel_l2_sxx": 4.870609784651632e-16,
+  "rel_l2_syy": 5.175401178077644e-16,
+  "rel_l2_sxy": 8.102588476497318e-16,
+  "solve_time_qr": 0.10362847335636616,
+  "solve_time_qr_single_run": 0.10386636853218079,
+  "time_lil_s": 0.13877473026514053,
+  "time_lil_s_single_run": 0.13884409330785275,
+  "timing_repeats_s": [
+    {
+      "time_lil_s": 0.13877473026514053,
+      "solve_time_qr": 0.10328014753758907
+    },
+    {
+      "time_lil_s": 0.1388489417731762,
+      "solve_time_qr": 0.10353630036115646
+    },
+    {
+      "time_lil_s": 0.1384809259325266,
+      "solve_time_qr": 0.10362847335636616
+    },
+    {
+      "time_lil_s": 0.13882304541766644,
+      "solve_time_qr": 0.10400999523699284
+    },
+    {
+      "time_lil_s": 0.13848851434886456,
+      "solve_time_qr": 0.10373319499194622
+    }
+  ],
+  "warmup_run_time_s": 0.13470014743506908,
+  "iterations": 1,
+  "final_norm_R_h": 2.969214942145851e-14,
+  "t_cum_s": 0.13884409330785275,
+  "first_stall_iteration": null,
+  "kappa_final": 5697.226212710824,
+  "kappa_method": "svd",
+  "num_rank_svd_final": 450,
+  "num_rank_gelsy_final": 450,
+  "test_eps_u": 6.793517994565283e-16,
+  "test_eps_v": 1.0108057583061929e-15,
+  "test_eps_p": null,
+  "test_eps_p_meanfree": null,
+  "test_maxerr_u": 9.992007221626409e-16,
+  "test_maxerr_v": 8.881784197001252e-16,
+  "test_maxerr_p": null
+}

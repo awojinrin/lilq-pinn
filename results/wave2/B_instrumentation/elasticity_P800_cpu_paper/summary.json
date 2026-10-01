@@ -1,0 +1,58 @@
+{
+  "run": "elasticity_P800_cpu_paper",
+  "benchmark": "elasticity",
+  "config": "P800",
+  "device": "cpu",
+  "pass": "paper",
+  "wall_total_s": 6.704639354720712,
+  "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0",
+  "solve_time_total": 0.8923294451087713,
+  "pde_mse": 2.267138726042963e-28,
+  "rel_l2_ux": 5.405259126611724e-16,
+  "rel_l2_uy": 8.12083911773217e-16,
+  "rel_l2_sxx": 2.582465138735155e-16,
+  "rel_l2_syy": 4.545145104690406e-16,
+  "rel_l2_sxy": 7.036897183401911e-16,
+  "solve_time_qr": 0.3128655832260847,
+  "solve_time_qr_single_run": 0.3109623696655035,
+  "time_lil_s": 0.42221746407449245,
+  "time_lil_s_single_run": 0.41962192580103874,
+  "timing_repeats_s": [
+    {
+      "time_lil_s": 0.42045591585338116,
+      "solve_time_qr": 0.31091951951384544
+    },
+    {
+      "time_lil_s": 0.42221746407449245,
+      "solve_time_qr": 0.3128655832260847
+    },
+    {
+      "time_lil_s": 0.42325120605528355,
+      "solve_time_qr": 0.31357442401349545
+    },
+    {
+      "time_lil_s": 0.42326878011226654,
+      "solve_time_qr": 0.3140055686235428
+    },
+    {
+      "time_lil_s": 0.4206232950091362,
+      "solve_time_qr": 0.310963936150074
+    }
+  ],
+  "warmup_run_time_s": 0.42268225364387035,
+  "iterations": 1,
+  "final_norm_R_h": 2.381031532790954e-14,
+  "t_cum_s": 0.41962192580103874,
+  "first_stall_iteration": null,
+  "kappa_final": 17837.431443041012,
+  "kappa_method": "svd",
+  "num_rank_svd_final": 800,
+  "num_rank_gelsy_final": 800,
+  "test_eps_u": 5.49563992502914e-16,
+  "test_eps_v": 8.197511394002354e-16,
+  "test_eps_p": null,
+  "test_eps_p_meanfree": null,
+  "test_maxerr_u": 9.992007221626409e-16,
+  "test_maxerr_v": 8.041554963080194e-16,
+  "test_maxerr_p": null
+}

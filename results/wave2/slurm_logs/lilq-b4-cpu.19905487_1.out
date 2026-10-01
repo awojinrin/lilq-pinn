@@ -1,0 +1,45 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905623 on c263: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+
+============================================================
+burgers
+============================================================
+  warm-up on cpu: 22.7s (untimed)
+
+  P=625 (devices=['cpu'])
+    NiL-N  seed=0     device=cpu    iters=  4419 loss=2.731e-05 [optimizer_stall] (75.8s)
+    NiL-N  seed=1     device=cpu    iters=  5213 loss=1.772e-05 [optimizer_stall] (88.5s)
+    NiL-N  seed=2     device=cpu    iters=  4469 loss=1.966e-05 [optimizer_stall] (77.5s)
+    NiL-Q  seed=0     device=cpu    iters=  5309 loss=2.879e-05 [optimizer_stall] (128.4s)
+    NiL-Q  seed=1     device=cpu    iters=  4043 loss=1.952e-05 [optimizer_stall] (95.2s)
+    NiL-Q  seed=2     device=cpu    iters=  6566 loss=2.926e-05 [optimizer_stall] (142.2s)
+    LiL-N  seed=n/a   device=cpu    iters=  3333 loss=8.434e-06 [optimizer_stall] (30.4s)
+
+============================================================
+stall controls: 7 runs ended on optimizer_stall
+============================================================
+
+  control of burgers P=625 NiL-N seed=0 device=cpu (original: 4419 iterations, optimizer_stall)
+    NiL-N  seed=0 [f1_stall_rule] device=cpu    iters= 15000 loss=1.120e-05 [iteration_cap] (341.0s)
+
+  control of burgers P=625 NiL-N seed=1 device=cpu (original: 5213 iterations, optimizer_stall)
+    NiL-N  seed=1 [f1_stall_rule] device=cpu    iters= 15000 loss=5.340e-06 [iteration_cap] (245.3s)
+
+  control of burgers P=625 NiL-N seed=2 device=cpu (original: 4469 iterations, optimizer_stall)
+    NiL-N  seed=2 [f1_stall_rule] device=cpu    iters= 15000 loss=3.712e-06 [iteration_cap] (292.0s)
+
+  control of burgers P=625 NiL-Q seed=0 device=cpu (original: 5309 iterations, optimizer_stall)
+    NiL-Q  seed=0 [f1_stall_rule] device=cpu    iters= 15000 loss=1.433e-05 [iteration_cap] (454.8s)
+
+  control of burgers P=625 NiL-Q seed=1 device=cpu (original: 4043 iterations, optimizer_stall)
+    NiL-Q  seed=1 [f1_stall_rule] device=cpu    iters= 15000 loss=5.619e-06 [iteration_cap] (427.1s)
+
+  control of burgers P=625 NiL-Q seed=2 device=cpu (original: 6566 iterations, optimizer_stall)
+    NiL-Q  seed=2 [f1_stall_rule] device=cpu    iters= 15000 loss=8.923e-06 [iteration_cap] (404.6s)
+
+  control of burgers P=625 LiL-N seed=None device=cpu (original: 3333 iterations, optimizer_stall)
+    LiL-N  seed=n/a [f1_stall_rule] device=cpu    iters= 15000 loss=5.751e-07 [iteration_cap] (143.0s)
+
+Wrote 14 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/burgers_cpu/four_method_tables.csv (0 failures)
+Total elapsed: 2979.2s

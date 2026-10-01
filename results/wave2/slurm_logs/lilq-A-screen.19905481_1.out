@@ -1,0 +1,244 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905481 on g054: 48 threads, 48 cores usable, OverSubscribe=OK
+OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+n_theta = 6339, rows = 24001, normal-equation memory ~ 1.00 GB
+{
+  "end_reason": "budget",
+  "steps": 679,
+  "final_loss": 4.900714963530911e-15,
+  "eps_u": 5.983329698346418e-09,
+  "eps_v": 9.67977847669908e-08,
+  "eps_p_meanfree": 8.826457624833509e-08,
+  "wall_s": 600.7133305687457
+}
+n_theta = 5347, rows = 6001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 2205,
+  "final_loss": 4.112771932193283e-12,
+  "eps_u": 4.113274230045184e-06,
+  "eps_v": 3.266267089151555e-05,
+  "eps_p_meanfree": 3.047911963042966e-05,
+  "wall_s": 600.2301137987524
+}
+n_theta = 6339, rows = 6001, normal-equation memory ~ 1.00 GB
+{
+  "end_reason": "budget",
+  "steps": 2521,
+  "final_loss": 2.097562569348034e-14,
+  "eps_u": 3.2552888805792866e-07,
+  "eps_v": 1.810714473325301e-06,
+  "eps_p_meanfree": 5.716819832126203e-06,
+  "wall_s": 600.191432626918
+}
+n_theta = 12675, rows = 6001, normal-equation memory ~ 3.93 GB
+{
+  "end_reason": "budget",
+  "steps": 1059,
+  "final_loss": 9.076656183209137e-19,
+  "eps_u": 1.7101884656255175e-06,
+  "eps_v": 9.283350721339189e-06,
+  "eps_p_meanfree": 1.1474698929612471e-05,
+  "wall_s": 600.1456716116518
+}
+n_theta = 16835, rows = 6001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "budget",
+  "steps": 665,
+  "final_loss": 3.1498180619308084e-16,
+  "eps_u": 1.8363504044123844e-08,
+  "eps_v": 1.0350224766771896e-07,
+  "eps_p_meanfree": 8.556916580937976e-08,
+  "wall_s": 600.0819197297096
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 769,
+  "final_loss": 2.308877199230348e-17,
+  "eps_u": 2.297719859503822e-10,
+  "eps_v": 1.7095486839460854e-09,
+  "eps_p_meanfree": 1.129045578366166e-09,
+  "wall_s": 600.4447012394667
+}
+n_theta = 16771, rows = 24001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 253,
+  "final_loss": 1.2423895094519688e-16,
+  "eps_u": 9.970126658547115e-10,
+  "eps_v": 5.115097221246512e-09,
+  "eps_p_meanfree": 5.942571755194532e-09,
+  "wall_s": 601.3370623923838
+}
+n_theta = 7395, rows = 6001, normal-equation memory ~ 1.36 GB
+{
+  "end_reason": "budget",
+  "steps": 1943,
+  "final_loss": 5.4316902598672886e-18,
+  "eps_u": 9.57247075887801e-08,
+  "eps_v": 8.294158837109213e-07,
+  "eps_p_meanfree": 2.3952427460240534e-06,
+  "wall_s": 600.0370571091771
+}
+n_theta = 6339, rows = 24001, normal-equation memory ~ 1.00 GB
+{
+  "end_reason": "budget",
+  "steps": 686,
+  "final_loss": 1.5028522988599524e-15,
+  "eps_u": 1.4258677251709646e-09,
+  "eps_v": 9.310149864807475e-09,
+  "eps_p_meanfree": 6.559339368458401e-09,
+  "wall_s": 600.015850495547
+}
+n_theta = 12675, rows = 24001, normal-equation memory ~ 3.93 GB
+{
+  "end_reason": "budget",
+  "steps": 319,
+  "final_loss": 6.678943317118817e-15,
+  "eps_u": 2.7398830743004054e-09,
+  "eps_v": 2.877669627751581e-08,
+  "eps_p_meanfree": 1.7754111124459495e-08,
+  "wall_s": 604.6335675306618
+}
+n_theta = 16771, rows = 24001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 247,
+  "final_loss": 7.912631889094556e-17,
+  "eps_u": 1.5588371367458616e-09,
+  "eps_v": 2.5165551836693784e-09,
+  "eps_p_meanfree": 2.920856144076904e-09,
+  "wall_s": 602.5390363242477
+}
+n_theta = 5347, rows = 6001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 2193,
+  "final_loss": 6.518048276324903e-16,
+  "eps_u": 1.538783837774232e-07,
+  "eps_v": 7.391028292873311e-07,
+  "eps_p_meanfree": 5.021695752284753e-07,
+  "wall_s": 600.0236370973289
+}
+n_theta = 7395, rows = 6001, normal-equation memory ~ 1.36 GB
+{
+  "end_reason": "budget",
+  "steps": 1935,
+  "final_loss": 2.3149486603962804e-18,
+  "eps_u": 1.5519713701744946e-08,
+  "eps_v": 1.0259683829247035e-07,
+  "eps_p_meanfree": 1.5772657280788415e-07,
+  "wall_s": 600.1763478014618
+}
+n_theta = 6339, rows = 24001, normal-equation memory ~ 1.00 GB
+{
+  "end_reason": "budget",
+  "steps": 660,
+  "final_loss": 1.7022449018061274e-14,
+  "eps_u": 9.31971279878506e-09,
+  "eps_v": 9.860964063825752e-08,
+  "eps_p_meanfree": 2.0944529788863383e-07,
+  "wall_s": 600.6364512331784
+}
+n_theta = 5347, rows = 24001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 571,
+  "final_loss": 5.912773200571452e-16,
+  "eps_u": 9.86223751084017e-10,
+  "eps_v": 9.1408065955784e-09,
+  "eps_p_meanfree": 5.380684654485727e-09,
+  "wall_s": 600.4114284459502
+}
+n_theta = 7395, rows = 6001, normal-equation memory ~ 1.36 GB
+{
+  "end_reason": "budget",
+  "steps": 1860,
+  "final_loss": 2.425228056633714e-18,
+  "eps_u": 7.586632902297359e-07,
+  "eps_v": 5.151947182731645e-06,
+  "eps_p_meanfree": 1.3190324161899908e-05,
+  "wall_s": 600.0234606396407
+}
+n_theta = 16835, rows = 6001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "mu_overflow",
+  "steps": 54,
+  "final_loss": 8.513338555111137e-31,
+  "eps_u": 0.01435758093861908,
+  "eps_v": 0.08154027624752089,
+  "eps_p_meanfree": 0.1545657044277359,
+  "wall_s": 52.910787066444755
+}
+n_theta = 12675, rows = 6001, normal-equation memory ~ 3.93 GB
+{
+  "end_reason": "budget",
+  "steps": 1053,
+  "final_loss": 1.9807356948662267e-18,
+  "eps_u": 5.3964917562281e-09,
+  "eps_v": 4.864536305380011e-08,
+  "eps_p_meanfree": 3.8919869881591496e-08,
+  "wall_s": 600.1969209834933
+}
+n_theta = 4291, rows = 6001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 2875,
+  "final_loss": 5.579562144093401e-12,
+  "eps_u": 5.384872451344135e-06,
+  "eps_v": 2.6619873441262798e-05,
+  "eps_p_meanfree": 2.267650172732566e-05,
+  "wall_s": 600.0457019619644
+}
+n_theta = 5347, rows = 24001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 560,
+  "final_loss": 1.8805841351120662e-10,
+  "eps_u": 5.73972369753875e-07,
+  "eps_v": 6.30552471047388e-06,
+  "eps_p_meanfree": 3.701757180996019e-06,
+  "wall_s": 600.0278361607343
+}
+n_theta = 16835, rows = 24001, normal-equation memory ~ 6.91 GB
+{
+  "end_reason": "budget",
+  "steps": 218,
+  "final_loss": 5.8440741469347086e-15,
+  "eps_u": 2.594613574339737e-09,
+  "eps_v": 2.362086353737792e-08,
+  "eps_p_meanfree": 1.9545936756599178e-08,
+  "wall_s": 603.2045664731413
+}
+n_theta = 16771, rows = 6001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 745,
+  "final_loss": 2.0918499206622542e-16,
+  "eps_u": 9.764665485266133e-09,
+  "eps_v": 4.316912370760306e-08,
+  "eps_p_meanfree": 2.93878038866473e-08,
+  "wall_s": 600.1711036060005
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 742,
+  "final_loss": 1.1224592593622828e-11,
+  "eps_u": 1.1612690922479216e-07,
+  "eps_v": 1.7011706109343907e-06,
+  "eps_p_meanfree": 7.012723404870624e-07,
+  "wall_s": 600.2728527802974
+}
+n_theta = 12675, rows = 24001, normal-equation memory ~ 3.93 GB
+{
+  "end_reason": "budget",
+  "steps": 324,
+  "final_loss": 1.5345480688770295e-14,
+  "eps_u": 1.0888181811535103e-08,
+  "eps_v": 9.831133599375962e-08,
+  "eps_p_meanfree": 1.1343280331059562e-07,
+  "wall_s": 600.93559961766
+}

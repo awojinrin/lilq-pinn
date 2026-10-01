@@ -1,0 +1,10 @@
+{
+  "device": "cuda",
+  "steps": [
+    20,
+    20
+  ],
+  "max_relative_difference": 0.0,
+  "bit_identical": true,
+  "passed": true
+}

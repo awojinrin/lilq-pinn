@@ -1,0 +1,37 @@
+{
+  "representative": "F1_04",
+  "representative_config": {
+    "id": "F1_04",
+    "family": "F1",
+    "width": 128,
+    "depth": 4,
+    "trunk": "shared",
+    "m": 64,
+    "sigma_ff": 5.0,
+    "bc": "hard",
+    "lambda_bc": null,
+    "balancing": true,
+    "eta": 0.001,
+    "t_adam": 5000,
+    "n_int": 2000,
+    "resample": true,
+    "n_theta": 66435
+  },
+  "median_final_loss": {
+    "F1_04": 4.771702080971981e-08,
+    "F1_15": 2.3555701753962e-07,
+    "F1_18": 2.0079153044546673e-07
+  },
+  "best_test_errors_over_all_full_runs": {
+    "eps_u": 2.4321180857731236e-05,
+    "eps_v": 0.0001976767960738453,
+    "eps_p_meanfree": 0.0001070835587820097
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ]
+}

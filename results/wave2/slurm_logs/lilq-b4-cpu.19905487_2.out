@@ -1,0 +1,39 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905624 on c270: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+
+============================================================
+bl
+============================================================
+  warm-up on cpu: 22.7s (untimed)
+
+  P=1024 (devices=['cpu'])
+    NiL-N  seed=0     device=cpu    iters=  6241 loss=2.226e-04 [optimizer_stall] (212.4s)
+    NiL-N  seed=1     device=cpu    iters=  5813 loss=1.320e-04 [optimizer_stall] (192.3s)
+    NiL-N  seed=2     device=cpu    iters=  6832 loss=7.498e-05 [CONVERGED] (235.4s)
+    NiL-Q  seed=0     device=cpu    iters=  4823 loss=2.227e-04 [optimizer_stall] (193.8s)
+    NiL-Q  seed=1     device=cpu    iters=  8039 loss=3.930e-04 [optimizer_stall] (307.0s)
+    NiL-Q  seed=2     device=cpu    iters=  8628 loss=3.533e-04 [optimizer_stall] (348.7s)
+    LiL-N  seed=n/a   device=cpu    iters= 20000 loss=2.006e-04 [iteration_cap] (361.6s)
+
+============================================================
+stall controls: 5 runs ended on optimizer_stall
+============================================================
+
+  control of bl P=1024 NiL-N seed=0 device=cpu (original: 6241 iterations, optimizer_stall)
+    NiL-N  seed=0 [f1_stall_rule] device=cpu    iters= 20000 loss=1.405e-04 [iteration_cap] (943.3s)
+
+  control of bl P=1024 NiL-N seed=1 device=cpu (original: 5813 iterations, optimizer_stall)
+    NiL-N  seed=1 [f1_stall_rule] device=cpu    iters= 11554 loss=7.500e-05 [CONVERGED] (370.0s)
+
+  control of bl P=1024 NiL-Q seed=0 device=cpu (original: 4823 iterations, optimizer_stall)
+    NiL-Q  seed=0 [f1_stall_rule] device=cpu    iters=  8883 loss=7.500e-05 [CONVERGED] (348.5s)
+
+  control of bl P=1024 NiL-Q seed=1 device=cpu (original: 8039 iterations, optimizer_stall)
+    NiL-Q  seed=1 [f1_stall_rule] device=cpu    iters= 20000 loss=2.856e-04 [iteration_cap] (940.0s)
+
+  control of bl P=1024 NiL-Q seed=2 device=cpu (original: 8628 iterations, optimizer_stall)
+    NiL-Q  seed=2 [f1_stall_rule] device=cpu    iters= 20000 loss=2.595e-04 [iteration_cap] (948.8s)
+
+Wrote 12 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_cpu/four_method_tables.csv (0 failures)
+Total elapsed: 5436.8s

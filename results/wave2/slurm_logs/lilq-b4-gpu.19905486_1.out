@@ -1,0 +1,120 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905620 on g051: 48 threads, 48 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+
+============================================================
+burgers
+============================================================
+  warm-up on cuda: 33.1s (untimed)
+
+  P=25 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=   141 loss=5.843e-02 [CONVERGED] (2.8s)
+    NiL-N  seed=1     device=cuda   iters=   306 loss=5.993e-02 [CONVERGED] (4.8s)
+    NiL-N  seed=2     device=cuda   iters=   256 loss=5.980e-02 [CONVERGED] (3.9s)
+    NiL-Q  seed=0     device=cuda   iters=   397 loss=5.982e-02 [CONVERGED] (7.1s)
+    NiL-Q  seed=1     device=cuda   iters=   434 loss=5.994e-02 [CONVERGED] (7.9s)
+    NiL-Q  seed=2     device=cuda   iters=   481 loss=5.977e-02 [CONVERGED] (8.7s)
+    LiL-N  seed=n/a   device=cuda   iters=    18 loss=5.810e-02 [CONVERGED] (0.1s)
+
+  P=100 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=  1050 loss=1.000e-03 [CONVERGED] (17.4s)
+    NiL-N  seed=1     device=cuda   iters=   405 loss=9.963e-04 [CONVERGED] (6.3s)
+    NiL-N  seed=2     device=cuda   iters=  1164 loss=9.979e-04 [CONVERGED] (19.3s)
+    NiL-Q  seed=0     device=cuda   iters=  1122 loss=9.993e-04 [CONVERGED] (20.8s)
+    NiL-Q  seed=1     device=cuda   iters=  2061 loss=9.960e-04 [CONVERGED] (39.5s)
+    NiL-Q  seed=2     device=cuda   iters=  1148 loss=9.903e-04 [CONVERGED] (26.5s)
+    LiL-N  seed=n/a   device=cuda   iters=    94 loss=9.914e-04 [CONVERGED] (0.9s)
+
+  P=225 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=  4329 loss=2.996e-05 [optimizer_stall] (89.7s)
+    NiL-N  seed=1     device=cuda   iters=  5212 loss=4.658e-05 [optimizer_stall] (112.6s)
+    NiL-N  seed=2     device=cuda   iters=  3738 loss=3.139e-05 [optimizer_stall] (77.9s)
+    NiL-Q  seed=0     device=cuda   iters=  5216 loss=2.744e-05 [optimizer_stall] (120.9s)
+    NiL-Q  seed=1     device=cuda   iters=  3942 loss=2.309e-05 [optimizer_stall] (89.0s)
+    NiL-Q  seed=2     device=cuda   iters=  5145 loss=2.000e-05 [CONVERGED] (114.0s)
+    LiL-N  seed=n/a   device=cuda   iters=  1883 loss=2.279e-05 [optimizer_stall] (23.3s)
+
+  P=400 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=  5562 loss=2.445e-05 [optimizer_stall] (90.7s)
+    NiL-N  seed=1     device=cuda   iters=  4531 loss=2.436e-05 [optimizer_stall] (73.0s)
+    NiL-N  seed=2     device=cuda   iters=  3549 loss=3.584e-05 [optimizer_stall] (57.0s)
+    NiL-Q  seed=0     device=cuda   iters=  8667 loss=3.948e-05 [optimizer_stall] (156.9s)
+    NiL-Q  seed=1     device=cuda   iters=  5560 loss=1.587e-05 [optimizer_stall] (100.5s)
+    NiL-Q  seed=2     device=cuda   iters=  5814 loss=2.391e-05 [optimizer_stall] (105.0s)
+    LiL-N  seed=n/a   device=cuda   iters=  1320 loss=4.207e-06 [optimizer_stall] (16.1s)
+
+  P=625 (devices=['cuda'])
+    NiL-N  seed=0     device=cuda   iters=  5079 loss=2.613e-05 [optimizer_stall] (81.8s)
+    NiL-N  seed=1     device=cuda   iters=  4032 loss=2.163e-05 [optimizer_stall] (64.9s)
+    NiL-N  seed=2     device=cuda   iters=  3892 loss=1.670e-05 [optimizer_stall] (62.2s)
+    NiL-Q  seed=0     device=cuda   iters=  5241 loss=1.735e-05 [optimizer_stall] (95.7s)
+    NiL-Q  seed=1     device=cuda   iters=  5605 loss=1.254e-05 [optimizer_stall] (101.6s)
+    NiL-Q  seed=2     device=cuda   iters=  6363 loss=2.763e-05 [optimizer_stall] (115.3s)
+    LiL-N  seed=n/a   device=cuda   iters=  3349 loss=8.483e-06 [optimizer_stall] (41.3s)
+
+============================================================
+stall controls: 20 runs ended on optimizer_stall
+============================================================
+
+  control of burgers P=225 NiL-N seed=0 device=cuda (original: 4329 iterations, optimizer_stall)
+    NiL-N  seed=0 [f1_stall_rule] device=cuda   iters=  6022 loss=2.000e-05 [CONVERGED] (96.5s)
+
+  control of burgers P=225 NiL-N seed=1 device=cuda (original: 5212 iterations, optimizer_stall)
+    NiL-N  seed=1 [f1_stall_rule] device=cuda   iters=  7500 loss=2.638e-05 [iteration_cap] (121.3s)
+
+  control of burgers P=225 NiL-N seed=2 device=cuda (original: 3738 iterations, optimizer_stall)
+    NiL-N  seed=2 [f1_stall_rule] device=cuda   iters=  4504 loss=1.997e-05 [CONVERGED] (72.4s)
+
+  control of burgers P=225 NiL-Q seed=0 device=cuda (original: 5216 iterations, optimizer_stall)
+    NiL-Q  seed=0 [f1_stall_rule] device=cuda   iters=  5805 loss=2.000e-05 [CONVERGED] (105.4s)
+
+  control of burgers P=225 NiL-Q seed=1 device=cuda (original: 3942 iterations, optimizer_stall)
+    NiL-Q  seed=1 [f1_stall_rule] device=cuda   iters=  4233 loss=1.995e-05 [CONVERGED] (77.0s)
+
+  control of burgers P=225 LiL-N seed=None device=cuda (original: 1883 iterations, optimizer_stall)
+    LiL-N  seed=n/a [f1_stall_rule] device=cuda   iters=  7500 loss=2.143e-05 [iteration_cap] (93.3s)
+
+  control of burgers P=400 NiL-N seed=0 device=cuda (original: 5562 iterations, optimizer_stall)
+    NiL-N  seed=0 [f1_stall_rule] device=cuda   iters= 10000 loss=9.534e-06 [iteration_cap] (162.3s)
+
+  control of burgers P=400 NiL-N seed=1 device=cuda (original: 4531 iterations, optimizer_stall)
+    NiL-N  seed=1 [f1_stall_rule] device=cuda   iters= 10000 loss=7.333e-06 [iteration_cap] (166.3s)
+
+  control of burgers P=400 NiL-N seed=2 device=cuda (original: 3549 iterations, optimizer_stall)
+    NiL-N  seed=2 [f1_stall_rule] device=cuda   iters= 10000 loss=7.612e-06 [iteration_cap] (177.6s)
+
+  control of burgers P=400 NiL-Q seed=0 device=cuda (original: 8667 iterations, optimizer_stall)
+    NiL-Q  seed=0 [f1_stall_rule] device=cuda   iters= 10000 loss=3.243e-05 [iteration_cap] (180.0s)
+
+  control of burgers P=400 NiL-Q seed=1 device=cuda (original: 5560 iterations, optimizer_stall)
+    NiL-Q  seed=1 [f1_stall_rule] device=cuda   iters= 10000 loss=5.217e-06 [iteration_cap] (187.7s)
+
+  control of burgers P=400 NiL-Q seed=2 device=cuda (original: 5814 iterations, optimizer_stall)
+    NiL-Q  seed=2 [f1_stall_rule] device=cuda   iters= 10000 loss=1.023e-05 [iteration_cap] (188.0s)
+
+  control of burgers P=400 LiL-N seed=None device=cuda (original: 1320 iterations, optimizer_stall)
+    LiL-N  seed=n/a [f1_stall_rule] device=cuda   iters= 10000 loss=1.337e-06 [iteration_cap] (125.2s)
+
+  control of burgers P=625 NiL-N seed=0 device=cuda (original: 5079 iterations, optimizer_stall)
+    NiL-N  seed=0 [f1_stall_rule] device=cuda   iters= 15000 loss=9.725e-06 [iteration_cap] (277.2s)
+
+  control of burgers P=625 NiL-N seed=1 device=cuda (original: 4032 iterations, optimizer_stall)
+    NiL-N  seed=1 [f1_stall_rule] device=cuda   iters= 15000 loss=5.011e-06 [iteration_cap] (264.2s)
+
+  control of burgers P=625 NiL-N seed=2 device=cuda (original: 3892 iterations, optimizer_stall)
+    NiL-N  seed=2 [f1_stall_rule] device=cuda   iters= 15000 loss=4.265e-06 [iteration_cap] (244.4s)
+
+  control of burgers P=625 NiL-Q seed=0 device=cuda (original: 5241 iterations, optimizer_stall)
+    NiL-Q  seed=0 [f1_stall_rule] device=cuda   iters= 15000 loss=6.987e-06 [iteration_cap] (273.2s)
+
+  control of burgers P=625 NiL-Q seed=1 device=cuda (original: 5605 iterations, optimizer_stall)
+    NiL-Q  seed=1 [f1_stall_rule] device=cuda   iters= 15000 loss=3.211e-06 [iteration_cap] (302.5s)
+
+  control of burgers P=625 NiL-Q seed=2 device=cuda (original: 6363 iterations, optimizer_stall)
+    NiL-Q  seed=2 [f1_stall_rule] device=cuda   iters= 15000 loss=5.903e-06 [iteration_cap] (273.3s)
+
+  control of burgers P=625 LiL-N seed=None device=cuda (original: 3349 iterations, optimizer_stall)
+    LiL-N  seed=n/a [f1_stall_rule] device=cuda   iters= 15000 loss=1.397e-06 [iteration_cap] (186.6s)
+
+Wrote 55 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/burgers_gpu/four_method_tables.csv (0 failures)
+Total elapsed: 5583.7s

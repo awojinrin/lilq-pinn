@@ -1,0 +1,57 @@
+{
+  "N_total": 39600,
+  "N_composition": {
+    "darcy_x": 13200,
+    "darcy_y": 13200,
+    "continuity": 13200
+  },
+  "P_total": 3169,
+  "P_composition": {
+    "h_tilde": 1024,
+    "u": 1056,
+    "v": 1089
+  },
+  "row_weights": {
+    "darcy_x": "per-row sqrt(K*)*R (physics row equilibration, not a block scalar)",
+    "darcy_y": "per-row sqrt(K*) (physics row equilibration, not a block scalar)",
+    "continuity": 1.0
+  },
+  "collocation_construction": {
+    "method": "cell centers",
+    "NX_CELLS": 60,
+    "NY_CELLS": 220
+  },
+  "basis_description": {
+    "h_tilde": {
+      "family": "cos(x) x sin(y)",
+      "modes": 32
+    },
+    "u": {
+      "family": "sin(x) x augmented-cos(y)",
+      "modes": 32
+    },
+    "v": {
+      "family": "augmented-cos(x) x augmented-cos(y)",
+      "modes": 32
+    }
+  },
+  "initial_coefficients": "n/a (single direct linear solve, no iterative initial guess)",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "single_direct_solve"
+  },
+  "K_max": 1,
+  "stopping_reason": "direct_solve",
+  "first_stall_iteration": null,
+  "device": "cpu",
+  "thread_count": 48,
+  "b2_check": {
+    "k": 0,
+    "rel_err": 0.0,
+    "max_rel_err_over_run": 0.0
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+}

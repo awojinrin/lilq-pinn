@@ -1,0 +1,32 @@
+provenance lock OK: commit 905e58c480c7, tree 7b076215828a
+job 19905488 on c276: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+26 runs -> /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation
+  bratu_P25_cpu_paper: 2 iterations, t_cum=0.001s, wall=0.9s
+  bratu_P100_cpu_paper: 3 iterations, t_cum=0.029s, wall=0.4s
+  bratu_P225_cpu_paper: 4 iterations, t_cum=0.192s, wall=2.1s
+  burgers_P25_cpu_paper: 2 iterations, t_cum=0.001s, wall=0.1s
+  burgers_P100_cpu_paper: 3 iterations, t_cum=0.031s, wall=0.4s
+  burgers_P225_cpu_paper: 3 iterations, t_cum=0.149s, wall=1.6s
+  burgers_P400_cpu_paper: 4 iterations, t_cum=0.432s, wall=4.2s
+  burgers_P625_cpu_paper: 4 iterations, t_cum=1.170s, wall=3.8s
+  bl_P64_cpu_paper: 10 iterations, t_cum=0.047s, wall=3.9s
+  bl_P256_cpu_paper: 4 iterations, t_cum=0.241s, wall=2.4s
+  bl_P576_cpu_paper: 4 iterations, t_cum=0.966s, wall=10.9s
+  bl_P1024_cpu_paper: 4 iterations, t_cum=3.862s, wall=11.6s
+  bl_gravity_P64_cpu_paper: 20 iterations, t_cum=0.102s, wall=1.7s
+  bl_gravity_P256_cpu_paper: 12 iterations, t_cum=0.727s, wall=6.3s
+  bl_gravity_P576_cpu_paper: 5 iterations, t_cum=1.228s, wall=4.0s
+  bl_gravity_P1024_cpu_paper: 5 iterations, t_cum=4.318s, wall=13.1s
+  elasticity_P50_cpu_paper: 1 iterations, t_cum=0.004s, wall=0.5s
+  elasticity_P200_cpu_paper: 1 iterations, t_cum=0.048s, wall=1.7s
+  elasticity_P450_cpu_paper: 1 iterations, t_cum=0.139s, wall=3.2s
+  elasticity_P800_cpu_paper: 1 iterations, t_cum=0.420s, wall=6.7s
+  elasticity_P1250_cpu_paper: 1 iterations, t_cum=1.081s, wall=4.4s
+  kovasznay_P75_cpu_paper: 16 iterations, t_cum=0.053s, wall=0.7s
+  kovasznay_P300_cpu_paper: 9 iterations, t_cum=0.291s, wall=2.9s
+  kovasznay_P675_cpu_paper: 6 iterations, t_cum=0.637s, wall=7.5s
+  kovasznay_P1200_cpu_paper: 6 iterations, t_cum=1.685s, wall=6.5s
+  kovasznay_P1875_cpu_paper: 6 iterations, t_cum=4.217s, wall=15.3s
+
+ok=26 skipped=0 failed=0 in 120.2s; index: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/runs_index.csv

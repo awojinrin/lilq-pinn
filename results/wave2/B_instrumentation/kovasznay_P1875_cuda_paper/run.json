@@ -1,0 +1,110 @@
+{
+  "N_total": 5564,
+  "N_composition": {
+    "x_momentum": 1521,
+    "y_momentum": 1521,
+    "continuity": 1521,
+    "bc_u": 500,
+    "bc_v": 500,
+    "pressure_pin": 1
+  },
+  "P_total": 1875,
+  "P_composition": {
+    "u": 625,
+    "v": 625,
+    "p": 625
+  },
+  "row_weights": {
+    "momentum": 0.02564102564102564,
+    "continuity": 0.02564102564102564,
+    "bc": {
+      "bot": 0.282842712474619,
+      "top": 0.282842712474619,
+      "left": 0.282842712474619,
+      "right": 0.282842712474619
+    },
+    "pressure_pin": 3.1622776601683795
+  },
+  "collocation_construction": {
+    "method": "equispaced tensor grid",
+    "sampling": "uniform",
+    "seed": null,
+    "collocation_floor": 10,
+    "n_interior": 1521,
+    "n_per_edge": 125,
+    "N_x": 25,
+    "N_y": 25,
+    "k_ratio": 4,
+    "collocation_ratios": [
+      0.6,
+      0.2,
+      0.2
+    ]
+  },
+  "basis_description": {
+    "family": "chebyshev",
+    "u": {
+      "modes_x": 25,
+      "modes_y": 25,
+      "total": 625
+    },
+    "v": {
+      "modes_x": 25,
+      "modes_y": 25,
+      "total": 625
+    },
+    "p": {
+      "modes_x": 25,
+      "modes_y": 25,
+      "total": 625
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gpu_qr",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "rel_coeff_change",
+    "tolerance": 1e-09
+  },
+  "K_max": 20,
+  "stopping_reason": "target",
+  "first_stall_iteration": 5,
+  "device": "cuda",
+  "thread_count": 48,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 3.591782953636556e-15,
+    "max_rel_err_over_run": 0.010916134603804745
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": {
+    "mem_estimate_bytes": 250380000,
+    "min_diag_ratio": 0.005100319029177727,
+    "flagged_iterations": [],
+    "h2d_s": [
+      0.017209474928677082,
+      0.01731756702065468,
+      0.017251127399504185,
+      0.017188668251037598,
+      0.017100696451961994,
+      0.017215746454894543
+    ],
+    "qr_solve_s": [
+      0.038756982423365116,
+      0.06598741468042135,
+      0.06598931457847357,
+      0.06603167857974768,
+      0.0659217918291688,
+      0.06598504818975925
+    ],
+    "d2h_s": [
+      0.00016063358634710312,
+      0.00015289708971977234,
+      0.0001603374257683754,
+      0.00014849472790956497,
+      0.0001468425616621971,
+      0.00014151260256767273
+    ]
+  },
+  "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+}

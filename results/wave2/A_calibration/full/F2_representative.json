@@ -1,0 +1,31 @@
+{
+  "representative": "F2_16",
+  "representative_config": {
+    "id": "F2_16",
+    "family": "F2",
+    "width": 64,
+    "depth": 4,
+    "m": 32,
+    "sigma_ff": 2.0,
+    "n_int": 2000,
+    "n_theta": 16835
+  },
+  "median_final_loss": {
+    "F2_16": 8.423875805051781e-31,
+    "F2_03": 3.6978474101151747e-19,
+    "F2_17": 1.300465150926713e-16
+  },
+  "best_test_errors_over_all_full_runs": {
+    "eps_u": 3.6720008008660746e-09,
+    "eps_v": 3.555413505742898e-08,
+    "eps_p": 1.8302883888014867e-07,
+    "eps_p_meanfree": 2.4388153866673003e-08
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ]
+}
