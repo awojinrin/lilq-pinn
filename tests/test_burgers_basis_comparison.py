@@ -130,12 +130,12 @@ def test_run_table3_study_small_scale_populates_real_diagnostics():
         assert last["num_rank_gelsy"] == 16
 
 
-def test_run_table3_study_defaults_to_all_nine_bases():
+def test_run_table3_study_defaults_to_all_ten_bases():
     config = ComparisonConfig(N_x=4, N_t=4, disable_stopping_rule=True,
                                max_quasi_iters=2)
     results = run_table3_study(config, verbose=False)
     assert set(results.keys()) == set(BASIS_CONFIGS.keys())
-    assert len(results) == 9
+    assert len(results) == 10          # with the default-init ELM (the advisor's follow-up, 1 Oct)
 
 
 def test_write_table3_csv_roundtrip(tmp_path):

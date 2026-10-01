@@ -25,6 +25,13 @@ run's trained model is saved in ``models/<case>_<guess>_P<P>_<method>_s<seed>/``
 
 Untimed (Addendum Section 2): runs on this machine's CPU by default.
 
+LiL-Q's K_max is the paper pass's, ``lilq.solvers.LILQ_PAPER_KMAX`` (60;
+20 for gravity BL until the advisor's follow-up of 1 October 2026), recorded
+in the ``K_max`` column. ``--rerun-capped-from`` reruns, with it, the LiL-Q
+rows of earlier tables that ended on ``iteration_cap`` (wave 3's three
+gravity rows), into a table of their own; merged with the earlier tables,
+the new rows sit beside the old ones, told apart by ``K_max``.
+
 Usage::
 
     python experiments/b8_initial_guess.py
@@ -64,7 +71,7 @@ METHODS = ('LiL-Q', 'LiL-N', 'NiL-N', 'NiL-Q')
 SEEDS = (0, 1, 2)
 OUTPUT_DIR = Path(_proj) / 'results' / 'b8_initial_guess'
 
-COLUMNS = ('case', 'guess', 'P', 'method', 'seed', 'iterations', 'evaluations', 'final_loss',
+COLUMNS = ('case', 'guess', 'P', 'method', 'seed', 'K_max', 'iterations', 'evaluations', 'final_loss',
            'target', 'target_reached', 'stopping_reason', 'iterations_cap', 'evaluations_cap',
            'first_stall_iteration', 'stall_flag_ever', 'chi_history',
            'stall_iteration', 'stall_evaluations', 'stall_time_s', 'wall_s', 'device', 'commit', 'error')
@@ -108,6 +115,7 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
         chi = [r['chi'] for r in rows]
         row.update(
             iterations=summary['total_iterations'], evaluations=summary['total_iterations'],
+            K_max=opt.max_quasi_iters_lil,
             iterations_cap=opt.max_quasi_iters_lil, evaluations_cap=opt.max_quasi_iters_lil,
             stopping_reason=('failure' if not np.isfinite(summary['final_loss'])      # 2.3's rule
                              else 'target' if summary['converged'] else 'iteration_cap'),
@@ -132,6 +140,19 @@ def run_one(case, guess, N, method, seed, device='cpu', quick=False, log_root=No
     return row
 
 
+def capped_lilq_runs(tables):
+    """``(case, guess, N, 'LiL-Q', '')`` for every LiL-Q row of ``tables``
+    (earlier ``b8_initial_guess.csv`` files) that ended on ``iteration_cap``."""
+    runs = []
+    for table in tables:
+        with open(table, newline='') as f:
+            for r in csv.DictReader(f):
+                run = (r['case'], r['guess'], int(round(np.sqrt(int(r['P'])))), 'LiL-Q', '')
+                if r['method'] == 'LiL-Q' and r['stopping_reason'] == 'iteration_cap' and run not in runs:
+                    runs.append(run)
+    return runs
+
+
 def planned_runs(cases=CASES, guesses=GUESSES, sizes=DEFAULT_N_VALUES, methods=METHODS, seeds=SEEDS):
     for case in cases:
         for guess in guesses:
@@ -150,7 +171,7 @@ def _write(path, rows):
     os.replace(tmp, path)
 
 
-def run_b8(out_dir, device='cpu', quick=False, verbose=True, **selection):
+def run_b8(out_dir, device='cpu', quick=False, verbose=True, runs=None, **selection):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / 'b8_initial_guess.csv'
@@ -160,7 +181,7 @@ def run_b8(out_dir, device='cpu', quick=False, verbose=True, **selection):
             rows = [r for r in csv.DictReader(f) if r['stopping_reason'] != 'failure']
     done = {row_key(r) for r in rows}
     save_provenance(out_dir)
-    for case, guess, N, method, seed in planned_runs(**selection):
+    for case, guess, N, method, seed in (runs if runs is not None else planned_runs(**selection)):
         key = (case, guess, N * N, method, str(seed))
         if key in done:
             continue
@@ -194,7 +215,15 @@ def main():
     parser.add_argument('--device', default='cpu', help="Device for LiL-N/NiL (LiL-Q is scipy on the CPU).")
     parser.add_argument('--quick', action='store_true', help='Smallest P, tiny budgets (smoke test).')
     parser.add_argument('--out-dir', type=str, default=str(OUTPUT_DIR))
+    parser.add_argument('--rerun-capped-from', nargs='+', default=None,
+                        help="Instead of the plan: rerun the LiL-Q rows of these b8_initial_guess.csv files "
+                             "that ended on iteration_cap, with this code's K_max (wave 4).")
     args = parser.parse_args()
+    if args.rerun_capped_from:
+        runs = capped_lilq_runs(args.rerun_capped_from)
+        print(f"Rerunning {len(runs)} capped LiL-Q rows: {runs}")
+        print(f"Wrote {run_b8(args.out_dir, device='cpu', quick=args.quick, runs=runs)}")
+        return
 
     sizes = DEFAULT_N_VALUES[:1] if args.quick else (
         [int(round(np.sqrt(p))) for p in args.P] if args.P else DEFAULT_N_VALUES)

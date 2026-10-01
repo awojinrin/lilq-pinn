@@ -62,7 +62,7 @@ import scipy.linalg
 
 from lilq.basis import (
     Chebyshev1D, Fourier1D, TensorProductBasis2D,
-    ELMBasis2D_Xavier, AugmentedBasis1D,
+    ELMBasis2D_Xavier, ELMBasis2D_TorchDefault, AugmentedBasis1D,
 )
 from lilq.provenance import save_provenance
 from lilq.instrumentation import EPS_MACH
@@ -162,6 +162,12 @@ BASIS_CONFIGS = {
         'short_label': 'ELM',
         'color': '#6A0572',    # purple  (same as Bratu ELM)
         'marker': 'v',
+    },
+    'elm_default': {
+        'label': 'ELM (tanh, default init)',
+        'short_label': 'ELM (default init)',
+        'color': '#B07AA1',    # light purple, beside the Xavier ELM
+        'marker': '^',
     },
     'sin_fourier': {
         'label': r'Sin$(x)$ $\times$ \{Cos,Sin\}$(t)$',
@@ -265,6 +271,15 @@ def create_comparison_basis(
             activation='tanh', seed=seed)
         desc = f"ELM(tanh, {n_hidden} neurons, Xavier-scaled)"
 
+    elif key == 'elm_default':
+        # PyTorch's default nn.Linear initialization, uniform on +-1/sqrt(fan_in)
+        # (the advisor's follow-up of 1 October 2026, item 3); same width and P.
+        n_hidden = N_x * N_t
+        basis = ELMBasis2D_TorchDefault(
+            n_hidden=n_hidden, domain_x=x_domain, domain_y=t_domain,
+            activation='tanh', seed=seed)
+        desc = f"ELM(tanh, {n_hidden} neurons, PyTorch default init +-1/sqrt(2))"
+
     else:
         raise ValueError(f"Unknown basis key: {key}")
 
@@ -321,6 +336,30 @@ def _bmm(basis, pts, dx=0, dy=0):
     """Build basis matrix helper."""
     return (basis.evaluate(pts[:, 0], pts[:, 1]) if (dx == 0 and dy == 0)
             else basis.derivative(pts[:, 0], pts[:, 1], dx=dx, dy=dy))
+
+
+TEST_GRID = (201, 201)   # as problems.burgers.TEST_GRID
+
+
+def make_basis_test_error_fn(basis, config):
+    """``beta -> {'eps_u': mean square of u_t + u u_x - nu u_xx}`` on the
+    uniform 201 x 201 grid of ``problems.burgers.make_test_error_fn`` (the
+    Burgers test residual), for any basis of the study, ELMs included
+    (evaluated through the basis's own derivatives, not a tensor product).
+    Off the clock (the tracker's)."""
+    xs = np.linspace(*config.x_domain, TEST_GRID[0])
+    ts = np.linspace(0.0, config.T_final, TEST_GRID[1])
+    X, T = np.meshgrid(xs, ts, indexing='ij')
+    pts = np.column_stack([X.ravel(), T.ravel()])
+    mats = {key: _bmm(basis, pts, *d) for key, d in
+            (('u', (0, 0)), ('u_x', (1, 0)), ('u_t', (0, 1)), ('u_xx', (2, 0)))}
+
+    def test_errors(beta):
+        u, u_x, u_t, u_xx = (mats[k] @ beta for k in ('u', 'u_x', 'u_t', 'u_xx'))
+        res = u_t + u * u_x - config.viscosity * u_xx
+        return {'eps_u': float(np.mean(res ** 2))}
+
+    return test_errors
 
 
 def solve_lilq_burgers_comparison(
@@ -445,6 +484,7 @@ def solve_lilq_burgers_comparison(
         tracker = LilQDiagnosticsTracker(
             n_interior_rows=n_pde,
             interior_weight=float(np.sqrt(lp / n_pde)),
+            test_error_fn=make_basis_test_error_fn(basis, config),
         )
 
     converged, stagnated = False, False
@@ -706,9 +746,12 @@ def write_table3_csv(results: Dict[str, Dict], out_path) -> None:
     """
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    # eps_u (the test-grid residual mean square), kappa_raw / kappa_retained
+    # and num_rank_qr: the advisor's follow-up of 1 October 2026, item 3.
     fieldnames = ['basis_key', 'basis_label', 'P', 'K_max',
-                 'final_R_h_squared', 'first_stall_iteration',
-                 'kappa', 'kappa_method', 'num_rank_svd', 'num_rank_gelsy']
+                 'final_R_h_squared', 'eps_u', 'first_stall_iteration',
+                 'kappa', 'kappa_method', 'kappa_raw', 'kappa_retained',
+                 'num_rank_svd', 'num_rank_gelsy', 'num_rank_qr']
     with open(out_path, 'w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -723,10 +766,14 @@ def write_table3_csv(results: Dict[str, Dict], out_path) -> None:
                 'K_max': len(solve_rows(rows)),
                 'final_R_h_squared': final['norm_R_h'] ** 2,
                 'first_stall_iteration': first_stall_iteration(rows),
+                'eps_u': final.get('eps_u'),
                 'kappa': last['kappa'],
                 'kappa_method': last['kappa_method'],
+                'kappa_raw': last.get('kappa_raw'),
+                'kappa_retained': last.get('kappa_retained'),
                 'num_rank_svd': last['num_rank_svd'],
                 'num_rank_gelsy': last['num_rank_gelsy'],
+                'num_rank_qr': last.get('num_rank_qr'),
             })
     print(f"\nTable 3 CSV written: {out_path}")
 

@@ -607,6 +607,44 @@ class ELMBasis2D(ELMBasis2D_Xavier):
         self.gamma = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-bias_bound, bias_bound)
 
 
+class ELMBasis2D_TorchDefault(ELMBasis2D_Xavier):
+    """ELM basis with PyTorch's default ``nn.Linear`` initialization:
+    weights and biases uniform on +-1/sqrt(fan_in) (``kaiming_uniform_`` with
+    a = sqrt(5) gives 1/sqrt(fan_in) for the weights; the bias bound is the
+    same). With fan_in = 2: +-0.7071 for alpha, beta and gamma alike.
+
+    (``ELMBasis2D`` above uses sqrt(3 / fan_in) = 1.2247 for the weights,
+    Kaiming with a = 0, not PyTorch's default.) The advisor's follow-up of 1
+    October 2026, item 3: one more Table 3 row with this initialization.
+    """
+
+    def __init__(self, n_hidden: int,
+                 domain_x: Tuple[float, float],
+                 domain_y: Tuple[float, float],
+                 activation: str = 'tanh',
+                 seed: Optional[int] = 42,
+                 dtype=None,
+                 device: str = 'cpu'):
+        if dtype is None:
+            dtype = torch.float64
+        self._n_hidden = n_hidden
+        self._domain_x = (float(domain_x[0]), float(domain_x[1]))
+        self._domain_y = (float(domain_y[0]), float(domain_y[1]))
+        self._activation = activation
+        self._dtype = dtype
+        self._device = device
+        self._ax, self._bx = self._domain_x
+        self._ay, self._by = self._domain_y
+        self._Lx = self._bx - self._ax
+        self._Ly = self._by - self._ay
+        if seed is not None:
+            torch.manual_seed(seed)
+        bound = 1.0 / np.sqrt(2.0)                     # fan_in = 2
+        self.alpha = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-bound, bound)
+        self.beta = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-bound, bound)
+        self.gamma = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-bound, bound)
+
+
 # ==============================================================================
 #                      AUGMENTED BASIS (with polynomial lift)
 # ==============================================================================

@@ -17,6 +17,82 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- The advisor's follow-up items: the default-init ELM row, B9's time records, B8's K_max = 60 reruns, the four-method history cost
+
+**Table 3, default-initialization ELM (item 3).**
+`lilq.basis.ELMBasis2D_TorchDefault` uses PyTorch's default `nn.Linear`
+initialization: weights and biases uniform on +-1/sqrt(fan_in) = +-0.7071,
+since `kaiming_uniform_` with a = sqrt(5) gives 1/sqrt(fan_in). The existing
+`ELMBasis2D`, documented as matching `nn.Linear`, uses sqrt(3 / fan_in) =
+1.2247 for the weights, i.e. Kaiming with a = 0. It is not the default and
+is unchanged. The basis study has a new key, `elm_default`, with the same
+width (625) and P as the Xavier `elm` row.
+
+`write_table3_csv` gains `eps_u`, `kappa_raw`, `kappa_retained` and
+`num_rank_qr`. `eps_u` is the mean square of u_t + u u_x - nu u_xx on the
+uniform 201 x 201 grid of `problems.burgers.make_test_error_fn`, computed for
+any basis through its own derivatives (`make_basis_test_error_fn`; the
+existing function needs a tensor-product basis). Sin x Sin's `eps_u` is 0 by
+construction: it cannot represent the initial condition, its solution is
+essentially zero, and zero satisfies the PDE; its final ||R||_h^2 of 4.98
+shows the failure.
+
+Local run of the whole table (about 5 minutes):
+- the existing rows reproduce wave 1's to round-off where well conditioned
+  (relative 1e-15 to 1e-12); the nearly singular rows differ in the last
+  digits between machines (Fourier x Fourier: kappa 1.3e16; Xavier ELM:
+  rank 43/625);
+- `elm_default` reaches ||R||_h^2 = 4.4e-4 against the Xavier ELM's 4.9e-2,
+  with SVD rank 176 of 625 and retained kappa 6.6e11.
+
+Wave 4 reruns the whole Table 3 (an untimed CPU job, about 2 SU), so that
+every row has the new columns; its files replace wave 1's B6 files in the
+package (`WAVES.json` overrides).
+
+**B9's time records (item 4).** `darcy_fv_comparison.csv` gains `allocation`
+(e.g. "8 cores + 1 x NVIDIA A100-PCIE-40GB", with ", exclusive" when the job
+held the node; from `lilq.provenance.capture_scheduler_info`) and
+`resumed_at` (the epochs a NiL run resumed from a checkpoint; `[]` for
+none). Wave 3 ran before these columns existed. `darcy_fv_comparison.py
+--annotate <darcy_fv>` fills them in an existing table from the job's
+`hardware.json` and each run's `network.pt`; the package assembly runs it
+before merging. For wave 3: every run on the shared allocation (8 cores, one
+A100-PCIE-40GB, not exclusive), and none of the 24 NiL runs resumed.
+
+**B8's capped LiL-Q rows, with K_max = 60 (item 1).** The B8 table gains a
+`K_max` column, the LiL-Q K_max of the run; it is the paper pass's 60 since
+the entry "Clean timing and K_max = 60", and was 20 for gravity BL in wave
+3. `b8_initial_guess.py --rerun-capped-from <tables>` reruns only the LiL-Q
+rows of earlier tables that ended on `iteration_cap`, on the CPU, into a
+table of their own. Merged with wave 3's, the new rows sit beside the old
+ones, told apart by `K_max`. Wave 3 has three such rows, all gravity BL.
+Locally, all three reach their targets: initial-condition guess P = 256 and
+576 in 23 iterations (losses 0.0749 and 0.0434 against 0.075 and 0.045),
+zero guess P = 64 in 43 (0.237 against 0.24).
+
+**Four-method training time and the loss history (the reply to wave 2,
+Section 3, item 3).** `training_time` (`training_time_s`) is the
+`MetricsTracker` wall time at the last recorded iteration. It includes the
+per-iteration record from which `loss_history_every_10` is subsampled after
+the run. `experiments/measure_history_cost.py` times it inside real runs
+(2,000 iterations, target 0, this laptop):
+- the recording: 0.01% of `training_time` on the GPU, 0.05-0.06% on the CPU
+  (Bratu P = 100 NiL-N and NiL-Q, Burgers P = 225 NiL-N);
+- the loss lookup at the accepted point: 0.44% (GPU) and 0.7% (CPU). It is
+  a stored value, no evaluation, and it is the stopping test, which the
+  method needs with or without a history. NiL-Q's stopping test is its
+  full-loss monitor evaluation (`monitor_evaluations`).
+
+The same rule therefore holds on both sides: a LiL-Q clean time includes
+its own stopping test and its per-iteration metrics record, and nothing
+else. The same runs show these small networks iterate about 5x faster on
+the CPU than on the A100 (9.1-11.1 s against 47-52 s per 2,000
+iterations), as the advisor noted in his wave 1 review.
+
+Tests: `tests/test_followup_items.py`.
+
+---
+
 ## 2026-10-01 -- Task B10: Kovasznay on CGL grids with Clenshaw-Curtis weights (Addendum v2.3)
 
 **Why.** The advisor's sampling-constant analysis (`Post-JCP/wave2/

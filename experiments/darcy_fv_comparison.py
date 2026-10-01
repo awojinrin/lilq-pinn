@@ -24,6 +24,7 @@ Usage::
 """
 
 import argparse
+import json
 import csv
 import os
 import sys
@@ -52,22 +53,46 @@ ORDER = 32  # the paper's (experiments/run_darcy.py DEFAULT_ORDER)
 DATA_DIR = Path(_proj) / 'data' / 'spe10'
 OUTPUT_DIR = Path(_proj) / 'results' / 'darcy_fv_comparison'
 
+# allocation and resumed_at record what each time ran on (the advisor's
+# follow-up of 1 October 2026, item 4: the paper quotes the NiL times).
 COLUMNS = ('field', 'method', 'seed', 'delta_fv', 'rel_l2_vs_abs_pressure', 'max_abs_err_psi',
-           'tpfa_residual', 'tpfa_residual_rel', 'time_s', 'final_loss', 'dtype', 'n_params', 'commit')
+           'tpfa_residual', 'tpfa_residual_rel', 'time_s', 'final_loss', 'dtype', 'n_params',
+           'allocation', 'resumed_at', 'commit')
 
 
 def _config(field, order):
     return DarcyConfig(ORDER_H=order, ORDER_U=order, ORDER_V=order, perm_file=f'perm_field_{field}.txt')
 
 
-def _row(field, method, seed, P_h, P_fvm, p_bot, tpfa, time_s, final_loss, dtype, n_params=None):
+def allocation_label(scheduler=None, gpu_name=None):
+    """``'<cores> cores + <n> x <GPU>'`` (or ``'<cores> cores'``) of the job a
+    time was measured in, with ``', exclusive'`` when it held the node; from
+    a ``hardware.json`` ``scheduler`` record, or this process's environment.
+    ``'local'`` outside a scheduler."""
+    if scheduler is None:
+        from lilq.provenance import capture_scheduler_info
+        scheduler = capture_scheduler_info()
+    if not scheduler or not scheduler.get('slurm'):
+        return 'local'
+    cores = (scheduler.get('job') or {}).get('NumCPUs') or scheduler.get('SLURM_CPUS_PER_TASK') \
+        or scheduler.get('SLURM_CPUS_ON_NODE')
+    gpus = [g for g in str(scheduler.get('SLURM_JOB_GPUS') or '').split(',') if g != '']
+    if gpu_name is None and gpus:
+        gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'GPU'
+    label = f"{cores} cores" + (f" + {len(gpus)} x {gpu_name}" if gpus else '')
+    return label + (', exclusive' if scheduler.get('exclusive') else '')
+
+
+def _row(field, method, seed, P_h, P_fvm, p_bot, tpfa, time_s, final_loss, dtype, n_params=None,
+         allocation=None, resumed_at=None):
     return {
         'field': field, 'method': method, 'seed': seed,
         'delta_fv': delta_fv(P_h, P_fvm, p_bot),
         'rel_l2_vs_abs_pressure': float(np.linalg.norm(P_h - P_fvm) / np.linalg.norm(P_fvm)),
         'max_abs_err_psi': float(np.abs(P_h - P_fvm).max()),
         **tpfa, 'time_s': time_s, 'final_loss': final_loss, 'dtype': dtype,
-        'n_params': n_params, 'commit': current_commit(),
+        'n_params': n_params, 'allocation': allocation,
+        'resumed_at': json.dumps(resumed_at) if resumed_at is not None else '', 'commit': current_commit(),
     }
 
 
@@ -99,8 +124,9 @@ def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=T
                        'u': (lil['basis_u'], lil['c_u']), 'v': (lil['basis_v'], lil['c_v'])},
                       config, extra={'P_lil': lil['P_lil'], 'P_fvm': P_fvm})
     n_lil = sum(len(lil[k]) for k in ('c_h_tilde', 'c_u', 'c_v'))
+    allocation = allocation_label()
     rows = [_row(field, 'LiL', '', lil['P_lil'], P_fvm, p_bot, tpfa,
-                 time.perf_counter() - t0, '', 'float64', n_lil)]
+                 time.perf_counter() - t0, '', 'float64', n_lil, allocation=allocation)]
     if verbose:
         print(f"  {field} LiL: delta_FV = {rows[-1]['delta_fv']:.3e}  "
               f"(TPFA residual {tpfa['tpfa_residual_rel']:.1e} relative)", flush=True)
@@ -113,11 +139,43 @@ def compare_field(field, order=ORDER, nil_seeds=(), nil_epochs=150000, verbose=T
             pinn = nil['pinn']
             n_nil = sum(q.numel() for net in (pinn.net_P, pinn.net_U, pinn.net_V) for q in net.parameters())
             rows.append(_row(field, 'NiL', seed, np.asarray(nil['fields']['P'], dtype=np.float64), P_fvm, p_bot,
-                             tpfa, nil['training_time'], nil['final_loss'], dtype, n_nil))
+                             tpfa, nil['training_time'], nil['final_loss'], dtype, n_nil,
+                             allocation=allocation, resumed_at=nil.get('resumed_at', [])))
             if verbose:
                 print(f"  {field} NiL seed {seed} {dtype}: delta_FV = {rows[-1]['delta_fv']:.3e}  "
                       f"({nil['training_time']:.0f} s)", flush=True)
     return rows
+
+
+def annotate(darcy_fv_root):
+    """Fill ``allocation`` and ``resumed_at`` in every job's table under
+    ``darcy_fv_root`` (``<root>/<field>_s<seed>/darcy_fv_comparison.csv``)
+    where they are empty -- tables written before these columns existed
+    (wave 3): the allocation from the job's ``hardware.json``, the resumes
+    from each NiL run's ``models/NiL_<field>_s<seed>_<dtype>/network.pt``.
+    Returns the number of rows filled."""
+    filled = 0
+    for table in sorted(Path(darcy_fv_root).glob('*/darcy_fv_comparison.csv')):
+        job = table.parent
+        rows = list(csv.DictReader(open(table)))
+        hw = job / 'hardware.json'
+        hardware = json.loads(hw.read_text()) if hw.exists() else {}
+        gpu = ((hardware.get('gpu') or {}).get('gpus') or [{}])[0].get('name')
+        label = allocation_label(hardware.get('scheduler') or {}, gpu) if hardware else ''
+        for r in rows:
+            if not r.get('allocation'):
+                r['allocation'] = label
+                filled += 1
+            if r['method'] == 'NiL' and not r.get('resumed_at'):
+                net = job / 'models' / f"NiL_{r['field']}_s{r['seed']}_{r['dtype']}" / 'network.pt'
+                if net.exists():
+                    saved = torch.load(net, map_location='cpu', weights_only=False)
+                    r['resumed_at'] = json.dumps(saved.get('resumed_at', []))
+        with open(table, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=COLUMNS)
+            writer.writeheader()
+            writer.writerows([{c: r.get(c, '') for c in COLUMNS} for r in rows])
+    return filled
 
 
 def main():
@@ -129,7 +187,13 @@ def main():
     parser.add_argument('--nil-epochs', type=int, default=150000)
     parser.add_argument('--nil-dtypes', nargs='+', default=['float64', 'float32'], choices=['float64', 'float32'])
     parser.add_argument('--out-dir', type=str, default=str(OUTPUT_DIR))
+    parser.add_argument('--annotate', type=str, default=None,
+                        help='Instead of running: fill allocation and resumed_at in the job tables under '
+                             'this darcy_fv folder (wave 3).')
     args = parser.parse_args()
+    if args.annotate:
+        print(f"Filled {annotate(args.annotate)} rows under {args.annotate}")
+        return
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
