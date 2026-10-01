@@ -29,7 +29,7 @@ import math
 from dataclasses import dataclass, replace as dataclasses_replace
 from typing import Tuple, Dict, Optional
 
-from lilq.collocation import points_1d, write_collocation_rows
+from lilq.collocation import clenshaw_curtis_weights, points_1d, write_collocation_rows
 from lilq.basis import (
     Chebyshev1D, Fourier1D, TensorProductBasis2D, AugmentedBasis1D,
     create_chebyshev_basis_2d, create_basis_2d,
@@ -77,6 +77,11 @@ class KovasznayConfig:
     # Minimum points per direction and per edge (the paper's 10). Component C
     # lowers it so that N/P = 1 is reachable at P = 300.
     collocation_floor: int = 10
+    # Row weights (Addendum v2.3, task B10): 'equal' (every existing run; the
+    # interior rows of an equation share sqrt(lambda / n_int), the rows of an
+    # edge sqrt(lambda_bc / n_edge)), or 'clenshaw_curtis' (CGL grids only):
+    # tensor Clenshaw-Curtis quadrature weights, see _row_weights.
+    weights: str = 'equal'
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -139,7 +144,7 @@ def _generate_collocation(config: KovasznayConfig, P_total):
         'x_top': tx, 'y_top': np.full_like(tx, y_max),
         'x_left': np.full_like(ty, x_min), 'y_left': ty,
         'x_right': np.full_like(ty, x_max), 'y_right': ty,
-        'n_bc_edge': n_bc,
+        'n_bc_edge': n_bc, 'n_dim': n_dim,
     }
 
 
@@ -147,11 +152,65 @@ def _generate_collocation(config: KovasznayConfig, P_total):
 # LiL-Q Solver (Multi-field Quasilinearization)
 # ─────────────────────────────────────────────────────────────────────────────
 
+EDGES = ('bot', 'top', 'left', 'right')
+
+
+def _row_weights(config: KovasznayConfig, n_pde, n_dim, n_edge) -> dict:
+    """The square-root row weights: ``{'mom', 'cont', 'bc': {edge}, 'pin'}``.
+
+    ``'equal'``: scalars, exactly the expressions the assembly has always
+    used (sqrt(lambda / n_int), sqrt(lambda_bc / n_edge), sqrt(lambda_bc)).
+
+    ``'clenshaw_curtis'`` (Addendum v2.3 Section 1; CGL grids only): with
+    w^(n) the Clenshaw-Curtis weights of n CGL nodes summing to 1
+    (``lilq.collocation.clenshaw_curtis_weights``),
+    * interior point (x_i, y_j), each of the three equations:
+      sqrt(lambda_block * w_i^(n) * w_j^(n)), so an equation's interior
+      weights sum to lambda_block as before. The weights are those of the
+      nodes without the grid's 1e-6 inset (negligible difference);
+    * edge e with n_e points, each u and v Dirichlet row:
+      sqrt(lambda_bc * w_k^(n_e) * |e| / |dOmega|), |dOmega| = 7 the perimeter,
+      so one component's boundary weights sum to lambda_bc over the whole
+      boundary (the manuscript's Y-norm is normalized over dOmega, not per
+      edge); corner points keep a row on each of their two edges;
+    * the pressure pin: unchanged.
+    The discrete norm is then a quadrature of the Y-norm."""
+    if config.weights == 'equal':
+        return {'mom': np.sqrt(config.lambda_mom / n_pde), 'cont': np.sqrt(config.lambda_cont / n_pde),
+                'bc': {e: np.sqrt(config.lambda_bc / n_edge[e]) for e in EDGES}, 'pin': np.sqrt(config.lambda_bc)}
+    w = clenshaw_curtis_weights(n_dim)
+    w_int = np.outer(w, w).ravel()         # (x_i, y_j) of meshgrid(xp, yp).ravel(): index j * n + i
+    lx = config.x_domain[1] - config.x_domain[0]
+    ly = config.y_domain[1] - config.y_domain[0]
+    perimeter = 2.0 * (lx + ly)
+    length = {'bot': lx, 'top': lx, 'left': ly, 'right': ly}
+    return {'mom': np.sqrt(config.lambda_mom * w_int), 'cont': np.sqrt(config.lambda_cont * w_int),
+            'bc': {e: np.sqrt(config.lambda_bc * clenshaw_curtis_weights(n_edge[e]) * length[e] / perimeter)
+                   for e in EDGES},
+            'pin': np.sqrt(config.lambda_bc)}
+
+
+def _weigh(w, M):
+    """Rows of ``M`` (a matrix or a vector) times their weights ``w``: a
+    scalar multiplies as it always has; a vector multiplies row by row."""
+    if np.ndim(w) == 0:
+        return w * M
+    return w[:, None] * M if np.ndim(M) == 2 else w * M
+
+
+def _check_weights(config: KovasznayConfig):
+    if config.weights not in ('equal', 'clenshaw_curtis'):
+        raise ValueError(f"weights must be 'equal' or 'clenshaw_curtis', not {config.weights!r}")
+    if config.weights == 'clenshaw_curtis' and config.sampling != 'cgl':
+        raise ValueError("weights='clenshaw_curtis' needs sampling='cgl' (Clenshaw-Curtis weights belong to "
+                         f"Chebyshev-Gauss-Lobatto nodes), not sampling={config.sampling!r}")
+
+
 def _make_kovasznay_nonlinear_loss_fn(
     Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
     Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
     Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
-    nu, Pu, Pv, Pp, lambda_mom, lambda_cont, lambda_bc,
+    nu, Pu, Pv, Pp, lambda_mom, lambda_cont, lambda_bc, row_weights=None,
 ):
     """Scalar total-loss evaluator for Kovasznay's Section 3.1
     instrumentation -- the MSE-based analogue of
@@ -192,6 +251,16 @@ def _make_kovasznay_nonlinear_loss_fn(
 
         pin_res = float((Phi_p_pin @ theta_p - p_pin_val)[0])
 
+        if row_weights is not None:            # Clenshaw-Curtis rows (Addendum v2.3): sum of w^2 r^2
+            rw = row_weights
+            total = (float(np.sum(rw['mom'] ** 2 * (res_xmom ** 2 + res_ymom ** 2)))
+                     + float(np.sum(rw['cont'] ** 2 * res_cont ** 2))
+                     + sum(float(np.sum(rw['bc'][e] ** 2 * ((bc_blocks[e]['Phi_u'] @ theta_u - bc_blocks[e]['u_exact']) ** 2
+                                                            + (bc_blocks[e]['Phi_v'] @ theta_v - bc_blocks[e]['v_exact']) ** 2)))
+                           for e in EDGES)
+                     + float(rw['pin']) ** 2 * pin_res ** 2)
+            return total
+
         total = (
             lambda_mom * (float(np.mean(res_xmom ** 2)) + float(np.mean(res_ymom ** 2)))
             + lambda_cont * float(np.mean(res_cont ** 2))
@@ -207,7 +276,7 @@ def _make_kovasznay_residual_vector_fn(
     Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
     Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
     Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
-    nu, Pu, Pv, Pp, n_pde, lambda_mom, lambda_cont, lambda_bc,
+    nu, Pu, Pv, Pp, n_pde, lambda_mom, lambda_cont, lambda_bc, row_weights=None,
 ):
     """Weighted nonlinear residual **vector** for Section 3.1's phase
     indicator -- the vector form of
@@ -244,6 +313,16 @@ def _make_kovasznay_residual_vector_fn(
         res_xmom = u * u_x + v * u_y + p_x - nu * lap_u
         res_ymom = u * v_x + v * v_y + p_y - nu * lap_v
         res_cont = u_x + v_y
+
+        if row_weights is not None:            # Clenshaw-Curtis rows (Addendum v2.3)
+            rw = row_weights
+            blocks = [rw['mom'] * res_xmom, rw['mom'] * res_ymom, rw['cont'] * res_cont]
+            for edge in EDGES:
+                blk = bc_blocks[edge]
+                blocks.append(rw['bc'][edge] * (blk['Phi_u'] @ theta_u - blk['u_exact']))
+                blocks.append(rw['bc'][edge] * (blk['Phi_v'] @ theta_v - blk['v_exact']))
+            blocks.append(rw['pin'] * (Phi_p_pin @ theta_p - p_pin_val))
+            return np.concatenate(blocks)
 
         blocks = [w_mom * res_xmom, w_mom * res_ymom, w_cont * res_cont]
         for edge in ('bot', 'top', 'left', 'right'):
@@ -534,6 +613,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
     if not diagnostics and (iteration_logger is not None or analyze_conditioning):
         raise ValueError("diagnostics=False excludes iteration_logger and analyze_conditioning.")
+    _check_weights(config)
     physics = KovasznayPhysics(config)
     nu = physics.nu
 
@@ -602,14 +682,16 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     Phi_p_pin = basis_p.evaluate(x_pin, y_pin)
     p_pin_val = physics.exact_p(x_pin[0], y_pin[0])
 
+    rw = _row_weights(config, n_pde, pts['n_dim'], {e: bc_blocks[e]['n'] for e in EDGES})
+    cc_weights = rw if config.weights == 'clenshaw_curtis' else None   # for the diagnostic functions
+
     if collocation_path is not None:           # every row, in assembly order (Addendum v2.2 2.8.3)
-        w_mom = np.sqrt(config.lambda_mom / n_pde)
-        blocks = [('xmom', 'xmom', xp, yp, w_mom), ('ymom', 'ymom', xp, yp, w_mom),
-                  ('cont', 'cont', xp, yp, np.sqrt(config.lambda_cont / n_pde))]
+        blocks = [('xmom', 'xmom', xp, yp, rw['mom']), ('ymom', 'ymom', xp, yp, rw['mom']),
+                  ('cont', 'cont', xp, yp, rw['cont'])]
         for edge in ['bot', 'top', 'left', 'right']:
-            xe, ye, w_bc = pts[f'x_{edge}'], pts[f'y_{edge}'], np.sqrt(config.lambda_bc / bc_blocks[edge]['n'])
+            xe, ye, w_bc = pts[f'x_{edge}'], pts[f'y_{edge}'], rw['bc'][edge]
             blocks += [(f'bc_u_{edge}', 'bc_u', xe, ye, w_bc), (f'bc_v_{edge}', 'bc_v', xe, ye, w_bc)]
-        blocks.append(('pin', 'pin', x_pin, y_pin, np.sqrt(config.lambda_bc)))
+        blocks.append(('pin', 'pin', x_pin, y_pin, rw['pin']))
         write_collocation_rows(collocation_path, blocks)
 
     # Initialize
@@ -635,18 +717,21 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
             Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
             Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
-            nu, Pu, Pv, Pp, config.lambda_mom, config.lambda_cont, config.lambda_bc,
+            nu, Pu, Pv, Pp, config.lambda_mom, config.lambda_cont, config.lambda_bc, row_weights=cc_weights,
         )
         residual_vector_fn = _make_kovasznay_residual_vector_fn(
             Phi_u, Phi_u_x, Phi_u_y, Phi_u_xx, Phi_u_yy,
             Phi_v, Phi_v_x, Phi_v_y, Phi_v_xx, Phi_v_yy,
             Phi_p_x, Phi_p_y, bc_blocks, Phi_p_pin, p_pin_val,
             nu, Pu, Pv, Pp, n_pde, config.lambda_mom, config.lambda_cont, config.lambda_bc,
+            row_weights=cc_weights,
         )
         t_diag += time.perf_counter() - t_diag0
 
         tracker_kwargs = {}
-        if config.lambda_mom == config.lambda_cont:
+        # The interior unweighting needs one scalar interior weight: not with
+        # Clenshaw-Curtis rows (norm_R_interior / norm_Rlin_interior empty).
+        if config.lambda_mom == config.lambda_cont and config.weights == 'equal':
             tracker_kwargs["n_interior_rows"] = 3 * n_pde
             tracker_kwargs["interior_weight"] = float(np.sqrt(config.lambda_mom / n_pde))
 
@@ -687,30 +772,29 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         A_cont_v = Phi_v_y
         Z_cont_p = np.zeros((n_pde, Pp))
 
-        w_mom = np.sqrt(config.lambda_mom / n_pde)
-        w_cont = np.sqrt(config.lambda_cont / n_pde)
+        w_mom, w_cont = rw['mom'], rw['cont']
 
         A_rows = [
-            w_mom * np.hstack([A_mom1_u, A_mom1_v, A_mom1_p]),
-            w_mom * np.hstack([A_mom2_u, A_mom2_v, A_mom2_p]),
-            w_cont * np.hstack([A_cont_u, A_cont_v, Z_cont_p]),
+            _weigh(w_mom, np.hstack([A_mom1_u, A_mom1_v, A_mom1_p])),
+            _weigh(w_mom, np.hstack([A_mom2_u, A_mom2_v, A_mom2_p])),
+            _weigh(w_cont, np.hstack([A_cont_u, A_cont_v, Z_cont_p])),
         ]
-        b_rows = [w_mom * b_mom1, w_mom * b_mom2, w_cont * np.zeros(n_pde)]
+        b_rows = [_weigh(w_mom, b_mom1), _weigh(w_mom, b_mom2), _weigh(w_cont, np.zeros(n_pde))]
 
         # BC rows
         for edge in ['bot', 'top', 'left', 'right']:
             blk = bc_blocks[edge]
             ne = blk['n']
-            w_bc = np.sqrt(config.lambda_bc / ne)
+            w_bc = rw['bc'][edge]
 
-            A_rows.append(w_bc * np.hstack([blk['Phi_u'], np.zeros((ne, Pv)), np.zeros((ne, Pp))]))
-            b_rows.append(w_bc * blk['u_exact'])
+            A_rows.append(_weigh(w_bc, np.hstack([blk['Phi_u'], np.zeros((ne, Pv)), np.zeros((ne, Pp))])))
+            b_rows.append(_weigh(w_bc, blk['u_exact']))
 
-            A_rows.append(w_bc * np.hstack([np.zeros((ne, Pu)), blk['Phi_v'], np.zeros((ne, Pp))]))
-            b_rows.append(w_bc * blk['v_exact'])
+            A_rows.append(_weigh(w_bc, np.hstack([np.zeros((ne, Pu)), blk['Phi_v'], np.zeros((ne, Pp))])))
+            b_rows.append(_weigh(w_bc, blk['v_exact']))
 
         # Pressure pin
-        w_pin = np.sqrt(config.lambda_bc)
+        w_pin = rw['pin']
         A_rows.append(w_pin * np.hstack([np.zeros((1, Pu)), np.zeros((1, Pv)), Phi_p_pin]))
         b_rows.append(w_pin * np.array([p_pin_val]))
 
@@ -867,9 +951,14 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
 
     if run_json_path is not None:
         n_bc_edge = bc_blocks['bot']['n']  # all four edges share one count (_generate_collocation)
-        w_mom = float(np.sqrt(config.lambda_mom / n_pde))
-        w_cont = float(np.sqrt(config.lambda_cont / n_pde))
-        w_bc = float(np.sqrt(config.lambda_bc / n_bc_edge))
+        if config.weights == 'equal':
+            w_mom = float(np.sqrt(config.lambda_mom / n_pde))
+            w_cont = float(np.sqrt(config.lambda_cont / n_pde))
+            bc_weights = {edge: float(np.sqrt(config.lambda_bc / blk['n'])) for edge, blk in bc_blocks.items()}
+        else:                                  # per row: in collocation.npz; here the rule
+            w_mom = w_cont = 'clenshaw_curtis: sqrt(lambda * w_i * w_j), per row (collocation.npz)'
+            bc_weights = {edge: 'clenshaw_curtis: sqrt(lambda_bc * w_k * |e| / |dOmega|), per row'
+                          for edge in bc_blocks}
         w_pin = float(np.sqrt(config.lambda_bc))
         thread_env = capture_blas_thread_env()
         final_rel_delta = history['coeff_change'][-1]
@@ -884,8 +973,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
             P_composition={'u': int(Pu), 'v': int(Pv), 'p': int(Pp)},
             row_weights={
                 'momentum': w_mom, 'continuity': w_cont,
-                'bc': {edge: float(np.sqrt(config.lambda_bc / blk['n']))
-                       for edge, blk in bc_blocks.items()},
+                'bc': bc_weights,
                 'pressure_pin': w_pin,
             },
             collocation_construction={
@@ -896,6 +984,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                            'scattered': 'uniform random scattered points'}.get(
                                config.sampling, config.sampling),
                 'sampling': config.sampling,
+                'weights': config.weights,
                 # The seed only affects the scattered family; the tensor
                 # grids are deterministic.
                 'seed': config.seed if config.sampling == 'scattered' else None,

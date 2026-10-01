@@ -26,6 +26,33 @@ def points_1d(a: float, b: float, n: int, sampling: str) -> np.ndarray:
     return np.linspace(a, b, n, dtype=np.float64)
 
 
+def clenshaw_curtis_weights(n: int) -> np.ndarray:
+    """Clenshaw-Curtis weights of the ``n`` Chebyshev-Gauss-Lobatto nodes of
+    [-1, 1], divided by 2 so that they sum to 1, in the order of
+    ``points_1d(..., 'cgl')`` (ascending; the weights are symmetric). The
+    cosine-sum formula of Trefethen's ``clencurt`` (Spectral Methods in
+    MATLAB, 2000): exact for polynomials of degree n - 1 (Addendum v2.3,
+    task B10)."""
+    if n < 2:
+        raise ValueError("Clenshaw-Curtis needs at least 2 nodes")
+    N = n - 1
+    theta = np.pi * np.arange(n) / N
+    w = np.zeros(n)
+    inner = np.arange(1, N)
+    v = np.ones(N - 1)
+    if N % 2 == 0:
+        w[0] = w[N] = 1.0 / (N * N - 1)
+        for k in range(1, N // 2):
+            v -= 2.0 * np.cos(2 * k * theta[inner]) / (4 * k * k - 1)
+        v -= np.cos(N * theta[inner]) / (N * N - 1)
+    else:
+        w[0] = w[N] = 1.0 / (N * N)
+        for k in range(1, (N - 1) // 2 + 1):
+            v -= 2.0 * np.cos(2 * k * theta[inner]) / (4 * k * k - 1)
+    w[inner] = 2.0 * v / N
+    return (w / 2.0)[::-1].astype(np.float64)
+
+
 def generate_collocation_points_2d(
     x_domain: Tuple[float, float],
     y_domain: Tuple[float, float],
@@ -163,7 +190,8 @@ def write_collocation_rows(path, blocks) -> int:
     """Save every collocation row, in the order the system is assembled, to
     ``path`` (``.npz``): ``x``, ``y``, ``block`` (e.g. ``bc_u_left``),
     ``equation`` (the row's equation: rows with the same equation and point
-    are identical), ``weight`` (the row weight), and ``n_distinct``. What an
+    are identical), ``weight`` (the row weight; a block's weight is one
+    number, or one per row), and ``n_distinct``. What an
     a-posteriori computation of the sampling constants c1, c2 on each grid
     needs (Addendum v2.2 Section 2.8.3). ``blocks``: a list of ``(block,
     equation, x, y, weight)``. Returns ``n_distinct``."""
@@ -174,7 +202,13 @@ def write_collocation_rows(path, blocks) -> int:
         y = np.asarray(y, dtype=np.float64).ravel()
         xs.append(x); ys.append(y)
         blk += [block] * len(x); eq += [equation] * len(x)
-        w.append(np.full(len(x), float(weight)))
+        if np.ndim(weight) == 0:              # one weight for the block, as always
+            w.append(np.full(len(x), float(weight)))
+        else:                                 # one per row (Clenshaw-Curtis rows, Addendum v2.3)
+            weight = np.asarray(weight, dtype=np.float64).ravel()
+            if len(weight) != len(x):
+                raise ValueError(f"block {block}: {len(weight)} weights for {len(x)} rows")
+            w.append(weight)
     x, y = np.concatenate(xs), np.concatenate(ys)
     n_distinct = count_distinct_rows(eq, x, y)
     path = str(path)

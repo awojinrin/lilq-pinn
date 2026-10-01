@@ -17,6 +17,94 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- Task B10: Kovasznay on CGL grids with Clenshaw-Curtis weights (Addendum v2.3)
+
+**Why.** The advisor's sampling-constant analysis (`Post-JCP/wave2/
+S85_Sampling_Constants_Kovasznay.md`, from the Component C collocation files)
+found that the paper's equispaced grids and the equal-weight CGL grids do not
+satisfy the hypothesis of Corollary 3 for the algorithm as run, while the
+same CGL points with Clenshaw-Curtis quadrature weights do, with a constant
+of about 1 from N/P = 5-10. B10 puts one experiment inside the proved theory.
+
+**The option** (`KovasznayConfig.weights`, default `'equal'`):
+`'clenshaw_curtis'` is allowed only with `sampling = 'cgl'`; any other
+sampling, or any other name, raises. The weights come from
+`problems.kovasznay._row_weights`:
+- **1-D weights:** `lilq.collocation.clenshaw_curtis_weights(n)`, the
+  cosine-sum formula of Trefethen's `clencurt`, divided by 2 so that they
+  sum to 1, in the node order of `points_1d(..., 'cgl')` (they are
+  symmetric). Exact to degree n - 1.
+- **Interior:** point (x_i, y_j), each of the three equations:
+  sqrt(lambda_block * w_i * w_j), replacing sqrt(lambda_block / n_int).
+  The weights are those of the nodes without the grid's 1e-6 inset.
+- **Boundary:** edge e with n_e points, each u and v row:
+  sqrt(lambda_bc * w_k^(n_e) * |e| / |dOmega|), |dOmega| = 7. Corners keep a
+  row on each of their edges.
+- **Pressure pin:** unchanged.
+
+The same per-row weights are used by the assembly, the logged residual
+vector and the loss (check B2 holds: relative error 1.5e-15 on a small
+case), and by `collocation.npz`; `write_collocation_rows` now takes one
+weight per row as well as one per block. `run.json` records `weights` in
+`collocation_construction`. The interior-row unweighting of the log
+(`norm_R_interior`, `norm_Rlin_interior`) needs one scalar interior weight,
+so it is empty for Clenshaw-Curtis runs.
+
+**`'equal'` is bitwise unchanged:** `A_final`, `b_final`, the coefficients,
+the saved row weights and the iteration counts are identical to commit
+`99c78e6`'s. This was checked on equispaced, CGL and scattered grids on the
+CPU and two sizes on the GPU, from a separate checkout of `99c78e6`; the
+equal branch keeps the scalar expressions it always had.
+
+**Tests** (`tests/test_b10_clenshaw_curtis.py`), the five of Addendum v2.3
+Section 1 and more:
+- the 1-D weights sum to 1 and integrate x^k exactly for k <= n - 1 (1e-13);
+- the interior weights reproduce the normalized integral of exp(x) cos(y):
+  1e-13 at the CGL nodes, 1e-5 at the inset grid;
+- the boundary weights reproduce the normalized perimeter integral of
+  exp(x) + y^2 (1e-12), and each component's weights sum to lambda_bc;
+- `'equal'` gives the scalar expressions and the default's solve, bitwise;
+- non-CGL sampling or an unknown name raises;
+- a Clenshaw-Curtis solve has per-row weights in `collocation.npz`, which
+  sum to lambda per equation, and passes check B2;
+- the driver end to end.
+
+**The runs** (`experiments/b10_cgl_cc.py`, 16):
+- B10-CC: P = 300, 1,200 and 1,875 x N/P = 5 and 10 x the paper and kmax
+  passes, Clenshaw-Curtis weights;
+- B10-EQ: P = 1,875, the same with equal weights.
+
+Each uses Component C's density rule (`k_for_ratio`, collocation floor 1),
+the paper's stopping rule (relative coefficient change 1e-9), and the full
+log, `collocation.npz`, model and `hardware.json`. Output: `b10.csv` with
+the addendum's columns, plus `rank_deficient` and `K_max`, and
+`b10_vs_paper_grid.csv`: the paper passes' errors beside the paper-grid
+runs' at the same P.
+
+**K_max of the paper pass.** The addendum's text says 20; the advisor's
+follow-up of the same day says 60 for every LiL-Q paper pass. B10 uses 60.
+Every paper pass of the local rehearsal converged in 6-9 iterations, so
+this makes no difference here.
+
+**Local rehearsal** (this laptop; the record runs are wave 4's).
+All 16 runs completed. Every paper pass reached the
+tolerance, in 9 iterations at P = 300 and 6 at P = 1,200 and 1,875; every
+system had full rank (300, 1,200, 1,875). Raw and retained kappa are equal:
+about 6.3e2, 1.0e4 and 3.1e4 for Clenshaw-Curtis, and 4.1-4.4e4 for equal
+weights at P = 1,875. Velocity errors eps_u, against the wave 2 paper-grid
+paper pass at the same P (equispaced, k = 4):
+- P = 300: 2.34e-2 against 2.90e-2 (0.81x);
+- P = 1,200: 6.58e-9 against 7.36e-9 (0.89x);
+- P = 1,875: 5.8e-14 against 7.0e-13 (0.083x), and equal-weight CGL also
+  5.9e-14 (0.084x).
+
+N/P = 5 and 10 give the same errors to three digits. At P = 1,875 the gain
+comes from the CGL points rather than the weights: equal and
+Clenshaw-Curtis weights agree. The kmax passes stay at the paper passes'
+errors.
+
+---
+
 ## 2026-10-01 -- Clean timing and K_max = 60 for every LiL-Q paper pass (the advisor's reply to wave 2, Section 3, and his follow-up)
 
 **Why.** In wave 2 Beltrami's untimed warm-up run (no logger) took 227 s and
