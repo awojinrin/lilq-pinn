@@ -30,6 +30,7 @@ import numpy as np
 import torch
 
 from lilq.utils import set_seed, clear_gpu_memory, DEVICE
+from lilq.solvers import LILQ_PAPER_KMAX
 from lilq.analysis import make_svd_callback
 from problems.bratu import (
     BratuConfig, BratuOptConfig,
@@ -85,7 +86,7 @@ def paper_setup(N, basis_type=DEFAULT_BASIS, lambda_=DEFAULT_LAMBDA):
         R_tol=TARGET_LOSSES.get(N, 1e-4),
         max_quasi_iters_nn=MAX_QUASI_ITERS,
         max_inner_iters_nn=MAX_LBFGS_PER_QUASI_ITER.get(N, 300),
-        max_quasi_iters_lil=MAX_QUASI_ITERS,
+        max_quasi_iters_lil=LILQ_PAPER_KMAX,   # the advisor's follow-up of 1 Oct (lilq.solvers)
         pretrain_epochs=DEFAULT_PRETRAIN_EPOCHS,
     )
     return config, opt

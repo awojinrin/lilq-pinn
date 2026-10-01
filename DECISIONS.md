@@ -17,6 +17,79 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- Clean timing and K_max = 60 for every LiL-Q paper pass (the advisor's reply to wave 2, Section 3, and his follow-up)
+
+**Why.** In wave 2 Beltrami's untimed warm-up run (no logger) took 227 s and
+the timed, logged run 303 s. The advisor set one rule for every LiL-Q time
+the paper quotes: it comes from a run with the per-iteration diagnostics
+off, after the warm-up. The logged runs stay the source of every monitor
+value.
+
+**The switch** (`diagnostics=True` by default) on `lilq.solvers.solve_lil_q`
+and the scalar `run_lil_q` wrappers (Bratu, Burgers, BL), `solve_kovasznay`,
+`solve_beltrami`, `solve_elasticity` and `solve_lilq_darcy`. With
+`diagnostics=False`:
+- no `iteration_logger`, `run.json` or conditioning (`analyze_conditioning`,
+  `diagnostics_callback`); passing any of them raises;
+- the passive work that otherwise ran on the clock is skipped:
+  - Kovasznay and Beltrami: the nonlinear residuals recorded in `history`
+    every iteration (`NaN` instead, and `pde_mse` / `cont_mse` are `NaN`;
+    the stopping rule is the coefficient change);
+  - Kovasznay on the GPU: the CPU `gelsy` rank cross-check of a flagged
+    iteration (the flag itself is still recorded);
+  - Darcy: `total_time` stops when the LiL solve ends. The FVM reference
+    solve and the error metrics after it (0.18-0.27 s of 21-28 s in wave 2)
+    are not part of the method.
+- The scalar loop has no other passive work (its nonlinear loss is the
+  stopping test), and neither has elasticity's assembly + solve phase.
+
+The solver path is unchanged: with the switch on and off the final
+coefficients are bit for bit identical for Bratu, gravity BL, Kovasznay (CPU
+and GPU), Beltrami (one and three pins), elasticity and Darcy
+(`tests/test_clean_timing.py`).
+
+**The runs** (`experiments/clean_timing.py`). For every paper-pass
+configuration -- Bratu, Burgers, both BL, elasticity, Kovasznay (CPU and
+GPU), Beltrami, the pinned Beltrami run of Section 3.7 (the paper's Beltrami
+run, the advisor's follow-up item 2; `run_beltrami_pinned.pinned_config`)
+and Darcy -- it runs one untimed warm-up, the timed run with
+`diagnostics=False`, and, under 1 s, five more reported as their median
+(Addendum v2.2 2.10). Recorded quantities are those the logged runs report:
+- `training_time` for the scalar benchmarks;
+- `solve_time_total` for Kovasznay, Beltrami and pinned Beltrami;
+- `time_lil_s` and `solve_time_qr` for elasticity;
+- `total_time` for Darcy.
+
+`clean_timing.csv` has one row per run and quantity, with the warm-up time,
+the iterations, K_max, and the logged time beside it, found under
+`--logged-roots`: wave 2's run folders, and wave 1's `beltrami_pinned`
+report for the pinned run.
+
+**K_max = 60** (`lilq.solvers.LILQ_PAPER_KMAX`) for every LiL-Q paper pass:
+- the scalar `paper_setup`s' `max_quasi_iters_lil`;
+- Kovasznay's `MAX_ITER` (also used by B3 and Component C);
+- Component B's Beltrami paper pass;
+- the pinned run's configuration (its K_max pass stays 8).
+
+LiL-Q's K_max had shared a constant with NiL-Q's outer-iteration budget
+(`MAX_QUASI_ITERS` in each `run_*.py`), so it is now a separate constant.
+NiL-Q's budgets are unchanged: 25 (Bratu), 20 (Burgers), 50 (viscous BL)
+and 20 (gravity BL).
+
+Only gravity BL at P = 64 behaves differently. It now reaches its target
+(0.24) at 43 iterations, as the advisor predicted from wave 1's kmax log;
+wave 2's paper pass ended at K_max = 20 without reaching it. Its logged paper
+pass is rerun in wave 4 for its monitor values. Every other paper pass
+converges within its old cap, e.g. gravity BL P = 256 at 12 as before. The
+four-method tables' LiL-Q rows come from the clean-timing runs; B8's LiL-Q
+rows that ended on `iteration_cap` in wave 3 are rerun with K_max = 60 in
+wave 4. Component C is not rerun.
+
+Tests: `tests/test_clean_timing.py`; `tests/test_component_b.py` and
+`tests/test_four_method_tables.py` updated.
+
+---
+
 ## 2026-10-01 -- Component A selects by validation residual (the advisor's reply to wave 2)
 
 **Why.** Wave 2 selected each family's top three and representative by

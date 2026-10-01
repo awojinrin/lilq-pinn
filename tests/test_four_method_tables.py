@@ -69,7 +69,8 @@ def test_paper_settings_that_the_harness_once_dropped():
     bl_setup, bratu_setup = run_bl.paper_setup, run_bratu.paper_setup
     assert bratu_setup(10)[1].pretrain_epochs == 1000
     assert bl_setup(16, False)[1].pretrain_epochs == 1000
-    assert bl_setup(16, True)[1].max_quasi_iters_lil == 20
+    assert bl_setup(16, True)[1].max_quasi_iters_lil == 60     # LiL-Q K_max (the advisor's follow-up, 1 Oct)
+    assert bl_setup(16, True)[1].max_quasi_iters_nn == 20      # NiL-Q's outer iterations, unchanged
     assert bl_setup(16, True)[0].basis_type == 'cos_fourier'
 
 

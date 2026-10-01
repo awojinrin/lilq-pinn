@@ -52,6 +52,7 @@ import numpy as np
 from lilq.iteration_log import IterationLogger, solve_rows
 from lilq.provenance import save_provenance
 from lilq.saved_models import save_solution
+from lilq.solvers import LILQ_PAPER_KMAX
 from lilq.source_lock import current_commit
 from lilq.run_metadata import first_stall_iteration
 
@@ -259,7 +260,7 @@ def _beltrami_runs(smoke, passes=('paper',)):
     if smoke:
         base = BeltramiConfig(N_vel=3, N_p=3, N_x=4, N_y=4, N_z=4, N_t=4, N_bc=3, N_t_bc=3, N_ic=3)
     else:
-        base = BeltramiConfig(N_vel=6, N_p=8, **COLLOC[6])
+        base = BeltramiConfig(N_vel=6, N_p=8, max_iter=LILQ_PAPER_KMAX, **COLLOC[6])   # paper pass: K_max 60
     P = 3 * base.N_vel ** 4 + base.N_p ** 4
     runs = []
     for pass_ in passes:

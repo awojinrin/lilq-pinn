@@ -178,7 +178,7 @@ def make_test_error_fn(physics, basis_u, basis_v, config):
 
 
 def solve_elasticity(config: ElasticityConfig, verbose=True,
-                     iteration_logger=None, run_json_path=None) -> Dict:
+                     iteration_logger=None, run_json_path=None, diagnostics: bool = True) -> Dict:
     """Solve linear elasticity via a single LiL-Q QR solve.
 
     ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
@@ -193,6 +193,11 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
     """
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
+    # diagnostics=False (clean timing; the advisor's reply to wave 2): no
+    # logger. The timed phases (time_lil_s, solve_time_qr) have no other
+    # passive work; the errors after the solve are in solve_time_total only.
+    if not diagnostics and iteration_logger is not None:
+        raise ValueError("diagnostics=False excludes iteration_logger.")
     physics = ElasticityPhysics(config)
     lam, mu = physics.lam, physics.mu
     C11, C12 = physics.C11, physics.C12

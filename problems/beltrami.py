@@ -361,11 +361,19 @@ def make_test_error_fn(physics, basis_u, basis_v, basis_w, basis_p, n_s=21, n_t=
 def solve_beltrami(config: BeltramiConfig, verbose=True,
                     analyze_conditioning: bool = False,
                     iteration_logger=None,
-                    run_json_path=None) -> Dict:
+                    run_json_path=None,
+                    diagnostics: bool = True) -> Dict:
     """Solve 3D Beltrami flow via multi-field LiL-Q.
 
     Parameters
     ----------
+    diagnostics : bool
+        ``False`` is the clean-timing mode (the advisor's reply to wave 2,
+        Section 3): no per-iteration logger, no ``run.json``, no
+        conditioning, and none of the passive work otherwise on the clock: the nonlinear residuals recorded in ``history`` every iteration
+        (``NaN`` instead; the stopping rule is the coefficient change).
+        The solver path, and so the coefficients, are bit for bit those of
+        ``diagnostics=True`` (``tests/test_clean_timing.py``).
     analyze_conditioning : bool
         If True, compute and log the system matrix's condition number
         (``np.linalg.cond``, a full SVD) every outer iteration. Defaults
@@ -414,6 +422,8 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         )
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
+    if not diagnostics and (iteration_logger is not None or analyze_conditioning):
+        raise ValueError("diagnostics=False excludes iteration_logger and analyze_conditioning.")
     physics = BeltramiPhysics(config)
     nu = physics.nu
 
@@ -627,20 +637,24 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         theta_old = np.concatenate([theta_u, theta_v, theta_w, theta_p])
         rel_delta = np.linalg.norm(theta_new - theta_old) / (np.linalg.norm(theta_new) + 1e-30)
 
-        # Nonlinear residual
-        u_n = Mu['val']@tu; ux = Mu['dx']@tu; uy = Mu['dy']@tu; uz = Mu['dz']@tu
-        v_n = Mv['val']@tv; vx = Mv['dx']@tv; vy = Mv['dy']@tv; vz = Mv['dz']@tv
-        w_n = Mw['val']@tw; wx = Mw['dx']@tw; wy = Mw['dy']@tw; wz = Mw['dz']@tw
-        ut = Mu['dt']@tu; vt = Mv['dt']@tv; wt = Mw['dt']@tw
-        px = Mp['dx']@tp_; py = Mp['dy']@tp_; pz = Mp['dz']@tp_
+        # Nonlinear residual: recorded in history, never used by the solve
+        # (its stopping rule is the coefficient change) -- passive.
+        if diagnostics:
+            u_n = Mu['val']@tu; ux = Mu['dx']@tu; uy = Mu['dy']@tu; uz = Mu['dz']@tu
+            v_n = Mv['val']@tv; vx = Mv['dx']@tv; vy = Mv['dy']@tv; vz = Mv['dz']@tv
+            w_n = Mw['val']@tw; wx = Mw['dx']@tw; wy = Mw['dy']@tw; wz = Mw['dz']@tw
+            ut = Mu['dt']@tu; vt = Mv['dt']@tv; wt = Mw['dt']@tw
+            px = Mp['dx']@tp_; py = Mp['dy']@tp_; pz = Mp['dz']@tp_
 
-        r1 = ut + u_n*ux + v_n*uy + w_n*uz + px - nu*((Mu['dxx']+Mu['dyy']+Mu['dzz'])@tu)
-        r2 = vt + u_n*vx + v_n*vy + w_n*vz + py - nu*((Mv['dxx']+Mv['dyy']+Mv['dzz'])@tv)
-        r3 = wt + u_n*wx + v_n*wy + w_n*wz + pz - nu*((Mw['dxx']+Mw['dyy']+Mw['dzz'])@tw)
-        r4 = ux + vy + wz
+            r1 = ut + u_n*ux + v_n*uy + w_n*uz + px - nu*((Mu['dxx']+Mu['dyy']+Mu['dzz'])@tu)
+            r2 = vt + u_n*vx + v_n*vy + w_n*vz + py - nu*((Mv['dxx']+Mv['dyy']+Mv['dzz'])@tv)
+            r3 = wt + u_n*wx + v_n*wy + w_n*wz + pz - nu*((Mw['dxx']+Mw['dyy']+Mw['dzz'])@tw)
+            r4 = ux + vy + wz
 
-        pde_res = (np.mean(r1**2) + np.mean(r2**2) + np.mean(r3**2)) / 3
-        cont_res = np.mean(r4**2)
+            pde_res = (np.mean(r1**2) + np.mean(r2**2) + np.mean(r3**2)) / 3
+            cont_res = np.mean(r4**2)
+        else:
+            pde_res = cont_res = float('nan')
 
         history['iteration'].append(k)
         history['coeff_change'].append(rel_delta)

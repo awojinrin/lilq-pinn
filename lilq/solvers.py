@@ -46,6 +46,14 @@ from .iteration_log import IterationLogger, LilQDiagnosticsTracker
 # An explicit cap overrides it (smoke tests, probes). DECISIONS.md, 2026-09-29.
 LINE_SEARCH_CAP_FACTOR = 16
 
+# K_max of every LiL-Q paper pass -- the scalar benchmarks, Kovasznay,
+# Beltrami and its pinned run (the advisor's follow-up of 1 October 2026).
+# The paper's stopping rule ends each of them long before this, except gravity
+# BL at P = 64, which needs about 43 iterations to reach its target (it ended
+# at the earlier K_max = 20 without). NiL-Q's outer-iteration budget is a
+# separate constant in each experiments/run_*.py and is unchanged.
+LILQ_PAPER_KMAX = 60
+
 
 def line_search_cap(iteration_budget: int, override: Optional[int] = None) -> int:
     """The evaluation cap for a method whose iteration budget is ``iteration_budget``."""
@@ -608,6 +616,7 @@ def solve_lil_q(
     n_interior_rows: Optional[int] = None,
     interior_weight: Optional[float] = None,
     test_error_fn: Optional[Callable[[np.ndarray], Dict[str, float]]] = None,
+    diagnostics: bool = True,
 ) -> Tuple[np.ndarray, QuasilinearMetrics, Dict]:
     """Quasilinear LiL solver (LiL-Q method).
 
@@ -699,6 +708,11 @@ def solve_lil_q(
     if verbose:
         print(f"  Initial loss: {total_loss:.6e}")
 
+    # diagnostics=False (clean timing; the advisor's reply to wave 2): no
+    # logger and no diagnostics callback. The loop has no other passive
+    # work: the nonlinear loss it evaluates is its stopping test.
+    if not diagnostics and (iteration_logger is not None or diagnostics_callback is not None):
+        raise ValueError("diagnostics=False excludes iteration_logger and diagnostics_callback.")
     tracker = None
     if iteration_logger is not None:
         tracker_kwargs = {}

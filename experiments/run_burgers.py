@@ -22,6 +22,7 @@ import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
 from lilq.utils import set_seed, clear_gpu_memory, DEVICE
+from lilq.solvers import LILQ_PAPER_KMAX
 from problems.burgers import (
     BurgersConfig, BurgersOptConfig,
     run_nil_n, run_nil_q, run_lil_n, run_lil_q,
@@ -66,7 +67,7 @@ def paper_setup(N, basis_type=DEFAULT_BASIS):
         R_tol=TARGET_LOSSES.get(N, 1e-4),
         max_quasi_iters_nn=MAX_QUASI_ITERS,
         max_inner_iters_nn=MAX_LBFGS_PER_QUASI.get(N, 300),
-        max_quasi_iters_lil=MAX_QUASI_ITERS,
+        max_quasi_iters_lil=LILQ_PAPER_KMAX,   # the advisor's follow-up of 1 Oct (lilq.solvers)
         pretrain_epochs=PRETRAIN_EPOCHS,
     )
     return config, opt

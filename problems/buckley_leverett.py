@@ -586,7 +586,7 @@ def make_test_error_fn(basis, config: BLConfig):
 
 def run_lil_q(config: BLConfig, opt: BLOptConfig,
               verbose=True, diagnostics_callback=None,
-              iteration_logger=None, run_json_path=None):
+              iteration_logger=None, run_json_path=None, diagnostics=True):
     """Run LiL-Q for Buckley-Leverett (viscous or gravity, transparently --
     ``physics.flux``/``flux_derivative`` handle both via ``config.N_g``).
 
@@ -608,6 +608,9 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,
     """
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
+    # diagnostics=False: clean timing (the advisor's reply to wave 2); see lilq.solvers.solve_lil_q.
+    if not diagnostics and (iteration_logger is not None or diagnostics_callback is not None):
+        raise ValueError("diagnostics=False excludes iteration_logger and diagnostics_callback.")
     np.random.seed(config.seed)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
     physics = BLPhysics(config)
 
@@ -668,7 +671,7 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,
         system_fn, loss_fn, init_coeffs,
         max_quasi_iters=opt.max_quasi_iters_lil,
         R_tol=opt.R_tol, verbose=verbose,
-        diagnostics_callback=diagnostics_callback,
+        diagnostics_callback=diagnostics_callback, diagnostics=diagnostics,
         **solve_kwargs,
     )
     summary['pretrain_loss'] = float(pretrain_loss)

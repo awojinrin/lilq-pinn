@@ -467,10 +467,23 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                      iteration_logger=None, run_json_path=None,
                      analyze_conditioning: bool = False,
                      return_final_system: bool = False,
-                     collocation_path=None) -> Dict:
+                     collocation_path=None,
+                     diagnostics: bool = True) -> Dict:
     """Solve Kovasznay flow via multi-field LiL-Q.
 
     Returns a dict containing coefficients, errors, and iteration history.
+
+    ``diagnostics`` : bool
+        ``False`` is the clean-timing mode (the advisor's reply to wave 2,
+        Section 3): no per-iteration logger, no ``run.json``, no
+        conditioning, and none of the passive work that otherwise runs on
+        the clock -- the nonlinear residuals recorded in ``history`` every
+        iteration (``NaN`` instead; the stopping rule uses the coefficient
+        change only) and, on the GPU, the CPU ``gelsy`` rank cross-check
+        of a flagged iteration. The solver path, and so the coefficients,
+        are bit for bit those of ``diagnostics=True``
+        (``tests/test_clean_timing.py``). The final errors are computed
+        after the clock stops, as always.
 
     ``analyze_conditioning`` : bool
         If True, record ``np.linalg.cond`` (a full SVD) of the system
@@ -519,6 +532,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     """
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
+    if not diagnostics and (iteration_logger is not None or analyze_conditioning):
+        raise ValueError("diagnostics=False excludes iteration_logger and analyze_conditioning.")
     physics = KovasznayPhysics(config)
     nu = physics.nu
 
@@ -736,9 +751,10 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                     print(f"    [GPU] WARNING: near-rank-deficient "
                           f"(min|R_pp|/max|R_pp|={degeneracy_ratio:.2e} < 1e-13) "
                           f"-- cross-checking with CPU gelsy")
-                _theta_cpu_check, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
-                    A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy',
-                )
+                if diagnostics:            # the rank cross-check is passive: not in clean timing
+                    _theta_cpu_check, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
+                        A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy',
+                    )
                 # Flagged and cross-checked (rank_gelsy now real), per
                 # Section 3.2 -- the GPU iterate itself still drives the
                 # quasilinearization forward; substituting the CPU result
@@ -759,24 +775,28 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         theta_old = np.concatenate([theta_u, theta_v, theta_p])
         rel_delta = np.linalg.norm(theta_new - theta_old) / (np.linalg.norm(theta_new) + 1e-30)
 
-        # Nonlinear PDE residual
-        u_new = Phi_u @ theta_u_new
-        u_new_x = Phi_u_x @ theta_u_new
-        u_new_y = Phi_u_y @ theta_u_new
-        v_new = Phi_v @ theta_v_new
-        v_new_x = Phi_v_x @ theta_v_new
-        v_new_y = Phi_v_y @ theta_v_new
-        p_new_x = Phi_p_x @ theta_p_new
-        p_new_y = Phi_p_y @ theta_p_new
-        lap_u = (Phi_u_xx + Phi_u_yy) @ theta_u_new
-        lap_v = (Phi_v_xx + Phi_v_yy) @ theta_v_new
+        # Nonlinear PDE residual: recorded in history, never used by the
+        # solve (its stopping rule is the coefficient change) -- passive.
+        if diagnostics:
+            u_new = Phi_u @ theta_u_new
+            u_new_x = Phi_u_x @ theta_u_new
+            u_new_y = Phi_u_y @ theta_u_new
+            v_new = Phi_v @ theta_v_new
+            v_new_x = Phi_v_x @ theta_v_new
+            v_new_y = Phi_v_y @ theta_v_new
+            p_new_x = Phi_p_x @ theta_p_new
+            p_new_y = Phi_p_y @ theta_p_new
+            lap_u = (Phi_u_xx + Phi_u_yy) @ theta_u_new
+            lap_v = (Phi_v_xx + Phi_v_yy) @ theta_v_new
 
-        res_xmom = u_new*u_new_x + v_new*u_new_y + p_new_x - nu*lap_u
-        res_ymom = u_new*v_new_x + v_new*v_new_y + p_new_y - nu*lap_v
-        res_cont = u_new_x + v_new_y
+            res_xmom = u_new*u_new_x + v_new*u_new_y + p_new_x - nu*lap_u
+            res_ymom = u_new*v_new_x + v_new*v_new_y + p_new_y - nu*lap_v
+            res_cont = u_new_x + v_new_y
 
-        pde_res = 0.5*(np.mean(res_xmom**2) + np.mean(res_ymom**2))
-        cont_res = np.mean(res_cont**2)
+            pde_res = 0.5*(np.mean(res_xmom**2) + np.mean(res_ymom**2))
+            cont_res = np.mean(res_cont**2)
+        else:
+            pde_res = cont_res = float('nan')
 
         history['iteration'].append(k)
         history['coeff_change'].append(rel_delta)

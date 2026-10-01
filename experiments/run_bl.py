@@ -23,6 +23,7 @@ import lilq.blas_threads  # noqa: F401  (must import before numpy/scipy)
 import numpy as np
 
 from lilq.utils import set_seed, clear_gpu_memory, DEVICE
+from lilq.solvers import LILQ_PAPER_KMAX
 from problems.buckley_leverett import (
     BLConfig, BLOptConfig,
     run_nil_n, run_nil_q, run_lil_n, run_lil_q,
@@ -97,7 +98,7 @@ def paper_setup(N, gravity, basis_type=None):
         R_tol=targets.get(N, 1e-3),
         max_quasi_iters_nn=quasi_iters,
         max_inner_iters_nn=inner_per_quasi.get(N, 200),
-        max_quasi_iters_lil=quasi_iters,
+        max_quasi_iters_lil=LILQ_PAPER_KMAX,   # the advisor's follow-up of 1 Oct (lilq.solvers)
         pretrain_epochs=PRETRAIN_EPOCHS,
     )
     return config, opt

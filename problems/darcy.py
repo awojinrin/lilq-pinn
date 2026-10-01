@@ -337,6 +337,7 @@ def solve_lilq_darcy(config: DarcyConfig,
                      physics: DarcyPhysics,
                      verbose: bool = True,
                      iteration_logger=None,
+                     diagnostics: bool = True,
                      run_json_path=None) -> Dict:
     """LiL-Q solver for Darcy flow with lifting function.
 
@@ -406,6 +407,12 @@ def solve_lilq_darcy(config: DarcyConfig,
         )
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
+    # diagnostics=False (clean timing; the advisor's reply to wave 2): no
+    # logger, and total_time stops when the LiL solve ends -- the FVM
+    # reference solve and the error metrics after it are not part of the
+    # method (0.18-0.27 s of 21-28 s in wave 2) and run off the clock.
+    if not diagnostics and iteration_logger is not None:
+        raise ValueError("diagnostics=False excludes iteration_logger.")
     cfg = config
     R = physics.R
     DELTA_P = physics.DELTA_P
@@ -514,6 +521,8 @@ def solve_lilq_darcy(config: DarcyConfig,
     c_u = coeffs[n_h:n_h + n_u]
     c_v = coeffs[n_h + n_u:]
 
+    t_lil_end = time.perf_counter()
+
     # ── FVM reference ────────────────────────────────────────────────────
     if verbose:
         print("Solving FVM reference...")
@@ -580,7 +589,7 @@ def solve_lilq_darcy(config: DarcyConfig,
     rmse = np.sqrt(np.mean(err**2))
     rel_L2 = np.linalg.norm(err) / np.linalg.norm(P_fvm)
 
-    t_total = time.perf_counter() - t_start - t_diag
+    t_total = (time.perf_counter() - t_start - t_diag) if diagnostics else (t_lil_end - t_start)
 
     metrics = {
         'build_time': t_build,

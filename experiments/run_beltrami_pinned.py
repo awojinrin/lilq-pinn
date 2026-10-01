@@ -34,6 +34,7 @@ from lilq.iteration_log import IterationLogger, last_solve_row
 from lilq.provenance import save_provenance
 from problems.beltrami import BeltramiConfig, solve_beltrami
 from lilq.saved_models import save_solution
+from lilq.solvers import LILQ_PAPER_KMAX
 
 # Matches experiments/run_beltrami.py's paper config for N_vel=6.
 N_VEL, N_P = 6, 8
@@ -53,6 +54,19 @@ OUTPUT_DIR = Path(__file__).resolve().parent.parent / 'results' / 'beltrami_pinn
 KMAX_ITERS = 8
 
 
+def pinned_config(kmax=False):
+    """The Section 3.7 configuration -- the paper's Beltrami run from wave 4
+    (the advisor's follow-up of 1 October 2026) -- with K_max =
+    ``LILQ_PAPER_KMAX``; ``kmax=True``: its K_max pass (8 iterations, zero
+    coefficient-change tolerance; Addendum v2.2 Section 2.7)."""
+    config = BeltramiConfig(
+        N_vel=N_VEL, N_p=N_P, basis_type=DEFAULT_BASIS,
+        n_pressure_pin_levels=N_PRESSURE_PIN_LEVELS, max_iter=LILQ_PAPER_KMAX,
+        **COLLOC_N6,
+    )
+    return dataclasses.replace(config, tol=0.0, max_iter=KMAX_ITERS) if kmax else config
+
+
 def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
     """Section 3.7's run; ``kmax=True``: its K_max pass (8 iterations, zero
     coefficient-change tolerance; Addendum v2.2 Section 2.7)."""
@@ -62,13 +76,7 @@ def run_beltrami_pinned(verbose=True, out_dir=OUTPUT_DIR, kmax=False):
             print(f"  {out_dir}: done, skipping")
         return json.loads((out_dir / 'report.json').read_text())
     np.random.seed(42)  # NumPy only: this solve is scipy on the CPU (Addendum v2.1 fix 3.3)
-    config = BeltramiConfig(
-        N_vel=N_VEL, N_p=N_P, basis_type=DEFAULT_BASIS,
-        n_pressure_pin_levels=N_PRESSURE_PIN_LEVELS,
-        **COLLOC_N6,
-    )
-    if kmax:
-        config = dataclasses.replace(config, tol=0.0, max_iter=KMAX_ITERS)
+    config = pinned_config(kmax)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     logger = IterationLogger()

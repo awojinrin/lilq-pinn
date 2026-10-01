@@ -186,8 +186,9 @@ def test_reproduction_check_separates_round_off_from_violations(tmp_path, monkey
 
 def test_kmax_pass_lengths():
     """Addendum v2.2 Section 2.7: K_max = 60 in the kmax pass for the scalar
-    benchmarks and Kovasznay (the paper pass keeps its caps); 8 for Beltrami,
-    zero tolerance throughout."""
+    benchmarks and Kovasznay, 8 for Beltrami, zero tolerance throughout. The
+    paper pass has K_max = 60 too since the advisor's follow-up of 1 October
+    2026; it differs from the kmax pass in its stopping rule."""
     runs = {(r.benchmark, r.config_label, r.device, r.pass_): r for r in cb.build_runs(devices=('cpu',))}
     for b in ('bratu', 'burgers', 'bl', 'bl_gravity'):
         for (bench, label, _, pass_), run in runs.items():
@@ -197,13 +198,13 @@ def test_kmax_pass_lengths():
             if pass_ == 'kmax':
                 assert opt.max_quasi_iters_lil == cb.KMAX_PASS_ITERS == 60 and opt.R_tol == 0.0
             else:
-                assert opt.max_quasi_iters_lil < 60 and opt.R_tol > 0
+                assert opt.max_quasi_iters_lil == 60 and opt.R_tol > 0
     kov = [r for k, r in runs.items() if k[0] == 'kovasznay']
     assert {(r.pass_, r.execute.__defaults__[0].max_iter, r.execute.__defaults__[0].tol > 0) for r in kov} == \
-        {('paper', 20, True), ('kmax', 60, False)}
+        {('paper', 60, True), ('kmax', 60, False)}
     bel = {r.pass_: r.execute.__defaults__[0] for k, r in runs.items() if k[0] == 'beltrami'}
     assert (bel['kmax'].max_iter, bel['kmax'].tol) == (cb.BELTRAMI_KMAX_PASS_ITERS, 0.0) == (8, 0.0)
-    assert bel['paper'].tol > 0 and bel['paper'].conditioning_every_iteration
+    assert bel['paper'].tol > 0 and bel['paper'].conditioning_every_iteration and bel['paper'].max_iter == 60
 
 
 def test_bl_logs_retained_kappa_and_beta_norm():

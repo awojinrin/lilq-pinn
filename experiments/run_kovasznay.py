@@ -37,7 +37,8 @@ DEFAULT_N_VALUES = [5, 10, 15, 20, 25]
 DEFAULT_RE = 40.0
 DEFAULT_BASIS = 'chebyshev'
 K_RATIO = 4
-MAX_ITER = 20
+from lilq.solvers import LILQ_PAPER_KMAX
+MAX_ITER = LILQ_PAPER_KMAX   # 20 until the advisor's follow-up of 1 Oct; the paper's runs stop by 16
 TOL = 1e-9
 
 
