@@ -1,4 +1,8 @@
-"""Validation residual of every Component A model in wave 2: the momentum and
+"""Usage, from the root of a checkout of branch wave2-results:
+
+    python results/wave2/analysis/validation_residual.py results/wave2/A_calibration out.csv
+
+Validation residual of every Component A model in wave 2: the momentum and
 continuity mean squares (plus the soft-BC mean square, F1 soft only) on
 20,000 fresh uniform interior points and 400 points per boundary face --
 F1's unweighted loss, on points no run trained on. No exact solution is
@@ -11,7 +15,7 @@ from pathlib import Path
 
 import torch
 
-REPO = Path(r'C:\Users\awoji\Documents\LiL-Q\Post-JCP\lilq-pinn')
+REPO = Path(__file__).resolve().parents[3]          # the checkout's root (results/wave2/analysis/)
 sys.path.insert(0, str(REPO))
 import baselines.f1_pinn as f1  # noqa: E402
 from baselines.lm_kovasznay import coons, ell, g_u, g_v  # noqa: E402
