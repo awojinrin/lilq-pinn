@@ -123,6 +123,8 @@ def test_keep_top_keeps_the_given_finalists(tmp_path):
     ids = _screening(tmp_path, 'F1', [(2e-7, 3.8), (3e-7, 2e-5), (6e-7, 3e-6), (1e-6, 1e-6)])
     sel = ca.select(tmp_path, 'F1', keep_top=ids[:3])
     assert sel['top'] == ids[:3] and sel['top_by_validation'] == [ids[3], ids[2], ids[1]] and 'top_kept' in sel
+    assert sel['top_kept_matches_validation'] is False
+    assert ca.select(tmp_path, 'F1', keep_top=[ids[3], ids[2], ids[1]])['top_kept_matches_validation'] is True
     with pytest.raises(ValueError, match='keep-top'):
         ca.select(tmp_path, 'F1', keep_top=['F1_99'])
 

@@ -561,15 +561,17 @@ class ELMBasis2D_Xavier:
 
 
 class ELMBasis2D(ELMBasis2D_Xavier):
-    """ELM basis with Kaiming uniform initialization matching nn.Linear defaults.
-
-    PyTorch nn.Linear uses:
+    """ELM basis with LeCun uniform weights and 1/sqrt(fan_in) biases:
         weights: uniform(-bound, bound) where bound = sqrt(3 / fan_in)
         biases:  uniform(-bound, bound) where bound = 1 / sqrt(fan_in)
 
     For the ELM, fan_in = 2 (x and y inputs), so:
         alpha, beta (weight-like): bound = sqrt(3/2) ≈ 1.2247
         gamma (bias-like):         bound = 1/sqrt(2)  ≈ 0.7071
+
+    This is not PyTorch's default ``nn.Linear`` initialization (that is
+    ``ELMBasis2D_TorchDefault``), as this docstring once said. Table 3's
+    ELM row uses ``ELMBasis2D_Xavier``, not this class.
     """
 
     def __init__(self, n_hidden: int,
@@ -614,8 +616,9 @@ class ELMBasis2D_TorchDefault(ELMBasis2D_Xavier):
     same). With fan_in = 2: +-0.7071 for alpha, beta and gamma alike.
 
     (``ELMBasis2D`` above uses sqrt(3 / fan_in) = 1.2247 for the weights,
-    Kaiming with a = 0, not PyTorch's default.) The advisor's follow-up of 1
-    October 2026, item 3: one more Table 3 row with this initialization.
+    LeCun uniform, not PyTorch's default; Table 3's existing ELM row uses
+    ``ELMBasis2D_Xavier``.) The advisor's follow-up of 1 October 2026, item
+    3: one more Table 3 row with this initialization.
     """
 
     def __init__(self, n_hidden: int,

@@ -4,9 +4,10 @@
 # CLUSTER (grace, the default, or faster) picks profiles/$CLUSTER.sh. Each job
 # script declares its class in a "# lilq-resources:" line:
 #   timed       one A100 and all of the node's cores and memory, without
-#               --exclusive: no other job fits on the node, and Grace charges
-#               one GPU (120 SU/h; --exclusive allocated and charged both,
-#               192 SU/h -- the advisor's reply to wave 1, item 2.3).
+#               --exclusive: no other job fits on the node. Grace charges
+#               192 SU/h for it (waves 2-3, sacct and myproject), as for an
+#               --exclusive node with both A100s (wave 1), not the 120 SU/h
+#               expected for one A100 (the advisor's reply to wave 1, item 2.3).
 #               --mem=$NODE_MEM: Grace refuses --mem=0, "all of it".
 #   timed-cpu   a whole CPU node (--exclusive): CPU-only timed work, same CPU
 #               as the A100 nodes, no GPU surcharge (Addendum v2.2 Section 4.1)

@@ -21,7 +21,11 @@ logged runs (``component_b.py``, wave 2; the pinned run, wave 1) remain the
 source of every monitor value; ``--logged-roots`` puts each logged time
 beside the clean one. Output: ``<out-root>/B_instrumentation/clean_timing/
 clean_timing.csv``, one row per run and quantity, rewritten after every run
-(a resubmitted job skips the runs it has).
+(a resubmitted job skips the runs it has), and each job's ``hardware.json``
+and ``environment.txt`` in ``provenance_<devices>/``. Wave 4's CPU and GPU
+jobs run one after the other (``submit_wave4.sh``); as well, every write
+keeps the rows of other runs already in the file, so a job never drops
+another's rows (the advisor's reply on wave 3, Section 1, item 1).
 
 Quantities, the same as the logged runs report:
 ``training_time`` (scalar benchmarks); ``solve_time_total`` (Kovasznay,
@@ -223,11 +227,19 @@ def execute(run: TimedRun, smoke=False, logged_roots=None) -> List[dict]:
 
 
 def write(rows, path):
+    """``rows``, after the rows of any other run already in ``path`` (another
+    job's), atomically."""
+    path = Path(path)
+    ours = {r['run'] for r in rows}
+    others = []
+    if path.exists():
+        with open(path, newline='') as f:
+            others = [r for r in csv.DictReader(f) if r['run'] not in ours]
     tmp = Path(str(path) + '.tmp')
     with open(tmp, 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=COLUMNS)
         w.writeheader()
-        w.writerows(rows)
+        w.writerows(others + list(rows))
     os.replace(tmp, path)
 
 
@@ -242,9 +254,12 @@ def main(argv=None):
     args = ap.parse_args(argv)
     out = Path(args.out_root) / 'B_instrumentation' / 'clean_timing'
     out.mkdir(parents=True, exist_ok=True)
-    save_provenance(out)
+    save_provenance(out / f"provenance_{'_'.join(args.devices)}")   # one folder per job's devices
     path = out / 'clean_timing.csv'
-    rows = list(csv.DictReader(open(path))) if path.exists() else []
+    rows = []
+    if path.exists():
+        with open(path, newline='') as f:
+            rows = list(csv.DictReader(f))
     done = {r['run'] for r in rows}
     for run in build_runs(args.benchmarks, args.devices, args.smoke):
         if run.name in done:

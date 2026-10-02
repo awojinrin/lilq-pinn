@@ -210,9 +210,11 @@ def select(root, family, device='cpu', keep_top=None):
     their screening run (the advisor's reply to wave 2), with the
     training-loss ranking beside it (``ranking_by_training_loss``, the rule
     until wave 2) and the validation protocol. ``keep_top`` keeps the given
-    configurations as the top three instead (F1 in wave 4: the advisor kept
-    wave 2's finalists and re-picks only the representative); the
-    validation top three is then recorded as ``top_by_validation``."""
+    configurations as the top three instead (wave 4: F1, wave 2's finalists,
+    the advisor re-picking only the representative; F2, the validation top
+    three of his analysis, pinned); the recomputed validation top three is
+    then recorded as ``top_by_validation``, and whether the two agree as
+    ``top_kept_matches_validation``."""
     configs = load_configs(root, family)
     keys = {c['id']: _config_key(c) for c in configs}
     rows = []
@@ -240,8 +242,13 @@ def select(root, family, device='cpu', keep_top=None):
         if unknown:
             raise ValueError(f"--keep-top: no configurations {unknown} in {family}")
         selection.update(top=list(keep_top), top_kept=(
-            "kept from wave 2's finalists by the advisor's decision of 1 October 2026; "
-            "the representative among them is chosen by validation residual"))
+            "pinned by the advisor's decisions of 1 October 2026 (F1: wave 2's finalists; "
+            "F2: the validation top three of his analysis); the representative among them "
+            "is chosen by validation residual"),
+            top_kept_matches_validation=list(keep_top) == top_by_validation)
+        if list(keep_top) != top_by_validation:
+            print(f"Note: {family} kept {list(keep_top)}; the validation top three is {top_by_validation}",
+                  flush=True)
     (Path(root) / 'screening' / f'{family}_selection.json').write_text(json.dumps(selection, indent=2))
     return selection
 

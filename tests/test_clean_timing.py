@@ -131,7 +131,22 @@ def test_clean_timing_driver_end_to_end(tmp_path):
     assert float(bratu['logged_time_s']) == 0.123 and float(bratu['clean_time_s']) > 0
     assert all(float(r['warmup_run_time_s']) > 0 for r in rows)
     assert ('beltrami_pinned', 'solve_time_total') in by_run and ('darcy_S1_cpu_paper', 'total_time') in by_run
-    assert (tmp_path / 'w4' / 'B_instrumentation' / 'clean_timing' / 'hardware.json').exists()
+    assert (tmp_path / 'w4' / 'B_instrumentation' / 'clean_timing' / 'provenance_cpu' / 'hardware.json').exists()
     before = path.read_text()
     ct.main(['--out-root', str(tmp_path / 'w4'), '--benchmarks', 'bratu', '--smoke'])
     assert path.read_text() == before
+
+
+def test_a_write_keeps_the_rows_of_other_runs_in_the_file(tmp_path):
+    """The CPU and GPU jobs write the same table: neither drops the other's
+    rows (the advisor's reply on wave 3, Section 1, item 1)."""
+    import csv
+    import experiments.clean_timing as ct
+    path = tmp_path / 'clean_timing.csv'
+    row = lambda run, t: {c: '' for c in ct.COLUMNS} | {'run': run, 'clean_time_s': t}  # noqa: E731
+    ct.write([row('kovasznay_P300_cuda_paper', 1.0)], path)        # the GPU job
+    ct.write([row('bratu_P25_cpu_paper', 2.0)], path)              # the CPU job, which read the file earlier
+    ct.write([row('bratu_P25_cpu_paper', 2.0), row('burgers_P225_cpu_paper', 3.0)], path)
+    rows = {r['run']: r['clean_time_s'] for r in csv.DictReader(open(path))}
+    assert rows == {'kovasznay_P300_cuda_paper': '1.0', 'bratu_P25_cpu_paper': '2.0', 'burgers_P225_cpu_paper': '3.0'}
+    assert len(list(csv.DictReader(open(path)))) == 3                # no duplicates

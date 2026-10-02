@@ -17,6 +17,82 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- The advisor's reply on wave 3 and the wave 4 commit: the two required fixes, and the smaller items of a first batch
+
+The advisor approved wave 4 once two fixes are in (his reply on wave 3,
+Section 1). Both are here, with some of his Section 2 items.
+
+**1. The clean-timing jobs no longer overwrite each other's table.**
+- 13a (CPU) and 13b (GPU) both rewrite
+  `B_instrumentation/clean_timing/clean_timing.csv` after every run, and
+  both followed only the preflight, so they would have run at once. The CPU
+  job's later writes would have dropped the GPU Kovasznay rows, and Section
+  4.6 would have fallen back silently to the logged GPU times.
+- **The fix:**
+  - 13b now waits for 13a (`--dependency=afterok:$pre,afterany:$tcpu`). It
+    finishes about an hour later, inside F2's ~15.5 h full stage, at no
+    extra cost.
+  - `clean_timing.write` also keeps the rows of other runs already in the
+    file.
+  - Each job's `hardware.json` and `environment.txt` go to
+    `clean_timing/provenance_<devices>/`, so neither job overwrites the
+    other's.
+
+**2. `package1` can no longer change a wave's files.**
+- The advisor found that B9's annotation rewrote its tables in place. Since
+  `assemble_package.py` hard-linked the waves' files into `package1`, that
+  would have changed wave 3's own tables.
+- The problem was wider. `90_finalize` also rewrites `runs_index.csv` and
+  `reproduction_check.csv` in place, and both come from the waves. In the
+  rehearsal of 1 October (entry "Wave 4 audit"), it changed the scratch
+  copy of wave 2's two files; the downloaded originals differ from them.
+- **The fix:**
+  - `assemble_package.py` now copies (`shutil.copy2`) instead of linking.
+    The waves come to under 1 GB (3,252 files in the rehearsal).
+  - As the advisor proposed, `annotate` also writes a new file and swaps
+    it in (`os.replace`).
+
+**3. A test that would have failed wave 4's preflight.**
+- `test_wave_4_submission_copies_component_a_and_chains_the_jobs` runs
+  only under Linux, so only in the preflight. Its fixture had no runs of
+  F1_15, and `submit_wave4.sh`'s copy loop failed on the unmatched glob.
+  The preflight would have failed, and with it every job after it.
+- The local rehearsal of the submission had F1_15, which hid it.
+- **The fix:**
+  - The fixture has F1_15.
+  - `submit_wave4.sh` checks that all three finalists have runs, in the
+    dry run too, and names any that are missing.
+  - The Linux-only tests have now been run under Git Bash on this laptop:
+    all pass.
+
+**Section 2 items in this batch:**
+- **2.1:** `run_beltrami.py` passes `max_iter=LILQ_PAPER_KMAX`. No paper
+  number comes from it.
+- **2.3:** `ELMBasis2D`'s sqrt(3 / fan_in) is LeCun uniform, not Kaiming
+  with a = 0 (that is sqrt(6 / fan_in)), and Table 3's existing ELM row uses
+  `ELMBasis2D_Xavier`. Corrected in `basis.py`'s docstrings, the entry of
+  the follow-up items below, and the test comment. The code is unchanged.
+- **2.4:** job 35 pins F2_10, F2_05 and F2_14 with `--keep-top`. The
+  recomputed validation top three is still recorded (`top_by_validation`),
+  with `top_kept_matches_validation`, and a note is printed if they differ.
+- **2.6, labels:**
+  - The timed class costs 192 SU/h on Grace, not 120 (`sbatch.sh`,
+    `provenance.py`, the cluster README).
+  - `allocation_label` ends with `, exclusive`, `, whole node` (the timed
+    class) or `, shared`. Wave 3's B9 rows read "8 cores + 1 x
+    NVIDIA A100-PCIE-40GB, shared".
+  - `43_basis_study.slurm` says 10 bases.
+
+Tests:
+- `tests/test_cluster_waves.py`: copies, not links; 13b after 13a; F2
+  pinned.
+- `tests/test_clean_timing.py`: a write keeps other runs' rows.
+- `tests/test_followup_items.py`: annotating leaves a hard-linked original
+  unchanged; the allocation labels.
+- `tests/test_validation_residual.py`: `top_kept_matches_validation`.
+
+---
+
 ## 2026-10-01 -- Wave 4 audit: four fixes, and a rehearsal of the package assembly on real data
 
 An audit of the wave 4 commit against the advisor's reply to wave 2, his
@@ -167,9 +243,11 @@ Tests: `tests/test_cluster_waves.py`.
 initialization: weights and biases uniform on +-1/sqrt(fan_in) = +-0.7071,
 since `kaiming_uniform_` with a = sqrt(5) gives 1/sqrt(fan_in). The existing
 `ELMBasis2D`, documented as matching `nn.Linear`, uses sqrt(3 / fan_in) =
-1.2247 for the weights, i.e. Kaiming with a = 0. It is not the default and
-is unchanged. The basis study has a new key, `elm_default`, with the same
-width (625) and P as the Xavier `elm` row.
+1.2247 for the weights, i.e. LeCun uniform (corrected from "Kaiming with a =
+0", which is sqrt(6 / fan_in); the advisor's reply on wave 3, item 2.3). It
+is not the default, is unchanged, and is not used by Table 3, whose
+existing ELM row uses `ELMBasis2D_Xavier`. The basis study has a new key,
+`elm_default`, with the same width (625) and P as the Xavier `elm` row.
 
 `write_table3_csv` gains `eps_u`, `kappa_raw`, `kappa_retained` and
 `num_rank_qr`. `eps_u` is the mean square of u_t + u u_x - nu u_xx on the

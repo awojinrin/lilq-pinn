@@ -172,8 +172,9 @@ def capture_scheduler_info() -> dict:
     ``holds_whole_node``: the job has every core and all the memory of its
     node, so no other job can be placed there -- the timing condition. From
     wave 2 on, the ``timed`` class gets it without ``--exclusive`` (one A100,
-    48 cores, 360G: 120 SU/h instead of 192; the advisor's reply to wave 1,
-    item 2.3), so ``exclusive`` is then false and ``holds_whole_node`` true.
+    48 cores, 360G; the advisor's reply to wave 1, item 2.3; Grace still
+    charges it 192 SU/h, waves 2-3), so ``exclusive`` is then false and
+    ``holds_whole_node`` true.
     ``gpus_allocated`` is the job's ``gres/gpu`` count from ``AllocTRES``."""
     if "SLURM_JOB_ID" not in os.environ:
         return {"slurm": False}

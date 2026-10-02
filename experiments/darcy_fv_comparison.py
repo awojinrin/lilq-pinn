@@ -66,9 +66,12 @@ def _config(field, order):
 
 def allocation_label(scheduler=None, gpu_name=None):
     """``'<cores> cores + <n> x <GPU>'`` (or ``'<cores> cores'``) of the job a
-    time was measured in, with ``', exclusive'`` when it held the node; from
-    a ``hardware.json`` ``scheduler`` record, or this process's environment.
-    ``'local'`` outside a scheduler."""
+    time was measured in, then how it held its node: ``', exclusive'``
+    (``--exclusive``), ``', whole node'`` (every core and all the memory,
+    the ``timed`` class) or ``', shared'`` (other jobs could run on the node:
+    the advisor's reply on wave 3, item 2.6). From a ``hardware.json``
+    ``scheduler`` record, or this process's environment. ``'local'`` outside
+    a scheduler."""
     if scheduler is None:
         from lilq.provenance import capture_scheduler_info
         scheduler = capture_scheduler_info()
@@ -80,7 +83,9 @@ def allocation_label(scheduler=None, gpu_name=None):
     if gpu_name is None and gpus:
         gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'GPU'
     label = f"{cores} cores" + (f" + {len(gpus)} x {gpu_name}" if gpus else '')
-    return label + (', exclusive' if scheduler.get('exclusive') else '')
+    if scheduler.get('exclusive'):
+        return label + ', exclusive'
+    return label + (', whole node' if scheduler.get('holds_whole_node') else ', shared')
 
 
 def _row(field, method, seed, P_h, P_fvm, p_bot, tpfa, time_s, final_loss, dtype, n_params=None,
@@ -157,7 +162,8 @@ def annotate(darcy_fv_root):
     filled = 0
     for table in sorted(Path(darcy_fv_root).glob('*/darcy_fv_comparison.csv')):
         job = table.parent
-        rows = list(csv.DictReader(open(table)))
+        with open(table, newline='') as f:
+            rows = list(csv.DictReader(f))
         hw = job / 'hardware.json'
         hardware = json.loads(hw.read_text()) if hw.exists() else {}
         gpu = ((hardware.get('gpu') or {}).get('gpus') or [{}])[0].get('name')
@@ -171,10 +177,15 @@ def annotate(darcy_fv_root):
                 if net.exists():
                     saved = torch.load(net, map_location='cpu', weights_only=False)
                     r['resumed_at'] = json.dumps(saved.get('resumed_at', []))
-        with open(table, 'w', newline='') as f:
+        # A new file swapped in, never the table rewritten in place: in place,
+        # a hard-linked copy would change its original too (the advisor's
+        # reply on wave 3, Section 1, item 2).
+        tmp = table.with_name(table.name + '.tmp')
+        with open(tmp, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=COLUMNS)
             writer.writeheader()
             writer.writerows([{c: r.get(c, '') for c in COLUMNS} for r in rows])
+        os.replace(tmp, table)
     return filled
 
 

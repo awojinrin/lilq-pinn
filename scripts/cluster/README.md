@@ -4,9 +4,9 @@ Every job of Package 1 v2.0 and Addendums v2.1-v2.2 runs on the cluster, in
 three waves (Addendum v2.2 Section 4). Timed work (everything whose times go
 into the paper) holds a whole node: on an A100 node, one A100 with all 48
 cores and all 360G of memory, without `--exclusive` -- no other job fits on
-the node, and Grace charges one GPU (120 SU/h; `--exclusive` allocated and
-charged both A100s, 192 SU/h, in wave 1; the advisor's reply to wave 1, item
-2.3); a CPU node (`--exclusive`) -- the same CPU, no GPU surcharge -- when it
+the node (the advisor's reply to wave 1, item 2.3), though Grace still
+charges 192 SU/h for it, as for wave 1's `--exclusive` node with both A100s
+(waves 2-3); a CPU node (`--exclusive`) -- the same CPU, no GPU surcharge -- when it
 does not use the GPU.
 Untimed work runs on a shared A100 or on CPU cores. The same job scripts
 serve both clusters: the cluster-specific values live in `profiles/grace.sh`
@@ -153,9 +153,10 @@ HPRC books pending SUs from the requested walltimes at submission. Revise
 them from wave 1's measured runtimes.
 
 **SUs.** Charged for time used: cores x hours plus a GPU surcharge per GPU-hour
-(Grace A100 72; FASTER A100 128). On Grace a timed A100 job is 48 core-SU plus
-72 for its one A100: 120 SU per node-hour (an `--exclusive` A100 node is
-allocated and charged both A100s: 192; wave 1, `sacct`). An exclusive CPU node
+(Grace A100 72; FASTER A100 128). On Grace a timed A100 job was expected to
+be 48 core-SU plus 72 for its one A100, 120 SU per node-hour, but waves 2 and
+3 were charged 192, as wave 1's `--exclusive` node with both A100s was
+(`sacct`, `myproject`; the wave 2 report). An exclusive CPU node
 is 48 SU per hour; a shared A100 job 80; a 24-core CPU job 24. Wave 1 was
 charged 332 SU; the advisor expects 5,900-6,700 for wave 2 and 2,500-4,200
 for wave 3. On

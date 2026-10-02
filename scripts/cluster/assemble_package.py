@@ -1,11 +1,15 @@
 """
-Assemble package1_results from the three waves (Addendum v2.2 Section 4.2)
-==========================================================================
+Assemble package1_results from the waves (Addendum v2.2 Section 4.2)
+=====================================================================
 
 Each wave wrote its own package root, ``results/wave<N>``, locked to its own
 commit (``lilq/source_lock.py``). This builds ``results/package1`` -- the
-layout of Package 1 v2.0 Section 6 -- by hard-linking (or, across file
-systems, copying) every file of wave 1, then wave 2, then wave 3 into it.
+layout of Package 1 v2.0 Section 6 -- by copying every file of wave 1, then
+wave 2, 3 and 4 into it. Copies, not hard links: ``90_finalize`` rewrites
+files in ``package1`` (the run index, the reproduction check, B9's tables),
+and through a hard link that would rewrite the wave's own file, which is
+locked to its commit (the advisor's reply on wave 3, Section 1, item 2).
+The waves come to under 1 GB.
 The components come from different waves (B4 from waves 1 and 2, each
 benchmark in its own folder), so paths rarely meet; where they do, an
 identical file is kept once and a differing one is taken from the later
@@ -21,7 +25,6 @@ Usage (``90_finalize.slurm``)::
 import argparse
 import filecmp
 import json
-import os
 import shutil
 from pathlib import Path
 
@@ -47,10 +50,7 @@ def assemble(results: Path, out: Path, waves=(1, 2, 3, 4)) -> dict:
                 record['overrides'].append({'path': rel.as_posix(), 'from_wave': n})
                 dst.unlink()
             dst.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                os.link(path, dst)
-            except OSError:
-                shutil.copy2(path, dst)
+            shutil.copy2(path, dst)
             record['files'] += 1
     (out / 'WAVES.json').write_text(json.dumps(record, indent=2))
     return record

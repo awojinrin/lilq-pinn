@@ -26,6 +26,7 @@ from problems.beltrami import (
     evaluate_fields_at_slice, evaluate_fields_3d,
 )
 
+from lilq.solvers import LILQ_PAPER_KMAX
 from experiments.exp_utils import (
     make_experiment_dir, make_figures_dir, experiment_base_dir,
     save_master_results, save_summary_json, save_metrics_csv, save_run_provenance,
@@ -52,6 +53,7 @@ def run_experiment(N_vel, N_p, basis_type, verbose=True):
     config = BeltramiConfig(
         N_vel=N_vel, N_p=N_p,
         basis_type=basis_type,
+        max_iter=LILQ_PAPER_KMAX,
         **cs,
     )
 

@@ -4,6 +4,7 @@ reruns with K_max = 60 (item 1)."""
 
 import csv
 import json
+import os
 
 import numpy as np
 import pytest
@@ -19,7 +20,8 @@ def test_default_init_elm_is_uniform_on_one_over_root_fan_in():
         assert float(p.abs().max()) <= bound and float(p.abs().max()) > 0.95 * bound
     again = ELMBasis2D_TorchDefault(625, (-1, 1), (0, 1), seed=0)
     assert torch.equal(b.alpha, again.alpha) and torch.equal(b.gamma, again.gamma)
-    # Not the Xavier (+-0.098 at 625 neurons) nor the a = 0 Kaiming (+-1.22) variant.
+    # Not the Xavier (+-0.098 at 625 neurons; Table 3's existing ELM row) nor the
+    # LeCun-uniform ELMBasis2D (+-sqrt(3 / fan_in) = +-1.22) variant.
     assert float(ELMBasis2D_Xavier(625, (-1, 1), (0, 1), seed=0).alpha.abs().max()) < 0.1
     assert float(ELMBasis2D(625, (-1, 1), (0, 1), seed=0).alpha.abs().max()) > 1.0
     assert b.evaluate(np.array([0.0, 0.5]), np.array([0.1, 0.9])).shape == (2, 625)
@@ -49,7 +51,10 @@ def test_b9_rows_record_allocation_and_resumes(tmp_path):
 def test_allocation_label_from_a_scheduler_record():
     import experiments.darcy_fv_comparison as b9
     shared = {'slurm': True, 'job': {'NumCPUs': '8'}, 'SLURM_JOB_GPUS': '1', 'exclusive': False}
-    assert b9.allocation_label(shared, 'NVIDIA A100-PCIE-40GB') == '8 cores + 1 x NVIDIA A100-PCIE-40GB'
+    assert b9.allocation_label(shared, 'NVIDIA A100-PCIE-40GB') == '8 cores + 1 x NVIDIA A100-PCIE-40GB, shared'
+    whole = {'slurm': True, 'job': {'NumCPUs': '48'}, 'SLURM_JOB_GPUS': '0', 'exclusive': False,
+             'holds_whole_node': True}
+    assert b9.allocation_label(whole, 'NVIDIA A100-PCIE-40GB') == '48 cores + 1 x NVIDIA A100-PCIE-40GB, whole node'
     cpu = {'slurm': True, 'job': {'NumCPUs': '48'}, 'SLURM_JOB_GPUS': None, 'exclusive': True}
     assert b9.allocation_label(cpu) == '48 cores, exclusive'
     assert b9.allocation_label({'slurm': False}) == 'local'
@@ -71,9 +76,15 @@ def test_annotate_fills_wave_3_tables(tmp_path):
         w.writeheader()
         w.writerow({c: '' for c in old} | {'field': 'S1', 'method': 'LiL', 'seed': '', 'dtype': 'float64', 'delta_fv': 1})
         w.writerow({c: '' for c in old} | {'field': 'S1', 'method': 'NiL', 'seed': '0', 'dtype': 'float64', 'delta_fv': 2})
+    # package1 once held wave 3's table by a hard link: annotating it must not
+    # change the original (the advisor's reply on wave 3, Section 1, item 2).
+    original = tmp_path / 'wave3_original.csv'
+    os.link(job / 'darcy_fv_comparison.csv', original)
+    before = original.read_bytes()
     assert b9.annotate(tmp_path / 'darcy_fv') == 2
+    assert original.read_bytes() == before
     rows = list(csv.DictReader(open(job / 'darcy_fv_comparison.csv')))
-    assert {r['allocation'] for r in rows} == {'8 cores + 1 x NVIDIA A100-PCIE-40GB'}
+    assert {r['allocation'] for r in rows} == {'8 cores + 1 x NVIDIA A100-PCIE-40GB, shared'}
     assert json.loads(rows[1]['resumed_at']) == [5000] and rows[0]['resumed_at'] == ''
     assert b9.annotate(tmp_path / 'darcy_fv') == 0                    # nothing left to fill
 

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Task B6 / Section 3.6 (untimed): the Burgers basis study, 9 bases to K_max = 50, CPU.
+# Task B6 / Section 3.6 (untimed): the Burgers basis study, 10 bases to K_max = 50, CPU
+# (wave 4: with the default-initialization ELM row).
 # lilq-resources: cpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-B6
 #SBATCH --time=03:00:00

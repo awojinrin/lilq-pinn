@@ -8,7 +8,8 @@
 #        validation residual (no training) -> 32 A CPU (F1), 33 float32
 #     35 F2 full stage: the validation top three (F2_10, F2_05, F2_14)
 #        x seeds 0-4 x 60 min -> 32 A CPU (F2)
-#   13a / 13b clean timing (CPU, with the gravity BL P = 64 logged rerun; GPU)
+#   13a / 13b clean timing (CPU, with the gravity BL P = 64 logged rerun; then
+#        GPU, after 13a: both write clean_timing.csv)
 #   43 Table 3 with the default-init ELM row, 44 B10, 45 B8's K_max = 60 reruns
 #   -> 91 wave report: results/wave4_report.tar.gz
 #   -> 90 finalize: results/package1 assembled from the four waves.
@@ -25,6 +26,11 @@ confirm_balance "~3,900 SU expected (advisor's estimate); ~5,300 SU if every job
 W2A="$RESULTS/wave2/A_calibration"
 A4="$RESULTS/wave4/A_calibration"
 [[ -d "$W2A/screening" && -d "$W2A/full" ]] || { echo "wave 2's Component A runs are missing ($W2A)" >&2; exit 1; }
+for f in F1_04 F1_15 F1_18; do   # checked in the dry run too
+    found=0
+    for run in "$W2A"/full/${f}_s*; do [[ -e "$run" ]] && found=1; done
+    [[ $found == 1 ]] || { echo "wave 2's full runs of $f are missing ($W2A/full)" >&2; exit 1; }
+done
 if [[ "$DRY_RUN" != 1 ]]; then
     mkdir -p "$A4/full"
     for item in search screening tuning_log.md; do
@@ -44,7 +50,10 @@ submit cpu1 $S/32_A_cpu.slurm             --dependency=afterok:$f1 --array=0
 submit cpu2 $S/32_A_cpu.slurm             --dependency=afterok:$f2 --array=1
 submit f32  $S/33_A_float32.slurm         --dependency=afterok:$f1
 submit tcpu $S/13a_clean_timing_cpu.slurm --dependency=afterok:$pre
-submit tgpu $S/13b_clean_timing_gpu.slurm --dependency=afterok:$pre
+# 13b after 13a, not beside it: both write B_instrumentation/clean_timing/
+# (the advisor's reply on wave 3, Section 1, item 1). afterany: a failed CPU
+# job does not hold the GPU one; afterok:$pre: neither runs without the preflight.
+submit tgpu $S/13b_clean_timing_gpu.slurm --dependency=afterok:$pre,afterany:$tcpu
 submit t3   $S/43_basis_study.slurm       --dependency=afterok:$pre
 submit b10  $S/44_b10_cgl_cc.slurm        --dependency=afterok:$pre
 submit b8   $S/45_b8_kmax60.slurm         --dependency=afterok:$pre
