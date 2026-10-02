@@ -69,12 +69,36 @@ KMAX_PASS_ITERS = 60
 RUNS = ([('clenshaw_curtis', N, r) for N in (10, 20, 25) for r in (5, 10)]
         + [('equal', 25, r) for r in (5, 10)])
 PASSES = ('paper', 'kmax')
-COLUMNS = ('run', 'set', 'P', 'ratio_target', 'ratio_actual', 'N', 'N_distinct', 'k_ratio', 'weights', 'pass',
+# The total weight of one velocity component's boundary rows, in units of
+# lambda_bc (the advisor's reply on wave 3, item 2.8): with equal weights each
+# edge's rows carry lambda_bc, 4 lambda_bc in all (as on the paper grid); with
+# Clenshaw-Curtis weights the whole perimeter carries lambda_bc (Addendum v2.3
+# Section 1). The two variants differ in total boundary weight as well as in
+# the quadrature.
+BC_WEIGHT_TOTAL = {'equal': 4, 'clenshaw_curtis': 1}
+NOTE = """# B10: a note on the boundary weights
+
+`bc_weight_total` (in `b10.csv`) and `b10_bc_weight_total` /
+`paper_grid_bc_weight_total` (in `b10_vs_paper_grid.csv`) give the total
+weight of one velocity component's boundary rows, in units of lambda_bc:
+
+- equal weights (`B10-EQ`, and the paper grid): each edge's rows carry
+  lambda_bc, so 4 lambda_bc over the four edges;
+- Clenshaw-Curtis weights (`B10-CC`): the whole perimeter carries lambda_bc,
+  as Addendum v2.3 Section 1 specifies.
+
+So `B10-CC` and `B10-EQ` differ in total boundary weight as well as in the
+quadrature (the advisor's reply on wave 3, item 2.8). The pressure pin is
+lambda_bc in both.
+"""
+COLUMNS = ('run', 'set', 'P', 'ratio_target', 'ratio_actual', 'N', 'N_distinct', 'k_ratio', 'weights',
+           'bc_weight_total', 'pass',
            'K_max', 'iterations', 'stopping_reason', 'first_stall_iteration', 'final_norm_R_h',
            'final_norm_Rlin_h', 'kappa_raw', 'kappa_retained', 'kappa', 'kappa_method', 'num_rank_qr',
            'num_rank_gelsy', 'num_rank_svd', 'rank_deficient', 'eps_u', 'eps_v', 'eps_p_pin_gauge',
            'eps_p_meanfree', 't_cum_s', 'commit', 'error')
-COMPARE_COLUMNS = ('P', 'ratio_target', 'weights', 'b10_eps_u', 'b10_eps_v', 'b10_eps_p_pin_gauge',
+COMPARE_COLUMNS = ('P', 'ratio_target', 'weights', 'b10_bc_weight_total', 'paper_grid_bc_weight_total',
+                   'b10_eps_u', 'b10_eps_v', 'b10_eps_p_pin_gauge',
                    'b10_eps_p_meanfree', 'b10_iterations', 'paper_grid_run', 'paper_grid_N', 'paper_grid_eps_u',
                    'paper_grid_eps_v', 'paper_grid_eps_p_pin_gauge', 'paper_grid_eps_p_meanfree',
                    'paper_grid_iterations', 'ratio_eps_u_b10_over_paper_grid')
@@ -103,7 +127,8 @@ def run_one(weights, N, ratio, pass_, root, smoke=False):
     config, k, rows = config_for(weights, N, ratio, pass_, smoke)
     P = 3 * N * N
     row = dict(run=name, set='B10-CC' if weights == 'clenshaw_curtis' else 'B10-EQ', P=P, ratio_target=ratio,
-               ratio_actual=rows / P, N=rows, k_ratio=k, weights=weights, **{'pass': pass_}, K_max=config.max_iter,
+               ratio_actual=rows / P, N=rows, k_ratio=k, weights=weights, bc_weight_total=BC_WEIGHT_TOTAL[weights],
+               **{'pass': pass_}, K_max=config.max_iter,
                commit=current_commit())
     run_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -148,6 +173,8 @@ def compare_with_paper_grid(rows, paper_root):
         g = lambda k: s.get(k)  # noqa: E731
         eu = g('test_eps_u')
         out.append({'P': r['P'], 'ratio_target': r['ratio_target'], 'weights': r['weights'],
+                    'b10_bc_weight_total': BC_WEIGHT_TOTAL[r['weights']],
+                    'paper_grid_bc_weight_total': BC_WEIGHT_TOTAL['equal'] if s else '',
                     'b10_eps_u': r['eps_u'], 'b10_eps_v': r['eps_v'], 'b10_eps_p_pin_gauge': r['eps_p_pin_gauge'],
                     'b10_eps_p_meanfree': r['eps_p_meanfree'], 'b10_iterations': r['iterations'],
                     'paper_grid_run': str(path) if s else '', 'paper_grid_N': '',
@@ -181,8 +208,13 @@ def main(argv=None):
     root = Path(args.out_root) / 'B_instrumentation' / 'b10'
     root.mkdir(parents=True, exist_ok=True)
     save_provenance(root)
+    (root / 'README.md').write_text(NOTE, encoding='utf-8')
     csv_path = root / 'b10.csv'
-    rows = [r for r in csv.DictReader(open(csv_path))] if csv_path.exists() else []
+    rows = []
+    if csv_path.exists():
+        with open(csv_path, newline='') as f:
+            rows = [dict(r, bc_weight_total=r.get('bc_weight_total') or BC_WEIGHT_TOTAL[r['weights']])
+                    for r in csv.DictReader(f)]
     done = {r['run'] for r in rows if r.get('stopping_reason') != 'failure'}
     rows = [r for r in rows if r['run'] in done]
     plan = [(w, N, ratio) for w, N, ratio in RUNS if not args.smoke or N == 10]

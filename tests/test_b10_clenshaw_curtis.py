@@ -125,3 +125,7 @@ def test_b10_driver_smoke(tmp_path):
         assert {'iterations.csv', 'run.json', 'collocation.npz', 'solution.pt', 'hardware.json'} <= {p.name for p in d.iterdir()}
     cmp = list(csv.DictReader(open(root / 'b10_vs_paper_grid.csv')))
     assert len(cmp) == 2 and float(cmp[0]['paper_grid_eps_u']) == 2.9e-2
+    # The total boundary weight (the advisor's reply on wave 3, item 2.8).
+    assert {r['bc_weight_total'] for r in rows} == {'1'}
+    assert (cmp[0]['b10_bc_weight_total'], cmp[0]['paper_grid_bc_weight_total']) == ('1', '4')
+    assert '4 lambda_bc' in (root / 'README.md').read_text()

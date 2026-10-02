@@ -65,7 +65,8 @@ import torch
 
 from lilq.utils import DEVICE, clear_gpu_memory
 from lilq.four_method_log import (
-    CONTROL_VARIANT, FourMethodLogger, compare_histories, row_key, stopping_fields, subsample_loss_history,
+    CONTROL_VARIANT, FOUR_METHOD_CSV_COLUMNS, FourMethodLogger, compare_histories, row_key, stopping_fields,
+    subsample_loss_history,
 )
 from lilq.provenance import save_provenance
 from lilq.saved_models import save_history, save_network, save_solution
@@ -400,37 +401,70 @@ def merge_csvs(paths, out_path):
     return merged, controls
 
 
+LILQ_EXTRA_COLUMNS = ('logged_iterations', 'logged_K_max', 'logged_summary')
+
+
 def lilq_rows(b_root, out_path=None):
     """The four-method tables' LiL-Q rows (the advisor's follow-up of 1
     October 2026, item 1): time and iterations from the clean-timing runs
     (``<b_root>/clean_timing/clean_timing.csv``: warm-up, diagnostics off,
     K_max = 60), final loss and convergence from the logged paper pass of the
     same configuration (``<b_root>/<benchmark>_P<P>_cpu_paper/summary.json``;
-    the clean run follows the same solver path), in this table's schema.
-    LiL-Q runs on the CPU, once (deterministic). With ``out_path`` the rows
-    are written there (``four_method_lilq.csv``)."""
+    the clean run follows the same solver path), in this table's schema plus
+    ``LILQ_EXTRA_COLUMNS``: the logged pass's iterations and K_max, and its
+    summary's path. LiL-Q runs on the CPU, once (deterministic). With
+    ``out_path`` the rows are written there (``four_method_lilq.csv``).
+
+    The advisor's reply on wave 3, item 2.2: a clean run whose iteration
+    count differs from its logged pass's (they would not be the same solve)
+    raises, after the file is written; a missing ``summary.json``, or a
+    failed clean run, gives a warning."""
     import csv as _csv
     import json as _json
+    import warnings
     path = Path(b_root) / 'clean_timing' / 'clean_timing.csv'
     if not path.exists():
+        warnings.warn(f"{path} is missing: no LiL-Q rows")
         return []
-    rows = FourMethodLogger()
+    logger, extras, mismatched = FourMethodLogger(), [], []
     with open(path, newline='') as f:
         clean = [r for r in _csv.DictReader(f)
-                 if r['benchmark'] in ('bratu', 'burgers', 'bl', 'bl_gravity') and r['quantity'] == 'training_time']
+                 if r['benchmark'] in ('bratu', 'burgers', 'bl', 'bl_gravity')
+                 and r.get('quantity') in ('training_time', '', None)]
     for r in clean:
+        if r.get('error') or r.get('clean_time_s') in ('', None):
+            warnings.warn(f"{r['run']}: the clean-timing run failed; no LiL-Q row")
+            continue
         s_path = Path(b_root) / r['run'] / 'summary.json'
-        s = _json.loads(s_path.read_text()) if s_path.exists() else {}
+        if s_path.exists():
+            s = _json.loads(s_path.read_text())
+        else:
+            warnings.warn(f"{s_path} is missing: {r['run']}'s final loss and convergence are left empty")
+            s = {}
         converged = s.get('converged')
-        rows.record(benchmark=r['benchmark'], P=int(r['config'].lstrip('P')), method='LiL-Q', seed=None,
-                    device=r['device'], total_iterations=int(r['iterations']),
-                    total_line_searches=int(r['iterations']), training_time_s=float(r['clean_time_s']),
-                    final_loss=s.get('final_loss'), converged=converged,
-                    stopping_reason='target' if converged else ('iteration_cap' if converged is False else None),
-                    iterations_cap=int(r['K_max']) if r['K_max'] else None, commit=r['commit'])
+        logged_iterations = s.get('iterations')
+        if logged_iterations is not None and int(logged_iterations) != int(r['iterations']):
+            mismatched.append(f"{r['run']}: clean {r['iterations']}, logged {logged_iterations}")
+        logger.record(benchmark=r['benchmark'], P=int(r['config'].lstrip('P')), method='LiL-Q', seed=None,
+                      device=r['device'], total_iterations=int(r['iterations']),
+                      total_line_searches=int(r['iterations']), training_time_s=float(r['clean_time_s']),
+                      final_loss=s.get('final_loss'), converged=converged,
+                      stopping_reason='target' if converged else ('iteration_cap' if converged is False else None),
+                      iterations_cap=int(r['K_max']) if r['K_max'] else None, commit=r['commit'])
+        extras.append({'logged_iterations': logged_iterations, 'logged_K_max': s.get('K_max'),
+                       'logged_summary': f"{r['run']}/summary.json" if s else ''})
+    rows = [dict(row, **extra) for row, extra in zip(logger.rows, extras)]
     if out_path is not None:
-        rows.to_csv(out_path)
-    return rows.rows
+        out_path = Path(out_path)
+        tmp = out_path.with_name(out_path.name + '.tmp')
+        with open(tmp, 'w', newline='') as f:
+            w = _csv.DictWriter(f, fieldnames=list(FOUR_METHOD_CSV_COLUMNS) + list(LILQ_EXTRA_COLUMNS))
+            w.writeheader()
+            w.writerows([{k: ('' if v is None else v) for k, v in row.items()} for row in rows])
+        os.replace(tmp, out_path)
+    if mismatched:
+        raise RuntimeError("clean-timing iterations differ from the logged paper passes': " + '; '.join(mismatched))
+    return rows
 
 
 def main():

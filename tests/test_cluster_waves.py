@@ -280,6 +280,19 @@ def test_package_files_are_copies_so_finalize_cannot_change_a_wave(tmp_path):
     with open(pkg, 'w') as f:                                        # as write_index does
         f.write('rebuilt\n')
     assert (res / 'wave2' / 'B_instrumentation' / 'runs_index.csv').read_text() == 'run,status\nx,ok\n'
+    # A package1 left from an assembly by hard links: rebuilt from scratch, the
+    # wave's file untouched, stale files gone.
+    pkg.unlink()
+    os.link(res / 'wave2' / 'B_instrumentation' / 'runs_index.csv', pkg)
+    (res / 'package1' / 'stale.txt').write_text('x')
+    record = assemble.assemble(res, res / 'package1')
+    assert os.stat(pkg).st_nlink == 1 and record['overrides'] == [] and not (res / 'package1' / 'stale.txt').exists()
+    assert (res / 'wave2' / 'B_instrumentation' / 'runs_index.csv').read_text() == 'run,status\nx,ok\n'
+    other = tmp_path / 'not_a_package'
+    _write(other / 'keep.txt', 'x')
+    with pytest.raises(FileExistsError):
+        assemble.assemble(res, other)
+    assert (other / 'keep.txt').exists()
 
 
 @pytest.mark.skipif(__import__('os').name == 'nt', reason='runs the bash submission scripts')

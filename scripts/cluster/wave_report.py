@@ -75,7 +75,8 @@ def report_files(root: Path):
         'A_calibration/run_endings.csv', 'A_calibration/representative_thresholds.csv',
         'A_calibration/*/*/validation.json',
         # wave 4: clean timing, B10, the logged gravity BL rerun
-        'B_instrumentation/clean_timing/*', 'B_instrumentation/b10/*.csv', 'B_instrumentation/b10/*/iterations.csv',
+        'B_instrumentation/clean_timing/*', 'B_instrumentation/clean_timing/*/*',
+        'B_instrumentation/b10/*.csv', 'B_instrumentation/b10/README.md', 'B_instrumentation/b10/*/iterations.csv',
         'B_instrumentation/b10/*/run.json', 'B_instrumentation/*_paper/summary.json',
         'B_instrumentation/*_paper/iterations.csv', 'B_instrumentation/*_paper/run.json',
         'A_calibration/screening/*_selection.json', 'A_calibration/full/*_representative.json',

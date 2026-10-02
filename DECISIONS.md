@@ -17,6 +17,89 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- The advisor's reply on wave 3: items 2.2, 2.5, 2.7 and 2.8
+
+**2.2, the four-method LiL-Q rows (`four_method_tables.lilq_rows`).**
+- **Iteration check:** each clean run's iteration count must equal its
+  logged paper pass's (`summary.json`'s `iterations`). Otherwise they are
+  not the same solve, and the function raises after writing the file, with
+  every mismatch listed.
+- **New columns:** `four_method_lilq.csv` gains `logged_iterations`,
+  `logged_K_max` and `logged_summary`, beside the four-method schema. The
+  shared schema (`FOUR_METHOD_CSV_COLUMNS`) is unchanged.
+- **Warnings:** a missing `summary.json`, a failed clean run and a missing
+  clean-timing table each give a warning. The last used to return no rows
+  silently.
+- **Finalize order:** `90_finalize` now runs this step last, so that a
+  mismatch fails the job only after every other step is done.
+- **On the rehearsal data** (entry "Wave 4 audit"), all 16 rows match. The
+  logged passes' K_max is 20, 25, 50 or 60: wave 2's caps, which no run
+  reached except gravity BL P = 64, rerun at 60.
+
+**2.5, robustness and JSON.**
+- **Component A validation:**
+  - **A failure no longer ends the stage.** In a new run (`run_one`), the
+    traceback goes into `run.json` as `val_error`, with no residual stored,
+    so the residual is computed again when the runs are ranked.
+  - **In the full stage** (`_validation` with a `failures` list), a failure
+    ranks the run last (inf). The run's name goes into the representative
+    file's `validation_failures`.
+  - **If no finalist has a finite median, the stage raises** and writes no
+    representative.
+  - **The selection still raises on a failure,** so that a broken validation
+    cannot silently pick the finalists.
+- **Clean timing:**
+  - **A failed run gets a row** with its traceback (`error`) and no time,
+    and the job continues. It exits non-zero at the end.
+  - **A resubmission reruns the failed run** and replaces its row.
+  - The readers (`load_clean_times`, `lilq_rows`) skip failed rows.
+- **Standard JSON:**
+  - `validation.json_safe` writes inf and NaN as `null`, in `run.json`'s and
+    `validation.json`'s validation fields, the selection files and the
+    representative files.
+  - `validation.as_residual` reads `null` back as inf.
+  - No file in waves 1-3's downloaded results contains `Infinity` or `NaN`,
+    so nothing written earlier needs changing.
+
+**2.7, superseded runs.** `assemble_package.mark_superseded` writes a
+`SUPERSEDED.json` (wave and reason) into each earlier-wave Component A run
+in `package1` that wave 4's selection replaced, and lists them in
+`WAVES.json` (`superseded`). Per family, from wave 4's own files:
+- `full/` runs not among the finalists (the selection's `top`);
+- `full_cpu/` and `float32/` runs not of the representative.
+
+**Reassembly:** `assemble` now removes an earlier assembly first (an `out`
+holding a `WAVES.json`) and builds it again from the waves. It refuses any
+other non-empty `out`. Without this, a `package1` assembled by hard links
+would have kept its identical files as links, and they would still have
+written through to the waves (removing a link leaves the wave's file). It
+also clears stale files and markers. On the rehearsal data it marks
+F2_03, F2_16 and F2_17's full runs, and F1_04's CPU and float32 runs. F2_16's
+CPU runs follow once wave 4 has written its F2 representative. That is the
+advisor's list. The wave folders are not touched: the package holds copies
+(entry below).
+
+**2.8, B10's boundary weight.**
+- **New columns:** `b10.csv` gains `bc_weight_total`, and
+  `b10_vs_paper_grid.csv` gains `b10_bc_weight_total` and
+  `paper_grid_bc_weight_total`. Each is the total weight of one velocity
+  component's boundary rows in units of lambda_bc: 4 with equal weights
+  (lambda_bc per edge, as on the paper grid), 1 with Clenshaw-Curtis (over
+  the perimeter, Addendum v2.3).
+- **Note:** `b10/README.md` says the two variants differ in total boundary
+  weight as well as in quadrature.
+- **Test:** the totals are checked against `_row_weights`'s assembled
+  weights.
+- **Incidental fix:** `b10_cgl_cc.main` now closes the table it reads
+  before replacing it.
+
+**The wave report** also packs `clean_timing/provenance_*/` and
+`b10/README.md`.
+
+Tests: `tests/test_wave3_reply.py`, `tests/test_b10_clenshaw_curtis.py`.
+
+---
+
 ## 2026-10-01 -- The advisor's reply on wave 3 and the wave 4 commit: the two required fixes, and the smaller items of a first batch
 
 The advisor approved wave 4 once two fixes are in (his reply on wave 3,

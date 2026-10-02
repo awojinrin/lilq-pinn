@@ -20,7 +20,6 @@ export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"
 
 python experiments/component_b.py --save-reference --save-code --out-root "$PKG"
 python experiments/four_method_tables.py --out-dir "$B" --merge-from "$B"/four_method_jobs/*/
-python experiments/four_method_tables.py --out-dir "$B" --lilq-from-clean-timing   # LiL-Q's rows (clean times)
 python experiments/component_b.py --reproduction-check --out-root "$PKG"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass paper --out-dir "$B/residual_band_figures/paper"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass kmax  --out-dir "$B/residual_band_figures/kmax"
@@ -67,3 +66,6 @@ print(f"B9 rows: {len(rows)} (NiL: {sum(r['method'] == 'NiL' for r in rows)} of 
 print(f"B8 rows: {len(b8)}: 128 of wave 3 and its LiL-Q reruns with K_max = 60 "
       f"({sum(r['stopping_reason'] == 'failure' for r in b8)} failures)")
 PY
+# LiL-Q's four-method rows from the clean times, last: it fails the job if a
+# clean run's iterations differ from its logged pass's (reply on wave 3, 2.2).
+python experiments/four_method_tables.py --out-dir "$B" --lilq-from-clean-timing

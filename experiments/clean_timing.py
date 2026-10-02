@@ -48,6 +48,7 @@ import json
 import os
 import sys
 import time
+import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List
@@ -69,7 +70,7 @@ SHORT_RUN_S = 1.0
 REPEATS = 5
 COLUMNS = ('run', 'benchmark', 'config', 'device', 'quantity', 'clean_time_s', 'clean_time_single_run_s',
            'timing_repeats_s', 'warmup_run_time_s', 'iterations', 'K_max', 'logged_time_s', 'logged_source',
-           'commit')
+           'commit', 'error')
 
 
 @dataclass
@@ -260,18 +261,34 @@ def main(argv=None):
     if path.exists():
         with open(path, newline='') as f:
             rows = list(csv.DictReader(f))
-    done = {r['run'] for r in rows}
+    # A run that failed before is run again; its failure row is replaced.
+    done = {r['run'] for r in rows} - {r['run'] for r in rows if r.get('error')}
+    rows = [r for r in rows if r['run'] in done]
+    failed = []
     for run in build_runs(args.benchmarks, args.devices, args.smoke):
         if run.name in done:
             print(f"  {run.name}: done, skipping")
             continue
-        new = execute(run, args.smoke, args.logged_roots)
+        # One failed run does not end the job (the advisor's reply on wave 3,
+        # item 2.5): it gets a row with its error and no time, and the job
+        # exits non-zero at the end.
+        try:
+            new = execute(run, args.smoke, args.logged_roots)
+        except Exception:
+            tb = traceback.format_exc()
+            print(f"  {run.name}: FAILED\n{tb}", flush=True)
+            failed.append(run.name)
+            new = [{'run': run.name, 'benchmark': run.benchmark, 'config': run.config_label, 'device': run.device,
+                    'K_max': run.k_max, 'commit': current_commit(), 'error': tb[-2000:]}]
         rows += new
         write(rows, path)
         for r in new:
-            print(f"  {r['run']} {r['quantity']}: clean {r['clean_time_s']:.4g} s "
-                  f"(warm-up {r['warmup_run_time_s']:.4g} s, logged {r['logged_time_s']})", flush=True)
+            if not r.get('error'):
+                print(f"  {r['run']} {r['quantity']}: clean {r['clean_time_s']:.4g} s "
+                      f"(warm-up {r['warmup_run_time_s']:.4g} s, logged {r['logged_time_s']})", flush=True)
     print(f"Wrote {path} ({len(rows)} rows)")
+    if failed:
+        sys.exit(f"{len(failed)} run(s) failed: {', '.join(failed)}")
 
 
 if __name__ == '__main__':

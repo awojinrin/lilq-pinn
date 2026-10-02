@@ -154,7 +154,16 @@ def run_one(root, stage, family, config, seed, budget_s, out_dir, device, precis
         run['commit'] = current_commit()
         (out_dir / 'run.json').write_text(json.dumps(run, indent=2, default=str))
     # The validation residual, off the clock, into run.json (the advisor's reply to wave 2).
-    validation.ensure(out_dir, device, record_in_run_json=True)
+    # A failure here does not end the stage (reply on wave 3, item 2.5): it is
+    # recorded, and the residual is computed again when the stage ranks the runs.
+    try:
+        validation.ensure(out_dir, device, record_in_run_json=True)
+    except Exception:
+        tb = traceback.format_exc()
+        print(f"Validation of {out_dir} failed:\n{tb}", flush=True)
+        failed = json.loads((out_dir / 'run.json').read_text())
+        failed['val_error'] = tb[-2000:]
+        (out_dir / 'run.json').write_text(json.dumps(failed, indent=2, default=str))
     run = json.loads((out_dir / 'run.json').read_text())
     save_provenance(out_dir)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
@@ -199,10 +208,26 @@ def _distinct_top(ids, keys, k=None):
     return top
 
 
-def _validation(run_dir, device):
-    """A run's validation residual (computed once; ``inf`` if not finite)."""
-    v = validation.ensure(run_dir, device)
+def _validation(run_dir, device, failures=None):
+    """A run's validation residual (computed once; ``inf`` if not finite).
+    With a ``failures`` list, an error computing it is printed, the run's
+    name appended there, and the run ranked last (inf), so that one failure
+    does not end the full stage (the advisor's reply on wave 3, item 2.5);
+    without one (the selection), it is raised."""
+    try:
+        v = validation.ensure(run_dir, device)
+    except Exception:
+        if failures is None:
+            raise
+        print(f"Validation of {run_dir} failed (ranked last):\n{traceback.format_exc()}", flush=True)
+        failures.append(Path(run_dir).name)
+        return float('inf')
     return v if math.isfinite(v) else float('inf')
+
+
+def _write_json(path, obj):
+    """JSON with no non-standard ``Infinity``/``NaN``: inf and NaN as ``null``."""
+    Path(path).write_text(json.dumps(validation.json_safe(obj), indent=2))
 
 
 def select(root, family, device='cpu', keep_top=None):
@@ -249,7 +274,7 @@ def select(root, family, device='cpu', keep_top=None):
         if list(keep_top) != top_by_validation:
             print(f"Note: {family} kept {list(keep_top)}; the validation top three is {top_by_validation}",
                   flush=True)
-    (Path(root) / 'screening' / f'{family}_selection.json').write_text(json.dumps(selection, indent=2))
+    _write_json(Path(root) / 'screening' / f'{family}_selection.json', selection)
     return selection
 
 
@@ -259,10 +284,14 @@ def full(root, family, device, budget_s=FULL_BUDGET_S, seeds=FULL_SEEDS):
     runs = {(cid, s): run_one(root, 'full', family, by_id[cid], s, budget_s,
                               Path(root) / 'full' / f'{cid}_s{s}', device)
             for cid in selection['top'] for s in seeds}
-    val = {cid: [_validation(Path(root) / 'full' / f'{cid}_s{s}', device) for s in seeds]
+    failures = []
+    val = {cid: [_validation(Path(root) / 'full' / f'{cid}_s{s}', device, failures) for s in seeds]
            for cid in selection['top']}
     medians_val = {cid: statistics.median(v) for cid, v in val.items()}
     medians = {cid: statistics.median(_final_loss(runs[(cid, s)]) for s in seeds) for cid in selection['top']}
+    if not any(math.isfinite(m) for m in medians_val.values()):
+        raise RuntimeError(f"{family}: no finalist has a finite median validation residual "
+                           f"(validation failures: {failures or 'none'}); no representative written")
     rep = min(medians_val, key=medians_val.get)
     # F1 has no pressure condition, so its pressure is only ever reported
     # mean-free (Addendum v2.2 Section 1, item 9); F2 keeps the corner pin.
@@ -272,9 +301,9 @@ def full(root, family, device, budget_s=FULL_BUDGET_S, seeds=FULL_SEEDS):
     summary = {'representative': rep, 'representative_config': by_id[rep],
                'representative_criterion': 'lowest median validation residual',
                'median_val_residual': medians_val, 'val_residual': val, 'median_final_loss': medians,
-               'validation_protocol': validation.PROTOCOL,
+               'validation_protocol': validation.PROTOCOL, 'validation_failures': failures,
                'best_test_errors_over_all_full_runs': best, 'seeds': list(seeds)}
-    (Path(root) / 'full' / f'{family}_representative.json').write_text(json.dumps(summary, indent=2))
+    _write_json(Path(root) / 'full' / f'{family}_representative.json', summary)
     return summary
 
 

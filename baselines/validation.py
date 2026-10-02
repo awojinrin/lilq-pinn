@@ -115,23 +115,48 @@ def compute(run_dir, device='cpu') -> dict:
             'val_protocol': PROTOCOL}
 
 
+def json_safe(obj):
+    """``obj`` with every non-finite float (inf, NaN) as ``None``, so that the
+    JSON written is standard (``null``, not ``Infinity``; the advisor's reply
+    on wave 3, item 2.5). Readers take ``None`` back as inf (``as_residual``)."""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [json_safe(v) for v in obj]
+    return obj
+
+
+def as_residual(v) -> float:
+    """A stored validation residual as a float: ``None`` (written for inf),
+    or anything not a finite number, is inf."""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return math.inf
+    return v if math.isfinite(v) else math.inf
+
+
 def ensure(run_dir, device='cpu', record_in_run_json: bool = False) -> float:
     """The run's validation residual, computed once. Where it is kept: in
     ``run.json`` for runs made by this code (``record_in_run_json``), and in
     ``validation.json`` beside it for older runs, whose ``run.json`` is left
-    as it was written. Either is read back before computing again."""
+    as it was written. Either is read back before computing again. An
+    infinite residual (no saved model) is stored as ``null``."""
     run_dir = Path(run_dir)
     run_path = run_dir / 'run.json'
     run = json.loads(run_path.read_text())
     if 'val_residual' in run:
-        return float(run['val_residual'])
+        return as_residual(run['val_residual'])
     side = run_dir / VALIDATION_FILE
     if side.exists():
-        return float(json.loads(side.read_text())['val_residual'])
+        return as_residual(json.loads(side.read_text())['val_residual'])
     result = compute(run_dir, device)
+    stored = {k: json_safe(v) for k, v in result.items()}
     if record_in_run_json:
-        run.update(result)
+        run.update(stored)
         run_path.write_text(json.dumps(run, indent=2, default=str))
     else:
-        side.write_text(json.dumps(result, indent=2, default=str))
-    return float(result['val_residual'])
+        side.write_text(json.dumps(stored, indent=2, default=str))
+    return as_residual(result['val_residual'])
