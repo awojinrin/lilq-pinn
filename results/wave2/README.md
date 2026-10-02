@@ -89,7 +89,19 @@ The full stage's results are kept as they are. The CPU reruns and the float32 ru
 `B_instrumentation/four_method_controls.csv` has **54 controls**: the 40 stalled runs of wave 2 and wave 1's 14 stalled Bratu runs. Each ran on its original's device, with tolerances 0 and F1's restart-once rule.
 
 - All 54 have `same_start = True`: iteration 0's loss equals the original's bit for bit, on GPU and CPU, including wave 1's runs (another commit and node).
-- **All 54 retrace their original exactly up to the stall.** For 48 the logged loss history matches the original's to the end. For the other 6, `departs_at_iteration` (1,320; 5,240; 5,560; 5,800; 6,400; 8,140) is the original's last logged row, i.e. the departure lies within the 10-iteration piece in which the original stalled, where the original made its no-op step. *Corrected 1 October 2026, following the advisor's reply to wave 2, Section 5: the first version of this README said the 6 "depart late".*
+- **All 54 retrace their original exactly until, at the latest, the last 14 iterations before the stall.**
+  - For 48, the logged loss history matches the original's to the end.
+  - The other 6 depart within the last 14 iterations before the stall. Their `departs_at_iteration`, with the original's stall iteration in brackets:
+    - 1,320 (1,320);
+    - 5,240 (5,241);
+    - 5,560 (5,560);
+    - 6,400 (6,400);
+    - 5,800 (5,814): Burgers P = 400, NiL-Q, seed 2;
+    - 8,140 (8,153): BL P = 1,024, NiL-Q, seed 2.
+  - For the first four, the departure is at the original's last logged row. The last two depart 13 and 14 iterations before the stall, earlier than the original's last logged row (5,810 and 8,150).
+  - *Corrected twice:*
+    - *1 October 2026, following the advisor's reply to wave 2, Section 5. The first version of this README said the 6 "depart late".*
+    - *2 October 2026, following the advisor's reply on wave 3. The second version said all 6 depart at the original's last logged row.*
 - No control needed the restart (`lbfgs_restarts = 0` everywhere): with tolerances 0, every step lowered the loss.
 - 46 end on `iteration_cap` and 8 reach the target.
 
