@@ -254,3 +254,90 @@ def test_the_weight_totals_match_the_assembled_rows():
         w = _row_weights(dataclasses.replace(config, weights=weights), 441, 21, n_edge)
         s = sum(float(np.sum(np.broadcast_to(np.asarray(w['bc'][e]) ** 2, (n_edge[e],)))) for e in EDGES)
         assert s == pytest.approx(total * config.lambda_bc, rel=1e-12)
+
+
+# ---- Section 4: the wave 4 report ------------------------------------------------
+
+def _load_report():
+    spec = importlib.util.spec_from_file_location('wave_report', REPO / 'scripts/cluster/wave_report.py')
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_su_per_job_at_grace_rates_reproduces_wave_3s_charge():
+    """Wave 3's jobs as sacct listed them: 1,019 SU charged (myproject)."""
+    report = _load_report()
+    assert report.su_rate('billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1') == 80       # shared A100
+    assert report.su_rate('billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1') == 192   # timed A100
+    assert report.su_rate('billing=48,cpu=48,mem=360G,node=1') == 48                               # timed CPU
+    assert report.su_rate('billing=24,cpu=24,mem=32G,node=1') == 24
+    sacct = '\n'.join([
+        '1_0|lilq-b8|billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1|36000|COMPLETED',
+        '2|lilq-wave-report|billing=24,cpu=24,mem=32G,node=1|150|RUNNING',
+        'garbage line'])
+    rows = report.su_rows(sacct)
+    assert [r['su'] for r in rows] == [800.0, 1.0] and rows[1]['note'].startswith('still running')
+
+
+def test_b8_reruns_beside_wave_3(tmp_path):
+    report = _load_report()
+    res = tmp_path / 'results'
+    cols = ['case', 'guess', 'P', 'method', 'iterations', 'final_loss', 'stopping_reason', 'iterations_cap', 'target']
+    old = res / 'wave3' / 'B_instrumentation' / 'b8_jobs' / 'gravity_zero' / 'b8_initial_guess.csv'
+    old.parent.mkdir(parents=True)
+    with open(old, 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=cols)
+        w.writeheader()
+        w.writerow(dict(case='gravity', guess='zero', P=64, method='LiL-Q', iterations=20, final_loss=0.95,
+                        stopping_reason='iteration_cap', iterations_cap=20, target=0.24))
+        w.writerow(dict(case='gravity', guess='zero', P=64, method='NiL-N', iterations=900, final_loss=0.3,
+                        stopping_reason='target', iterations_cap=2000, target=0.24))
+    root = res / 'wave4'
+    new = root / 'B_instrumentation' / 'b8_jobs' / 'lilq_kmax60' / 'b8_initial_guess.csv'
+    new.parent.mkdir(parents=True)
+    with open(new, 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=cols + ['K_max', 'target_reached'])
+        w.writeheader()
+        w.writerow(dict(case='gravity', guess='zero', P=64, method='LiL-Q', iterations=43, final_loss=0.2367,
+                        stopping_reason='target', iterations_cap=60, target=0.24, K_max=60, target_reached=True))
+    (row,) = report.b8_reruns_beside_wave3(res, root)
+    assert (row['wave3_K_max'], row['wave3_iterations'], row['wave3_stopping_reason']) == ('20', '20', 'iteration_cap')
+    assert (row['wave4_K_max'], row['wave4_iterations'], row['wave4_final_loss']) == ('60', '43', '0.2367')
+    assert (root / 'B_instrumentation' / 'b8_kmax60_vs_wave3.csv').exists()
+
+
+def test_clean_against_logged_with_the_iteration_check(tmp_path):
+    report = _load_report()
+    root = tmp_path / 'wave4'
+    logged = tmp_path / 'wave2' / 'kovasznay_P300_cpu_paper' / 'summary.json'
+    _put(logged, json.dumps({'solve_time_total': 0.3, 'iterations': 9, 'K_max': 20}))
+    pinned = tmp_path / 'wave1' / 'beltrami_pinned' / 'report.json'
+    _put(pinned, json.dumps({'solver_time_s': 267.0, 'n_outer_iters': 5}))
+    ct = root / 'B_instrumentation' / 'clean_timing' / 'clean_timing.csv'
+    ct.parent.mkdir(parents=True)
+    with open(ct, 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=['run', 'benchmark', 'config', 'device', 'quantity', 'clean_time_s',
+                                          'warmup_run_time_s', 'iterations', 'K_max', 'logged_time_s',
+                                          'logged_source', 'error'])
+        w.writeheader()
+        w.writerow(dict(run='kovasznay_P300_cpu_paper', benchmark='kovasznay', config='P300', device='cpu',
+                        quantity='solve_time_total', clean_time_s=0.15, warmup_run_time_s=0.2, iterations=9,
+                        K_max=60, logged_time_s=0.3, logged_source=str(logged)))
+        w.writerow(dict(run='beltrami_pinned', benchmark='beltrami_pinned', config='P7984', device='cpu',
+                        quantity='solve_time_total', clean_time_s=297.0, warmup_run_time_s=297.0, iterations=4,
+                        K_max=60, logged_time_s=267.0, logged_source=str(pinned)))
+    kov, pin = report.clean_vs_logged(root)
+    assert kov['clean_over_logged'] == pytest.approx(0.5) and kov['iterations_match'] is True
+    assert kov['logged_K_max'] == 20
+    assert pin['logged_iterations'] == 5 and pin['iterations_match'] is False      # flagged
+    assert (ct.parent / 'clean_vs_logged.csv').exists()
+
+
+def test_package_is_provisional_until_assembled_with_final(tmp_path):
+    assemble = _load_assemble()
+    res = tmp_path / 'results'
+    _put(res / 'wave1' / 'COMMIT', json.dumps({'commit': 'a'}))
+    assert assemble.assemble(res, res / 'package1')['status'].startswith('provisional')
+    assert json.loads((res / 'package1' / 'WAVES.json').read_text())['status'].startswith('provisional')
+    assert assemble.assemble(res, res / 'package1', final=True)['status'] == 'final'

@@ -17,6 +17,59 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-01 -- The advisor's reply on wave 3, Section 4: the wave 4 report, and package1 provisional
+
+The wave 4 report (`scripts/cluster/wave_report.py`, job 91) adds what the
+reply's Section 4 asks for.
+
+**B8's reruns beside wave 3.** `b8_reruns_beside_wave3` writes
+`B_instrumentation/b8_kmax60_vs_wave3.csv`: each LiL-Q row rerun with K_max
+= 60 (`b8_jobs/lilq_kmax60`) beside wave 3's row of the same case, guess and
+P, with K_max (wave 3's from `iterations_cap`), iterations, final loss and
+stopping reason. The report log lists them too.
+
+**Clean against logged, every quoted LiL-Q time.** `clean_vs_logged`
+writes `B_instrumentation/clean_timing/clean_vs_logged.csv`, one row per row
+of `clean_timing.csv`, both Beltrami runs included:
+- the clean and logged times, their ratio, and the warm-up run's time;
+- both runs' iteration counts (the logged one from the logged run's
+  `summary.json`, or the pinned run's `report.json`), whether they match,
+  and both K_max.
+
+The report log counts any mismatches and failed clean runs.
+
+**SUs per job.** `su_per_job` writes `su_per_job.csv` from `sacct -P`
+(`AllocTRES`, `ElapsedRaw`) at Grace's rates (`su_rate`):
+- one SU per core-hour, plus 72 per A100-hour;
+- 192 per hour for a job holding a whole A100 node (48 cores), which Grace
+  charges for both of the node's A100s;
+- 80 for a shared A100 (8 cores); 48 for a timed CPU node; 24 for a 24-core
+  job.
+
+These reproduce wave 3's charge exactly (1,019 SU) and wave 2's to 1% (8,402
+of 8,498; the rest were jobs outside its `sacct` record). Grace reports only
+the account's total (`myproject`), so the per-job figures are computed, and
+labelled so. The report job is still running when it reads `sacct`, and the
+finalize job comes after it, so neither is complete in the table. No rates
+are applied on another cluster (`CLUSTER`).
+
+**Rehearsal** on the audit's rehearsal data: waves 1-3 extracted fresh from
+the downloaded results, and wave 4 from this laptop's outputs, including
+Component A's whole chain at a budget of seconds.
+- **B8:** the three reruns: gravity BL, initial-condition guess, P = 256
+  and 576, from 20 iterations (cap) to 23 (target) each; zero guess, P =
+  64, from 20 (cap) to 43 (target).
+- **Clean against logged:** 42 rows, all iteration counts equal.
+
+**package1 is provisional** (the reply, Section 4: "treat its package as
+provisional until we have reviewed the wave 4 report"). `WAVES.json` gains
+a `status`, provisional by default. `assemble_package.py --final` marks it
+final once the advisor has approved.
+
+Tests: `tests/test_wave3_reply.py`.
+
+---
+
 ## 2026-10-01 -- The advisor's reply on wave 3: items 2.2, 2.5, 2.7 and 2.8
 
 **2.2, the four-method LiL-Q rows (`four_method_tables.lilq_rows`).**

@@ -30,7 +30,11 @@ import shutil
 from pathlib import Path
 
 
-def assemble(results: Path, out: Path, waves=(1, 2, 3, 4)) -> dict:
+PROVISIONAL = ("provisional: the advisor reviews the wave 4 report first (his reply on wave 3, Section 4); "
+               "assembled again with --final once he has approved it")
+
+
+def assemble(results: Path, out: Path, waves=(1, 2, 3, 4), final: bool = False) -> dict:
     """Build ``out`` from the wave roots under ``results``. An earlier
     assembly there (it has a ``WAVES.json``) is removed first, so that a
     rerun starts clean: no stale files, no hard links left from assemblies
@@ -41,7 +45,7 @@ def assemble(results: Path, out: Path, waves=(1, 2, 3, 4)) -> dict:
             raise FileExistsError(f"{out} is not empty and holds no earlier assembly (WAVES.json); not touching it")
         shutil.rmtree(out)
     out.mkdir(parents=True, exist_ok=True)
-    record = {'waves': {}, 'overrides': [], 'files': 0}
+    record = {'status': 'final' if final else PROVISIONAL, 'waves': {}, 'overrides': [], 'files': 0}
     for n in waves:
         src = results / f'wave{n}'
         if not src.is_dir():
@@ -115,11 +119,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Assemble results/package1 from the wave roots.")
     ap.add_argument('--results', required=True)
     ap.add_argument('--out', required=True)
+    ap.add_argument('--final', action='store_true',
+                    help="Mark the package final (WAVES.json's status), once the advisor has approved it.")
     args = ap.parse_args(argv)
-    record = assemble(Path(args.results), Path(args.out))
+    record = assemble(Path(args.results), Path(args.out), final=args.final)
     commits = {n: (w or {}).get('commit') for n, w in record['waves'].items()}
     print(f"Assembled {args.out}: {record['files']} files; commits by wave {commits}; "
-          f"{len(record['overrides'])} overrides")
+          f"{len(record['overrides'])} overrides; {len(record['superseded'])} runs marked superseded; "
+          f"status: {record['status']}")
 
 
 if __name__ == '__main__':

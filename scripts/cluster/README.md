@@ -98,7 +98,15 @@ reproduction table, the merged four-method table, `sacct` for its jobs, and
 `results/wave<N>_report.tar.gz` with everything the advisor asked to see
 (COMMIT, the check tables, the K_max and Beltrami logs, the four-method rows
 with their histories, the Component A checks, `oversampling.csv`, every
-`hardware.json`, the Slurm logs). Models stay on the cluster.
+`hardware.json`, the Slurm logs). Models stay on the cluster. It also
+writes `su_per_job.csv`: each job's SUs from `sacct` at Grace's rates
+(`wave_report.su_rate`), which reproduce the charges of waves 2 and 3. In
+wave 4 it adds the B8 reruns beside wave 3 (`b8_kmax60_vs_wave3.csv`) and
+every quoted LiL-Q time clean against logged
+(`clean_timing/clean_vs_logged.csv`). `90_finalize` marks `package1`
+provisional (`WAVES.json`'s `status`) until the advisor has reviewed the
+wave 4 report; after his approval, `assemble_package.py --final` marks it
+final.
 
 **If the preflight fails.** Every job of the wave depends on it, and `sbatch.sh`
 submits with `--kill-on-invalid-dep=yes`, so they are cancelled rather than
