@@ -25,6 +25,9 @@ this branch starts from. The branch's own commit adds only `results/wave4/`.
 - **The package is provisional** (`WAVES.json`'s `status`) until the advisor
   has reviewed this report.
 
+**The fix:** `fixes/` holds two fixes for the one wrong clean time, both run
+after the wave, and the tables under each (Section 9).
+
 Waves 1-3 are on branches `wave1-results`, `wave2-results` and `wave3-results`.
 
 ## 1. Jobs and SUs
@@ -175,7 +178,8 @@ eps_u reaches 1e-4, 1e-6, 1e-8 and 1e-9):
   - its warm-up took 0.725 s, the logged run 0.739 s, all 12 iterations.
 
   The timed run was slowed by something outside the solve. This value
-  enters `four_method_lilq.csv` as well. See the report note.
+  enters `four_method_lilq.csv` as well. It was rerun two ways; see
+  Section 9.
 
 ## 5. B8: the three LiL-Q reruns with K_max = 60
 
@@ -220,10 +224,18 @@ The K_max passes (60 iterations, zero tolerance) end at the same errors.
 `B_instrumentation/basis_study/table3_basis_study.csv`:
 - **`eps_u`:** the Burgers residual mean square on the 201 x 201 test grid.
 - **The two kappas:** `kappa_raw` and `kappa_retained`.
-- **Rank:** `num_rank_svd`, and `num_rank_gelsy`, the rank of LAPACK's
-  column-pivoted QR (the CPU solve uses `gelsy`).
-- **`num_rank_qr` is empty in every row.** It is filled only on the GPU's QR
-  path. The pivoted-QR rank is `num_rank_gelsy`.
+- **Rank: `num_rank_svd`, the rank to quote.** This study computes kappa by
+  SVD, so the numerical rank is the number of singular values above max(N,
+  P) eps sigma_max, and `kappa_retained` = sigma_1 / sigma_r over exactly
+  that rank. It is the convention behind the manuscript's 43 of 625 for
+  the ELM.
+- **`num_rank_gelsy`** is the solver's own rank, from LAPACK's pivoted-QR
+  least-squares routine at its tolerance (rcond = eps). It is looser, so it
+  reads higher for the ill-conditioned bases: 71 for the ELM, 288 for the
+  default-initialization ELM, 624 for fourier_fourier.
+- **`num_rank_qr` is empty by design.** It is written only when kappa is
+  computed by pivoted QR (`conditioning_via_pivoted_qr`, used for systems too large
+  for an SVD), which this study does not use. Nothing is missing.
 
 | Basis | final ‖R‖²_h | eps_u | SVD rank (of 625) | kappa_raw | kappa_retained |
 |---|---|---|---|---|---|
@@ -269,3 +281,70 @@ shows 2 violations and 137 missing. Wave 4 reran only gravity BL P = 64
 among the Section 3.3 runs. Its 2 violations are that run's iterations and
 kappa (43 and 103 against the paper's 9 and 7,800): the basis change
 recorded in `DECISIONS.md`.
+
+## 9. The clean-timing fix (`fixes/`, jobs 14a and 14b, 3 October 2026)
+
+**Why:** gravity BL P = 256's clean time from job 13a, 3.169 s, is wrong
+(Section 4).
+
+**What ran:** two fixes, run after the wave so that the advisor can choose
+between finished results.
+- Both used wave 4's code (`17b3539`; each job's provenance lock passed)
+  and protocol, on an exclusive CPU node (48 threads, `OverSubscribe=NO`).
+- The job scripts are in `fixes/` (`14a_gravity_rerun.slurm`,
+  `14b_clean_timing_replicates.slurm`), outside the code bundle, with their
+  Slurm logs.
+- Nothing wave 4 wrote was changed.
+
+**Cost:** 47 SU charged (`myproject`: 13,792.06 used, against 13,744.99),
+for 3:19 and 53:10 of an exclusive CPU node at 48 SU/h.
+
+**The options:**
+- **Option A** (job 14a, `fixes/option_a_gravity_rerun/`): the gravity BL
+  clean timing again, at all four sizes. P = 256's rerun row replaces 13a's.
+  The other three sizes are a consistency check (P = 64: 0.263 s against
+  0.240; P = 576: 1.246 against 1.221; P = 1,024: 4.805 against 4.224) and
+  are not used.
+- **Option B** (job 14b, `fixes/option_b_replicate_1/`, `_2/`): two more
+  independent clean timings of every quoted CPU time, each in its own
+  process. Every CPU row of option B is the median of three: 13a's and the
+  two replicates', each by the same protocol (warm-up, timed run, median of
+  five under 1 s). The GPU rows (13b) are unchanged: all are under 1 s and
+  already medians of five.
+
+**Every new timing took exactly as many iterations** as wave 4's run of the
+same configuration. `compose_options.py` checks this and stops otherwise.
+
+**`compose_options.py`** writes:
+- `options_compared.csv`: every quoted time, logged, wave 4's, option A's
+  and option B's, with option B's three timings and their spread;
+- `option_a/` and `option_b/`: under each option, `clean_timing.csv`,
+  `four_method_lilq.csv` and the Section 4.6 comparison (`section46/`).
+
+To rerun it, from this branch, on package1:
+`python results/wave4/fixes/compose_options.py --wave4 results/wave4 --package <package1>`.
+
+**What changes:**
+
+| Run | Logged | Wave 4 (13a) | Option A | Option B | Option B's three timings |
+|---|---|---|---|---|---|
+| gravity BL P = 256 | 0.739 s | 3.169 s | 0.739 s | 0.718 s | 3.169, 0.717, 0.654 |
+| Darcy S2 | 23.4 s | 20.7 s | 20.7 s | 28.2 s | 20.7, 29.0, 28.2 |
+| Darcy SPE10 | 21.1 s | 19.5 s | 19.5 s | 22.9 s | 19.5, 25.8, 22.9 |
+
+- **Every other quoted time** moves by at most 6% under option B. The
+  three timings of every non-Darcy row agree within 14%, Beltrami within
+  10% (unpinned 261.8-289.3 s, pinned 267.0-280.5 s).
+- **Darcy's timed runs scatter by up to 1.4x** between repeats (S1
+  27.5-29.6 s, S2 20.7-29.0, S3 21.1-28.1, SPE10 19.5-25.8). Option B
+  quotes their medians; option A keeps 13a's single timings.
+- **Downstream:**
+  - Section 4.6 changes only in LiL-Q's CPU times under option B (P =
+    1,875: 4.256 s against 4.329). The GPU times and every baseline number
+    are the same under both options.
+  - The four-method LiL-Q row of gravity BL P = 256 is 0.739 s (A) or
+    0.718 s (B).
+
+**Once the advisor has chosen,** that option's `clean_timing.csv` becomes
+the package's and `package1` is reassembled (`assemble_package.py --final`).
+

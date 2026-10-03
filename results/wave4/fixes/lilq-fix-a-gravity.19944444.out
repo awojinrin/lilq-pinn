@@ -1,0 +1,8 @@
+provenance lock OK: commit 17b353982661, tree 00762ff259a0
+job 19944444 on c011: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  bl_gravity_P64_cpu_paper training_time: clean 0.2634 s (warm-up 3.156 s, logged 0.27555568888783455)
+  bl_gravity_P256_cpu_paper training_time: clean 0.7387 s (warm-up 0.7507 s, logged 0.7386190425604582)
+  bl_gravity_P576_cpu_paper training_time: clean 1.246 s (warm-up 1.261 s, logged 1.2464991621673107)
+  bl_gravity_P1024_cpu_paper training_time: clean 4.805 s (warm-up 4.32 s, logged 4.359783731400967)
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/fixes/option_a_gravity_rerun/B_instrumentation/clean_timing/clean_timing.csv (4 rows)
