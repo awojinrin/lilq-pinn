@@ -1,0 +1,76 @@
+{
+  "representative": "F1_18",
+  "representative_config": {
+    "id": "F1_18",
+    "family": "F1",
+    "width": 128,
+    "depth": 4,
+    "trunk": "separate",
+    "m": 64,
+    "sigma_ff": 0.5,
+    "bc": "soft",
+    "lambda_bc": 1.0,
+    "balancing": true,
+    "eta": 0.001,
+    "t_adam": 5000,
+    "n_int": 2000,
+    "resample": true,
+    "n_theta": 198531
+  },
+  "representative_criterion": "lowest median validation residual",
+  "median_val_residual": {
+    "F1_04": 3.822175891178887,
+    "F1_15": 2.256565932701082e-05,
+    "F1_18": 3.4376466662943757e-06
+  },
+  "val_residual": {
+    "F1_04": [
+      3.5173849340166714,
+      4.431711051909921,
+      3.822175891178887,
+      2.9646362652756797,
+      5.546991915311743
+    ],
+    "F1_15": [
+      2.256565932701082e-05,
+      5.586012957626913e-05,
+      1.4414908737063996e-05,
+      1.0778980242200808e-05,
+      3.905207514394725e-05
+    ],
+    "F1_18": [
+      3.973901364434826e-06,
+      4.493589263086255e-06,
+      2.177916241851339e-06,
+      6.551763241175126e-07,
+      3.4376466662943757e-06
+    ]
+  },
+  "median_final_loss": {
+    "F1_04": 4.771702080971981e-08,
+    "F1_15": 2.3555701753962e-07,
+    "F1_18": 2.0079153044546673e-07
+  },
+  "validation_protocol": {
+    "criterion": "F1's unweighted loss on fresh points",
+    "seed": 20261001,
+    "n_interior": 20000,
+    "n_boundary_per_face": 400,
+    "interior_distribution": "uniform on [-0.5, 1] x [-0.5, 1.5]",
+    "boundary_term": "soft-BC F1 runs only",
+    "dtype": "float64"
+  },
+  "validation_failures": [],
+  "best_test_errors_over_all_full_runs": {
+    "eps_u": 2.4321180857731236e-05,
+    "eps_v": 0.0001976767960738453,
+    "eps_p_meanfree": 0.0001070835587820097
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ]
+}

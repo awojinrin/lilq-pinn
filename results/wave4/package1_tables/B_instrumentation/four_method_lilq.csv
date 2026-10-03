@@ -1,0 +1,17 @@
+benchmark,P,method,seed,collocation_seed,device,total_iterations,total_line_searches,training_time_s,wall_total_s,final_loss,converged,stopping_reason,iterations_cap,line_searches_cap,stall_iteration,stall_evaluations,stall_time_s,loss_history_every_10,commit,error,variant,lbfgs_restarts,same_start,start_loss_rel_diff,departs_at_iteration,original_total_iterations,original_final_loss,logged_iterations,logged_K_max,logged_summary
+bratu,25,LiL-Q,,,cpu,2,2,0.0007286053150892258,,0.20780022287306976,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,2,25,bratu_P25_cpu_paper/summary.json
+bratu,100,LiL-Q,,,cpu,3,3,0.03142109140753746,,2.161091281899161e-05,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,3,25,bratu_P100_cpu_paper/summary.json
+bratu,225,LiL-Q,,,cpu,4,4,0.19899476505815983,,1.0658274766997529e-07,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,4,25,bratu_P225_cpu_paper/summary.json
+burgers,25,LiL-Q,,,cpu,2,2,0.0008417479693889618,,0.05309496203459731,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,2,20,burgers_P25_cpu_paper/summary.json
+burgers,100,LiL-Q,,,cpu,3,3,0.031182894483208656,,0.0009058905638485572,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,3,20,burgers_P100_cpu_paper/summary.json
+burgers,225,LiL-Q,,,cpu,3,3,0.150970371440053,,1.8842137902097046e-05,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,3,20,burgers_P225_cpu_paper/summary.json
+burgers,400,LiL-Q,,,cpu,4,4,0.42945947125554085,,9.725196537120332e-08,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,4,20,burgers_P400_cpu_paper/summary.json
+burgers,625,LiL-Q,,,cpu,4,4,1.1576726790517569,,3.495313515752177e-09,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,4,20,burgers_P625_cpu_paper/summary.json
+bl,64,LiL-Q,,,cpu,10,10,0.051558975130319595,,0.0767846614178793,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,10,50,bl_P64_cpu_paper/summary.json
+bl,256,LiL-Q,,,cpu,4,4,0.24020705558359623,,0.013209743504850317,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,4,50,bl_P256_cpu_paper/summary.json
+bl,576,LiL-Q,,,cpu,4,4,0.9428386557847261,,0.000410783862677061,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,4,50,bl_P576_cpu_paper/summary.json
+bl,1024,LiL-Q,,,cpu,4,4,3.8848941642791033,,2.5698129573821606e-05,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,4,50,bl_P1024_cpu_paper/summary.json
+bl_gravity,64,LiL-Q,,,cpu,43,43,0.24009891971945763,,0.23674916027010356,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,43,60,bl_gravity_P64_cpu_paper/summary.json
+bl_gravity,256,LiL-Q,,,cpu,12,12,3.169019389897585,,0.07426290746366458,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,12,20,bl_gravity_P256_cpu_paper/summary.json
+bl_gravity,576,LiL-Q,,,cpu,5,5,1.2207422628998756,,0.042803290127063326,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,5,20,bl_gravity_P576_cpu_paper/summary.json
+bl_gravity,1024,LiL-Q,,,cpu,5,5,4.224440401419997,,0.010297356716942903,True,target,60,,,,,,17b3539826615c696d622dcd2e3833862c793542,,,,,,,,,5,20,bl_gravity_P1024_cpu_paper/summary.json

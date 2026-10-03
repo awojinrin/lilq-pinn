@@ -1,0 +1,20 @@
+provenance lock OK: commit 17b353982661, tree 00762ff259a0
+job 19931288 on c012: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+  kovasznay_P300_r5_cgl_cc_paper: 9 iterations, eps_u 0.02341269858544442
+  kovasznay_P300_r5_cgl_cc_kmax: 60 iterations, eps_u 0.023412698587860974
+  kovasznay_P300_r10_cgl_cc_paper: 9 iterations, eps_u 0.023411859084531222
+  kovasznay_P300_r10_cgl_cc_kmax: 60 iterations, eps_u 0.023411859086944785
+  kovasznay_P1200_r5_cgl_cc_paper: 6 iterations, eps_u 6.575508298923149e-09
+  kovasznay_P1200_r5_cgl_cc_kmax: 60 iterations, eps_u 6.575508329524266e-09
+  kovasznay_P1200_r10_cgl_cc_paper: 6 iterations, eps_u 6.575517331976124e-09
+  kovasznay_P1200_r10_cgl_cc_kmax: 60 iterations, eps_u 6.575517476484788e-09
+  kovasznay_P1875_r5_cgl_cc_paper: 6 iterations, eps_u 5.799500749806599e-14
+  kovasznay_P1875_r5_cgl_cc_kmax: 60 iterations, eps_u 5.807931206361533e-14
+  kovasznay_P1875_r10_cgl_cc_paper: 6 iterations, eps_u 5.809852642347844e-14
+  kovasznay_P1875_r10_cgl_cc_kmax: 60 iterations, eps_u 5.820667278047825e-14
+  kovasznay_P1875_r5_cgl_eq_paper: 6 iterations, eps_u 5.868201037068111e-14
+  kovasznay_P1875_r5_cgl_eq_kmax: 60 iterations, eps_u 5.863571941267284e-14
+  kovasznay_P1875_r10_cgl_eq_paper: 6 iterations, eps_u 5.856462396878701e-14
+  kovasznay_P1875_r10_cgl_eq_kmax: 60 iterations, eps_u 5.860008173676889e-14
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/b10/b10.csv (16 runs)

@@ -1,0 +1,63 @@
+{
+  "config": {
+    "id": "A1_plain",
+    "family": "F1",
+    "width": 128,
+    "depth": 4,
+    "trunk": "shared",
+    "m": 0,
+    "sigma_ff": 1.0,
+    "bc": "soft",
+    "lambda_bc": 10.0,
+    "balancing": false,
+    "eta": 0.001,
+    "t_adam": 20000,
+    "n_int": 8000,
+    "resample": false
+  },
+  "seed": 0,
+  "device": "cuda",
+  "precision": "float64",
+  "n_theta": 50307,
+  "budget_s": 3600.0,
+  "torch": "2.10.0+cu126",
+  "threads": 8,
+  "end_reason": "budget",
+  "iterations": 158419,
+  "adam_iters": 20000,
+  "lbfgs_calls": 280,
+  "lbfgs_iters": 138419,
+  "lbfgs_restarts": 0,
+  "lbfgs_evaluations": 163377,
+  "wall_s": 3600.0087650548667,
+  "eps_u": 5.7753077844433184e-05,
+  "eps_v": 0.0005144348928827203,
+  "eps_p": 5.693691536650113,
+  "eps_p_meanfree": 0.0001990921973299799,
+  "final_loss": 9.087460405397383e-07,
+  "final_loss_unweighted": 8.263049610803322e-07,
+  "weights": {
+    "xmom": 1.0,
+    "ymom": 1.0,
+    "cont": 1.0,
+    "bc": 10.0
+  },
+  "peak_gpu_bytes": 1109108224,
+  "commit": "17b3539826615c696d622dcd2e3833862c793542",
+  "val_residual": 8.335474219575998e-07,
+  "val_terms": {
+    "xmom": 3.425703638493283e-07,
+    "ymom": 2.323585407959385e-07,
+    "cont": 2.4945839737239896e-07,
+    "bc": 9.160119939934001e-09
+  },
+  "val_protocol": {
+    "criterion": "F1's unweighted loss on fresh points",
+    "seed": 20261001,
+    "n_interior": 20000,
+    "n_boundary_per_face": 400,
+    "interior_distribution": "uniform on [-0.5, 1] x [-0.5, 1.5]",
+    "boundary_term": "soft-BC F1 runs only",
+    "dtype": "float64"
+  }
+}

@@ -1,0 +1,9 @@
+provenance lock OK: commit 17b353982661, tree 00762ff259a0
+job 19931277 on g026: 48 threads, 48 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+  kovasznay_P75_cuda_paper solve_time_total: clean 0.04253 s (warm-up 7.278 s, logged 0.04770612437278032)
+  kovasznay_P300_cuda_paper solve_time_total: clean 0.05949 s (warm-up 1.305 s, logged 0.060573735274374485)
+  kovasznay_P675_cuda_paper solve_time_total: clean 0.1472 s (warm-up 0.1498 s, logged 0.15604507829993963)
+  kovasznay_P1200_cuda_paper solve_time_total: clean 0.3878 s (warm-up 0.772 s, logged 0.42109850980341434)
+  kovasznay_P1875_cuda_paper solve_time_total: clean 0.8593 s (warm-up 0.9147 s, logged 1.1416657557711005)
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/clean_timing/clean_timing.csv (42 rows)

@@ -1,0 +1,15 @@
+JobID                         JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ ------------------------ ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+19931246               lilq-preflight        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:09:25  COMPLETED      0:0 
+19931249                 lilq-A1-gate        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   01:06:12  COMPLETED      0:0 
+19931252             lilq-A-f1-repick        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:02:01  COMPLETED      0:0 
+19931255               lilq-A-f2-full        gpu billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1   15:29:31  COMPLETED      0:0 
+19931259_0                 lilq-A-cpu     medium                            billing=48,cpu=48,mem=360G,node=1   05:07:05  COMPLETED      0:0 
+19931262_1                 lilq-A-cpu     medium                            billing=48,cpu=48,mem=360G,node=1   05:08:47  COMPLETED      0:0 
+19931265                   lilq-A-f32        gpu billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1   01:01:41  COMPLETED      0:0 
+19931268               lilq-clean-cpu     medium                            billing=48,cpu=48,mem=360G,node=1   00:23:54  COMPLETED      0:0 
+19931277               lilq-clean-gpu        gpu billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1   00:02:53  COMPLETED      0:0 
+19931280                      lilq-B6     medium                             billing=24,cpu=24,mem=32G,node=1   00:04:11  COMPLETED      0:0 
+19931288                     lilq-b10     medium                             billing=24,cpu=24,mem=32G,node=1   00:22:22  COMPLETED      0:0 
+19931289               lilq-b8-kmax60     medium                             billing=24,cpu=24,mem=32G,node=1   00:01:12  COMPLETED      0:0 
+19931291             lilq-wave-report     medium                             billing=24,cpu=24,mem=32G,node=1   00:02:37    RUNNING      0:0 

@@ -1,0 +1,100 @@
+provenance lock OK: commit 17b353982661, tree 00762ff259a0
+job 19931246 on g048: 8 threads, 8 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+torch 2.10.0+cu126 OK
+threadpoolctl 3.5.0 OK
+numpy 1.26.4 scipy 1.13.1 torch 2.10.0+cu126 cuda True NVIDIA A100-PCIE-40GB
+........................................................................ [ 14%]
+........................................................................ [ 28%]
+....................................................s.....s............. [ 42%]
+........................................................................ [ 57%]
+........................................................................ [ 71%]
+........s..s............................................................ [ 85%]
+........................................................................ [100%]
+=============================== warnings summary ===============================
+tests/test_saved_models.py::test_f1_and_f2_models_reload
+  /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    value = float(loss)
+
+tests/test_saved_models.py: 18 warnings
+  /scratch/user/gbenga-awojinrin/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+500 passed, 4 skipped, 19 warnings in 359.05s (0:05:59)
+16 runs -> /scratch/user/gbenga-awojinrin/lilq-run/preflight/19931246/B_instrumentation
+  bratu_P25_cpu_paper: 2 iterations, t_cum=0.000s, wall=0.2s
+  bratu_P25_cpu_kmax: 5 iterations, t_cum=0.001s, wall=0.0s
+  burgers_P25_cpu_paper: 2 iterations, t_cum=0.000s, wall=0.1s
+  burgers_P25_cpu_kmax: 5 iterations, t_cum=0.001s, wall=0.0s
+  bl_P64_cpu_paper: 5 iterations, t_cum=0.017s, wall=1.2s
+  bl_P64_cpu_kmax: 5 iterations, t_cum=0.017s, wall=0.1s
+  bl_gravity_P64_cpu_paper: 5 iterations, t_cum=0.019s, wall=0.8s
+  bl_gravity_P64_cpu_kmax: 5 iterations, t_cum=0.019s, wall=0.1s
+  elasticity_P50_cpu_paper: 1 iterations, t_cum=0.004s, wall=0.2s
+  kovasznay_P75_cpu_paper: 5 iterations, t_cum=0.012s, wall=0.2s
+  kovasznay_P75_cpu_kmax: 5 iterations, t_cum=0.012s, wall=0.2s
+  kovasznay_P75_cuda_paper: 5 iterations, t_cum=0.014s, wall=0.2s
+  kovasznay_P75_cuda_kmax: 5 iterations, t_cum=0.014s, wall=0.1s
+  beltrami_P324_cpu_paper: 9 iterations, t_cum=0.416s, wall=1.3s
+  beltrami_P324_cpu_kmax: 3 iterations, t_cum=0.143s, wall=0.4s
+  darcy_S1_cpu_paper: 1 iterations, t_cum=0.185s, wall=0.9s
+
+ok=16 skipped=0 failed=0 in 9.0s; index: /scratch/user/gbenga-awojinrin/lilq-run/preflight/19931246/B_instrumentation/runs_index.csv
+  P=75: beta diff 1.4e-15, R_lin diff 0.0e+00 -> equivalent; gelsy 0.002s, gels 0.002s, GPU QR 0.002s
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/preflight/19931246/B_instrumentation/gpu_cpu_equivalence.csv: spec rule passes at every size; amended rule passes at every size
+
+============================================================
+bratu
+============================================================
+  warm-up on cuda: 4.4s (untimed)
+  warm-up on cpu: 0.2s (untimed)
+
+  P=25 (devices=['cuda', 'cpu'])
+    NiL-N  seed=0     device=cuda   iters=    15 loss=1.231e+01 [iteration_cap] (0.2s)
+    NiL-N  seed=0     device=cpu    iters=    15 loss=1.231e+01 [iteration_cap] (0.1s)
+    NiL-Q  seed=0     device=cuda   iters=    20 loss=8.667e+00 [iteration_cap] (0.3s)
+    NiL-Q  seed=0     device=cpu    iters=    20 loss=8.667e+00 [iteration_cap] (0.1s)
+    LiL-N  seed=n/a   device=cuda   iters=    15 loss=4.679e-01 [iteration_cap] (0.1s)
+    LiL-N  seed=n/a   device=cpu    iters=    15 loss=4.679e-01 [iteration_cap] (0.0s)
+
+============================================================
+burgers
+============================================================
+
+  P=25 (devices=['cuda', 'cpu'])
+    NiL-N  seed=0     device=cuda   iters=    15 loss=2.961e+00 [iteration_cap] (0.1s)
+    NiL-N  seed=0     device=cpu    iters=    15 loss=2.961e+00 [iteration_cap] (0.1s)
+    NiL-Q  seed=0     device=cuda   iters=    20 loss=2.199e+00 [iteration_cap] (0.2s)
+    NiL-Q  seed=0     device=cpu    iters=    20 loss=2.199e+00 [iteration_cap] (0.1s)
+    LiL-N  seed=n/a   device=cuda   iters=    15 loss=7.359e-02 [iteration_cap] (0.1s)
+    LiL-N  seed=n/a   device=cpu    iters=    15 loss=7.359e-02 [iteration_cap] (0.0s)
+
+============================================================
+bl
+============================================================
+
+  P=64 (devices=['cuda', 'cpu'])
+    NiL-N  seed=0     device=cuda   iters=    15 loss=1.086e+00 [iteration_cap] (0.3s)
+    NiL-N  seed=0     device=cpu    iters=    15 loss=1.086e+00 [iteration_cap] (0.1s)
+    NiL-Q  seed=0     device=cuda   iters=    20 loss=1.913e+00 [iteration_cap] (0.3s)
+    NiL-Q  seed=0     device=cpu    iters=    20 loss=1.913e+00 [iteration_cap] (0.2s)
+    LiL-N  seed=n/a   device=cuda   iters=    15 loss=2.285e+00 [iteration_cap] (0.1s)
+    LiL-N  seed=n/a   device=cpu    iters=    15 loss=2.285e+00 [iteration_cap] (0.0s)
+
+============================================================
+bl_gravity
+============================================================
+
+  P=64 (devices=['cuda', 'cpu'])
+    NiL-N  seed=0     device=cuda   iters=    15 loss=1.970e+00 [iteration_cap] (0.2s)
+    NiL-N  seed=0     device=cpu    iters=    15 loss=1.970e+00 [iteration_cap] (0.1s)
+    NiL-Q  seed=0     device=cuda   iters=    20 loss=2.188e+00 [iteration_cap] (0.2s)
+    NiL-Q  seed=0     device=cpu    iters=    20 loss=2.188e+00 [iteration_cap] (0.1s)
+    LiL-N  seed=n/a   device=cuda   iters=    15 loss=6.373e+00 [iteration_cap] (0.1s)
+    LiL-N  seed=n/a   device=cpu    iters=    15 loss=6.373e+00 [iteration_cap] (0.0s)
+
+Wrote 24 rows to /scratch/user/gbenga-awojinrin/lilq-run/preflight/19931246/four_method/four_method_tables.csv (0 failures)
+Total elapsed: 11.3s
+PREFLIGHT OK

@@ -1,0 +1,38 @@
+wave 4 report, 2026-10-03T03:26:58.860028+00:00
+
+$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python -c from pathlib import Path; from experiments.component_b import write_index; write_index(Path('/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation'))
+  exit 0
+
+
+$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python experiments/component_b.py --reproduction-check --out-root /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4
+  exit 0
+Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/reproduction_check.csv: violation=2, missing=137, round-off=0, reported=1, ok=0
+
+Representative threshold times: 21 runs
+
+Component A runs ended before their budget: 3
+  checks/a2/a: max_steps after 2.1091011986136436 s
+  checks/a2/b: max_steps after 0.7715717703104019 s
+  screening/F2_16_s0: mu_overflow after 52.910787066444755 s
+
+B8 LiL-Q reruns with K_max = 60, beside wave 3:
+  gravity ic P = 256: wave 3 20 iterations (iteration_cap, K_max 20), loss 0.0988211539587539; wave 4 23 (target), loss 0.07487061171752597
+  gravity ic P = 576: wave 3 20 iterations (iteration_cap, K_max 20), loss 0.12545765190414038; wave 4 23 (target), loss 0.04335135125953132
+  gravity zero P = 64: wave 3 20 iterations (iteration_cap, K_max 20), loss 0.9507298035790827; wave 4 43 (target), loss 0.23674916027010356
+
+Clean against logged times: 42 rows; iteration counts differ in 0; failed clean runs: 0
+
+SUs by job (Grace's rates; su_per_job.csv): 3,809 in all
+  19931246 lilq-preflight: 12.6 (0.16 h at 80/h)
+  19931249 lilq-A1-gate: 88.3 (1.10 h at 80/h)
+  19931252 lilq-A-f1-repick: 2.7 (0.03 h at 80/h)
+  19931255 lilq-A-f2-full: 2974.5 (15.49 h at 192/h)
+  19931259_0 lilq-A-cpu: 245.7 (5.12 h at 48/h)
+  19931262_1 lilq-A-cpu: 247.0 (5.15 h at 48/h)
+  19931265 lilq-A-f32: 197.4 (1.03 h at 192/h)
+  19931268 lilq-clean-cpu: 19.1 (0.40 h at 48/h)
+  19931277 lilq-clean-gpu: 9.2 (0.05 h at 192/h)
+  19931280 lilq-B6: 1.7 (0.07 h at 24/h)
+  19931288 lilq-b10: 8.9 (0.37 h at 24/h)
+  19931289 lilq-b8-kmax60: 0.5 (0.02 h at 24/h)
+  19931291 lilq-wave-report: 1.0 (0.04 h at 24/h) -- still running when the report was built

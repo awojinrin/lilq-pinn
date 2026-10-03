@@ -1,0 +1,2 @@
+run,benchmark,config,device,pass,status,iterations,final_norm_R_h,t_cum_s,wall_total_s,first_stall_iteration,kappa_final,kappa_method,num_rank_gelsy_final,test_eps_u,test_eps_v,test_eps_p,test_eps_p_meanfree
+bl_gravity_P64_cpu_paper,bl_gravity,P64,cpu,paper,ok,43,0.48656876211908995,0.22322626784443855,3.712218765169382,4,103.37661346228059,svd,64,0.1965922754715224,,,

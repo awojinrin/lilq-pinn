@@ -1,0 +1,53 @@
+provenance lock OK: commit 17b353982661, tree 00762ff259a0
+job 19931262 on c222: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 309,
+  "final_loss": 1.7837714816745124e-16,
+  "eps_u": 9.428593444510505e-10,
+  "eps_v": 1.194642537857489e-08,
+  "eps_p_meanfree": 5.900368786942006e-09,
+  "wall_s": 3603.017546314746
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 313,
+  "final_loss": 6.799972434455796e-16,
+  "eps_u": 3.0420890634478908e-09,
+  "eps_v": 9.361921358781935e-09,
+  "eps_p_meanfree": 1.0419263572471684e-08,
+  "wall_s": 3603.105639241636
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 313,
+  "final_loss": 1.408205177876683e-13,
+  "eps_u": 1.3359909067606263e-08,
+  "eps_v": 1.044631842457276e-07,
+  "eps_p_meanfree": 6.47948563424833e-08,
+  "wall_s": 3603.2551064956933
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 312,
+  "final_loss": 3.9425231106759403e-16,
+  "eps_u": 1.9869550497233217e-09,
+  "eps_v": 5.861130550136972e-09,
+  "eps_p_meanfree": 7.458581047922664e-09,
+  "wall_s": 3602.9170205928385
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 314,
+  "final_loss": 2.9212804988080976e-16,
+  "eps_u": 1.8051789526027803e-09,
+  "eps_v": 9.908545279790044e-09,
+  "eps_p_meanfree": 6.416860589354274e-09,
+  "wall_s": 3610.3018720503896
+}

@@ -1,0 +1,272 @@
+{
+  "seed": 12345,
+  "space": {
+    "width": [
+      32,
+      64,
+      100
+    ],
+    "depth": [
+      3,
+      4
+    ],
+    "m": [
+      32,
+      64
+    ],
+    "sigma_ff": [
+      0.5,
+      1.0,
+      2.0
+    ],
+    "n_int": [
+      2000,
+      8000
+    ]
+  },
+  "max_params": 20000,
+  "redrawn_violators": 32,
+  "redrawn_duplicates": 11,
+  "configs": [
+    {
+      "id": "F2_00",
+      "family": "F2",
+      "width": 32,
+      "depth": 3,
+      "m": 64,
+      "sigma_ff": 1.0,
+      "n_int": 8000,
+      "n_theta": 6339
+    },
+    {
+      "id": "F2_01",
+      "family": "F2",
+      "width": 32,
+      "depth": 4,
+      "m": 32,
+      "sigma_ff": 2.0,
+      "n_int": 2000,
+      "n_theta": 5347
+    },
+    {
+      "id": "F2_02",
+      "family": "F2",
+      "width": 32,
+      "depth": 3,
+      "m": 64,
+      "sigma_ff": 2.0,
+      "n_int": 2000,
+      "n_theta": 6339
+    },
+    {
+      "id": "F2_03",
+      "family": "F2",
+      "width": 64,
+      "depth": 3,
+      "m": 32,
+      "sigma_ff": 1.0,
+      "n_int": 2000,
+      "n_theta": 12675
+    },
+    {
+      "id": "F2_04",
+      "family": "F2",
+      "width": 64,
+      "depth": 4,
+      "m": 32,
+      "sigma_ff": 0.5,
+      "n_int": 2000,
+      "n_theta": 16835
+    },
+    {
+      "id": "F2_05",
+      "family": "F2",
+      "width": 32,
+      "depth": 3,
+      "m": 32,
+      "sigma_ff": 0.5,
+      "n_int": 8000,
+      "n_theta": 4291
+    },
+    {
+      "id": "F2_06",
+      "family": "F2",
+      "width": 64,
+      "depth": 3,
+      "m": 64,
+      "sigma_ff": 1.0,
+      "n_int": 8000,
+      "n_theta": 16771
+    },
+    {
+      "id": "F2_07",
+      "family": "F2",
+      "width": 32,
+      "depth": 4,
+      "m": 64,
+      "sigma_ff": 1.0,
+      "n_int": 2000,
+      "n_theta": 7395
+    },
+    {
+      "id": "F2_08",
+      "family": "F2",
+      "width": 32,
+      "depth": 3,
+      "m": 64,
+      "sigma_ff": 0.5,
+      "n_int": 8000,
+      "n_theta": 6339
+    },
+    {
+      "id": "F2_09",
+      "family": "F2",
+      "width": 64,
+      "depth": 3,
+      "m": 32,
+      "sigma_ff": 0.5,
+      "n_int": 8000,
+      "n_theta": 12675
+    },
+    {
+      "id": "F2_10",
+      "family": "F2",
+      "width": 64,
+      "depth": 3,
+      "m": 64,
+      "sigma_ff": 0.5,
+      "n_int": 8000,
+      "n_theta": 16771
+    },
+    {
+      "id": "F2_11",
+      "family": "F2",
+      "width": 32,
+      "depth": 4,
+      "m": 32,
+      "sigma_ff": 1.0,
+      "n_int": 2000,
+      "n_theta": 5347
+    },
+    {
+      "id": "F2_12",
+      "family": "F2",
+      "width": 32,
+      "depth": 4,
+      "m": 64,
+      "sigma_ff": 0.5,
+      "n_int": 2000,
+      "n_theta": 7395
+    },
+    {
+      "id": "F2_13",
+      "family": "F2",
+      "width": 32,
+      "depth": 3,
+      "m": 64,
+      "sigma_ff": 2.0,
+      "n_int": 8000,
+      "n_theta": 6339
+    },
+    {
+      "id": "F2_14",
+      "family": "F2",
+      "width": 32,
+      "depth": 4,
+      "m": 32,
+      "sigma_ff": 0.5,
+      "n_int": 8000,
+      "n_theta": 5347
+    },
+    {
+      "id": "F2_15",
+      "family": "F2",
+      "width": 32,
+      "depth": 4,
+      "m": 64,
+      "sigma_ff": 2.0,
+      "n_int": 2000,
+      "n_theta": 7395
+    },
+    {
+      "id": "F2_16",
+      "family": "F2",
+      "width": 64,
+      "depth": 4,
+      "m": 32,
+      "sigma_ff": 2.0,
+      "n_int": 2000,
+      "n_theta": 16835
+    },
+    {
+      "id": "F2_17",
+      "family": "F2",
+      "width": 64,
+      "depth": 3,
+      "m": 32,
+      "sigma_ff": 0.5,
+      "n_int": 2000,
+      "n_theta": 12675
+    },
+    {
+      "id": "F2_18",
+      "family": "F2",
+      "width": 32,
+      "depth": 3,
+      "m": 32,
+      "sigma_ff": 2.0,
+      "n_int": 2000,
+      "n_theta": 4291
+    },
+    {
+      "id": "F2_19",
+      "family": "F2",
+      "width": 32,
+      "depth": 4,
+      "m": 32,
+      "sigma_ff": 2.0,
+      "n_int": 8000,
+      "n_theta": 5347
+    },
+    {
+      "id": "F2_20",
+      "family": "F2",
+      "width": 64,
+      "depth": 4,
+      "m": 32,
+      "sigma_ff": 0.5,
+      "n_int": 8000,
+      "n_theta": 16835
+    },
+    {
+      "id": "F2_21",
+      "family": "F2",
+      "width": 64,
+      "depth": 3,
+      "m": 64,
+      "sigma_ff": 0.5,
+      "n_int": 2000,
+      "n_theta": 16771
+    },
+    {
+      "id": "F2_22",
+      "family": "F2",
+      "width": 32,
+      "depth": 3,
+      "m": 32,
+      "sigma_ff": 2.0,
+      "n_int": 8000,
+      "n_theta": 4291
+    },
+    {
+      "id": "F2_23",
+      "family": "F2",
+      "width": 64,
+      "depth": 3,
+      "m": 32,
+      "sigma_ff": 2.0,
+      "n_int": 8000,
+      "n_theta": 12675
+    }
+  ]
+}

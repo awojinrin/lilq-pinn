@@ -1,0 +1,70 @@
+{
+  "representative": "F2_05",
+  "representative_config": {
+    "id": "F2_05",
+    "family": "F2",
+    "width": 32,
+    "depth": 3,
+    "m": 32,
+    "sigma_ff": 0.5,
+    "n_int": 8000,
+    "n_theta": 4291
+  },
+  "representative_criterion": "lowest median validation residual",
+  "median_val_residual": {
+    "F2_10": 8.693934346402585e-15,
+    "F2_05": 1.0287856924064615e-15,
+    "F2_14": 7.361234926735761e-15
+  },
+  "val_residual": {
+    "F2_10": [
+      5.078293980826103e-17,
+      1.3120380347386997e-14,
+      8.693934346402585e-15,
+      2.331741253828165e-14,
+      3.0262537231919733e-15
+    ],
+    "F2_05": [
+      2.5275601441587297e-16,
+      2.005310458781314e-15,
+      2.255005754016466e-14,
+      7.555214388206975e-16,
+      1.0287856924064615e-15
+    ],
+    "F2_14": [
+      1.0043082069794045e-15,
+      7.746169166944392e-14,
+      1.0278811567033525e-15,
+      2.899613962821536e-14,
+      7.361234926735761e-15
+    ]
+  },
+  "median_final_loss": {
+    "F2_10": 2.305792079365367e-17,
+    "F2_05": 2.1675511941008364e-17,
+    "F2_14": 1.0632126584578912e-16
+  },
+  "validation_protocol": {
+    "criterion": "F1's unweighted loss on fresh points",
+    "seed": 20261001,
+    "n_interior": 20000,
+    "n_boundary_per_face": 400,
+    "interior_distribution": "uniform on [-0.5, 1] x [-0.5, 1.5]",
+    "boundary_term": "soft-BC F1 runs only",
+    "dtype": "float64"
+  },
+  "validation_failures": [],
+  "best_test_errors_over_all_full_runs": {
+    "eps_u": 9.042532800874368e-11,
+    "eps_v": 6.16434937589348e-10,
+    "eps_p": 4.941239976975371e-09,
+    "eps_p_meanfree": 7.667890117538869e-10
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ]
+}

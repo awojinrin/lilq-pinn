@@ -1,0 +1,14 @@
+job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
+19931246,lilq-preflight,"billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1",0.1569,COMPLETED,80,12.6,
+19931249,lilq-A1-gate,"billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1",1.1033,COMPLETED,80,88.3,
+19931252,lilq-A-f1-repick,"billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1",0.0336,COMPLETED,80,2.7,
+19931255,lilq-A-f2-full,"billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1",15.4919,COMPLETED,192,2974.5,
+19931259_0,lilq-A-cpu,"billing=48,cpu=48,mem=360G,node=1",5.1181,COMPLETED,48,245.7,
+19931262_1,lilq-A-cpu,"billing=48,cpu=48,mem=360G,node=1",5.1464,COMPLETED,48,247.0,
+19931265,lilq-A-f32,"billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1",1.0281,COMPLETED,192,197.4,
+19931268,lilq-clean-cpu,"billing=48,cpu=48,mem=360G,node=1",0.3983,COMPLETED,48,19.1,
+19931277,lilq-clean-gpu,"billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1",0.0481,COMPLETED,192,9.2,
+19931280,lilq-B6,"billing=24,cpu=24,mem=32G,node=1",0.0697,COMPLETED,24,1.7,
+19931288,lilq-b10,"billing=24,cpu=24,mem=32G,node=1",0.3728,COMPLETED,24,8.9,
+19931289,lilq-b8-kmax60,"billing=24,cpu=24,mem=32G,node=1",0.02,COMPLETED,24,0.5,
+19931291,lilq-wave-report,"billing=24,cpu=24,mem=32G,node=1",0.0436,RUNNING,24,1.0,still running when the report was built

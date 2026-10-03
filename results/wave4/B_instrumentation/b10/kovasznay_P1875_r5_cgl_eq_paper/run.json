@@ -1,0 +1,83 @@
+{
+  "N_total": 9476,
+  "N_composition": {
+    "x_momentum": 2601,
+    "y_momentum": 2601,
+    "continuity": 2601,
+    "bc_u": 836,
+    "bc_v": 836,
+    "pressure_pin": 1
+  },
+  "P_total": 1875,
+  "P_composition": {
+    "u": 625,
+    "v": 625,
+    "p": 625
+  },
+  "row_weights": {
+    "momentum": 0.0196078431372549,
+    "continuity": 0.0196078431372549,
+    "bc": {
+      "bot": 0.21873931962990356,
+      "top": 0.21873931962990356,
+      "left": 0.21873931962990356,
+      "right": 0.21873931962990356
+    },
+    "pressure_pin": 3.1622776601683795
+  },
+  "collocation_construction": {
+    "method": "Chebyshev-Gauss-Lobatto tensor grid",
+    "sampling": "cgl",
+    "weights": "equal",
+    "seed": null,
+    "collocation_floor": 1,
+    "n_interior": 2601,
+    "n_per_edge": 209,
+    "N_x": 25,
+    "N_y": 25,
+    "k_ratio": 6.67,
+    "collocation_ratios": [
+      0.6,
+      0.2,
+      0.2
+    ]
+  },
+  "basis_description": {
+    "family": "chebyshev",
+    "u": {
+      "modes_x": 25,
+      "modes_y": 25,
+      "total": 625
+    },
+    "v": {
+      "modes_x": 25,
+      "modes_y": 25,
+      "total": 625
+    },
+    "p": {
+      "modes_x": 25,
+      "modes_y": 25,
+      "total": 625
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "rel_coeff_change",
+    "tolerance": 1e-09
+  },
+  "K_max": 60,
+  "stopping_reason": "target",
+  "first_stall_iteration": 5,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 3.0629222635752297e-15,
+    "max_rel_err_over_run": 0.004811315925461209
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "17b3539826615c696d622dcd2e3833862c793542"
+}

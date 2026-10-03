@@ -1,0 +1,224 @@
+provenance lock OK: commit 17b353982661, tree 00762ff259a0
+job 19931255 on g004: 48 threads, 48 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+["F2_10", "F2_05", "F2_14"]
+n_theta = 16771, rows = 24001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 1518,
+  "final_loss": 4.6230071753234984e-18,
+  "eps_u": 1.506104776240806e-10,
+  "eps_v": 1.4724112164475223e-09,
+  "eps_p_meanfree": 7.667890117538869e-10,
+  "wall_s": 3601.6993404328823
+}
+n_theta = 16771, rows = 24001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 1518,
+  "final_loss": 3.3480108731704026e-17,
+  "eps_u": 7.654872314507259e-10,
+  "eps_v": 6.0731843389341854e-09,
+  "eps_p_meanfree": 6.525572382532013e-09,
+  "wall_s": 3600.4168443661183
+}
+n_theta = 16771, rows = 24001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 1513,
+  "final_loss": 2.305792079365367e-17,
+  "eps_u": 2.3033234031350867e-10,
+  "eps_v": 1.260673939240501e-09,
+  "eps_p_meanfree": 3.1847543523267564e-09,
+  "wall_s": 3600.947949761525
+}
+n_theta = 16771, rows = 24001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 1520,
+  "final_loss": 1.220318190941711e-16,
+  "eps_u": 2.874276669521203e-10,
+  "eps_v": 2.5117888726722183e-09,
+  "eps_p_meanfree": 5.049100761940209e-09,
+  "wall_s": 3601.810441736132
+}
+n_theta = 16771, rows = 24001, normal-equation memory ~ 6.85 GB
+{
+  "end_reason": "budget",
+  "steps": 1514,
+  "final_loss": 7.273070673306425e-18,
+  "eps_u": 9.042532800874368e-11,
+  "eps_v": 8.597555589023004e-10,
+  "eps_p_meanfree": 2.4725944985405844e-09,
+  "wall_s": 3601.9117274582386
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 4648,
+  "final_loss": 1.2042587581426571e-17,
+  "eps_u": 1.662570234467809e-10,
+  "eps_v": 1.3188686921712748e-09,
+  "eps_p_meanfree": 8.47248818684296e-10,
+  "wall_s": 3600.1012185290456
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 4648,
+  "final_loss": 3.24943150929441e-17,
+  "eps_u": 3.0944891658694934e-10,
+  "eps_v": 1.7030813329352502e-09,
+  "eps_p_meanfree": 1.52619037276159e-09,
+  "wall_s": 3600.4769651722163
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 4608,
+  "final_loss": 1.3344113256354102e-15,
+  "eps_u": 1.577703166963729e-09,
+  "eps_v": 1.2573370634785835e-08,
+  "eps_p_meanfree": 7.71574711879275e-09,
+  "wall_s": 3600.257467739284
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 4571,
+  "final_loss": 2.1675511941008364e-17,
+  "eps_u": 1.4212761082773612e-10,
+  "eps_v": 1.284596742899861e-09,
+  "eps_p_meanfree": 1.2277369183758702e-09,
+  "wall_s": 3600.667618472129
+}
+n_theta = 4291, rows = 24001, normal-equation memory ~ 0.47 GB
+{
+  "end_reason": "budget",
+  "steps": 4537,
+  "final_loss": 1.3229433940205881e-17,
+  "eps_u": 9.130263359104234e-11,
+  "eps_v": 7.213225500462453e-10,
+  "eps_p_meanfree": 9.117396208567127e-10,
+  "wall_s": 3600.5221694316715
+}
+n_theta = 5347, rows = 24001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 3458,
+  "final_loss": 1.0632126584578912e-16,
+  "eps_u": 5.818167894241324e-10,
+  "eps_v": 5.3512637998093654e-09,
+  "eps_p_meanfree": 2.725429519106687e-09,
+  "wall_s": 3600.1492456384003
+}
+n_theta = 5347, rows = 24001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 3430,
+  "final_loss": 1.1258714509517547e-14,
+  "eps_u": 5.408722929986542e-09,
+  "eps_v": 4.2477026384613864e-08,
+  "eps_p_meanfree": 2.5991419018687465e-08,
+  "wall_s": 3600.6722592506558
+}
+n_theta = 5347, rows = 24001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 3435,
+  "final_loss": 1.1473779657784673e-17,
+  "eps_u": 1.1836318387091934e-10,
+  "eps_v": 9.116849268401963e-10,
+  "eps_p_meanfree": 9.012178423078251e-10,
+  "wall_s": 3600.1558865550905
+}
+n_theta = 5347, rows = 24001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 3450,
+  "final_loss": 4.1770670665800746e-15,
+  "eps_u": 1.6291478914226212e-09,
+  "eps_v": 2.6739556040400068e-08,
+  "eps_p_meanfree": 1.3340059907502105e-08,
+  "wall_s": 3600.632229682058
+}
+n_theta = 5347, rows = 24001, normal-equation memory ~ 0.72 GB
+{
+  "end_reason": "budget",
+  "steps": 3464,
+  "final_loss": 6.3594351080951524e-18,
+  "eps_u": 9.973724164586031e-11,
+  "eps_v": 6.16434937589348e-10,
+  "eps_p_meanfree": 1.4662957662302953e-09,
+  "wall_s": 3600.614955605939
+}
+{
+  "representative": "F2_05",
+  "representative_config": {
+    "id": "F2_05",
+    "family": "F2",
+    "width": 32,
+    "depth": 3,
+    "m": 32,
+    "sigma_ff": 0.5,
+    "n_int": 8000,
+    "n_theta": 4291
+  },
+  "representative_criterion": "lowest median validation residual",
+  "median_val_residual": {
+    "F2_10": 8.693934346402585e-15,
+    "F2_05": 1.0287856924064615e-15,
+    "F2_14": 7.361234926735761e-15
+  },
+  "val_residual": {
+    "F2_10": [
+      5.078293980826103e-17,
+      1.3120380347386997e-14,
+      8.693934346402585e-15,
+      2.331741253828165e-14,
+      3.0262537231919733e-15
+    ],
+    "F2_05": [
+      2.5275601441587297e-16,
+      2.005310458781314e-15,
+      2.255005754016466e-14,
+      7.555214388206975e-16,
+      1.0287856924064615e-15
+    ],
+    "F2_14": [
+      1.0043082069794045e-15,
+      7.746169166944392e-14,
+      1.0278811567033525e-15,
+      2.899613962821536e-14,
+      7.361234926735761e-15
+    ]
+  },
+  "median_final_loss": {
+    "F2_10": 2.305792079365367e-17,
+    "F2_05": 2.1675511941008364e-17,
+    "F2_14": 1.0632126584578912e-16
+  },
+  "validation_protocol": {
+    "criterion": "F1's unweighted loss on fresh points",
+    "seed": 20261001,
+    "n_interior": 20000,
+    "n_boundary_per_face": 400,
+    "interior_distribution": "uniform on [-0.5, 1] x [-0.5, 1.5]",
+    "boundary_term": "soft-BC F1 runs only",
+    "dtype": "float64"
+  },
+  "validation_failures": [],
+  "best_test_errors_over_all_full_runs": {
+    "eps_u": 9.042532800874368e-11,
+    "eps_v": 6.16434937589348e-10,
+    "eps_p": 4.941239976975371e-09,
+    "eps_p_meanfree": 7.667890117538869e-10
+  },
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ]
+}

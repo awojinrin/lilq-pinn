@@ -1,0 +1,250 @@
+{
+  "selection_criterion": "validation_residual",
+  "validation_protocol": {
+    "criterion": "F1's unweighted loss on fresh points",
+    "seed": 20261001,
+    "n_interior": 20000,
+    "n_boundary_per_face": 400,
+    "interior_distribution": "uniform on [-0.5, 1] x [-0.5, 1.5]",
+    "boundary_term": "soft-BC F1 runs only",
+    "dtype": "float64"
+  },
+  "training_loss": "final_loss_unweighted",
+  "ranking": [
+    {
+      "id": "F1_19",
+      "val_residual": 1.1051049806714545e-06,
+      "training_loss": 1.0470290560688238e-06
+    },
+    {
+      "id": "F1_01",
+      "val_residual": 1.4133800410747087e-06,
+      "training_loss": 1.299434837709847e-06
+    },
+    {
+      "id": "F1_08",
+      "val_residual": 1.5566924250292713e-06,
+      "training_loss": 1.263233646046275e-06
+    },
+    {
+      "id": "F1_18",
+      "val_residual": 6.683090649938224e-06,
+      "training_loss": 6.721737040898608e-07
+    },
+    {
+      "id": "F1_10",
+      "val_residual": 7.725170372323366e-06,
+      "training_loss": 7.2256192473136274e-06
+    },
+    {
+      "id": "F1_12",
+      "val_residual": 1.192686326505545e-05,
+      "training_loss": 1.1628184666668565e-05
+    },
+    {
+      "id": "F1_03",
+      "val_residual": 2.2225177595305996e-05,
+      "training_loss": 2.011102810922309e-05
+    },
+    {
+      "id": "F1_15",
+      "val_residual": 2.458498004565104e-05,
+      "training_loss": 3.083219470542849e-07
+    },
+    {
+      "id": "F1_17",
+      "val_residual": 2.8869145385108724e-05,
+      "training_loss": 2.88185441679135e-05
+    },
+    {
+      "id": "F1_06",
+      "val_residual": 0.00010422991012531257,
+      "training_loss": 8.442934523406093e-05
+    },
+    {
+      "id": "F1_23",
+      "val_residual": 0.00015713672423293628,
+      "training_loss": 4.63699704302302e-05
+    },
+    {
+      "id": "F1_21",
+      "val_residual": 0.00016762517894507604,
+      "training_loss": 0.00015932036136455125
+    },
+    {
+      "id": "F1_14",
+      "val_residual": 0.00017084430598249105,
+      "training_loss": 0.00016250093859370666
+    },
+    {
+      "id": "F1_05",
+      "val_residual": 0.0004283126598614589,
+      "training_loss": 0.0003631370384824336
+    },
+    {
+      "id": "F1_20",
+      "val_residual": 0.0005990141343401438,
+      "training_loss": 0.0005636932028736211
+    },
+    {
+      "id": "F1_16",
+      "val_residual": 0.0007449039081769897,
+      "training_loss": 0.0007305303167526739
+    },
+    {
+      "id": "F1_11",
+      "val_residual": 0.0016831478388103626,
+      "training_loss": 0.001637710469485802
+    },
+    {
+      "id": "F1_00",
+      "val_residual": 0.0016947085913698418,
+      "training_loss": 0.001618147644978095
+    },
+    {
+      "id": "F1_02",
+      "val_residual": 0.0025612246499105273,
+      "training_loss": 0.0025167061232889572
+    },
+    {
+      "id": "F1_13",
+      "val_residual": 0.002807653596450975,
+      "training_loss": 0.0025839583878260438
+    },
+    {
+      "id": "F1_22",
+      "val_residual": 0.00558538729394108,
+      "training_loss": 0.005482580314301035
+    },
+    {
+      "id": "F1_07",
+      "val_residual": 0.20199882930623927,
+      "training_loss": 0.14439210280331552
+    },
+    {
+      "id": "F1_04",
+      "val_residual": 3.4992757906300525,
+      "training_loss": 2.0349488777263823e-07
+    },
+    {
+      "id": "F1_09",
+      "val_residual": 6.38328177841638,
+      "training_loss": 0.008296176702242537
+    }
+  ],
+  "ranking_by_training_loss": [
+    {
+      "id": "F1_04",
+      "training_loss": 2.0349488777263823e-07
+    },
+    {
+      "id": "F1_15",
+      "training_loss": 3.083219470542849e-07
+    },
+    {
+      "id": "F1_18",
+      "training_loss": 6.721737040898608e-07
+    },
+    {
+      "id": "F1_19",
+      "training_loss": 1.0470290560688238e-06
+    },
+    {
+      "id": "F1_08",
+      "training_loss": 1.263233646046275e-06
+    },
+    {
+      "id": "F1_01",
+      "training_loss": 1.299434837709847e-06
+    },
+    {
+      "id": "F1_10",
+      "training_loss": 7.2256192473136274e-06
+    },
+    {
+      "id": "F1_12",
+      "training_loss": 1.1628184666668565e-05
+    },
+    {
+      "id": "F1_03",
+      "training_loss": 2.011102810922309e-05
+    },
+    {
+      "id": "F1_17",
+      "training_loss": 2.88185441679135e-05
+    },
+    {
+      "id": "F1_23",
+      "training_loss": 4.63699704302302e-05
+    },
+    {
+      "id": "F1_06",
+      "training_loss": 8.442934523406093e-05
+    },
+    {
+      "id": "F1_21",
+      "training_loss": 0.00015932036136455125
+    },
+    {
+      "id": "F1_14",
+      "training_loss": 0.00016250093859370666
+    },
+    {
+      "id": "F1_05",
+      "training_loss": 0.0003631370384824336
+    },
+    {
+      "id": "F1_20",
+      "training_loss": 0.0005636932028736211
+    },
+    {
+      "id": "F1_16",
+      "training_loss": 0.0007305303167526739
+    },
+    {
+      "id": "F1_00",
+      "training_loss": 0.001618147644978095
+    },
+    {
+      "id": "F1_11",
+      "training_loss": 0.001637710469485802
+    },
+    {
+      "id": "F1_02",
+      "training_loss": 0.0025167061232889572
+    },
+    {
+      "id": "F1_13",
+      "training_loss": 0.0025839583878260438
+    },
+    {
+      "id": "F1_22",
+      "training_loss": 0.005482580314301035
+    },
+    {
+      "id": "F1_09",
+      "training_loss": 0.008296176702242537
+    },
+    {
+      "id": "F1_07",
+      "training_loss": 0.14439210280331552
+    }
+  ],
+  "top_by_training_loss": [
+    "F1_04",
+    "F1_15",
+    "F1_18"
+  ],
+  "top_by_validation": [
+    "F1_19",
+    "F1_01",
+    "F1_08"
+  ],
+  "top": [
+    "F1_04",
+    "F1_15",
+    "F1_18"
+  ],
+  "top_kept": "pinned by the advisor's decisions of 1 October 2026 (F1: wave 2's finalists; F2: the validation top three of his analysis); the representative among them is chosen by validation residual",
+  "top_kept_matches_validation": false
+}

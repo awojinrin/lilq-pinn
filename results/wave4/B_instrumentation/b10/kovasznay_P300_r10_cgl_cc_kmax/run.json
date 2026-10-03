@@ -1,0 +1,83 @@
+{
+  "N_total": 3052,
+  "N_composition": {
+    "x_momentum": 841,
+    "y_momentum": 841,
+    "continuity": 841,
+    "bc_u": 264,
+    "bc_v": 264,
+    "pressure_pin": 1
+  },
+  "P_total": 300,
+  "P_composition": {
+    "u": 100,
+    "v": 100,
+    "p": 100
+  },
+  "row_weights": {
+    "momentum": "clenshaw_curtis: sqrt(lambda * w_i * w_j), per row (collocation.npz)",
+    "continuity": "clenshaw_curtis: sqrt(lambda * w_i * w_j), per row (collocation.npz)",
+    "bc": {
+      "bot": "clenshaw_curtis: sqrt(lambda_bc * w_k * |e| / |dOmega|), per row",
+      "top": "clenshaw_curtis: sqrt(lambda_bc * w_k * |e| / |dOmega|), per row",
+      "left": "clenshaw_curtis: sqrt(lambda_bc * w_k * |e| / |dOmega|), per row",
+      "right": "clenshaw_curtis: sqrt(lambda_bc * w_k * |e| / |dOmega|), per row"
+    },
+    "pressure_pin": 3.1622776601683795
+  },
+  "collocation_construction": {
+    "method": "Chebyshev-Gauss-Lobatto tensor grid",
+    "sampling": "cgl",
+    "weights": "clenshaw_curtis",
+    "seed": null,
+    "collocation_floor": 1,
+    "n_interior": 841,
+    "n_per_edge": 66,
+    "N_x": 10,
+    "N_y": 10,
+    "k_ratio": 13.07,
+    "collocation_ratios": [
+      0.6,
+      0.2,
+      0.2
+    ]
+  },
+  "basis_description": {
+    "family": "chebyshev",
+    "u": {
+      "modes_x": 10,
+      "modes_y": 10,
+      "total": 100
+    },
+    "v": {
+      "modes_x": 10,
+      "modes_y": 10,
+      "total": 100
+    },
+    "p": {
+      "modes_x": 10,
+      "modes_y": 10,
+      "total": 100
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "rel_coeff_change",
+    "tolerance": 0.0
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 3,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 1.2446237313927448e-15,
+    "max_rel_err_over_run": 2.9066564925671414e-14
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "17b3539826615c696d622dcd2e3833862c793542"
+}

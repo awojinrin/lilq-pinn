@@ -1,0 +1,18 @@
+{
+  "val_residual": 3.973901364434826e-06,
+  "val_terms": {
+    "xmom": 3.402322428763152e-06,
+    "ymom": 2.94794581749153e-09,
+    "cont": 5.512857951716124e-07,
+    "bc": 1.7345194682569652e-08
+  },
+  "val_protocol": {
+    "criterion": "F1's unweighted loss on fresh points",
+    "seed": 20261001,
+    "n_interior": 20000,
+    "n_boundary_per_face": 400,
+    "interior_distribution": "uniform on [-0.5, 1] x [-0.5, 1.5]",
+    "boundary_term": "soft-BC F1 runs only",
+    "dtype": "float64"
+  }
+}
