@@ -17,6 +17,35 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 6d: RELEASE.md; the permeability figure's script
+
+**`RELEASE.md`** (gate G1, Package 2, Section 2, item 1). It maps every
+table and figure of Section 6 and Appendix B, by its printed number (Tables
+2-17, B.1-B.6; Figures 3-23), to:
+- the script that regenerates it (batches 6b and 6c);
+- the files it reads;
+- the script of ours that wrote those files.
+
+It also has:
+- where the results are;
+- the regeneration commands and their result at the tag;
+- the text numbers traced by hand (Section 6.6 delta_P, the Section 6.11
+  held-out evaluation, the B.2 caption, B.4), all of which match;
+- the release's corrections: the `kovasznay_comparison.csv` note (item 4),
+  the two stall-control runs (item 5), the four rounding slips of Table 7,
+  the gravity BL P = 64 note, and B.5.
+
+**`scripts/plot_permeability_grid.py`** (Figure 20). It is the pre-v2
+script (`pre-v2-local-codebase/SPE10/plot_permeability_grid.py`), whose
+inputs are byte-identical to `data/spe10/perm_field_*.txt`. As found, it
+differed from the manuscript's PNG only in the panel titles: the
+manuscript's carry the letters (a)-(d). With the letters, it reproduces the
+PNG exactly (no pixel differs). Two other changes:
+- the outputs go to `--out`;
+- a missing field file is now an error instead of a dummy field.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 6c: the manuscript folder's scripts rerun on our results
 
 **What.** The figures, the screening tables (B.3) and the best-approximation
