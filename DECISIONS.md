@@ -17,6 +17,53 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 3: the Burgers reference (Cole-Hopf), the eps_ref column, the scalar network models' reference errors
+
+**The Burgers reference** (Package 2, Section 6.2; check C4).
+`lilq/references.py` gives the Cole-Hopf solution of the Section 6.3 problem
+by adaptive quadrature of the two Cole-Hopf integrals (`quad_vec`, relative
+tolerance 1e-13).
+- **Overflow:** the exponent is shifted by its bound 1/(2 pi nu), so nothing
+  overflows at small nu.
+- **Range:** the integrals run over |eta| <= s sqrt(4c + 60) (s =
+  sqrt(4 nu t), c = 1/(2 pi nu)), beyond which the integrands are below
+  1e-26 of their peak.
+- **Basdevant check:** u_x(0, 1.6037/pi) at nu = 0.01/pi is -152.0051616
+  (published: -152.00516).
+- **Independent check:** at nu = 0.1, the cosine series of the Cole-Hopf
+  transform (modified Bessel coefficients, scaled) agrees to 4.3e-15 on the
+  whole test grid. The series cannot check small nu: there its terms cancel
+  to about exp(-2c) near x = 0.
+- **The tests also show:** u(+-1, t) is 0 to 2e-16, the initial condition
+  holds, and the PDE residual is below 1e-5 by central differences.
+- **Output:** `experiments/p2_references.py burgers` writes
+  `reference/burgers_cole_hopf.npz` (x, t, u on the 201 x 201 test grid of
+  `problems.burgers`) and the checks.
+
+**`eps_ref`** is appended to the iteration log's columns, after
+`stall_rule_fires`, as Package 2's Section 12.1 asks: empty where there is no
+reference. `lilq.references.make_eps_ref_fn(basis, npz)` gives the error for
+an iteration logger's `test_error_fn`. The paper runs are wired to it in the
+Grace batch that reruns them.
+
+**The scalar network models** (Section 6.2):
+`network_reference_errors.py --benchmarks bratu burgers` evaluates the saved
+four-method Bratu and Burgers models (70) against the two references, into
+`P2_12_reference_errors/scalar_reference_errors.csv`. As before, only final
+models exist, so `eps_ref_min` and `k_min` are empty.
+
+**Preview, not the deliverable:** LiL-Q's final reference errors from the
+saved paper-pass solutions. The deliverable is the per-iteration `eps_ref`
+of the Grace reruns.
+- **Bratu:** 1.5e-1, 3.5e-4 and 5.8e-5 at P = 25, 100 and 225.
+- **Burgers:** 1.8e-1, 5.7e-3, 2.2e-3, 1.9e-4 and 4.6e-5 at P = 25-625.
+- **C2:** every one is far above the references' errors (Bratu 3.6e-9;
+  Burgers about 1e-15).
+
+Tests: `tests/test_references.py`, `tests/test_iteration_log.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 2: the Bratu classical baseline ported, its reference, checks C1 and C2
 
 **The port** (Package 2, Section 4.1). `baselines/square_chebyshev.py`

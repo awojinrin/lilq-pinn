@@ -17,8 +17,9 @@ Benchmarks:
 - ``bl`` and ``bl_gravity``: the finite-difference reference of
   ``problems.buckley_leverett.reference_solution`` on its 201 x 201 grid
   (``bl_reference_errors_networks.csv``, Package 2 Section 2.6).
-- ``bratu`` and ``burgers``: the Package 2 references (Section 6.2), passed in
-  as ``reference`` -- added with them.
+- ``bratu`` and ``burgers``: the Package 2 references (Section 6.2) in
+  ``--reference-dir`` (``scalar_reference_errors.csv``, with
+  ``--first-column benchmark``).
 
 Usage::
 
@@ -107,24 +108,44 @@ def rows_for(package, bench, reference):
     return rows
 
 
-REFERENCES = {'bl': bl_reference, 'bl_gravity': bl_reference}
+def npz_reference(reference_dir, benchmark):
+    """Bratu or Burgers: the Package 2 reference (Section 6.2) on its grid,
+    checked against the model's domain."""
+    from lilq.references import load_reference, reference_path
+    axes, ref, _ = load_reference(reference_path(reference_dir, benchmark))
+
+    def reference(config):
+        second = getattr(config, 'y_domain', None) or (0.0, config.T_final)
+        assert np.allclose([axes[0][0], axes[0][-1]], config.x_domain), 'x domain'
+        assert np.allclose([axes[1][0], axes[1][-1]], second), 'second domain'
+        return axes, ref
+
+    return reference
+
+
+REFERENCES = {'bl': bl_reference, 'bl_gravity': bl_reference, 'bratu': None, 'burgers': None}
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Reference errors of the saved four-method models.")
     ap.add_argument('--package', required=True)
     ap.add_argument('--benchmarks', nargs='+', default=['bl', 'bl_gravity'], choices=list(REFERENCES))
+    ap.add_argument('--reference-dir', default=None, help="package2_results/reference (bratu, burgers)")
+    ap.add_argument('--first-column', default='case', choices=('case', 'benchmark'),
+                    help="'case' for bl_reference_errors_networks.csv, 'benchmark' for scalar_reference_errors.csv")
     ap.add_argument('--out', required=True)
     args = ap.parse_args(argv)
     rows = []
     for bench in args.benchmarks:
-        rows += rows_for(Path(args.package), bench, REFERENCES[bench])
+        ref = REFERENCES[bench] or npz_reference(args.reference_dir, bench)
+        rows += rows_for(Path(args.package), bench, ref)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    cols = (args.first_column,) + COLUMNS[1:]
     with open(out, 'w', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=COLUMNS)
+        w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
-        w.writerows(rows)
+        w.writerows([{args.first_column: r['case'], **{k: r[k] for k in COLUMNS[1:]}} for r in rows])
     print(f"Wrote {out}: {len(rows)} models")
 
 

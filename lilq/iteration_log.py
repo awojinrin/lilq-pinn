@@ -61,6 +61,10 @@ ITERATION_CSV_COLUMNS = (
     # stall detector's conditions have held at n_s consecutive steps, this
     # one included. ``stall_flag`` stays the single-step indicator.
     "stall_rule_fires",
+    # Package 2 (Section 12.1): the relative discrete L2 error against the
+    # benchmark's reference solution on its test grid (lilq.references),
+    # empty where there is none.
+    "eps_ref",
 )
 
 

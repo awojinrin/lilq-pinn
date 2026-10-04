@@ -25,9 +25,11 @@ def test_schema_has_exactly_the_spec_columns_in_order():
         "kappa_raw", "kappa_retained", "num_rank_qr", "norm_beta",
         # the termination rule (the advisor's reply to wave 4, item 2(b)):
         "stall_rule_fires",
+        # Package 2: the error against the reference solution
+        "eps_ref",
     )
     assert ITERATION_CSV_COLUMNS == expected
-    assert len(ITERATION_CSV_COLUMNS) == 35
+    assert len(ITERATION_CSV_COLUMNS) == 36
 
 
 def test_record_fills_unspecified_columns_with_none():
