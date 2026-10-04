@@ -1,0 +1,870 @@
+{
+  "package": "C:\\Users\\awoji\\AppData\\Local\\Temp\\claude\\C--Users-awoji-Documents-LiL-Q\\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\\scratchpad\\final\\results\\package1",
+  "files": [
+    {
+      "file": "bratu.npz",
+      "arrays": {
+        "x": [
+          201
+        ],
+        "y": [
+          201
+        ],
+        "P25_LiL-Q": [
+          201,
+          201
+        ],
+        "P25_LiL-N": [
+          201,
+          201
+        ],
+        "P25_NiL-N": [
+          201,
+          201
+        ],
+        "P25_NiL-Q": [
+          201,
+          201
+        ],
+        "P225_LiL-Q": [
+          201,
+          201
+        ],
+        "P225_LiL-N": [
+          201,
+          201
+        ],
+        "P225_NiL-N": [
+          201,
+          201
+        ],
+        "P225_NiL-Q": [
+          201,
+          201
+        ]
+      },
+      "figure": "Bratu solution fields",
+      "grid": "201 x 201 on [0,1]^2",
+      "exact": "none (no closed form)",
+      "sources": {
+        "P25_LiL-Q": {
+          "run": "B_instrumentation/bratu_P25_cpu_paper",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "P25_LiL-N": {
+          "run": "B_instrumentation/four_method_jobs/bratu_gpu/models/bratu_P25_LiL-N_sna_cuda",
+          "device": "cuda",
+          "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf",
+          "note": "no CPU model (B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P25_LiL-N_sna_cpu): the GPU run of the same method and seed"
+        },
+        "P25_NiL-N": {
+          "run": "B_instrumentation/four_method_jobs/bratu_gpu/models/bratu_P25_NiL-N_s0_cuda",
+          "device": "cuda",
+          "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf",
+          "note": "no CPU model (B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P25_NiL-N_s0_cpu): the GPU run of the same method and seed"
+        },
+        "P25_NiL-Q": {
+          "run": "B_instrumentation/four_method_jobs/bratu_gpu/models/bratu_P25_NiL-Q_s0_cuda",
+          "device": "cuda",
+          "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf",
+          "note": "no CPU model (B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P25_NiL-Q_s0_cpu): the GPU run of the same method and seed"
+        },
+        "P225_LiL-Q": {
+          "run": "B_instrumentation/bratu_P225_cpu_paper",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "P225_LiL-N": {
+          "run": "B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P225_LiL-N_sna_cpu",
+          "device": "cpu",
+          "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+        },
+        "P225_NiL-N": {
+          "run": "B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P225_NiL-N_s0_cpu",
+          "device": "cpu",
+          "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+        },
+        "P225_NiL-Q": {
+          "run": "B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P225_NiL-Q_s0_cpu",
+          "device": "cpu",
+          "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+        }
+      },
+      "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45",
+      "evaluation_roundoff": {
+        "bratu_P25_LiL-Q": 6.661338147750939e-16,
+        "bratu_P25_LiL-N": 4.440892098500626e-16,
+        "bratu_P225_LiL-Q": 1.227178081375513e-13,
+        "bratu_P225_LiL-N": 1.3322676295501878e-15
+      }
+    },
+    {
+      "file": "burgers.npz",
+      "arrays": {
+        "x": [
+          201
+        ],
+        "t": [
+          201
+        ],
+        "P625_LiL-Q": [
+          201,
+          201
+        ],
+        "P625_LiL-N": [
+          201,
+          201
+        ],
+        "P625_NiL-N": [
+          201,
+          201
+        ],
+        "P625_NiL-Q": [
+          201,
+          201
+        ]
+      },
+      "figure": "Burgers solution fields",
+      "grid": "201 x 201 in (x, t)",
+      "exact": "none",
+      "sources": {
+        "P625_LiL-Q": {
+          "run": "B_instrumentation/burgers_P625_cpu_paper",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "P625_LiL-N": {
+          "run": "B_instrumentation/four_method_jobs/burgers_cpu/models/burgers_P625_LiL-N_sna_cpu",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "P625_NiL-N": {
+          "run": "B_instrumentation/four_method_jobs/burgers_cpu/models/burgers_P625_NiL-N_s0_cpu",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "P625_NiL-Q": {
+          "run": "B_instrumentation/four_method_jobs/burgers_cpu/models/burgers_P625_NiL-Q_s0_cpu",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        }
+      },
+      "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45",
+      "evaluation_roundoff": {
+        "burgers_P625_LiL-Q": 1.1879386363489175e-14,
+        "burgers_P625_LiL-N": 1.4432899320127035e-15
+      }
+    },
+    {
+      "file": "buckley_leverett.npz",
+      "arrays": {
+        "x": [
+          201
+        ],
+        "t": [
+          201
+        ],
+        "bl_reference": [
+          201,
+          201
+        ],
+        "bl_LiL-Q": [
+          201,
+          201
+        ],
+        "bl_NiL-N": [
+          201,
+          201
+        ],
+        "bl_gravity_reference": [
+          201,
+          201
+        ],
+        "bl_gravity_LiL-Q": [
+          201,
+          201
+        ],
+        "bl_gravity_NiL-N": [
+          201,
+          201
+        ]
+      },
+      "figure": "Buckley-Leverett comparison, viscous (bl) and gravity (bl_gravity)",
+      "P": 1024,
+      "N": 32,
+      "grid": "201 x 201 in (x, t)",
+      "reference": "finite-difference method-of-lines solve, problems.buckley_leverett.reference_solution",
+      "sources": {
+        "bl_LiL-Q": {
+          "run": "B_instrumentation/bl_P1024_cpu_paper",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "bl_NiL-N": {
+          "run": "B_instrumentation/four_method_jobs/bl_cpu/models/bl_P1024_NiL-N_s0_cpu",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "bl_gravity_LiL-Q": {
+          "run": "B_instrumentation/bl_gravity_P1024_cpu_paper",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "bl_gravity_NiL-N": {
+          "run": "B_instrumentation/four_method_jobs/bl_gravity_cpu/models/bl_gravity_P1024_NiL-N_s0_cpu",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        }
+      },
+      "checks": {
+        "bl_LiL-Q_eps_u": {
+          "recomputed": 0.00019580643300839623,
+          "logged": 0.00019580177503266018
+        },
+        "bl_NiL-N_eps_u": {
+          "recomputed": 0.0019013762505638342
+        },
+        "bl_gravity_LiL-Q_eps_u": {
+          "recomputed": 0.011600526376072845,
+          "logged": 0.011600526352997773
+        },
+        "bl_gravity_NiL-N_eps_u": {
+          "recomputed": 0.00802212318160995
+        }
+      },
+      "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45",
+      "evaluation_roundoff": {
+        "bl_LiL-Q": 1.716039939617109e-05,
+        "bl_gravity_LiL-Q": 1.8042901080432723e-08
+      }
+    },
+    {
+      "file": "kovasznay.npz",
+      "arrays": {
+        "x": [
+          301
+        ],
+        "y": [
+          401
+        ],
+        "LiL-Q_u": [
+          301,
+          401
+        ],
+        "exact_u": [
+          301,
+          401
+        ],
+        "LiL-Q_v": [
+          301,
+          401
+        ],
+        "exact_v": [
+          301,
+          401
+        ],
+        "LiL-Q_p": [
+          301,
+          401
+        ],
+        "exact_p": [
+          301,
+          401
+        ]
+      },
+      "figure": "Kovasznay fields and errors",
+      "P": 1875,
+      "grid": "301 x 401 on [-0.5,1] x [-0.5,1.5]",
+      "pressure": "LiL-Q_p in the run's pin gauge; the mean-free error is in checks",
+      "sources": {
+        "LiL-Q": {
+          "run": "B_instrumentation/kovasznay_P1875_cpu_paper",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        }
+      },
+      "checks": {
+        "eps_u": {
+          "recomputed": 7.002773878914153e-13,
+          "logged": 7.002775416216135e-13
+        },
+        "eps_v": {
+          "recomputed": 5.346818514401247e-12,
+          "logged": 5.346822930292403e-12
+        },
+        "eps_p_meanfree": {
+          "recomputed": 1.6524636745529153e-12,
+          "logged": 1.6524600426894258e-12
+        }
+      },
+      "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45",
+      "evaluation_roundoff": {
+        "kovasznay_LiL-Q_u": 3.6637359812630166e-15,
+        "kovasznay_LiL-Q_v": 4.163336342344337e-16,
+        "kovasznay_LiL-Q_p": 1.7763568394002505e-15
+      }
+    },
+    {
+      "file": "beltrami.npz",
+      "arrays": {
+        "s": [
+          41
+        ],
+        "xm1_LiL-Q_u": [
+          41,
+          41
+        ],
+        "xm1_exact_u": [
+          41,
+          41
+        ],
+        "xm1_LiL-Q_v": [
+          41,
+          41
+        ],
+        "xm1_exact_v": [
+          41,
+          41
+        ],
+        "xm1_LiL-Q_w": [
+          41,
+          41
+        ],
+        "xm1_exact_w": [
+          41,
+          41
+        ],
+        "xm1_LiL-Q_p": [
+          41,
+          41
+        ],
+        "xm1_exact_p": [
+          41,
+          41
+        ],
+        "xp1_LiL-Q_u": [
+          41,
+          41
+        ],
+        "xp1_exact_u": [
+          41,
+          41
+        ],
+        "xp1_LiL-Q_v": [
+          41,
+          41
+        ],
+        "xp1_exact_v": [
+          41,
+          41
+        ],
+        "xp1_LiL-Q_w": [
+          41,
+          41
+        ],
+        "xp1_exact_w": [
+          41,
+          41
+        ],
+        "xp1_LiL-Q_p": [
+          41,
+          41
+        ],
+        "xp1_exact_p": [
+          41,
+          41
+        ],
+        "ym1_LiL-Q_u": [
+          41,
+          41
+        ],
+        "ym1_exact_u": [
+          41,
+          41
+        ],
+        "ym1_LiL-Q_v": [
+          41,
+          41
+        ],
+        "ym1_exact_v": [
+          41,
+          41
+        ],
+        "ym1_LiL-Q_w": [
+          41,
+          41
+        ],
+        "ym1_exact_w": [
+          41,
+          41
+        ],
+        "ym1_LiL-Q_p": [
+          41,
+          41
+        ],
+        "ym1_exact_p": [
+          41,
+          41
+        ],
+        "yp1_LiL-Q_u": [
+          41,
+          41
+        ],
+        "yp1_exact_u": [
+          41,
+          41
+        ],
+        "yp1_LiL-Q_v": [
+          41,
+          41
+        ],
+        "yp1_exact_v": [
+          41,
+          41
+        ],
+        "yp1_LiL-Q_w": [
+          41,
+          41
+        ],
+        "yp1_exact_w": [
+          41,
+          41
+        ],
+        "yp1_LiL-Q_p": [
+          41,
+          41
+        ],
+        "yp1_exact_p": [
+          41,
+          41
+        ],
+        "zm1_LiL-Q_u": [
+          41,
+          41
+        ],
+        "zm1_exact_u": [
+          41,
+          41
+        ],
+        "zm1_LiL-Q_v": [
+          41,
+          41
+        ],
+        "zm1_exact_v": [
+          41,
+          41
+        ],
+        "zm1_LiL-Q_w": [
+          41,
+          41
+        ],
+        "zm1_exact_w": [
+          41,
+          41
+        ],
+        "zm1_LiL-Q_p": [
+          41,
+          41
+        ],
+        "zm1_exact_p": [
+          41,
+          41
+        ],
+        "zp1_LiL-Q_u": [
+          41,
+          41
+        ],
+        "zp1_exact_u": [
+          41,
+          41
+        ],
+        "zp1_LiL-Q_v": [
+          41,
+          41
+        ],
+        "zp1_exact_v": [
+          41,
+          41
+        ],
+        "zp1_LiL-Q_w": [
+          41,
+          41
+        ],
+        "zp1_exact_w": [
+          41,
+          41
+        ],
+        "zp1_LiL-Q_p": [
+          41,
+          41
+        ],
+        "zp1_exact_p": [
+          41,
+          41
+        ]
+      },
+      "figure": "Beltrami",
+      "run": "the pinned LiL-Q run (Section 3.7)",
+      "t": 1.0,
+      "grid": "41 x 41 per face",
+      "faces": {
+        "xm1": "x = -1, (y, z) = (s, s)",
+        "xp1": "x = +1, (y, z)",
+        "ym1": "y = -1, (x, z)",
+        "yp1": "y = +1, (x, z)",
+        "zm1": "z = -1, (x, y)",
+        "zp1": "z = +1, (x, y)"
+      },
+      "pressure": "LiL-Q_p in the run's pinned gauge",
+      "sources": {
+        "LiL-Q": {
+          "run": "B_instrumentation/beltrami_pinned",
+          "device": "cpu",
+          "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf"
+        }
+      },
+      "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45",
+      "evaluation_roundoff": {
+        "beltrami_xm1_u": 4.3298697960381105e-15,
+        "beltrami_xm1_v": 2.55351295663786e-15,
+        "beltrami_xm1_w": 3.3306690738754696e-15,
+        "beltrami_xm1_p": 1.2989609388114332e-14,
+        "beltrami_xp1_u": 4.884981308350689e-15,
+        "beltrami_xp1_v": 8.881784197001252e-15,
+        "beltrami_xp1_w": 4.440892098500626e-15,
+        "beltrami_xp1_p": 2.353672812205332e-14,
+        "beltrami_ym1_u": 3.219646771412954e-15,
+        "beltrami_ym1_v": 3.552713678800501e-15,
+        "beltrami_ym1_w": 3.1086244689504383e-15,
+        "beltrami_ym1_p": 1.3322676295501878e-14,
+        "beltrami_yp1_u": 3.219646771412954e-15,
+        "beltrami_yp1_v": 5.329070518200751e-15,
+        "beltrami_yp1_w": 7.771561172376096e-15,
+        "beltrami_yp1_p": 2.5979218776228663e-14,
+        "beltrami_zm1_u": 4.3576253716537394e-15,
+        "beltrami_zm1_v": 4.218847493575595e-15,
+        "beltrami_zm1_w": 4.6629367034256575e-15,
+        "beltrami_zm1_p": 8.659739592076221e-15,
+        "beltrami_zp1_u": 7.105427357601002e-15,
+        "beltrami_zp1_v": 3.552713678800501e-15,
+        "beltrami_zp1_w": 3.774758283725532e-15,
+        "beltrami_zp1_p": 2.4424906541753444e-14
+      }
+    },
+    {
+      "file": "darcy.npz",
+      "arrays": {
+        "S1_x": [
+          60
+        ],
+        "S1_y": [
+          220
+        ],
+        "S1_FV": [
+          60,
+          220
+        ],
+        "S1_LiL": [
+          60,
+          220
+        ],
+        "S1_NiL_float64": [
+          60,
+          220
+        ],
+        "S1_NiL_float32": [
+          60,
+          220
+        ],
+        "S2_x": [
+          60
+        ],
+        "S2_y": [
+          220
+        ],
+        "S2_FV": [
+          60,
+          220
+        ],
+        "S2_LiL": [
+          60,
+          220
+        ],
+        "S2_NiL_float64": [
+          60,
+          220
+        ],
+        "S2_NiL_float32": [
+          60,
+          220
+        ],
+        "S3_x": [
+          60
+        ],
+        "S3_y": [
+          220
+        ],
+        "S3_FV": [
+          60,
+          220
+        ],
+        "S3_LiL": [
+          60,
+          220
+        ],
+        "S3_NiL_float64": [
+          60,
+          220
+        ],
+        "S3_NiL_float32": [
+          60,
+          220
+        ],
+        "SPE10_x": [
+          60
+        ],
+        "SPE10_y": [
+          220
+        ],
+        "SPE10_FV": [
+          60,
+          220
+        ],
+        "SPE10_LiL": [
+          60,
+          220
+        ],
+        "SPE10_NiL_float64": [
+          60,
+          220
+        ],
+        "SPE10_NiL_float32": [
+          60,
+          220
+        ]
+      },
+      "figure": "Darcy pressure fields",
+      "grid": "the finite-volume cell centres (physical coordinates)",
+      "units": "pressure as in B9 (psi)",
+      "sources": {
+        "S1_LiL": {
+          "run": "B_instrumentation/darcy_fv/S1_s0/models/LiL_S1",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S1_FV": {
+          "from": "B_instrumentation/darcy_fv/S1_s0/models/LiL_S1/solution.pt, extra['P_fvm']",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S1_NiL_float64": {
+          "run": "B_instrumentation/darcy_fv/S1_s0/models/NiL_S1_s0_float64",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S1_NiL_float32": {
+          "run": "B_instrumentation/darcy_fv/S1_s0/models/NiL_S1_s0_float32",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S2_LiL": {
+          "run": "B_instrumentation/darcy_fv/S2_s0/models/LiL_S2",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S2_FV": {
+          "from": "B_instrumentation/darcy_fv/S2_s0/models/LiL_S2/solution.pt, extra['P_fvm']",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S2_NiL_float64": {
+          "run": "B_instrumentation/darcy_fv/S2_s0/models/NiL_S2_s0_float64",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S2_NiL_float32": {
+          "run": "B_instrumentation/darcy_fv/S2_s0/models/NiL_S2_s0_float32",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S3_LiL": {
+          "run": "B_instrumentation/darcy_fv/S3_s0/models/LiL_S3",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S3_FV": {
+          "from": "B_instrumentation/darcy_fv/S3_s0/models/LiL_S3/solution.pt, extra['P_fvm']",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S3_NiL_float64": {
+          "run": "B_instrumentation/darcy_fv/S3_s0/models/NiL_S3_s0_float64",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "S3_NiL_float32": {
+          "run": "B_instrumentation/darcy_fv/S3_s0/models/NiL_S3_s0_float32",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "SPE10_LiL": {
+          "run": "B_instrumentation/darcy_fv/SPE10_s0/models/LiL_SPE10",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "SPE10_FV": {
+          "from": "B_instrumentation/darcy_fv/SPE10_s0/models/LiL_SPE10/solution.pt, extra['P_fvm']",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "SPE10_NiL_float64": {
+          "run": "B_instrumentation/darcy_fv/SPE10_s0/models/NiL_SPE10_s0_float64",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        },
+        "SPE10_NiL_float32": {
+          "run": "B_instrumentation/darcy_fv/SPE10_s0/models/NiL_SPE10_s0_float32",
+          "device": "cuda (B9, shared A100)",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        }
+      },
+      "checks": {
+        "S1_LiL": {
+          "P_lil_vs_stored_max_abs": 1.8189894035458565e-12,
+          "delta_fv_recomputed": 0.00013732921683686473,
+          "delta_fv_logged": 0.0001373292168368637
+        },
+        "S1_NiL_float64": {
+          "delta_fv_recomputed": 0.021406541228611034,
+          "delta_fv_logged": 0.021406541228611034
+        },
+        "S1_NiL_float32": {
+          "delta_fv_recomputed": 0.021661602710446697,
+          "delta_fv_logged": 0.021661599871854814
+        },
+        "S2_LiL": {
+          "P_lil_vs_stored_max_abs": 1.8189894035458565e-12,
+          "delta_fv_recomputed": 0.0002330539412630806,
+          "delta_fv_logged": 0.0002330539412630805
+        },
+        "S2_NiL_float64": {
+          "delta_fv_recomputed": 0.04678456355309791,
+          "delta_fv_logged": 0.0467845635530979
+        },
+        "S2_NiL_float32": {
+          "delta_fv_recomputed": 0.06324707294687747,
+          "delta_fv_logged": 0.06324706542807673
+        },
+        "S3_LiL": {
+          "P_lil_vs_stored_max_abs": 1.8189894035458565e-12,
+          "delta_fv_recomputed": 0.0006736036979545337,
+          "delta_fv_logged": 0.0006736036979545363
+        },
+        "S3_NiL_float64": {
+          "delta_fv_recomputed": 0.05123076996848109,
+          "delta_fv_logged": 0.0512307699684811
+        },
+        "S3_NiL_float32": {
+          "delta_fv_recomputed": 0.05458291067981185,
+          "delta_fv_logged": 0.054582908301542436
+        },
+        "SPE10_LiL": {
+          "P_lil_vs_stored_max_abs": 6.366462912410498e-12,
+          "delta_fv_recomputed": 0.03420749260743777,
+          "delta_fv_logged": 0.034207492607437745
+        },
+        "SPE10_NiL_float64": {
+          "delta_fv_recomputed": 0.0873976990058765,
+          "delta_fv_logged": 0.08739769900587646
+        },
+        "SPE10_NiL_float32": {
+          "delta_fv_recomputed": 0.10902207613942434,
+          "delta_fv_logged": 0.10902205487251965
+        }
+      },
+      "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45",
+      "evaluation_roundoff": {
+        "darcy_S1_h_tilde": 5.273559366969494e-16,
+        "darcy_S2_h_tilde": 3.608224830031759e-16,
+        "darcy_S3_h_tilde": 4.718447854656915e-16,
+        "darcy_SPE10_h_tilde": 2.0539125955565396e-15
+      }
+    },
+    {
+      "file": "elasticity.npz",
+      "arrays": {
+        "x": [
+          200
+        ],
+        "y": [
+          200
+        ],
+        "LiL_ux": [
+          200,
+          200
+        ],
+        "LiL_uy": [
+          200,
+          200
+        ],
+        "exact_ux": [
+          200,
+          200
+        ],
+        "exact_uy": [
+          200,
+          200
+        ]
+      },
+      "figure": "Elasticity fields and errors (the superseded image: elasticity_fields_and_errors_N5.png)",
+      "P": 50,
+      "grid": "200 x 200 on [0,1]^2",
+      "sources": {
+        "LiL": {
+          "run": "B_instrumentation/elasticity_P50_cpu_paper",
+          "device": "cpu",
+          "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0"
+        }
+      },
+      "checks": {
+        "eps_ux": {
+          "recomputed": 8.258697607695968e-16,
+          "logged": 8.257875242203066e-16
+        },
+        "eps_uy": {
+          "recomputed": 8.465720771633762e-16,
+          "logged": 8.498340193358157e-16
+        }
+      },
+      "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45",
+      "evaluation_roundoff": {
+        "elasticity_ux": 3.3306690738754696e-16,
+        "elasticity_uy": 3.3306690738754696e-16
+      }
+    }
+  ],
+  "missing_models": [
+    {
+      "figure": "bratu",
+      "P": 25,
+      "method": "LiL-N",
+      "seed": 0,
+      "missing": "B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P25_LiL-N_sna_cpu",
+      "used_instead": "B_instrumentation/four_method_jobs/bratu_gpu/models/bratu_P25_LiL-N_sna_cuda"
+    },
+    {
+      "figure": "bratu",
+      "P": 25,
+      "method": "NiL-N",
+      "seed": 0,
+      "missing": "B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P25_NiL-N_s0_cpu",
+      "used_instead": "B_instrumentation/four_method_jobs/bratu_gpu/models/bratu_P25_NiL-N_s0_cuda"
+    },
+    {
+      "figure": "bratu",
+      "P": 25,
+      "method": "NiL-Q",
+      "seed": 0,
+      "missing": "B_instrumentation/four_method_jobs/bratu_cpu/models/bratu_P25_NiL-Q_s0_cpu",
+      "used_instead": "B_instrumentation/four_method_jobs/bratu_gpu/models/bratu_P25_NiL-Q_s0_cuda"
+    }
+  ],
+  "written_by_commit": "6945d501a95771d1d91da86c68fa8d24cf7dcb45"
+}
