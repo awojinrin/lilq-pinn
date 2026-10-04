@@ -17,6 +17,57 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 6b: the manuscript's tables regenerated from package1 and checked against main.tex
+
+**Why.** Gate G1 (Package 2, Section 2, item 1) requires a script for every
+table of Section 6 and Appendix B ("do not leave any manuscript number
+without a reproducible path"). The advisor's README in the manuscript
+snapshot says most tables were typed from our package CSVs. They carry
+medians over seeds, stopping-reason markers and ratios, and no script of
+ours built them.
+
+**`experiments/release_tables.py`** has two parts:
+- **Builders.** One per table, each writing `<label>.csv` in the
+  manuscript's layout, at full precision, from `package1` only.
+- **A checker.** It reads the same tables out of `main.tex` and compares
+  every checked cell:
+  - a number agrees when it is within half a unit of its last printed
+    digit;
+  - markers (`*`, dagger, `r/3`, `a`) must be the same set;
+  - text cells must match.
+
+  Published rows (other papers' solvers) are not checked.
+
+19 tables, 2,601 cells. Every cell agrees except 4, all in
+`tab:bl_reference_errors`, where the manuscript has a rounding slip:
+- viscous, P = 576: E_S (stop) and min E_S are 9.0458e-4, printed 9.1e-4
+  (should be 9.0e-4);
+- gravity, P = 1,024: min E_S and E_S (k = 60) are 1.1477e-2, printed
+  1.2e-2 (should be 1.1e-2).
+
+The advisor's own `A1_bl_lilq_errors.csv` carries the same values as
+ours, so the slip is in the typing; it goes in `RELEASE.md` and the Stage 1
+report.
+
+**Rules recovered from the data and stated in the code:**
+- **Four-method tables:** GPU medians of the iterations and of the time,
+  each taken separately.
+  - Markers: `r/3` when 1 or 2 of the 3 seeds reached the target; `*` when
+    most runs ended at the budget; dagger when most stalled.
+  - LiL-Q values are option B's clean times.
+- **Beltrami:** the eight-pin run (`beltrami_pinned`), as B.5 states.
+- **Darcy NiL:** float64 medians.
+- **Conditioning:** final-iterate kappa. The iteration stability is
+  max_k kappa / min_k kappa over k >= 1, the largest over P.
+- **Termination-rule tables:** `stopping_rule_table.table16` at each
+  variant's tolerances.
+
+Tests: `tests/test_release_tables.py`. They check the parser, that a wrong
+number or a wrong marker is caught, the marker rule, and matching rows by
+key.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 6a: the advisor's reply to the Stage-1 note; the Section 12.1 layout
 
 **The reply** (`Package2v2/Reply_to_stage1_note_2026-10-04.md`). It came with a
