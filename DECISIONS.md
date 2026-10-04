@@ -17,6 +17,38 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 5 on Grace: check C4 passed; the LiL-Q rows of the scalar reference-error table
+
+**The job** (`p2s1_scalar_reruns`, job 19956475, node c531, exclusive, 48
+threads) completed in 2 min 52 s, about 2.3 SU, at commit `750f0b6`
+(`results/package2_stage1/COMMIT`).
+- **Check C4:** every one of the 8 reruns has the same iterations as
+  `package1`, and `norm_R_h` agrees **exactly** (relative difference 0.0) at
+  every k. `eps_ref` is logged on every row.
+- **The references** written on Grace match the laptop's to 1.4e-14 (Bratu)
+  and 7.8e-16 (Burgers). Grace's Bratu reference error is 3.6e-9, and the
+  Burgers Basdevant and series checks pass as on the laptop.
+
+**The table.** `experiments/network_reference_errors.py --lilq-runs` adds the
+LiL-Q rows to `scalar_reference_errors.csv`, with the final and smallest
+`eps_ref` and the k of the smallest, read from the reruns' `iterations.csv`.
+The network rows, evaluated against Grace's references, are unchanged
+(within 1e-12).
+
+**One thing to report:** at Burgers P = 400 and P = 625, LiL-Q's smallest
+`eps_ref` comes one iteration before the last. The last iteration lowers the
+residual but raises the error against the reference:
+- P = 400: 1.67e-4 to 1.93e-4;
+- P = 625: 3.67e-5 to 4.56e-5.
+
+The iterate converges to the discrete collocation solution, whose own error
+is the final value. At every other configuration, the final iterate has the
+smallest error.
+
+Tests: `tests/test_package2_stage1_release.py::test_lilq_rows_read_eps_ref_from_the_reruns`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 5: the Grace job (references, scalar reruns with eps_ref, check C4) and the stage names
 
 **eps_ref in the scalar solvers.**

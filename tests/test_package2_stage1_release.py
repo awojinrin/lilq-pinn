@@ -74,3 +74,17 @@ def test_network_reference_errors_on_saved_models(tmp_path, monkeypatch):
     assert [(r['method'], r['seed']) for r in rows] == [('LiL-N', ''), ('NiL-N', 1)]
     assert rows[0]['eps_ref_final'] == pytest.approx(0.0, abs=1e-14) and rows[1]['eps_ref_final'] > 0
     assert rows[1]['eps_ref_min'] == '' and 'only the final model' in rows[1]['note'] and rows[1]['commit'] == 'c0ffee'
+
+
+def test_lilq_rows_read_eps_ref_from_the_reruns(tmp_path):
+    import experiments.network_reference_errors as nre
+    runs = tmp_path / 'P2_12_reference_errors' / 'B_instrumentation'
+    (runs.parent / 'hardware.json').parent.mkdir(parents=True)
+    (runs.parent / 'hardware.json').write_text(json.dumps({'git': {'commit': 'beef'}}))
+    _write(runs / 'toy_P25_cpu_paper' / 'iterations.csv',
+           [{'k': 0, 'eps_ref': 1.0}, {'k': 1, 'eps_ref': 1e-3}, {'k': 2, 'eps_ref': 2e-3}])
+    _write(runs / 'other_P25_cpu_paper' / 'iterations.csv', [{'k': 0, 'eps_ref': 1.0}])
+    [row] = nre.lilq_rows(runs, 'toy')
+    assert (row['method'], row['P'], row['device'], row['commit']) == ('LiL-Q', 25, 'cpu', 'beef')
+    assert (row['eps_ref_final'], row['eps_ref_min'], row['k_min']) == (2e-3, 1e-3, 1)
+    assert row['run'] == 'P2_12_reference_errors/B_instrumentation/toy_P25_cpu_paper'

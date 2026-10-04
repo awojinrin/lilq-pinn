@@ -13,6 +13,10 @@ smallest error over the iterations and where it occurred) cannot be computed
 without rerunning; they are left empty and the reason is in ``note``. The stall
 controls (``*_f1_stall_rule``) are not among the reported runs and are skipped.
 
+**LiL-Q** (``--lilq-runs``): the Package 2 reruns of the reported Bratu and
+Burgers configurations log ``eps_ref`` at every iteration, so their rows have
+all three columns, read from each run's ``iterations.csv``.
+
 Benchmarks:
 - ``bl`` and ``bl_gravity``: the finite-difference reference of
   ``problems.buckley_leverett.reference_solution`` on its 201 x 201 grid
@@ -25,6 +29,10 @@ Usage::
 
     python experiments/network_reference_errors.py --package <package1> --benchmarks bl bl_gravity \\
         --out <package2_results>/G1_release/bl_reference_errors_networks.csv
+    python experiments/network_reference_errors.py --package <package1> --benchmarks bratu burgers \\
+        --reference-dir <stage1>/reference --first-column benchmark \\
+        --lilq-runs <stage1>/P2_12_reference_errors/B_instrumentation \\
+        --out <package2_results>/P2_12_reference_errors/scalar_reference_errors.csv
 """
 
 import argparse
@@ -44,6 +52,8 @@ import torch
 from lilq.saved_models import load_network, load_solution
 from lilq.test_errors import tensor_grid_values
 
+LILQ_RE = re.compile(r'^(?P<bench>.+)_P(?P<P>\d+)_(?P<device>cpu|cuda)_paper$')
+LILQ_NOTE = 'Package 2 rerun of the reported configuration; eps_ref logged at every iteration'
 MODEL_RE = re.compile(r'^(?P<bench>.+)_P(?P<P>\d+)_(?P<method>NiL-N|NiL-Q|LiL-N)_(?P<seed>s\d+|sna)_(?P<device>cpu|cuda)$')
 NOTE = 'only the final model was saved: eps_ref_min and k_min need the intermediate iterates'
 COLUMNS = ('case', 'P', 'method', 'seed', 'device', 'eps_ref_final', 'eps_ref_min', 'k_min', 'run', 'commit', 'note')
@@ -108,6 +118,25 @@ def rows_for(package, bench, reference):
     return rows
 
 
+def lilq_rows(runs_dir, bench):
+    """LiL-Q rows of ``bench`` from the reruns in ``runs_dir``: the final and
+    smallest ``eps_ref`` over the iterations, and the k of the smallest."""
+    runs_dir = Path(runs_dir)
+    rows = []
+    for path in sorted(runs_dir.iterdir()):
+        m = LILQ_RE.match(path.name)
+        if not (m and m['bench'] == bench and (path / 'iterations.csv').exists()):
+            continue
+        with open(path / 'iterations.csv', newline='') as f:
+            log = [(int(r['k']), float(r['eps_ref'])) for r in csv.DictReader(f) if r.get('eps_ref', '') != '']
+        k_min, eps_min = min(log, key=lambda t: t[1])
+        rows.append({'case': bench, 'P': int(m['P']), 'method': 'LiL-Q', 'seed': '', 'device': m['device'],
+                     'eps_ref_final': log[-1][1], 'eps_ref_min': eps_min, 'k_min': k_min,
+                     'run': path.relative_to(runs_dir.parent.parent).as_posix(),
+                     'commit': _commit(path, Path(path.anchor)), 'note': LILQ_NOTE})
+    return rows
+
+
 def npz_reference(reference_dir, benchmark):
     """Bratu or Burgers: the Package 2 reference (Section 6.2) on its grid,
     checked against the model's domain."""
@@ -131,6 +160,8 @@ def main(argv=None):
     ap.add_argument('--package', required=True)
     ap.add_argument('--benchmarks', nargs='+', default=['bl', 'bl_gravity'], choices=list(REFERENCES))
     ap.add_argument('--reference-dir', default=None, help="package2_results/reference (bratu, burgers)")
+    ap.add_argument('--lilq-runs', default=None,
+                    help="the Package 2 LiL-Q reruns (B_instrumentation), whose eps_ref is in iterations.csv")
     ap.add_argument('--first-column', default='case', choices=('case', 'benchmark'),
                     help="'case' for bl_reference_errors_networks.csv, 'benchmark' for scalar_reference_errors.csv")
     ap.add_argument('--out', required=True)
@@ -138,7 +169,8 @@ def main(argv=None):
     rows = []
     for bench in args.benchmarks:
         ref = REFERENCES[bench] or npz_reference(args.reference_dir, bench)
-        rows += rows_for(Path(args.package), bench, ref)
+        both = rows_for(Path(args.package), bench, ref) + (lilq_rows(args.lilq_runs, bench) if args.lilq_runs else [])
+        rows += sorted(both, key=lambda r: (r['P'], r['method'], str(r['seed']), r['device']))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     cols = (args.first_column,) + COLUMNS[1:]
