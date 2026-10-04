@@ -112,11 +112,12 @@ def test_dry_run_checks_every_job_and_submits_nothing(tmp_path):
                     'for a in "$@"; do [[ "$a" == --test-only ]] && { echo "$*" >> "$(dirname "$0")/log"; '
                     'echo "sbatch: Job 1 to start at soon" >&2; exit 0; }; done\nexit 1\n')
     fake.chmod(0o755)
-    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1')
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1', LILQ_ACCOUNT='000000000000')
     out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave1.sh')], env=env,
                          capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
     log = (tmp_path / 'log').read_text().splitlines()
+    assert all('--account=000000000000' in l for l in log)
     assert len(log) == 9 and not any('--dependency' in l for l in log)
     assert all('--mem=360G' in l for l in log if '10a_timed_lilq_cpu' in l or '10b_timed_lilq_gpu' in l)
     out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave1.sh')],
@@ -178,7 +179,7 @@ def test_wave_2_dry_run_requests_one_gpu_per_timed_job(tmp_path):
                     'for a in "$@"; do [[ "$a" == --test-only ]] && { echo "$*" >> "$(dirname "$0")/log"; '
                     'echo "sbatch: Job 1 to start at soon" >&2; exit 0; }; done\nexit 1\n')
     fake.chmod(0o755)
-    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1')
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1', LILQ_ACCOUNT='000000000000')
     out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave2.sh')], env=env,
                          capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
@@ -312,7 +313,8 @@ def test_wave_4_submission_copies_component_a_and_chains_the_jobs(tmp_path):
     fake.write_text('#!/bin/bash\nn=$(cat "$(dirname "$0")/n" 2>/dev/null || echo 100); echo $((n+1)) > "$(dirname "$0")/n"\n'
                     'echo "$*" >> "$(dirname "$0")/log"; echo $((n+1))\n')
     fake.chmod(0o755)
-    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", LILQ_RESULTS=str(res), YES='1')
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", LILQ_RESULTS=str(res), YES='1',
+               LILQ_ACCOUNT='000000000000')
     out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave4.sh')], env=env, capture_output=True, text=True)
     assert out.returncode == 0, out.stdout + out.stderr
     w4 = res / 'wave4' / 'A_calibration'
@@ -326,3 +328,15 @@ def test_wave_4_submission_copies_component_a_and_chains_the_jobs(tmp_path):
     # 13b waits for 13a (both write clean_timing.csv); the fake ids count from 101.
     tcpu = 101 + next(i for i, l in enumerate(log) if '13a_clean_timing_cpu' in l)
     assert f'afterany:{tcpu}' in next(l for l in log if '13b_clean_timing_gpu' in l)
+
+
+@pytest.mark.skipif(__import__('os').name == 'nt', reason='runs the bash submission scripts')
+def test_submission_needs_the_allocation_account(tmp_path):
+    """The account is not in the repository: without LILQ_ACCOUNT, nothing is submitted."""
+    import os
+    import subprocess
+    env = {k: v for k, v in os.environ.items() if k != 'LILQ_ACCOUNT'}
+    for script in ('submit_wave1.sh', 'sbatch.sh'):
+        out = subprocess.run(['bash', str(REPO / 'scripts/cluster' / script), 'x.slurm'],
+                             env=dict(env, LILQ_WAVE='1', DRY_RUN='1'), capture_output=True, text=True)
+        assert out.returncode != 0 and 'set LILQ_ACCOUNT' in out.stderr, script

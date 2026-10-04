@@ -12,6 +12,7 @@ RESULTS="${LILQ_RESULTS:-$PWD/results}"   # LILQ_RESULTS: tests only
 CLUSTER="${CLUSTER:-grace}"
 [[ -f $S/profiles/$CLUSTER.sh ]] || { echo "no profile $S/profiles/$CLUSTER.sh" >&2; exit 1; }
 source $S/profiles/$CLUSTER.sh
+[[ -n "$ACCOUNT" ]] || { echo "set LILQ_ACCOUNT to your HPRC allocation account (myproject -l)" >&2; exit 1; }
 [[ -n "$CPU_PARTITION" && -n "${CPU_NODE_CORES:-}" ]] || { echo "the profile needs CPU_PARTITION and CPU_NODE_CORES" >&2; exit 1; }
 export CLUSTER CPU_PARTITION LILQ_WAVE
 

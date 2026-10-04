@@ -20,6 +20,7 @@ module spider PyTorch                    # module names (profile's LILQ_MODULES)
 sinfo -p gpu -o "%N %c %m %G %l"         # A100 nodes: cores (Grace profile: 48), memory, GPUs, time limit
 sinfo -s                                 # a partition without GPUs, for CPU_PARTITION
 myproject -l                             # the account and its balance
+export LILQ_ACCOUNT=<account>            # the account jobs are charged to (add it to ~/.bashrc)
 ```
 
 Edit the profile if the module names or the nodes' core counts differ. On

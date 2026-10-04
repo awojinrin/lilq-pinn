@@ -17,6 +17,30 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 6f: no allocation accounts or machine paths in the repository
+
+**The allocation account** comes from the environment, `LILQ_ACCOUNT`, not from the cluster
+profiles (`scripts/cluster/profiles/{grace,faster}.sh` had the two HPRC account numbers):
+- `sbatch.sh` and `submit_lib.sh` stop before submitting anything when it is unset;
+- `tests/test_cluster_waves.py` runs the submission scripts with a placeholder account and
+  checks that it reaches `sbatch`, and that without it nothing is submitted;
+- `tests/test_provenance.py` uses a placeholder account;
+- on the cluster: `export LILQ_ACCOUNT=<account>` (`scripts/cluster/README.md`, Section 1).
+
+**The notebook** (`examples/lilq_demo.ipynb`) had a saved stderr output, a PyTorch warning
+that printed the path of a local Python installation; that output was removed (8 lines; the
+code already locates the project by a relative path, and the other outputs stay).
+
+**A guard:** `tests/test_no_local_paths.py` fails if a tracked text file contains a Windows or
+Linux home-directory path, a cluster scratch path or an allocation account (checked on the
+previous versions of the four files: it catches each).
+
+Both remain in the history of the public branches (the accounts on `v3-dev` since
+2026-09-29, the notebook path on `main` since June); removing them from history would mean
+rewriting published commits, which is not done here.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 6e: the review before the release; no journal in the release's name
 
 **The name.** The release is tagged `v2.0.0` (semantic versioning; `v1.0-manuscript` is the

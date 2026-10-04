@@ -184,12 +184,12 @@ def test_scheduler_info_records_node_type_and_exclusivity(monkeypatch):
             "NodeName=g001 Arch=x86_64 CPUTot=48 AvailableFeatures=a100,gpu ActiveFeatures=a100,gpu "
             "Gres=gpu:a100:2 RealMemory=376000 Partitions=gpu",
         ("scontrol", "show", "job", "123"):
-            "JobId=123 Account=132698954494 Partition=gpu NumCPUs=48 OverSubscribe=NO TRES=cpu=48,gres/gpu=2",
+            "JobId=123 Account=000000000000 Partition=gpu NumCPUs=48 OverSubscribe=NO TRES=cpu=48,gres/gpu=2",
     }
     monkeypatch.setattr(prov, "_run", lambda args, **kw: outputs.get(tuple(args)))
     info = prov.capture_scheduler_info()
     assert info["node"]["AvailableFeatures"] == "a100,gpu" and info["node"]["Gres"] == "gpu:a100:2"
-    assert info["job"]["Account"] == "132698954494" and info["exclusive"] is True
+    assert info["job"]["Account"] == "000000000000" and info["exclusive"] is True
 
 
 def test_scheduler_info_records_a_whole_node_held_without_exclusive(monkeypatch):

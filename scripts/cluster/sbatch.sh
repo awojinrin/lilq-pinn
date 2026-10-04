@@ -20,6 +20,7 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER="${CLUSTER:-grace}"
 source "$here/profiles/$CLUSTER.sh"
+[[ -n "$ACCOUNT" ]] || { echo "set LILQ_ACCOUNT to your HPRC allocation account (myproject -l)" >&2; exit 1; }
 : "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1 or p2s2 (the wave or stage this job belongs to)}"
 [[ "$LILQ_WAVE" =~ ^([1234]|p2s[12])$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1 or p2s2, not '$LILQ_WAVE'" >&2; exit 1; }
 export CLUSTER LILQ_MODULES LILQ_WAVE
