@@ -17,6 +17,60 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 2: the Bratu classical baseline ported, its reference, checks C1 and C2
+
+**The port** (Package 2, Section 4.1). `baselines/square_chebyshev.py`
+ports the advisor's pilot (`bratu_pilot.py`). Every method is one Newton
+iteration through one `assemble`, and the methods differ only in:
+- **the trial space:** tensor T_i(2x-1)T_j(2y-1), or the same times
+  x(1-x)y(1-y);
+- **the rows and their weights:**
+  - square on the p x p CGL grid (LU);
+  - interior CGL rows with Clenshaw-Curtis weights (`hard`);
+  - weak boundary rows with equal mean-square weights and lambda_bc
+    (`weakMS`), or with Clenshaw-Curtis weights (`weakCC`).
+
+The iteration starts from zero, with K_max = 20, and stops at a relative
+coefficient change < 1e-9. It records:
+- per iteration: the residual norms, the coefficient change, chi, and the
+  error against a reference;
+- the assembly and solve times, kept apart and outside the diagnostics, for
+  the Stage 2 timing;
+- the plateau iterate (the first within 5% of the final error);
+- kappa and the rank (SVD).
+
+**The reference** (Section 6.2; check C2).
+`experiments/p2_3_classical.py reference` writes
+`reference/bratu_ref_p48.npz` and `bratu_ref_p64.npz`: the coefficients,
+p, and the field on the 201 x 201 test grid.
+- **Its error:** p = 48 against p = 64 is 3.6e-9 relative (max 2.2e-8);
+  p = 64 against p = 80 is 6.9e-10.
+- **The smallest Bratu error the package will report** is LS-hard at p =
+  24, 2.4e-7; SQ-CGL at p = 24 is 5.1e-7.
+- **So C2 holds by a factor of about 67** (10 required).
+
+**Check C1** (`check-pilot`; Section 3, item 2). On the pilot's 101 x 101
+error grid, against the same p = 48 reference:
+- **The pilot's errors are reproduced to 1e-11 relative** (three digits
+  required): LS-hard-CGL-1.5 1.0827e-5 (p = 12) and 6.4719e-7 (p = 20);
+  SQ-CGL 1.2742e-5 (p = 14) and 8.0343e-7 (p = 22).
+- **So are its N, its kappa and its plateau** (k = 4).
+- **The sanity run:** LS-hard with N = P on the interior CGL points of the
+  12-point grid (p = 10) reproduces SQ-CGL at p = 12 to 1.2e-15.
+- The package reports errors on the 201 x 201 test grid. The pilot used
+  101 x 101, so C1 is checked on the pilot's grid.
+
+**The pilot's weak-boundary variant used lambda_bc = 1; Section 4.1 says
+10.** The instructions win. The difference is small:
+- **The errors:** 2.840e-4 against 2.819e-4 (p = 12), and 2.282e-5 against
+  2.310e-5 (p = 20).
+- **The ratio to SQ-CGL** at matched free coefficients stays 22x and 28x.
+- **The port at lambda_bc = 1** reproduces the pilot's values exactly.
+
+Tests: `tests/test_square_chebyshev.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 1: the release checks (B.5, stall controls, network reference errors, elasticity counts)
 
 Package 2 (the advisor's instructions of 4 October 2026), Section 2 items 3,
