@@ -12,9 +12,16 @@ family's representative runs (``A_calibration/full/`` on the GPU,
 ``A_calibration/full_cpu/`` on the CPU), and writes:
 
 ``results/kovasznay_comparison.csv``
-    One row per (family, device): the best eps_u, eps_v and mean-free eps_p
-    reached within the budget (per seed the minimum over its log within the budget; median,
-    min and max over seeds), peak GPU memory, and for each of the five
+    One row per (family, device): the final eps_u, eps_v and mean-free eps_p
+    of each seed's run (its ``run.json``; median, min and max over seeds:
+    ``<eps>_median`` etc.) -- the values the manuscript quotes (the
+    advisor's reply to wave 4, item 2(a)); beside them the best reached
+    within the budget (per seed the minimum over its log rows with t <=
+    budget and, if the run did not overrun, its final value:
+    ``<eps>_best_logged_median`` etc.), and how many seeds' final
+    evaluation finished past the budget (``n_final_past_budget``; an LM
+    step or the last F1 evaluation can) and by how much at most
+    (``max_final_overrun_s``). Peak GPU memory, and for each of the five
     LiL-Q eps_u levels on the same device the time-to-accuracy (median over
     the seeds that reached it, and how many did) with the iteration count at
     that time. LiL-Q has one row per (P, device).
@@ -98,10 +105,16 @@ def load_seed_runs(a_root, family, stage_dir):
             rows = [r for r in csv.DictReader(f) if float(r['t_cum_s']) <= budget]
         curve = [(float(r['t_cum_s']), int(float(r['iter'])), _num(r['eps_u']))
                  for r in rows if _num(r['eps_u']) is not None]
-        final = [_num(run.get(k)) for k in EPS] if (_num(run.get('wall_s')) or 0.0) <= budget else [None] * 3
+        final = {k: _num(run.get(k)) for k in EPS}
+        overrun = (_num(run.get('wall_s')) or 0.0) - budget
+        past_budget = overrun > 0
+        # Best within the budget (the rule until the reply to wave 4): the log
+        # rows with t <= budget, and the final value only if the run did not overrun.
+        within = [None] * 3 if past_budget else [final[k] for k in EPS]
         best = {k: min([v for v in [_num(r.get(k)) for r in rows] + [f] if v is not None], default=None)
-                for k, f in zip(EPS, final)}
-        runs.append({'seed': run.get('seed'), 'curve': curve, 'best': best,
+                for k, f in zip(EPS, within)}
+        runs.append({'seed': run.get('seed'), 'curve': curve, 'final': final, 'best': best,
+                     'past_budget': past_budget, 'overrun_s': max(overrun, 0.0),
                      'peak_gpu_bytes': run.get('peak_gpu_bytes')})
     return rep, runs
 
@@ -143,7 +156,12 @@ def build(package, out_root=None):
                 continue
             row = {'family': family, 'device': label, 'config': rep, 'n_seeds': len(runs)}
             for k in EPS:
-                row[f'{k}_median'], row[f'{k}_min'], row[f'{k}_max'] = _stats([r['best'][k] for r in runs])
+                row[f'{k}_median'], row[f'{k}_min'], row[f'{k}_max'] = _stats([r['final'][k] for r in runs])
+            for k in EPS:
+                (row[f'{k}_best_logged_median'], row[f'{k}_best_logged_min'],
+                 row[f'{k}_best_logged_max']) = _stats([r['best'][k] for r in runs])
+            row['n_final_past_budget'] = sum(r['past_budget'] for r in runs)
+            row['max_final_overrun_s'] = max(r['overrun_s'] for r in runs)
             peaks = [r['peak_gpu_bytes'] for r in runs if r['peak_gpu_bytes']]
             row['peak_gpu_bytes_max'] = max(peaks) if peaks else None
             for P, lil in lilq.items():

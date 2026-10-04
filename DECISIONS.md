@@ -17,6 +17,51 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-03 -- Section 4.6 reports the final errors (the advisor's reply to wave 4, item 2(a))
+
+**The discrepancy.** For the baselines, `kovasznay_comparison.csv`'s
+`eps_*_median`, `_min` and `_max` were "best within the budget" (entry of
+2026-09-29, item 2): per seed, the minimum over the log rows with t <=
+budget and, if the run did not overrun, its final value. The manuscript
+quotes the final errors in each run's `run.json`.
+- **F1_18 on the GPU:** two seeds' minimum logged eps_u lies below their
+  final one (seed 1: 2.42e-5 against 2.43e-5; seed 3: 4.11e-5 against
+  4.19e-5). The table's median was 4.11e-5 where the medians of the final
+  errors are 4.19e-5 (GPU) and 5.88e-5 (CPU; the table had 5.66e-5).
+- **The README and report note** gave the final values.
+- **F2_05:** the minimum and the final coincide in all ten runs.
+
+**The second problem.** The final value was dropped whenever the run's wall
+time passed its budget. That happens to every run, by at most 0.2 s for F1
+and 10.3 s for F2 (an LM step, or the last F1 evaluation, finishes after the
+clock check). It changed no number here, because each overrunning run's last
+logged row within the budget equals its final value.
+
+**Now:**
+- `eps_*_median`, `_min` and `_max` are of the final errors from `run.json`,
+  regardless of the overrun.
+- The old quantity is kept beside them, unchanged, as
+  `eps_*_best_logged_median`, `_min` and `_max`.
+- `n_final_past_budget` and `max_final_overrun_s` say how many seeds'
+  final evaluation finished past the budget, and by how much at most.
+- Time-to-accuracy is unchanged: it reads the log rows within the budget.
+
+**On wave 4's data:**
+
+| Representative | Device | Final median eps_u | Best logged median eps_u |
+|---|---|---|---|
+| F1_18 | GPU | 4.19e-5 | 4.11e-5 |
+| F1_18 | CPU | 5.88e-5 | 5.66e-5 |
+| F2_05 | GPU | 1.66e-10 | 1.66e-10 |
+| F2_05 | CPU | 1.99e-9 | 1.99e-9 |
+
+Mean-free eps_p on the CPU moves from 3.42e-4 to 3.45e-4. Every other
+median is unchanged.
+
+Tests: `tests/test_kovasznay_comparison.py`.
+
+---
+
 ## 2026-10-01 -- The advisor's reply on wave 3, Section 4: the wave 4 report, and package1 provisional
 
 The wave 4 report (`scripts/cluster/wave_report.py`, job 91) adds what the

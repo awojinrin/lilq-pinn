@@ -22,8 +22,10 @@ def _baseline(a_root, stage, rep, seed, eps_series, peak, budget=3600):
         w.writerow(['iter', 't_cum_s', 'eps_u', 'eps_v', 'eps_p_meanfree'])
         for i, (t, e) in enumerate(eps_series):
             w.writerow([100 * i, t, e, 2 * e, 3 * e])
-    (d / 'run.json').write_text(json.dumps({'seed': seed, 'peak_gpu_bytes': peak, 'eps_u': eps_series[-1][1],
-                                            'budget_s': budget, 'wall_s': eps_series[-1][0]}))
+    e = eps_series[-1][1]                  # the final errors, as a real run.json records them
+    (d / 'run.json').write_text(json.dumps({'seed': seed, 'peak_gpu_bytes': peak, 'eps_u': e, 'eps_v': 2 * e,
+                                            'eps_p_meanfree': 3 * e, 'budget_s': budget,
+                                            'wall_s': eps_series[-1][0]}))
 
 
 def test_table_and_figure(tmp_path):
@@ -39,6 +41,7 @@ def test_table_and_figure(tmp_path):
     rows = list(csv.DictReader(open(out / 'results' / 'kovasznay_comparison.csv')))
     f1 = next(r for r in rows if r['family'] == 'F1' and r['device'] == 'gpu')
     assert float(f1['eps_u_median']) == (5e-4 + 2e-4) / 2 and float(f1['eps_u_min']) == 2e-4
+    assert float(f1['eps_u_best_logged_median']) == (5e-4 + 2e-4) / 2 and f1['n_final_past_budget'] == '0'
     assert float(f1['eps_v_max']) == 1e-3 and f1['peak_gpu_bytes_max'] == '2000'
     assert f1['tta_P75_reached'] == '2/2' and float(f1['tta_P75_time_median']) == 15.0   # 1e-1: t = 10, 20
     assert f1['tta_P675_reached'] == '2/2' and float(f1['tta_P675_time_median']) == 150.0
@@ -57,7 +60,29 @@ def test_rows_past_the_budget_are_ignored(tmp_path):
     _baseline(a, 'full', 'F2_03', 0, [(10, 0.5), (590, 0.2), (605, 1e-3)], None, budget=600)
     rows = list(csv.DictReader(open(kc.build(tmp_path) / 'results' / 'kovasznay_comparison.csv')))
     f2 = next(r for r in rows if r['family'] == 'F2')
-    assert float(f2['eps_u_median']) == 0.2            # the 605 s row and the overrunning final value excluded
+    assert float(f2['eps_u_best_logged_median']) == 0.2   # the 605 s row and the overrunning final value excluded
+    assert float(f2['eps_u_median']) == 1e-3              # the final value, as the manuscript quotes
+    assert f2['n_final_past_budget'] == '1' and float(f2['max_final_overrun_s']) == 5.0
+
+
+def test_medians_are_of_the_final_errors_not_the_best_logged(tmp_path):
+    """The advisor's reply to wave 4, item 2(a): F1's eps_u_median was the
+    median of each seed's minimum logged eps_u (4.11e-5 for F1_18 on the
+    GPU) where the manuscript quotes the median of the final errors in
+    run.json (4.19e-5). Here a seed whose last logged value is above its
+    best: the median is of the finals, the best logged is beside it."""
+    b, a = tmp_path / 'B_instrumentation', tmp_path / 'A_calibration'
+    _lilq(b, 'cuda', 75, 1e-1, 0.1)
+    (a / 'full').mkdir(parents=True)
+    (a / 'full' / 'F1_representative.json').write_text(json.dumps({'representative': 'F1_18'}))
+    _baseline(a, 'full', 'F1_18', 0, [(1, 0.5), (100, 2.0e-5), (3600, 2.5e-5)], None)
+    _baseline(a, 'full', 'F1_18', 1, [(1, 0.5), (100, 4.0e-5), (3600, 4.0e-5)], None)
+    _baseline(a, 'full', 'F1_18', 2, [(1, 0.5), (100, 4.1e-5), (3600, 4.2e-5)], None)
+    rows = list(csv.DictReader(open(kc.build(tmp_path) / 'results' / 'kovasznay_comparison.csv')))
+    f1 = next(r for r in rows if r['family'] == 'F1')
+    assert float(f1['eps_u_median']) == 4.0e-5 and float(f1['eps_u_max']) == 4.2e-5    # finals 2.5, 4.0, 4.2
+    assert float(f1['eps_u_best_logged_median']) == 4.0e-5 and float(f1['eps_u_best_logged_min']) == 2.0e-5
+    assert float(f1['eps_u_min']) == 2.5e-5
 
 
 def test_lilq_times_come_from_the_clean_timing_runs(tmp_path):
