@@ -75,13 +75,19 @@ def path_map(package, figure_data, attachments, out, waves=None):
     ]
 
 
-def stage(snapshot, out, mapping):
-    """Copy the scripts into ``out`` with the paths rewritten; returns the rewrites made."""
+def stage(snapshot, out, mapping, replace=()):
+    """Copy the scripts into ``out`` with the paths rewritten; returns the rewrites made.
+    ``replace``: newer copies of some scripts (matched by file name) used instead of
+    the snapshot's, e.g. the advisor's patched ``conv_data.py``."""
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
+    newer = {Path(r).name: Path(r) for r in replace}
     made = []
     for sub in ('figure_scripts', 'analysis_scripts'):
         for src in sorted((Path(snapshot) / 'our_scripts' / sub).glob('*.py')):
+            if src.name in newer:
+                made.append((src.name, 'replaced by', str(newer.pop(src.name))))
+                src = Path(made[-1][2])
             text = src.read_text(encoding='utf-8')
             for old, new in mapping:
                 if old in text:
@@ -89,6 +95,7 @@ def stage(snapshot, out, mapping):
                     text = text.replace(old, new)
             assert '/home/claude' not in text, f'{src.name}: an unmapped path remains'
             (out / src.name).write_text(text, encoding='utf-8')
+    assert not newer, f'no script of that name in the snapshot: {sorted(newer)}'
     return made
 
 
@@ -127,12 +134,16 @@ def main(argv=None):
     ap.add_argument('--attachments', required=True)
     ap.add_argument('--waves', default=None,
                     help='a folder with results/wave1..wave4 from the wave<N>-results branches (instead of package1)')
+    ap.add_argument('--replace', nargs='*', default=[],
+                    help="newer copies of some of the snapshot's scripts, matched by file name")
+    ap.add_argument('--tex', default=None, help="a newer main.tex for the screening comparison (default: the snapshot's)")
     ap.add_argument('--out', required=True)
     args = ap.parse_args(argv)
     out = Path(args.out)
     if out.exists():
         shutil.rmtree(out)
-    made = stage(args.snapshot, out, path_map(args.package, args.figure_data, args.attachments, out, args.waves))
+    made = stage(args.snapshot, out, path_map(args.package, args.figure_data, args.attachments, out, args.waves),
+                 args.replace)
     with open(out / 'path_rewrites.csv', 'w', newline='') as f:
         csv.writer(f).writerows([('script', 'old', 'new')] + made)
     status = {}
@@ -155,7 +166,7 @@ def main(argv=None):
         csv.writer(f).writerows([('figure', 'share_of_pixels_differing', 'note')] + rows)
     for r in rows:
         print(f'  {r[0]:36s} {r[1]:>9s} {r[2]}')
-    tex = (snapshot / 'main.tex').read_text(encoding='utf-8')
+    tex = Path(args.tex or snapshot / 'main.tex').read_text(encoding='utf-8')
     gen = (out / 'screening_tables.tex').read_text(encoding='utf-8') if (out / 'screening_tables.tex').exists() else ''
     srows = []
     for label in ('tab:screening', 'tab:screening_f2'):

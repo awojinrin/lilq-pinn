@@ -17,6 +17,32 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- After the advisor's Stage-1 reply: the release check against the corrected manuscript, 20 of 20 figures on package1
+
+**The reply** (`Computational_Package2/response_stage1/Reply_to_stage1_2026-10-04.md`):
+Stage 2 released (Kovasznay included), Zenodo approved, the release accepted, the three
+manuscript corrections applied (`response_stage1/main.tex`, which supersedes the snapshot's),
+and a patched `figure_scripts/conv_data.py` that accepts wave 4's gravity BL P = 64 rerun.
+
+**Tables.** Against the corrected `main.tex`, `release_tables.py` flags nothing: 19 tables,
+2,594 cells. Table 14 gained a row (loss weights), so its builder is now keyed by the row label
+and checks 18 cells instead of 2: the network size, precision and iteration budget from the 12
+saved float64 networks (`network.pt`: `hidden_dim`, `num_layers`, `dtype`, `max_epochs`), the
+LiL modes and coefficients from the paper pass, and the activation and loss weights from
+`problems/darcy.py` (`act = nn.SiLU()`, `W_PDE, W_BC = 50.0, 20.0`). The output and optimizer
+entries are descriptions and are not checked.
+
+**Figures.** `manuscript_scripts.py --replace <patched conv_data.py> --tex <main.tex>` on
+`package1`: all 20 data figures pixel-identical (the two `fig_conv` figures that had stopped also
+at 300 dpi with any grey-level change counted), 48 of 48 screening rows. The snapshot itself is
+left as the authors sent it; `--replace` substitutes newer copies by file name.
+
+**`RELEASE.md`:** the results against the corrected manuscript, 20 of 20 on `package1`, the
+corrections recorded as applied; and "the JCP submission" replaced by "the arXiv version", the
+one journal name the release review had missed.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 6f: no allocation accounts or machine paths in the repository
 
 **The allocation account** comes from the environment, `LILQ_ACCOUNT`, not from the cluster

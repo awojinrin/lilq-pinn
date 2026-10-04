@@ -457,14 +457,36 @@ def beltrami_comparison(package):
 DARCY_FIELDS = ('S1', 'S2', 'S3', 'SPE10')
 
 
-@table('tab:darcy_training')
+@table('tab:darcy_training', key=1)
 def darcy_training(package):
+    """Table 14, keyed by its left-hand label. The network size, precision and
+    iteration budget come from the saved float64 networks; the LiL modes and
+    coefficients from the paper pass; the activation and the loss weights from
+    ``problems/darcy.py`` (``DarcyPINN``), the code the runs used. The output
+    and optimizer entries are descriptions, not numbers, and are not checked."""
+    import torch
     rows = _csv(_b(package, 'darcy_fv_comparison.csv'))
-    n_nil = {int(r['n_params']) for r in rows if r['method'] == 'NiL'}
-    n_lil = {int(r['n_params']) for r in rows if r['method'] == 'LiL'}
-    [n_nil], [n_lil] = n_nil, n_lil
-    out = [[SKIP] * 4, [SKIP, SKIP, SKIP, num(n_lil)], [SKIP] * 4, [SKIP] * 4, [SKIP, num(n_nil), SKIP, SKIP],
-           [SKIP] * 4, [SKIP] * 4, [SKIP] * 4]
+    [n_nil] = {int(r['n_params']) for r in rows if r['method'] == 'NiL'}
+    [n_lil] = {int(r['n_params']) for r in rows if r['method'] == 'LiL'}
+    nets = [torch.load(p, map_location='cpu', weights_only=False)
+            for p in sorted(_b(package, 'darcy_fv').glob('*/models/NiL_*_float64/network.pt'))]
+    meta = {(n['networks']['hidden_dim'], n['networks']['num_layers'], n['networks']['dtype'], n['max_epochs'])
+            for n in nets}
+    assert len(nets) == 12 and len(meta) == 1, meta
+    [(width, depth, dtype, epochs)] = meta
+    order = _json(_b(package, 'darcy_S1_cpu_paper', 'summary.json'))['order']
+    src = (_proj / 'problems' / 'darcy.py').read_text(encoding='utf-8')
+    act = re.search(r'act = nn\.(\w+)\(\)', src).group(1)
+    w_pde, w_bc = map(float, re.search(r'W_PDE, W_BC = ([\d.]+), ([\d.]+)', src).groups())
+    out = [[txt('Hidden layers'), num(depth), SKIP, num(order)],
+           [txt('Neurons per layer'), num(width), SKIP, num(n_lil)],
+           [txt('Activation'), txt(act), SKIP, SKIP],
+           [txt('Output ($h^*$)'), SKIP, SKIP, SKIP],
+           [txt('Total parameters'), num(n_nil), SKIP, SKIP],
+           [txt('Optimizer'), SKIP, SKIP, SKIP],
+           [txt('Iterations'), num(epochs), SKIP, SKIP],
+           [txt('Loss weights'), num(w_pde, w_bc), SKIP, SKIP],
+           [txt('Precision'), txt('\\texttt{' + dtype.replace('torch.', '') + '}'), SKIP, SKIP]]
     return ['nil_setting', 'nil_value', 'lil_setting', 'lil_value'], out
 
 

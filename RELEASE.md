@@ -9,8 +9,11 @@ of the manuscript to:
 
 It also records the corrections made at the release.
 
-The JCP submission's state of the code is the earlier tag `v1.0-manuscript`
-(the arXiv version).
+The earlier version of the paper's code (the arXiv version) is the tag
+`v1.0-manuscript`.
+
+This file is kept up to date on `main` after the tag: the check against the
+corrected manuscript of 4 October, and the archive DOIs.
 
 ## 1. The results
 
@@ -34,10 +37,11 @@ results and compare them with `main.tex` and its figure files:
 python experiments/release_tables.py --package <package1> --tex <main.tex> --out <out>/tables
 
 # Figures, the screening tables (Appendix B.3) and the best-approximation numbers of Section 6.6,
-# by the manuscript folder's scripts, on the published waves (or on package1 without --waves)
+# by the manuscript folder's scripts, on package1, with the authors' patched conv_data.py
+# (--waves <folder with results/wave1..wave4> runs them on the published wave branches instead)
 python experiments/manuscript_scripts.py --snapshot <manuscript folder> --package <package1> \
-    --waves <folder with results/wave1..wave4> --figure-data <figure-data results/figure_data> \
-    --attachments <Package 2 attachments> --out <out>/manuscript_scripts
+    --figure-data <figure-data results/figure_data> --attachments <Package 2 attachments> \
+    --replace <patched conv_data.py> --tex <main.tex> --out <out>/manuscript_scripts
 
 # The permeability figure of Section 6.8
 python scripts/plot_permeability_grid.py --out <out>/figures
@@ -60,14 +64,14 @@ python scripts/plot_permeability_grid.py --out <out>/figures
 - **How it compares:** it renders each regenerated figure beside the
   manuscript's file, and compares the screening tables row by row.
 
-**Result at this tag** (`package2_results/G1_release/`; the regenerated
-CSVs are attached there):
+**Result** (`package2_results/G1_release/`; the regenerated CSVs are
+attached there), against the corrected manuscript of 4 October:
 
 | Check | Result |
 |---|---|
-| 19 tables, 2,578 cells | all agree except 4 cells of Table 7, rounding slips of the manuscript (Section 4 below) |
+| 19 tables, 2,594 cells | all agree (Tables 7 and 14 after the corrections of Section 4) |
 | 20 data figures, by the manuscript folder's scripts on the published waves | all pixel-identical to the manuscript's files (PyMuPDF render; `fig_compA` also at 300 dpi with any grey-level change counted) |
-| the same on `package1` | 18 of 20 identical; `fig_conv.py` stops before the other two at an assertion about which file holds gravity BL P = 64 (Section 4) |
+| the same on `package1`, with the authors' patched `conv_data.py` | all 20 pixel-identical (the two `fig_conv` figures that had stopped also at 300 dpi with any grey-level change counted; Section 4) |
 | Appendix B.3 screening tables | 48 of 48 rows identical (`gen_screening.py`) |
 | Figure 20, permeability | pixel-identical (`scripts/plot_permeability_grid.py`) |
 
@@ -185,9 +189,9 @@ checked by hand at the release.
   up to the stall") is unaffected, because the departures fall within the
   stall window.
 
-**Rounding slips in Table 7** (`tab:bl_reference_errors`). The values are
-the same as in the authors' `A1_bl_lilq_errors.csv`, and four cells are
-rounded wrongly in the manuscript:
+**Table 7** (`tab:bl_reference_errors`): four rounding slips, corrected in
+the manuscript of 4 October. The values are the same as in the authors'
+`A1_bl_lilq_errors.csv`; four cells had been rounded wrongly:
 
 | Case | P | Column | Value | Printed | Should be |
 |---|---|---|---|---|---|
@@ -201,15 +205,19 @@ rounded wrongly in the manuscript:
   the advisor's reply to wave 2 asked. `package1` therefore holds wave 4's
   `bl_gravity_P64_cpu_paper`, which reaches the target at k = 43; wave 2's
   had K_max = 20 and did not (`WAVES.json`, overrides).
-- **Why the script stops:** `fig_conv.py` asserts wave 2's version, then
-  builds the curve to k = 43 from wave 1's K_max pass.
-- **Why the figure is unchanged:** the two curves agree to 1.1e-16, so
-  Figures 4 and 13 are the same either way. They regenerate pixel for
-  pixel from the published waves.
+- **The script:** the manuscript folder's `conv_data.py` asserted wave 2's
+  version and built the curve to k = 43 from wave 1's K_max pass, so on
+  `package1` it stopped before Figures 4 and 13. The authors' patched copy
+  (4 October) accepts wave 4's rerun as it is; with it, all 20 figures
+  regenerate pixel for pixel from `package1`.
+- **Why the figures are the same either way:** the two curves agree to
+  1.1e-16.
 
-**Table 14** (`tab:darcy_training`): three NiL entries describe the
-pre-GitHub notebook's per-field recipe, not the network behind the NiL rows
-of Table 15.
+**Table 14** (`tab:darcy_training`): corrected in the manuscript of 4
+October. Three NiL entries described the pre-GitHub notebook's per-field
+recipe, not the network behind the NiL rows of Table 15; the loss weights
+were added. `release_tables.py` now checks the table against the saved
+networks and `problems/darcy.py`.
 - **Why:** before wave 3, the authors decided to use one NiL formulation for
   all four fields (`DECISIONS.md`, Addendum v2.2), so that delta_FV compares
   NiL, LiL and the finite-volume reference on the same problem.

@@ -44,3 +44,16 @@ def test_an_unmapped_path_stops_the_run(tmp_path):
     (snap / 'our_scripts' / 'figure_scripts' / 'new.py').write_text("X = '/home/claude/elsewhere/a.csv'\n")
     with pytest.raises(AssertionError, match='unmapped'):
         ms.stage(snap, out, ms.path_map(tmp_path / 'p', tmp_path / 'fd', tmp_path / 'att', out))
+
+
+def test_a_newer_copy_replaces_the_snapshots_script(tmp_path):
+    snap, out = _snapshot(tmp_path), tmp_path / 'out'
+    newer = tmp_path / 'patched' / 'heldout.py'
+    newer.parent.mkdir()
+    newer.write_text("B8 = '/home/claude/w3/results/wave3/B_instrumentation'  # patched\n")
+    made = ms.stage(snap, out, ms.path_map(tmp_path / 'p', tmp_path / 'fd', tmp_path / 'att', out), [newer])
+    assert '# patched' in (out / 'heldout.py').read_text() and '/home/claude' not in (out / 'heldout.py').read_text()
+    assert ('heldout.py', 'replaced by', str(newer)) in made
+    with pytest.raises(AssertionError, match='no script of that name'):
+        ms.stage(snap, tmp_path / 'out2', ms.path_map(tmp_path / 'p', tmp_path / 'fd', tmp_path / 'att', out),
+                 [tmp_path / 'patched' / 'missing.py'])
