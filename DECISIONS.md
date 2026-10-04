@@ -17,6 +17,65 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 1: the release checks (B.5, stall controls, network reference errors, elasticity counts)
+
+Package 2 (the advisor's instructions of 4 October 2026), Section 2 items 3,
+5 and 6, and item 9 (P2-6). Four scripts read the final `package1`. Each is
+rerunnable and listed for `RELEASE.md`.
+
+**`experiments/b5_check.py`:** what the runs used, per row of the
+manuscript's Table `tab:run_settings` (Appendix B.5), from their records,
+written to `b5_actual.csv`.
+- **One discrepancy:** the four-method row's P range, "25-1051", mixes
+  LiL's smallest P (25) with NiL's largest parameter count (1,051). The
+  NiL networks have 37-1,051 parameters (h = 4 to 30, h^2 + 5h >= P).
+- **Six clarifications:**
+  - Buckley-Leverett's N/P is 9.75-9.81;
+  - the random grids use collocation seed 42;
+  - the paper passes record K_max 20/25/50 against the code's 60, which
+    makes no difference: every one stops on its criterion first, and
+    gravity BL P = 64 was rerun at 60;
+  - the Beltrami row is the pinned run;
+  - B9's NiL also ran in float32;
+  - B10 also has equal-weight runs.
+- **Report:** `b5_check.md`. The code was not changed.
+
+**`experiments/stall_control_departures.py`:** the six controls whose
+history departs from their original's.
+- **Four depart at the original's last logged row before the stall.** The
+  histories are logged every 10 iterations plus the final row; Burgers P =
+  625's departure at 5,240 against its stall at 5,241 counts as at that
+  row.
+- **Two depart 13-14 iterations before the stall:**
+  `bl_P1024_NiL-Q_s2_cuda` (8,140 against 8,153) and
+  `burgers_P400_NiL-Q_s2_cuda` (5,800 against 5,814).
+
+**`experiments/network_reference_errors.py`:** the saved four-method
+models evaluated against a reference on its test grid.
+- **For Buckley-Leverett:** both cases, every P on the GPU and P = 1,024
+  on the CPU, NiL seeds 0-2. That is 70 models, against the
+  finite-difference reference.
+- **Limitation:** only the final models were saved, so `eps_ref_min` and
+  `k_min` are left empty, with the reason.
+- **Skipped:** the stall controls.
+- **Bratu and Burgers** follow, with their references (Section 6.2).
+
+**`experiments/elasticity_counts.py`:** per field, the coefficients above
+1e-12 max|beta| in the saved solutions.
+- u_x has 1 and u_y has 5 at every P from 50 to 1,250: the exact solution
+  is in the span.
+- Every system has full rank (`gelsy` and SVD).
+
+**Where the outputs go:** to `Post-JCP/package2_results/`, outside the
+repository: `G1_release/` and `P2_6_elasticity_counts.csv`. The final
+`package1` assembled on 3 October (`package1-final`) now lives at
+`Post-JCP/package1_local/package1`, with its models, rather than in a
+temporary folder.
+
+Tests: `tests/test_package2_stage1_release.py`.
+
+---
+
 ## 2026-10-03 -- Field data for the solution-field figures, from the saved models (the advisor's reply to wave 4, Section 3)
 
 The manuscript's solution-field figures are images from the superseded
