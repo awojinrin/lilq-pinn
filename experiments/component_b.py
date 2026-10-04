@@ -94,8 +94,13 @@ def _log_summary(logger: IterationLogger) -> Dict:
         'num_rank_svd_final': solves[-1]['num_rank_svd'],
         'num_rank_gelsy_final': solves[-1]['num_rank_gelsy'],
         **{f'test_{col}': last[col] for col in
-           ('eps_u', 'eps_v', 'eps_p', 'eps_p_meanfree', 'maxerr_u', 'maxerr_v', 'maxerr_p')},
+           ('eps_u', 'eps_v', 'eps_p', 'eps_p_meanfree', 'maxerr_u', 'maxerr_v', 'maxerr_p', 'eps_ref')},
     }
+
+
+# Package 2 (Section 6.2): the reference solutions' folder; when set, the Bratu
+# and Burgers runs log eps_ref against them (``--reference-dir``).
+REFERENCE_DIR = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -162,9 +167,13 @@ def _scalar_runs(benchmark, smoke, passes):
             def execute(run_dir, config=config, run_opt=run_opt, run_lil_q=run_lil_q, pass_=pass_):
                 warm = _warm_up_run(pass_, lambda: run_lil_q(config, run_opt, verbose=False)[-1]['training_time'])
                 logger = IterationLogger()
+                ref = {}
+                if REFERENCE_DIR is not None and benchmark in ('bratu', 'burgers'):
+                    from lilq.references import reference_path
+                    ref = {'reference_npz': reference_path(REFERENCE_DIR, benchmark)}
                 basis, c, _metrics, summary = run_lil_q(
                     config, run_opt, verbose=False, iteration_logger=logger,
-                    run_json_path=run_dir / 'run.json')
+                    run_json_path=run_dir / 'run.json', **ref)
                 logger.to_csv(run_dir / 'iterations.csv')
                 save_solution(run_dir, {'u': (basis, c)}, config, run_opt)
                 # training_time: the method's own clock, the same quantity the
@@ -685,6 +694,8 @@ def main():
                         help='Smallest size per benchmark, capped iterations -- a fast end-to-end check.')
     parser.add_argument('--list', action='store_true', help='Print the run plan and exit.')
     parser.add_argument('--fresh', action='store_true', help='Rerun completed runs too.')
+    parser.add_argument('--reference-dir', default=None,
+                        help="Package 2: log eps_ref of the Bratu and Burgers runs against the references here.")
     parser.add_argument('--gpu-equivalence', action='store_true',
                         help='Run check B3 (Section 3.2) instead of the run plan; needs a CUDA device. '
                              'Writes gpu_cpu_equivalence.csv; exits non-zero if any size fails.')
@@ -696,6 +707,8 @@ def main():
     parser.add_argument('--save-code', action='store_true',
                         help="Write the commit, any diff and the source to <out-root>/code/ (Section 6).")
     args = parser.parse_args()
+    global REFERENCE_DIR
+    REFERENCE_DIR = args.reference_dir
 
     if args.save_reference or args.save_code:
         if args.save_reference:

@@ -17,6 +17,49 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 5: the Grace job (references, scalar reruns with eps_ref, check C4) and the stage names
+
+**eps_ref in the scalar solvers.**
+- **The option:** `problems.bratu.run_lil_q` and `problems.burgers.run_lil_q`
+  take `reference_npz`. When given, the iteration log's test errors gain
+  `eps_ref` against that reference (`lilq.references.make_eps_ref_fn`).
+- **The solve is unchanged:** it is a diagnostic, off the clock, and the
+  solver never sees it. A test checks that the coefficients and `norm_R_h`
+  are bit for bit those of a run without it.
+- **The driver:** `component_b.py --reference-dir` passes the references to
+  the Bratu and Burgers runs. Each summary gains `test_eps_ref`.
+
+**Check C4 for the reruns** (`experiments/p2_c4_check.py`): `norm_R_h` of
+each rerun against `package1`'s at every k, to 1e-10 relative, with the
+iteration counts and `eps_ref` on every row.
+- **Rehearsal on this laptop,** against Grace's wave 2 logs: every run
+  passes, with the largest differences 8.2e-11 (Bratu P = 225) and 9.1e-11
+  (Burgers P = 625).
+- **On Grace,** with the 48-thread setting of the original runs, the
+  agreement should be tighter.
+
+**The stage names.** `LILQ_WAVE` also takes `p2s1` and `p2s2`, Package 2's
+two stages.
+- **Folders:** `env.sh` points them at `results/package2_stage1` and
+  `results/package2_stage2`, each locked to its own commit like a wave.
+- **`sbatch.sh`** accepts them.
+- **The job scripts** are in `scripts/cluster/package2/`. They are not in a
+  wave's submit script, so the "every job belongs to a wave" test does not
+  apply to them.
+
+**`scripts/cluster/package2/p2s1_scalar_reruns.slurm`** (timed-cpu,
+exclusive, 48 threads, 30 min) runs:
+- the two references, so that the stage is self-contained and locked;
+- the 8 reruns;
+- check C4 against `results/wave2/B_instrumentation`.
+
+Requested 24 SU (walltime x 48 SU/h); about 2 SU expected
+(`package2_results/su_plan.csv`).
+
+Tests: `tests/test_package2_stage1_grace.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 4: the Kovasznay square-system pilot (P_N - P_{N-2})
 
 **The system** (Package 2, Section 4.2, step 1). `baselines/square_kovasznay.py`

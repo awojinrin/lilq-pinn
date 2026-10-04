@@ -527,9 +527,21 @@ def make_test_error_fn(basis, config: BratuConfig):
     return test_errors
 
 
+def _with_eps_ref(test_error_fn, basis, reference_npz):
+    """The log's test errors, plus ``eps_ref`` against the Package 2 reference
+    in ``reference_npz`` (Section 6.2) when one is given. Diagnostics only:
+    the solve does not see it."""
+    if reference_npz is None:
+        return test_error_fn
+    from lilq.references import make_eps_ref_fn
+    eps_ref = make_eps_ref_fn(basis, reference_npz)
+    return lambda beta: {**test_error_fn(beta), **eps_ref(beta)}
+
+
 def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
               verbose=True, diagnostics_callback=None,
-              iteration_logger=None, run_json_path=None, collocation_path=None, diagnostics=True):
+              iteration_logger=None, run_json_path=None, collocation_path=None, diagnostics=True,
+              reference_npz=None):
     """Run LiL-Q (Quasilinear LiL) for Bratu.
 
     ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
@@ -611,7 +623,7 @@ def run_lil_q(config: BratuConfig, opt: BratuOptConfig,
             compute_residual_vector_fn=residual_vector_fn,
             n_interior_rows=n_pde,
             interior_weight=np.sqrt(opt.lambda_pde / n_pde),
-            test_error_fn=make_test_error_fn(basis, config),
+            test_error_fn=_with_eps_ref(make_test_error_fn(basis, config), basis, reference_npz),
         )
 
     coefficients, metrics, summary = solve_lil_q(

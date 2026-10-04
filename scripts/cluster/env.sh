@@ -35,7 +35,13 @@ export PYTHONUNBUFFERED=1    # progress lines reach the .out file as they happen
 # (package1_results/) from the three.
 export RESULTS="$SCRATCH/lilq-run/lilq-pinn/results"
 : "${LILQ_WAVE:?LILQ_WAVE is not set: submit through scripts/cluster/sbatch.sh or submit_wave<N>.sh}"
-export PKG="$RESULTS/wave$LILQ_WAVE"
+# Package 2's two stages (p2s1, p2s2) write results/package2_stage1 and
+# results/package2_stage2, each locked to its own commit like a wave.
+case "$LILQ_WAVE" in
+    p2s1) export PKG="$RESULTS/package2_stage1" ;;
+    p2s2) export PKG="$RESULTS/package2_stage2" ;;
+    *)    export PKG="$RESULTS/wave$LILQ_WAVE" ;;
+esac
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"
 mkdir -p "$PKG"
 
