@@ -1,0 +1,1242 @@
+{
+  "status": "final",
+  "assembled_by_commit": "8a86bbc8c12109fd9c7b84bc4cf030c027e65f68",
+  "waves": {
+    "1": {
+      "commit": "8a3f5f7cc4c21d301320dd20df0a657f52748bdf",
+      "tree_hash": "ead9b37f635f197fa49e95ebd87d92bae6f8fc0e7a682cf1df8f29068ac1f80e",
+      "source": "bundle",
+      "locked_at_utc": "2026-09-29T08:14:12.158863+00:00",
+      "locked_on_host": "g062"
+    },
+    "2": {
+      "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0",
+      "tree_hash": "7b076215828a18c0feb1740d4ba55353ed39423252f10780314f32650e378c9e",
+      "source": "bundle",
+      "locked_at_utc": "2026-09-29T22:17:05.139248+00:00",
+      "locked_on_host": "g088"
+    },
+    "3": {
+      "commit": "905e58c480c7f2860443a5235bb8bbacd98efda0",
+      "tree_hash": "7b076215828a18c0feb1740d4ba55353ed39423252f10780314f32650e378c9e",
+      "source": "bundle",
+      "locked_at_utc": "2026-10-01T17:00:38.867691+00:00",
+      "locked_on_host": "g098"
+    },
+    "4": {
+      "commit": "17b3539826615c696d622dcd2e3833862c793542",
+      "tree_hash": "00762ff259a0b3af3eb6c4b19d81cb120d25f324f544a9b056fd0fbcfc8da995",
+      "source": "bundle",
+      "locked_at_utc": "2026-10-02T05:30:43.472194+00:00",
+      "locked_on_host": "g048"
+    }
+  },
+  "overrides": [
+    {
+      "path": "A_calibration/checks/a1.json",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/log.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/model.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/a2/a/log.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/a2/a/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/a2/b/log.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/checks/a2/b/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/search/F2_configs.json",
+      "from_wave": 2
+    },
+    {
+      "path": "A_calibration/tuning_log.md",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/beltrami_P7984_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/beltrami_P7984_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/beltrami_P7984_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/beltrami_P7984_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P1024_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P1024_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P1024_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P1024_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P1024_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P256_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P256_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P256_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P256_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P256_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P576_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P576_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P576_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P576_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P576_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P1024_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P1024_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P1024_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P1024_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P1024_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P256_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P256_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P256_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P256_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P256_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P576_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P576_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P576_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P576_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P576_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P64_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P64_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P64_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P64_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bl_P64_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P100_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P100_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P100_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P100_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P100_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P225_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P225_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P225_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P225_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P225_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P25_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P25_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P25_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P25_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/bratu_P25_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P100_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P100_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P100_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P100_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P100_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P225_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P225_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P225_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P225_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P225_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P25_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P25_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P25_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P25_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P25_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P400_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P400_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P400_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P400_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P400_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P625_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P625_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P625_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P625_cpu_paper/solution.pt",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/burgers_P625_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S1_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S1_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S1_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S1_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S2_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S2_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S2_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S2_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S3_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S3_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S3_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_S3_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_SPE10_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_SPE10_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_SPE10_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/darcy_SPE10_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P1250_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P1250_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P1250_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P1250_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P200_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P200_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P200_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P200_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P450_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P450_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P450_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P450_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P50_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P50_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P50_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P50_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P800_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P800_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P800_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/elasticity_P800_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/four_method_tables.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/gpu_cpu_equivalence.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cuda_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cuda_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cuda_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1200_cuda_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cuda_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cuda_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cuda_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P1875_cuda_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cuda_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cuda_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cuda_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P300_cuda_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cuda_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cuda_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cuda_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P675_cuda_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cpu_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cpu_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cpu_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cpu_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cuda_paper/hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cuda_paper/iterations.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cuda_paper/run.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/kovasznay_P75_cuda_paper/summary.json",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/reproduction_check.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "B_instrumentation/runs_index.csv",
+      "from_wave": 2
+    },
+    {
+      "path": "hardware.json",
+      "from_wave": 2
+    },
+    {
+      "path": "report_log.txt",
+      "from_wave": 2
+    },
+    {
+      "path": "sacct.txt",
+      "from_wave": 2
+    },
+    {
+      "path": "report_log.txt",
+      "from_wave": 3
+    },
+    {
+      "path": "sacct.txt",
+      "from_wave": 3
+    },
+    {
+      "path": "A_calibration/checks/a1.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/hardware.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/log.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/model.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/A1_s0/run.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/a2/a/log.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/a2/a/run.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/a2/b/log.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/checks/a2/b/run.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/full/F1_representative.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/full/F2_representative.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/run_endings.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/screening/F1_selection.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/screening/F2_selection.json",
+      "from_wave": 4
+    },
+    {
+      "path": "A_calibration/tuning_log.md",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/hardware.json",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/augsin_cheb/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/augsin_cheb/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/cheb_cheb/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/cheb_cheb/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/cos_cheb/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/cos_cheb/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/elm/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/elm/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/fourier_cheb/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/fourier_cheb/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/fourier_fourier/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/fourier_fourier/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/sin_cheb/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/sin_cheb/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/sin_fourier/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/sin_fourier/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/sin_sin/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/runs/sin_sin/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/basis_study/table3_basis_study.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/hardware.json",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/iterations.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/run.json",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/solution.pt",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/bl_gravity_P64_cpu_paper/summary.json",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/reproduction_check.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "B_instrumentation/runs_index.csv",
+      "from_wave": 4
+    },
+    {
+      "path": "environment.txt",
+      "from_wave": 4
+    },
+    {
+      "path": "hardware.json",
+      "from_wave": 4
+    },
+    {
+      "path": "report_log.txt",
+      "from_wave": 4
+    },
+    {
+      "path": "sacct.txt",
+      "from_wave": 4
+    }
+  ],
+  "files": 3386,
+  "superseded": [
+    {
+      "path": "A_calibration/full_cpu/F1_04_s0",
+      "reason": "not wave 4's F1 representative (F1_18)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F1_04_s1",
+      "reason": "not wave 4's F1 representative (F1_18)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F1_04_s2",
+      "reason": "not wave 4's F1 representative (F1_18)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F1_04_s3",
+      "reason": "not wave 4's F1 representative (F1_18)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F1_04_s4",
+      "reason": "not wave 4's F1 representative (F1_18)"
+    },
+    {
+      "path": "A_calibration/float32/F1_04_s0",
+      "reason": "not wave 4's F1 representative (F1_18)"
+    },
+    {
+      "path": "A_calibration/full/F2_03_s0",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_03_s1",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_03_s2",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_03_s3",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_03_s4",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_16_s0",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_16_s1",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_16_s2",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_16_s3",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_16_s4",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_17_s0",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_17_s1",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_17_s2",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_17_s3",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full/F2_17_s4",
+      "reason": "not among wave 4's F2 finalists ['F2_10', 'F2_05', 'F2_14']"
+    },
+    {
+      "path": "A_calibration/full_cpu/F2_16_s0",
+      "reason": "not wave 4's F2 representative (F2_05)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F2_16_s1",
+      "reason": "not wave 4's F2 representative (F2_05)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F2_16_s2",
+      "reason": "not wave 4's F2 representative (F2_05)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F2_16_s3",
+      "reason": "not wave 4's F2 representative (F2_05)"
+    },
+    {
+      "path": "A_calibration/full_cpu/F2_16_s4",
+      "reason": "not wave 4's F2 representative (F2_05)"
+    }
+  ],
+  "clean_timing": {
+    "rule": "CPU: the median of three independent clean timings, wave 4's job 13a and job 14b's two replicates (option B, the advisor's reply to wave 4, item 1); GPU: job 13b, one clean timing, the median of five under 1 s",
+    "replicates": [
+      "fixes/option_b_replicate_1/B_instrumentation/clean_timing/clean_timing.csv",
+      "fixes/option_b_replicate_2/B_instrumentation/clean_timing/clean_timing.csv"
+    ],
+    "single_timing_table": "B_instrumentation/clean_timing/clean_timing_single.csv",
+    "timings_s": {
+      "bratu_P25_cpu_paper|training_time": [
+        0.0007286053150892258,
+        0.0007287915796041489,
+        0.0007884465157985687
+      ],
+      "bratu_P100_cpu_paper|training_time": [
+        0.03142109140753746,
+        0.03190677799284458,
+        0.0337393619120121
+      ],
+      "bratu_P225_cpu_paper|training_time": [
+        0.19899476505815983,
+        0.2008247748017311,
+        0.19951855763792992
+      ],
+      "burgers_P25_cpu_paper|training_time": [
+        0.0008417479693889618,
+        0.0008310228586196899,
+        0.000841282308101654
+      ],
+      "burgers_P100_cpu_paper|training_time": [
+        0.031182894483208656,
+        0.03245672397315502,
+        0.03337517939507961
+      ],
+      "burgers_P225_cpu_paper|training_time": [
+        0.150970371440053,
+        0.15280639939010143,
+        0.14962587505578995
+      ],
+      "burgers_P400_cpu_paper|training_time": [
+        0.42945947125554085,
+        0.4315998647361994,
+        0.42356354743242264
+      ],
+      "burgers_P625_cpu_paper|training_time": [
+        1.1576726790517569,
+        1.1827266979962587,
+        1.1875965967774391
+      ],
+      "bl_P64_cpu_paper|training_time": [
+        0.051558975130319595,
+        0.05306994356215,
+        0.057235850021243095
+      ],
+      "bl_P256_cpu_paper|training_time": [
+        0.24020705558359623,
+        0.246609253808856,
+        0.23921933770179749
+      ],
+      "bl_P576_cpu_paper|training_time": [
+        0.9428386557847261,
+        0.9455036520957947,
+        0.9312712531536818
+      ],
+      "bl_P1024_cpu_paper|training_time": [
+        3.8848941642791033,
+        3.957916369661689,
+        3.757106462493539
+      ],
+      "bl_gravity_P64_cpu_paper|training_time": [
+        0.24009891971945763,
+        0.2474562767893076,
+        0.24430492892861366
+      ],
+      "bl_gravity_P256_cpu_paper|training_time": [
+        3.169019389897585,
+        0.71748261526227,
+        0.6539408639073372
+      ],
+      "bl_gravity_P576_cpu_paper|training_time": [
+        1.2207422628998756,
+        1.2365010473877192,
+        1.2055706065148115
+      ],
+      "bl_gravity_P1024_cpu_paper|training_time": [
+        4.224440401419997,
+        4.252434879541397,
+        4.163906272500753
+      ],
+      "elasticity_P50_cpu_paper|time_lil_s": [
+        0.0038168802857398987,
+        0.0039917826652526855,
+        0.003950025886297226
+      ],
+      "elasticity_P50_cpu_paper|solve_time_qr": [
+        0.00196884386241436,
+        0.0021269842982292175,
+        0.002089347690343857
+      ],
+      "elasticity_P200_cpu_paper|time_lil_s": [
+        0.04574117995798588,
+        0.049900857731699944,
+        0.046007065102458
+      ],
+      "elasticity_P200_cpu_paper|solve_time_qr": [
+        0.038152819499373436,
+        0.042021481320261955,
+        0.037780025973916054
+      ],
+      "elasticity_P450_cpu_paper|time_lil_s": [
+        0.13904553093016148,
+        0.14349937811493874,
+        0.1257922239601612
+      ],
+      "elasticity_P450_cpu_paper|solve_time_qr": [
+        0.10195367783308029,
+        0.10702863149344921,
+        0.09760459326207638
+      ],
+      "elasticity_P800_cpu_paper|time_lil_s": [
+        0.4047407694160938,
+        0.40816298872232437,
+        0.38223508186638355
+      ],
+      "elasticity_P800_cpu_paper|solve_time_qr": [
+        0.299589304253459,
+        0.3027202859520912,
+        0.2842767406255007
+      ],
+      "elasticity_P1250_cpu_paper|time_lil_s": [
+        1.0421808548271656,
+        1.040124787017703,
+        1.0080509912222624
+      ],
+      "elasticity_P1250_cpu_paper|solve_time_qr": [
+        0.800001373514533,
+        0.7970530167222023,
+        0.7682607006281614
+      ],
+      "kovasznay_P75_cpu_paper|solve_time_total": [
+        0.055804187431931496,
+        0.05744130536913872,
+        0.05438450537621975
+      ],
+      "kovasznay_P300_cpu_paper|solve_time_total": [
+        0.29497927241027355,
+        0.3172472808510065,
+        0.2822468038648367
+      ],
+      "kovasznay_P675_cpu_paper|solve_time_total": [
+        0.6397423036396503,
+        0.6595329791307449,
+        0.6052308026701212
+      ],
+      "kovasznay_P1200_cpu_paper|solve_time_total": [
+        1.666234564036131,
+        1.6810644753277302,
+        1.5962012950330973
+      ],
+      "kovasznay_P1875_cpu_paper|solve_time_total": [
+        4.328708857297897,
+        4.25593089312315,
+        4.0499500427395105
+      ],
+      "beltrami_P7984_cpu_paper|solve_time_total": [
+        282.45822896808386,
+        289.2574373036623,
+        261.8172962125391
+      ],
+      "beltrami_pinned|solve_time_total": [
+        266.9718537032604,
+        280.54708495922387,
+        267.18489447422326
+      ],
+      "darcy_S1_cpu_paper|total_time": [
+        29.56323845498264,
+        27.450982747599483,
+        29.342367002740502
+      ],
+      "darcy_S2_cpu_paper|total_time": [
+        20.68706621788442,
+        29.011539097875357,
+        28.156152030453086
+      ],
+      "darcy_S3_cpu_paper|total_time": [
+        27.309030825272202,
+        21.09314543567598,
+        28.114541290327907
+      ],
+      "darcy_SPE10_cpu_paper|total_time": [
+        19.484482569620013,
+        25.768728559836745,
+        22.924145126715302
+      ]
+    }
+  }
+}

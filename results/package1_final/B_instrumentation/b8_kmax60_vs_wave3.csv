@@ -1,0 +1,4 @@
+case,guess,P,target,wave3_K_max,wave3_iterations,wave3_final_loss,wave3_stopping_reason,wave4_K_max,wave4_iterations,wave4_final_loss,wave4_stopping_reason,wave4_target_reached
+gravity,ic,256,0.075,20,20,0.0988211539587539,iteration_cap,60,23,0.07487061171752597,target,True
+gravity,ic,576,0.045,20,20,0.12545765190414038,iteration_cap,60,23,0.04335135125953132,target,True
+gravity,zero,64,0.24,20,20,0.9507298035790827,iteration_cap,60,43,0.23674916027010356,target,True

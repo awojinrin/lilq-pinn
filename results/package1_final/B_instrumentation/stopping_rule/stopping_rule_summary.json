@@ -1,0 +1,112 @@
+{
+  "tau_chi": 0.1,
+  "tau_r": 0.01,
+  "n_s": [
+    1,
+    2,
+    3
+  ],
+  "table16": {
+    "1": {
+      "early": 0,
+      "errstop": 0,
+      "R_max": 1.0055101640042412,
+      "never_fires": 0
+    },
+    "2": {
+      "early": 0,
+      "errstop": 0,
+      "R_max": 1.002307322454012,
+      "never_fires": 0
+    },
+    "3": {
+      "early": 0,
+      "errstop": 0,
+      "R_max": 1.0013147299151037,
+      "never_fires": 0
+    }
+  },
+  "held_out": {
+    "1": {
+      "runs": 192,
+      "fired": 145,
+      "censored": 0,
+      "R_max": 1.0032022755491192,
+      "kovasznay_fired": 87,
+      "kovasznay_E_over_min_max": 1.7261106000950148,
+      "kovasznay_E_over_min_median": 1.0012980435662215,
+      "kovasznay_E_over_last_range": [
+        0.9391262995992379,
+        1.0305049316452488
+      ],
+      "kovasznay_P1200_by_class": {
+        "A": {
+          "n": 26,
+          "eps_u_range": [
+            4.93871619564793e-09,
+            4.855124179134013e-08
+          ]
+        },
+        "C": {
+          "n": 20,
+          "eps_u_range": [
+            9.128368405509902e-09,
+            7.579466184548544e-05
+          ]
+        }
+      }
+    },
+    "2": {
+      "runs": 192,
+      "fired": 69,
+      "censored": 76,
+      "R_max": 1.0003930662726639,
+      "kovasznay_fired": 55,
+      "kovasznay_E_over_min_max": 1.7460641159409296,
+      "kovasznay_E_over_min_median": 1.003915163977739,
+      "kovasznay_E_over_last_range": [
+        0.9816862079797856,
+        1.0408569096254563
+      ],
+      "kovasznay_P1200_by_class": {
+        "A": {
+          "n": 0,
+          "eps_u_range": null
+        },
+        "C": {
+          "n": 14,
+          "eps_u_range": [
+            1.1419689727976471e-07,
+            1.4433986416343668e-05
+          ]
+        }
+      }
+    },
+    "3": {
+      "runs": 192,
+      "fired": 59,
+      "censored": 86,
+      "R_max": 1.0000886336107375,
+      "kovasznay_fired": 45,
+      "kovasznay_E_over_min_max": 1.7489191961392057,
+      "kovasznay_E_over_min_median": 1.0045561863105914,
+      "kovasznay_E_over_last_range": [
+        0.9775264467224399,
+        1.0029059042429773
+      ],
+      "kovasznay_P1200_by_class": {
+        "A": {
+          "n": 0,
+          "eps_u_range": null
+        },
+        "C": {
+          "n": 4,
+          "eps_u_range": [
+            3.370194523398772e-06,
+            1.4434442360159948e-05
+          ]
+        }
+      }
+    }
+  }
+}

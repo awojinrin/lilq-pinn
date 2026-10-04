@@ -1,0 +1,67 @@
+Assembled C:/Users/awoji/AppData/Local/Temp/claude/C--Users-awoji-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/final/results/package1: 3386 files; commits by wave {'1': '8a3f5f7cc4c21d301320dd20df0a657f52748bdf', '2': '905e58c480c7f2860443a5235bb8bbacd98efda0', '3': '905e58c480c7f2860443a5235bb8bbacd98efda0', '4': '17b3539826615c696d622dcd2e3833862c793542'}; 226 overrides; 26 runs marked superseded; status: final
+Composed 42 clean-timing rows (CPU: median of the replicates)
+Wrote C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\reference
+Wrote C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\code
+Merged 140 rows from 10 job directories into C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\four_method_tables.csv; 54 stall controls into four_method_controls.csv
+Wrote C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\reproduction_check.csv: violation=15, missing=0, round-off=10, reported=31, ok=84
+
+============================================================
+Bratu
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\paper\bratu_residual_bands.pdf
+
+============================================================
+Burgers
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\paper\burgers_residual_bands.pdf
+
+============================================================
+Buckley–Leverett (viscous)
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\paper\bl_residual_bands.pdf
+
+============================================================
+Buckley–Leverett (gravity)
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\paper\bl_gravity_residual_bands.pdf
+
+All figures and CSVs written to C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\paper
+
+============================================================
+Bratu
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\kmax\bratu_residual_bands.pdf
+
+============================================================
+Burgers
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\kmax\burgers_residual_bands.pdf
+
+============================================================
+Buckley–Leverett (viscous)
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\kmax\bl_residual_bands.pdf
+
+============================================================
+Buckley–Leverett (gravity)
+============================================================
+  Saved C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\kmax\bl_gravity_residual_bands.pdf
+
+All figures and CSVs written to C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\residual_band_figures\kmax
+Wrote C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\A_calibration
+Table 16 (tau_chi = 0.1, tau_r = 0.01):
+  n_s = 1: early 0, errstop 0, R max 1.0055, never fires 0
+  n_s = 2: early 0, errstop 0, R max 1.0023, never fires 0
+  n_s = 3: early 0, errstop 0, R max 1.0013, never fires 0
+Held out:
+  n_s = 1: 145 of 192 fire, 0 censored, R max 1.00320
+  n_s = 2: 69 of 192 fire, 76 censored, R max 1.00039
+  n_s = 3: 59 of 192 fire, 86 censored, R max 1.00009
+Stall columns of 306 logs recomputed
+Wrote C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\stopping_rule
+Filled 36 rows under C:/Users/awoji/AppData/Local/Temp/claude/C--Users-awoji-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/final/results/package1/B_instrumentation/darcy_fv
+Section 3.3 runs: 63 (0 failed)
+four-method rows: 140 (0 failures)
+B9 rows: 28 (NiL: 24 of 24: 4 fields x 3 seeds x 2 precisions)
+B8 rows: 131: 128 of wave 3 and its LiL-Q reruns with K_max = 60 (0 failures)
+Wrote 16 LiL-Q rows to C:\Users\awoji\AppData\Local\Temp\claude\C--Users-awoji-Documents-LiL-Q\b870b5bf-bc15-4f34-8be6-4c7449cc20a2\scratchpad\final\results\package1\B_instrumentation\four_method_lilq.csv
