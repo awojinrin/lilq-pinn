@@ -2,7 +2,7 @@
 The manuscript's LiL-Q table entries, for check B1 (Section 3.3)
 =================================================================
 
-Transcribed from ``Post-JCP/main.pdf`` (the revised manuscript; its table
+Transcribed from the revised manuscript (``main.pdf``; its table
 numbers, which run one ahead of the computational package's for some
 tables). Each entry names the rerun it is compared against and how:
 

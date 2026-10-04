@@ -1,13 +1,15 @@
-# A Convex Quasilinearization Method for Solving Nonlinear PDEs with Physics-Informed Neural Networks
+# Quasilinearized Physics-Informed Least-Squares Collocation in Linear-in-Learnables Trial Spaces
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 Codebase for the paper:
 
-> **A Convex Quasilinearization Method for Solving Nonlinear PDEs with Physics-Informed Neural Networks**
+> **Quasilinearized Physics-Informed Least-Squares Collocation in Linear-in-Learnables Trial Spaces: Convergence Theory and Practical Stopping Criteria**
 > Gbenga T. Awojinrin, Abdul-Akeem Olawoyin, and Rami M. Younis
 > (under review)
+
+An earlier version of the paper appeared on arXiv as *A Convex Quasilinearization Method for Solving Nonlinear PDEs with Physics-Informed Neural Networks*; its code is the tag `v1.0-manuscript`.
 
 ## Overview
 
@@ -104,62 +106,44 @@ pinn, saved = load_darcy_pinn('B_instrumentation/darcy_fv/S1_s0/models/NiL_S1_s0
 ## Project Structure
 
 ```
-LiL-Q/
-├── .github/workflows/       # Continuous Integration workflows
-│   └── test.yml             # Dry-run validation suite runner
-├── lilq/                    # Core library
-│   ├── basis.py             # Chebyshev, Fourier, ELM, tensor products (1D/2D/ND)
-│   ├── solvers.py           # Generic NiL-N, NiL-Q, LiL-N, LiL-Q templates
-│   ├── collocation.py       # Collocation point generation
-│   ├── pretraining.py       # NN and LiL pretraining
-│   ├── nn.py                # MLP architecture (tanh/SiLU)
-│   ├── metrics.py           # Experiment tracking
-│   ├── properties.py        # Theorem 2 residual bounds validation
-│   ├── analysis.py          # SVD, condition number studies
-│   ├── plotting.py          # Publication-quality plots
-│   ├── style.py             # JCP/Elsevier styling
-│   └── utils.py             # Seeds, GPU management, checkpointing
-├── problems/                # Problem-specific physics
-│   ├── bratu.py
-│   ├── burgers.py
-│   ├── buckley_leverett.py
-│   ├── kovasznay.py
-│   ├── beltrami.py
-│   ├── elasticity.py
-│   └── darcy.py
-├── experiments/             # Experiment runners
-│   ├── exp_utils.py         # Shared saving/plotting utilities
-│   ├── run_all_dry.py       # End-to-end validation
-│   ├── run_bratu.py
-│   ├── run_burgers.py
-│   ├── run_bl.py
-│   ├── run_kovasznay.py
-│   ├── run_beltrami.py
-│   ├── run_elasticity.py
-│   ├── run_darcy.py
-│   └── run_burgers_basis_comparison.py
-├── reference_results/       # Pre-computed paper results (committed)
-│   └── <problem>_experiments_<basis>/
-│       ├── N_<n>/           # Per-N checkpoints + metrics
-│       ├── figures/         # Convergence + solution plots (PNG only)
-│       └── master_results.json
-├── examples/                # Quick-start scripts + notebook
-│   ├── run_bratu_lilq.py
-│   ├── run_burgers_lilq.py
-│   ├── run_kovasznay_lilq.py
-│   ├── run_elasticity_lilq.py
-│   ├── run_bl_lilq.py
-│   └── lilq_demo.ipynb
-├── data/spe10/              # SPE10 permeability field data
+lilq-pinn/
+├── .github/workflows/test.yml  # CI: the dry-run validation suite
+├── lilq/                       # Core library
+│   ├── basis.py                # Chebyshev, Fourier, ELM, tensor products (1D/2D/ND)
+│   ├── solvers.py              # Generic NiL-N, NiL-Q, LiL-N, LiL-Q templates
+│   ├── collocation.py          # Collocation point generation
+│   ├── pretraining.py, nn.py   # NN and LiL pretraining; MLP architecture (tanh/SiLU)
+│   ├── iteration_log.py        # Per-iteration log (iterations.csv)
+│   ├── instrumentation.py      # Monitors (chi, round-off, rank) and the stall-based termination rule
+│   ├── test_errors.py, references.py  # Errors against exact and reference solutions
+│   ├── saved_models.py         # Save and reload every trained model
+│   ├── provenance.py, source_lock.py, run_metadata.py  # Commit, hardware and run records
+│   ├── properties.py, analysis.py  # Residual-bound checks; SVD and condition numbers
+│   └── plotting.py, style.py, utils.py, ...
+├── problems/                   # Problem-specific physics (Bratu, Burgers, Buckley-Leverett,
+│                               #   Kovasznay, Beltrami, elasticity, Darcy)
+├── baselines/                  # Calibrated network baselines (F1, F2) and the classical
+│                               #   square Chebyshev collocation baselines
+├── experiments/                # Experiment runners
+│   ├── run_<problem>.py        # One runner per problem; run_all_dry.py validates them all
+│   ├── component_a.py, component_b.py, component_c.py  # Network baselines, instrumented runs,
+│   │                           #   oversampling study
+│   ├── four_method_tables.py, clean_timing.py, stopping_rule_table.py, ...
+│   ├── release_tables.py       # Regenerates the manuscript's tables and checks them (RELEASE.md)
+│   └── manuscript_scripts.py   # Runs the manuscript's figure scripts on the results (RELEASE.md)
 ├── scripts/
-│   └── generate_permeability.py
-├── pyproject.toml           # Package metadata and dynamic install setup
-├── CITATION.cff             # Author citation metadata (full author list)
-├── REPRODUCE.md             # Detailed replication guide
-├── requirements.txt
-├── LICENSE
+│   ├── cluster/                # SLURM jobs and submission scripts (TAMU HPRC Grace and FASTER)
+│   ├── make_hprc_bundle.py     # The upload bundle, locked to a commit
+│   └── generate_permeability.py, plot_permeability_grid.py
+├── reference_results/          # Results of the arXiv version (committed)
+├── examples/                   # Quick-start scripts and notebook
+├── data/spe10/                 # SPE10 permeability field data
+├── tests/                      # pytest suite
+├── RELEASE.md                  # Every table and figure of the manuscript -> script and result files
+├── REPRODUCE.md                # Replication guide
+├── DECISIONS.md                # Dated log of every design decision and deviation
+├── pyproject.toml, requirements.txt, CITATION.cff, LICENSE
 └── README.md
-
 ```
 
 ## Repository Status
@@ -169,8 +153,15 @@ LiL-Q/
 - 4-method comparison (NiL-N, NiL-Q, LiL-N, LiL-Q) for Bratu, Burgers, Buckley-Leverett
 - LiL-Q for Kovasznay, Beltrami, elasticity
 - FVM + LiL-Q + NiL-N for Darcy/SPE10
-- Theorem 2 residual bounds validation
+- Residual-bound checks of the convergence theory
 - Interactive Jupyter notebook
+
+## Releases
+
+| Tag | Paper version |
+|---|---|
+| `v2.0.0` | the revised manuscript (4 October 2026). [RELEASE.md](RELEASE.md) maps every table and figure of its Sections 6 and Appendix B to the script that regenerates it and the result files it reads. |
+| `v1.0-manuscript` | the arXiv version |
 
 ## Citation
 

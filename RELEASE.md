@@ -1,4 +1,4 @@
-# Release `v1.0-cmame`: the code and results behind the CMAME manuscript
+# Release `v2.0.0`: the code and results behind the revised manuscript
 
 This tag is the code of the revised manuscript ("main.tex", 107 pp., 4 October
 2026). It is gate G1 of the manuscript plan (Computational Package 2,
@@ -65,7 +65,7 @@ CSVs are attached there):
 
 | Check | Result |
 |---|---|
-| 19 tables, 2,576 cells | all agree except 4 cells of Table 7, rounding slips of the manuscript (Section 4 below) |
+| 19 tables, 2,578 cells | all agree except 4 cells of Table 7, rounding slips of the manuscript (Section 4 below) |
 | 20 data figures, by the manuscript folder's scripts on the published waves | all pixel-identical to the manuscript's files (PyMuPDF render; `fig_compA` also at 300 dpi with any grey-level change counted) |
 | the same on `package1` | 18 of 20 identical; `fig_conv.py` stops before the other two at an assertion about which file holds gravity BL P = 64 (Section 4) |
 | Appendix B.3 screening tables | 48 of 48 rows identical (`gen_screening.py`) |
@@ -96,10 +96,10 @@ CSVs are attached there):
 | 8 | `tab:elasticity_results` | RT `elasticity_results` | `B_instrumentation/elasticity_P*_cpu_paper/summary.json`, `clean_timing/clean_timing.csv` (`solve_time_qr`) | `experiments/component_b.py`, `experiments/clean_timing.py` |
 | 9 | `tab:elasticity_comparison` | RT `elasticity_comparison` (LiL rows; the SciANN row is published) | as Table 8 (`time_lil_s`) | as Table 8 |
 | 10 | `tab:kovasznay_results` | RT `kovasznay_results` | `B_instrumentation/kovasznay_P*_cpu_paper/summary.json`, `clean_timing/clean_timing.csv` | `experiments/component_b.py`, `experiments/clean_timing.py` |
-| 11 | `tab:kovasznay_comparison` | RT `kovasznay_comparison` (F1, F2 and LiL-Q rows; the others are published) | `A_calibration/results/kovasznay_comparison.csv` (corrected, Section 4) | `experiments/kovasznay_comparison.py`, `experiments/component_a.py` |
-| 12 | `tab:beltrami_results` | RT `beltrami_results` | `B_instrumentation/beltrami_pinned/{report.json, iterations.csv}` (the eight-pin run) | `experiments/run_beltrami_pinned.py` |
+| 11 | `tab:kovasznay_comparison` | RT `kovasznay_comparison` (F1, F2 and LiL-Q rows; the others are published; F2's "~4,600 LM steps" is the median 4,608, not checked automatically) | `A_calibration/results/kovasznay_comparison.csv` (corrected, Section 4) | `experiments/kovasznay_comparison.py`, `experiments/component_a.py` |
+| 12 | `tab:beltrami_results` | RT `beltrami_results` | `B_instrumentation/beltrami_pinned/{report.json, iterations.csv}` (the eight-pin run); the whole-domain E_w, which that run's log does not carry, from `beltrami_P7984_cpu_paper/summary.json` (the two runs' whole-domain velocity errors agree to round-off, asserted for u and v) | `experiments/run_beltrami_pinned.py` |
 | 13 | `tab:beltrami_comparison` | RT `beltrami_comparison` (LiL-Q row) | as Table 12 | as Table 12 |
-| 14 | `tab:darcy_training` | RT `darcy_training` (parameter counts); the other entries are the settings of `problems/darcy.py` and `experiments/darcy_fv_comparison.py` | `B_instrumentation/darcy_fv_comparison.csv` | `experiments/darcy_fv_comparison.py` |
+| 14 | `tab:darcy_training` | RT `darcy_training` (parameter counts only); three NiL entries do not describe the code that ran (Section 4) | `B_instrumentation/darcy_fv_comparison.csv` | `experiments/darcy_fv_comparison.py`, `problems/darcy.py` |
 | 15 | `tab:darcy_results` | RT `darcy_results` | `B_instrumentation/darcy_fv_comparison.csv` (NiL: float64 medians), `darcy_*_cpu_paper/summary.json` (FVM time), `clean_timing/clean_timing.csv` (LiL) | `experiments/darcy_fv_comparison.py`, `experiments/component_b.py`, `experiments/clean_timing.py` |
 | 16 | `tab:condition_numbers` | RT `condition_numbers` | `B_instrumentation/*_cpu_paper/iterations.csv` (final-iterate kappa; stability over k >= 1), `beltrami_pinned/report.json` | `experiments/component_b.py`, `experiments/run_beltrami_pinned.py` |
 | 17 | `tab:stopping_demo` | RT `stopping_demo` (n_s = 2, tau_chi = 0.1, tau_r = 0.01) | `B_instrumentation/*_cpu_kmax` and `*_cpu_paper/iterations.csv` | `experiments/stopping_rule_table.py` (also `stopping_rule/stopping_rule_table16.csv`); MS `ns_eval.py` |
@@ -206,6 +206,25 @@ rounded wrongly in the manuscript:
 - **Why the figure is unchanged:** the two curves agree to 1.1e-16, so
   Figures 4 and 13 are the same either way. They regenerate pixel for
   pixel from the published waves.
+
+**Table 14** (`tab:darcy_training`): three NiL entries describe the
+pre-GitHub notebook's per-field recipe, not the network behind the NiL rows
+of Table 15.
+- **Why:** before wave 3, the authors decided to use one NiL formulation for
+  all four fields (`DECISIONS.md`, Addendum v2.2), so that delta_FV compares
+  NiL, LiL and the finite-volume reference on the same problem.
+- **The three entries:**
+
+  | Entry | Table 14 | The code that produced Table 15 (`problems/darcy.py`, `DarcyPINN`) |
+  |---|---|---|
+  | Activation | tanh / SiLU | SiLU |
+  | Output (h*) | sigmoid | linear: `P_MID + P_HALF * net_P` |
+  | Optimizer | Adam, StepLR | Adam, cosine annealing to 1e-5, gradient clipping |
+
+- **Not listed in the table:** the loss weights (50 for the PDE, 20 for the
+  boundaries).
+- **Correct as printed:** the network size (2 x 32 per field, 3,555
+  parameters), 150,000 iterations and float64.
 
 **Appendix B.5** (`b5_check.md`): one discrepancy and six clarifications.
 - **The discrepancy:** the four-method row's P range "25–1,051" mixes

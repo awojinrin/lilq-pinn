@@ -162,7 +162,9 @@ def test_saved_reference_is_the_grid_the_errors_use(tmp_path):
 def test_saved_code_records_the_commit_and_the_source(tmp_path):
     code = cb.save_code(tmp_path)
     prov = json.loads((code / 'PROVENANCE.json').read_text())
-    assert prov['available'] and len(prov['commit']) == 40
+    if not prov['available']:
+        pytest.skip("no git checkout and no bundle PROVENANCE.json (e.g. a source archive): no commit to record")
+    assert len(prov['commit']) == 40
     for d in cb.CODE_DIRS:
         assert (code / d).is_dir()
     assert (code / 'experiments' / 'component_b.py').exists()

@@ -15,7 +15,7 @@ Submodules:
     collocation  - Collocation point generation
     pretraining  - NN and basis coefficient pretraining
     solvers      - Generic solver templates for all four methods
-    style        - Publication-quality matplotlib styling (CMAME/Elsevier)
+    style        - Publication-quality matplotlib styling (Elsevier)
     plotting     - Convergence and solution field visualization
     analysis     - SVD, condition number studies (opt-in)
     properties   - Theorem 2 residual bounds validation

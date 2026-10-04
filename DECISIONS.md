@@ -17,6 +17,45 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 6e: the review before the release; no journal in the release's name
+
+**The name.** The release is tagged `v2.0.0` (semantic versioning; `v1.0-manuscript` is the
+arXiv version), not after a journal: the package suggested a journal-named tag, but a
+repository's releases should not be named for the journal a paper is submitted to. Journal
+names were removed from `RELEASE.md`, the README and two docstrings (`lilq/__init__.py`,
+`lilq/plotting.py`, from the v2 migration); literature citations stay. `CITATION.cff`: version
+2.0.0, released 2026-10-04.
+
+**The review** (the whole tree at this commit, which `main` will fast-forward to):
+- **pyflakes over every tracked .py file:** no undefined names. One real defect: an identical
+  copy of `test_scheduler_info_records_a_whole_node_held_without_exclusive` in
+  `tests/test_provenance.py` (from 55795b6), removed. Left as found: 103 unused imports,
+  5 f-strings without placeholders, 7 unused local variables (all from the v2 migration, in
+  solver code that produced published results: `f_vals` and two `*_prev` arrays in
+  `problems/buckley_leverett.py`, `Phi_p` in `problems/kovasznay.py`; each value is computed
+  and then not needed, none is a missing use).
+- **A fresh export without `.git`:** two tests failed, because a source archive has no commit
+  to record: `test_saved_code_records_the_commit_and_the_source` now skips there, and
+  `test_b8_saves_histories` compares with `''`. In a clone both pass, as before.
+- **The README:** its structure tree predated `baselines/`, most of `experiments/`,
+  `scripts/cluster/`, `tests/`, `RELEASE.md` and `DECISIONS.md`; rewritten. Its quick start,
+  its nine experiment commands, its loader example and the five `examples/` scripts were run;
+  all work. The CI script (`run_all_dry.py`) passes.
+- **`release_tables.py`:** Beltrami's whole-domain E_w was read from the `eps_v` column (the
+  eight-pin run logs no `eps_w`); it now comes from the one-pin paper pass's `rel_l2_w`, with
+  the two runs' u and v asserted equal to 1e-9. The F1 and F2 parameter counts of Table 11 are
+  now checked. 2,578 cells; still only the 4 slips of Table 7.
+- **A manuscript finding:** three NiL entries of Table 14 (tanh / SiLU, sigmoid output,
+  StepLR) describe the pre-GitHub notebook's per-field recipe, not the single formulation
+  (SiLU, linear output, Adam with cosine annealing and clipping, weights 50 / 20) that
+  produced Table 15's NiL rows, as decided before wave 3. `RELEASE.md` had said those entries
+  were the code's settings; corrected, and listed with the release's notes.
+- **Left for the authors:** the HPRC allocation account numbers in `scripts/cluster/profiles/`
+  and `tests/test_provenance.py` (public on `v3-dev` since 2026-09-29); the notebook's saved
+  output carries a local path (on `main` since June).
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 6d: RELEASE.md; the permeability figure's script
 
 **`RELEASE.md`** (gate G1, Package 2, Section 2, item 1). It maps every

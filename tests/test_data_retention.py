@@ -56,7 +56,7 @@ def test_b8_saves_histories(tmp_path):
               methods=('NiL-N',), seeds=(0,))
     assert (tmp_path / 'models' / 'viscous_zero_P64_NiL-N_s0' / 'history.csv').exists()
     with open(tmp_path / 'b8_initial_guess.csv', newline='') as f:
-        assert next(csv.DictReader(f))['commit'] == source_lock.current_commit()
+        assert next(csv.DictReader(f))['commit'] == (source_lock.current_commit() or '')   # '' without git
 
 
 # ── provenance lock ──────────────────────────────────────────────────────────

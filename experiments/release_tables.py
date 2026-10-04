@@ -407,7 +407,9 @@ def kovasznay_comparison(package):
     rows = [None] * 9                                                # published rows
     for fam, cfg in (('F1', 'F1_18'), ('F2', 'F2_05')):
         r = cmp[(fam, 'gpu', cfg)]
-        rows.append([SKIP, SKIP, SKIP, SKIP, num(float(r['eps_u_median'])), num(float(r['eps_v_median'])),
+        n_theta = _json(Path(package, 'A_calibration', 'full', f'{cfg}_s0', 'run.json'))['n_theta']
+        # training ("~4,600 LM steps": the median is 4,608) and runtime (the 60-minute budget) are not checked
+        rows.append([SKIP, num(n_theta), SKIP, SKIP, num(float(r['eps_u_median'])), num(float(r['eps_v_median'])),
                      num(float(r['eps_p_meanfree_median']))])
     for P in (675, 1200, 1875):
         c, g = cmp[('LiL-Q', 'cpu', f'P={P}')], cmp[('LiL-Q', 'gpu', f'P={P}')]
@@ -428,12 +430,18 @@ def _beltrami(package):
 
 @table('tab:beltrami_results')
 def beltrami_results(package):
+    """Snapshots and the whole-domain u, v, p errors from the eight-pin run.
+    Its log has no ``eps_w`` column, so the whole-domain E_w is the one-pin
+    paper pass's ``rel_l2_w`` (``beltrami_P7984_cpu_paper/summary.json``):
+    the two runs' whole-domain velocity errors agree to round-off, which is
+    asserted for u and v."""
     rep, last = _beltrami(package)
+    one_pin = _json(_b(package, 'beltrami_P7984_cpu_paper', 'summary.json'))
+    for f in ('u', 'v'):
+        assert abs(float(last[f'eps_{f}']) / one_pin[f'rel_l2_{f}'] - 1) < 1e-9, f
+    whole = {'u': float(last['eps_u']), 'v': float(last['eps_v']), 'w': one_pin['rel_l2_w'], 'p': float(last['eps_p'])}
     snaps = rep['snapshots']
-    rows = []
-    for f, whole in (('u', 'eps_u'), ('v', 'eps_v'), ('w', 'eps_v'), ('p', 'eps_p')):
-        whole_value = float(last['eps_u'] if f in 'uvw' and not last[whole] else last[whole])
-        rows.append([SKIP] + [num(100 * s[f]) for s in snaps] + [num(100 * whole_value)])
+    rows = [[SKIP] + [num(100 * s[f]) for s in snaps] + [num(100 * whole[f])] for f in ('u', 'v', 'w', 'p')]
     return ['field'] + [f"t={s['t']}" for s in snaps] + ['entire_domain'], rows
 
 

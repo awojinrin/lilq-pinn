@@ -3,7 +3,7 @@ Unified Plotting Module for LiL-Q
 ====================================
 
 Provides convergence, solution, and comparison plotting functions that
-work across all problems. Uses the CMAME publication style from ``lilq.style``.
+work across all problems. Uses the publication style from ``lilq.style``.
 
 Usage::
 
