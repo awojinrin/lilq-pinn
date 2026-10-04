@@ -17,6 +17,71 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-03 -- Field data for the solution-field figures, from the saved models (the advisor's reply to wave 4, Section 3)
+
+The manuscript's solution-field figures are images from the superseded
+code. `experiments/figure_data.py` evaluates the saved models of the
+regenerated runs in a package on each figure's grid. Nothing is retrained
+or re-solved.
+
+**The output:** one `.npz` per figure, and `manifest.json`.
+- **The figures:**
+
+  | File | Runs |
+  |---|---|
+  | `bratu.npz` | P = 25 and 225 |
+  | `burgers.npz` | P = 625 |
+  | `buckley_leverett.npz` | viscous and gravity at P = 1,024, with the finite-difference reference |
+  | `kovasznay.npz` | P = 1,875, with the exact solution, on the 301 x 401 evaluation grid |
+  | `beltrami.npz` | the pinned run at t = 1, the six faces at 41 x 41, with the exact fields |
+  | `darcy.npz` | finite-volume, LiL and NiL (seed 0, float64 and float32), at the cell centres |
+  | `elasticity.npz` | P = 50, with the exact solution, 200 x 200 |
+
+- **Every file holds:**
+  - the coordinates;
+  - each method's field (`[i, j]`, `indexing='ij'`);
+  - the exact or reference field where there is one;
+  - a `meta` JSON with each model's run folder, device and commit, and
+    the checks.
+
+**The runs:**
+- **LiL-Q:** the Section 3.3 CPU paper passes.
+- **LiL-N and NiL (seed 0):** the CPU four-method runs.
+- **Missing CPU models:** where there is none, the GPU run's model is used,
+  labelled in its source and listed in the manifest. That is the case only
+  for Bratu at P = 25: wave 1's CPU four-method job ran P = 225 only, so
+  P = 25's LiL-N, NiL-N and NiL-Q come from the GPU job.
+- **Elasticity:** included because its image
+  (`elasticity_fields_and_errors_N*.png`) exists only in
+  `pre-v2-local-codebase/`, the superseded code.
+
+**Evaluation and its round-off:**
+- **How LiL fields are evaluated:** as tensor products
+  (`lilq.test_errors.tensor_grid_values`), the code path of the runs'
+  logged test errors.
+- **What is recorded:** `meta['evaluation_roundoff']` gives each field's
+  largest difference from the pointwise evaluation. It is below 1.3e-13
+  everywhere except the viscous Buckley-Leverett LiL-Q solution at P =
+  1,024.
+- **Viscous Buckley-Leverett:** its coefficients reach 2.5e9, and the two
+  evaluations differ by up to 1.7e-5. So its eps_u (1.958e-4) reproduces
+  only to about 2e-5 relative: laptop against Grace, and tensor-product
+  against pointwise evaluation.
+
+**Checks against the logged errors,** on the final package:
+- **Darcy:** delta_FV of every LiL and NiL model equals B9's table:
+  exactly for LiL and NiL float64, to 1e-7 for float32. The re-evaluated
+  LiL pressures equal the stored `P_lil` to 6e-12.
+- **Kovasznay:** eps_u, eps_v and the mean-free eps_p agree to 3e-7
+  relative.
+- **Gravity Buckley-Leverett:** eps_u to 2e-9.
+- **Elasticity:** both errors are of order 1e-16 (the basis reproduces the
+  exact solution), so an error panel would show round-off only.
+
+Tests: `tests/test_figure_data.py`.
+
+---
+
 ## 2026-10-03 -- The final package: option B's clean times, the stall-based rule's tables, status final (the advisor's reply to wave 4, item 1)
 
 The advisor adopted option B of the clean-timing fix: every quoted CPU time
