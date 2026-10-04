@@ -10,7 +10,8 @@ model (``eps_ref_final``).
 
 **Only the final models were saved**, so ``eps_ref_min`` and ``k_min`` (the
 smallest error over the iterations and where it occurred) cannot be computed
-without rerunning; they are left empty and the reason is in ``note``. The stall
+without rerunning; they are written ``NA`` (the advisor's reply to the
+Stage-1 note, 4 Oct 2026, item 2: no reruns) and the reason is in ``note``. The stall
 controls (``*_f1_stall_rule``) are not among the reported runs and are skipped.
 
 **LiL-Q** (``--lilq-runs``): the Package 2 reruns of the reported Bratu and
@@ -31,12 +32,13 @@ Usage::
         --out <package2_results>/G1_release/bl_reference_errors_networks.csv
     python experiments/network_reference_errors.py --package <package1> --benchmarks bratu burgers \\
         --reference-dir <stage1>/reference --first-column benchmark \\
-        --lilq-runs <stage1>/P2_12_reference_errors/B_instrumentation \\
+        --lilq-runs <package2_results>/P2_12_reference_errors \\
         --out <package2_results>/P2_12_reference_errors/scalar_reference_errors.csv
 """
 
 import argparse
 import csv
+import json
 import os
 import re
 import sys
@@ -52,7 +54,7 @@ import torch
 from lilq.saved_models import load_network, load_solution
 from lilq.test_errors import tensor_grid_values
 
-LILQ_RE = re.compile(r'^(?P<bench>.+)_P(?P<P>\d+)_(?P<device>cpu|cuda)_paper$')
+LILQ_RE = re.compile(r'^(?P<bench>[a-z_]+)_P(?P<P>\d+)(?:_(?P<device>cpu|cuda)_paper)?$')
 LILQ_NOTE = 'Package 2 rerun of the reported configuration; eps_ref logged at every iteration'
 MODEL_RE = re.compile(r'^(?P<bench>.+)_P(?P<P>\d+)_(?P<method>NiL-N|NiL-Q|LiL-N)_(?P<seed>s\d+|sna)_(?P<device>cpu|cuda)$')
 NOTE = 'only the final model was saved: eps_ref_min and k_min need the intermediate iterates'
@@ -85,7 +87,6 @@ def evaluate(method_dir, method, axes):
 
 
 def _commit(path, package):
-    import json
     d = Path(path)
     while d != Path(package) and d.parent != d:
         if (d / 'hardware.json').exists():
@@ -113,7 +114,7 @@ def rows_for(package, bench, reference):
         rows.append({'case': bench, 'P': int(m['P']), 'method': m['method'],
                      'seed': '' if m['seed'] == 'sna' else int(m['seed'][1:]), 'device': m['device'],
                      'eps_ref_final': float(np.linalg.norm(u - ref) / np.linalg.norm(ref)),
-                     'eps_ref_min': '', 'k_min': '', 'run': path.relative_to(package).as_posix(),
+                     'eps_ref_min': 'NA', 'k_min': 'NA', 'run': path.relative_to(package).as_posix(),
                      'commit': _commit(path, package), 'note': NOTE})
     return rows
 
@@ -130,9 +131,10 @@ def lilq_rows(runs_dir, bench):
         with open(path / 'iterations.csv', newline='') as f:
             log = [(int(r['k']), float(r['eps_ref'])) for r in csv.DictReader(f) if r.get('eps_ref', '') != '']
         k_min, eps_min = min(log, key=lambda t: t[1])
-        rows.append({'case': bench, 'P': int(m['P']), 'method': 'LiL-Q', 'seed': '', 'device': m['device'],
+        device = m['device'] or json.loads((path / 'run.json').read_text())['device']
+        rows.append({'case': bench, 'P': int(m['P']), 'method': 'LiL-Q', 'seed': '', 'device': device,
                      'eps_ref_final': log[-1][1], 'eps_ref_min': eps_min, 'k_min': k_min,
-                     'run': path.relative_to(runs_dir.parent.parent).as_posix(),
+                     'run': path.relative_to(runs_dir.parent).as_posix(),
                      'commit': _commit(path, Path(path.anchor)), 'note': LILQ_NOTE})
     return rows
 

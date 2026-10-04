@@ -73,18 +73,44 @@ def test_network_reference_errors_on_saved_models(tmp_path, monkeypatch):
     rows = nre.rows_for(tmp_path, 'toy', lambda c: (axes, ref))
     assert [(r['method'], r['seed']) for r in rows] == [('LiL-N', ''), ('NiL-N', 1)]
     assert rows[0]['eps_ref_final'] == pytest.approx(0.0, abs=1e-14) and rows[1]['eps_ref_final'] > 0
-    assert rows[1]['eps_ref_min'] == '' and 'only the final model' in rows[1]['note'] and rows[1]['commit'] == 'c0ffee'
+    assert rows[1]['eps_ref_min'] == rows[1]['k_min'] == 'NA' and 'only the final model' in rows[1]['note'] and rows[1]['commit'] == 'c0ffee'
 
 
 def test_lilq_rows_read_eps_ref_from_the_reruns(tmp_path):
     import experiments.network_reference_errors as nre
-    runs = tmp_path / 'P2_12_reference_errors' / 'B_instrumentation'
-    (runs.parent / 'hardware.json').parent.mkdir(parents=True)
-    (runs.parent / 'hardware.json').write_text(json.dumps({'git': {'commit': 'beef'}}))
-    _write(runs / 'toy_P25_cpu_paper' / 'iterations.csv',
+    runs = tmp_path / 'P2_12_reference_errors'                  # the Section 12.1 layout: <benchmark>_P<P>/
+    _write(runs / 'toy_P25' / 'iterations.csv',
            [{'k': 0, 'eps_ref': 1.0}, {'k': 1, 'eps_ref': 1e-3}, {'k': 2, 'eps_ref': 2e-3}])
-    _write(runs / 'other_P25_cpu_paper' / 'iterations.csv', [{'k': 0, 'eps_ref': 1.0}])
+    (runs / 'toy_P25' / 'run.json').write_text(json.dumps({'device': 'cpu'}))
+    (runs / 'toy_P25' / 'hardware.json').write_text(json.dumps({'git': {'commit': 'beef'}}))
+    _write(runs / 'other_P25' / 'iterations.csv', [{'k': 0, 'eps_ref': 1.0}])
     [row] = nre.lilq_rows(runs, 'toy')
     assert (row['method'], row['P'], row['device'], row['commit']) == ('LiL-Q', 25, 'cpu', 'beef')
     assert (row['eps_ref_final'], row['eps_ref_min'], row['k_min']) == (2e-3, 1e-3, 1)
-    assert row['run'] == 'P2_12_reference_errors/B_instrumentation/toy_P25_cpu_paper'
+    assert row['run'] == 'P2_12_reference_errors/toy_P25'
+
+
+def test_stage1_layout(tmp_path):
+    import experiments.p2_assemble as asm
+    stage, out = tmp_path / 'package2_stage1', tmp_path / 'package2_results'
+    (stage / 'reference').mkdir(parents=True)
+    (stage / 'reference' / 'bratu_ref_p48.npz').write_bytes(b'ref')
+    (stage / 'COMMIT').write_text('{"commit": "abc"}')
+    reruns = stage / 'P2_12_reference_errors' / 'B_instrumentation'
+    for name in ('bratu_P25_cpu_paper', 'burgers_P625_cpu_paper'):
+        _write(reruns / name / 'iterations.csv', [{'k': 0, 'eps_ref': 1.0}])
+        (reruns / name / 'run.json').write_text('{}')
+    (reruns / 'runs_index.csv').write_text('run\n')
+    for f in asm.STAGE1_FILES:
+        (reruns.parent / f).write_text(f)
+    (out / 'P2_12_reference_errors').mkdir(parents=True)
+    (out / 'P2_12_reference_errors' / 'scalar_reference_errors.csv').write_text('kept')
+    (out / 'reference').mkdir()
+    (out / 'reference' / 'bratu_ref_p48.npz').write_bytes(b'laptop')
+    runs, replaced = asm.stage1(stage, out)
+    assert runs == ['bratu_P25', 'burgers_P625']
+    assert (out / 'P2_12_reference_errors' / 'burgers_P625' / 'run.json').exists()
+    assert (out / 'P2_12_reference_errors' / 'check_c4.json').read_text() == 'check_c4.json'
+    assert (out / 'P2_12_reference_errors' / 'scalar_reference_errors.csv').read_text() == 'kept'
+    assert (out / 'reference' / 'bratu_ref_p48.npz').read_bytes() == b'ref'
+    assert replaced == [out / 'reference' / 'bratu_ref_p48.npz']

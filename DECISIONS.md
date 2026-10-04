@@ -17,6 +17,39 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 6a: the advisor's reply to the Stage-1 note; the Section 12.1 layout
+
+**The reply** (`Package2v2/Reply_to_stage1_note_2026-10-04.md`). It came with a
+re-issue of the package, `Package2v2`. Its 19 files are byte-identical to
+the first issue. Two things are new:
+- the manuscript snapshot (`main.tex`, `main.pdf`, the figures, the
+  advisor's figure and table scripts, and a README mapping them);
+- the reply itself.
+
+So the instructions are unchanged. The reply's item 2 (saved models):
+- final weights are enough;
+- `eps_ref_min` and `k_min` of the network rows are written `NA`, in
+  `bl_reference_errors_networks.csv` and `scalar_reference_errors.csv`;
+- no reruns.
+
+`experiments/network_reference_errors.py` now writes `NA` there. The
+LiL-Q rows keep their values: they come from the Stage-1 reruns, which log
+`eps_ref` at every iteration.
+
+**The layout.** Section 6.2 asks for
+`P2_12_reference_errors/<benchmark>_P<P>/{run.json, iterations.csv}`; the
+Grace job wrote `B_instrumentation/<benchmark>_P<P>_cpu_paper/`.
+`experiments/p2_assemble.py stage1` copies the downloaded stage into the
+Section 12.1 layout. Nothing is recomputed. It also replaces the laptop's
+`reference/` with Grace's, which is locked to `750f0b6`; they agree to
+1.4e-14.
+
+Regenerated: both tables have the same rows and the same `eps_ref_final`
+(no change at all). The LiL-Q rows' `run` column now points to the new
+folders.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 5 on Grace: check C4 passed; the LiL-Q rows of the scalar reference-error table
 
 **The job** (`p2s1_scalar_reruns`, job 19956475, node c531, exclusive, 48
