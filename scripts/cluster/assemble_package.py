@@ -27,7 +27,12 @@ import argparse
 import filecmp
 import json
 import shutil
+import sys
 from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
 
 PROVISIONAL = ("provisional: the advisor reviews the wave 4 report first (his reply on wave 3, Section 4); "
@@ -45,7 +50,9 @@ def assemble(results: Path, out: Path, waves=(1, 2, 3, 4), final: bool = False) 
             raise FileExistsError(f"{out} is not empty and holds no earlier assembly (WAVES.json); not touching it")
         shutil.rmtree(out)
     out.mkdir(parents=True, exist_ok=True)
-    record = {'status': 'final' if final else PROVISIONAL, 'waves': {}, 'overrides': [], 'files': 0}
+    from lilq.source_lock import current_commit
+    record = {'status': 'final' if final else PROVISIONAL, 'assembled_by_commit': current_commit(),
+              'waves': {}, 'overrides': [], 'files': 0}
     for n in waves:
         src = results / f'wave{n}'
         if not src.is_dir():

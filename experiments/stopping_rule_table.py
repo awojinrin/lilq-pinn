@@ -177,6 +177,36 @@ def held_out(oversampling_root, n_s_values, tau_chi, tau_r):
     return rows, summary
 
 
+def stall_columns(package):
+    """One row per ``iterations.csv`` under ``package``'s B_instrumentation
+    and C_oversampling (every LiL-Q log: the Section 3.3 runs, B8, B10,
+    Table 3, Component C, ...): the first stall as logged (``stall_flag``,
+    tau_r = 0.1 for every run so far), the first single-step stall at
+    this module's tolerances (tau_r = 0.01), and the n_s = 2 rule's first
+    step, returned iterate and censoring. Beside the tables'
+    ``first_stall_iteration`` columns, which are left as they were logged."""
+    package = Path(package)
+    logs = sorted(list((package / 'B_instrumentation').rglob('iterations.csv'))
+                  + list((package / 'C_oversampling').rglob('iterations.csv')))
+    rows = []
+    for path in logs:
+        with open(path, newline='') as f:
+            raw = list(csv.DictReader(f))
+        d = read_log(path)
+        if not raw or 'chi' not in raw[0]:
+            continue
+        K = int(np.nanmax(d['k']))
+        logged = next((int(float(r['k'])) for r in raw if str(r.get('stall_flag')).strip() == 'True'), None)
+        single = stall_rule_index(d['chi'][:K], d['norm_Rlin_h'][:K], n_s=1)
+        rule = stall_rule_index(d['chi'][:K], d['norm_Rlin_h'][:K], n_s=DEFAULT_N_S)
+        rows.append({'run': path.parent.relative_to(package).as_posix(), 'solve_rows': K,
+                     'first_stall_logged_tau_r_0.1': logged, 'first_stall_tau_r_0.01': single,
+                     f'rule_n_s_{DEFAULT_N_S}_fires_at': rule,
+                     f'rule_n_s_{DEFAULT_N_S}_returns': rule + 1 if rule is not None else None,
+                     'rule_censored': rule is None and single is not None})
+    return rows
+
+
 def _write(path, rows):
     cols = list(dict.fromkeys(c for r in rows for c in r))
     with open(path, 'w', newline='') as f:
@@ -193,6 +223,8 @@ def main(argv=None):
     ap.add_argument('--n-s', type=int, nargs='+', default=[1, DEFAULT_N_S, 3])
     ap.add_argument('--tau-chi', type=float, default=DEFAULT_TAU_CHI)
     ap.add_argument('--tau-r', type=float, default=DEFAULT_TAU_R)
+    ap.add_argument('--stall-columns-root', default=None,
+                    help='A package: also write stall_columns.csv, every log\'s stall columns recomputed.')
     args = ap.parse_args(argv)
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -211,6 +243,10 @@ def main(argv=None):
         for n_s, s in h_sum.items():
             print(f"  n_s = {n_s}: {s['fired']} of {s['runs']} fire, {s['censored']} censored, "
                   f"R max {s['R_max']:.5f}")
+    if args.stall_columns_root:
+        s_rows = stall_columns(args.stall_columns_root)
+        _write(out / 'stall_columns.csv', s_rows)
+        print(f"Stall columns of {len(s_rows)} logs recomputed")
     (out / 'stopping_rule_summary.json').write_text(json.dumps(result, indent=2))
     print(f"Wrote {out}")
 

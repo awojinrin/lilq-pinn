@@ -46,6 +46,8 @@ import csv
 import dataclasses
 import json
 import os
+import shutil
+import statistics
 import sys
 import time
 import traceback
@@ -244,15 +246,100 @@ def write(rows, path):
     os.replace(tmp, path)
 
 
+REPLICATE_TABLES = 'fixes/option_b_replicate_*/B_instrumentation/clean_timing/clean_timing.csv'
+SINGLE_TABLE = 'clean_timing_single.csv'
+
+
+def compose_median(base, replicates):
+    """Option B of the clean-timing fix (the advisor's reply to wave 4, item
+    1): every CPU row of ``base`` (wave 4's job 13a) becomes the median of
+    its clean time and those of the same run and quantity in each of
+    ``replicates`` (job 14b's), each an independent clean timing by the same
+    protocol; the timings, their spread and the rule are recorded beside it.
+    GPU rows (job 13b: all under 1 s, medians of five) are kept as they are.
+    Raises ``ValueError`` if a replicate lacks a CPU row, failed, or took a
+    different number of iterations (not the same solve)."""
+    reps = [{(r['run'], r['quantity']): r for r in rep} for rep in replicates]
+    out = []
+    for r in base:
+        key = (r['run'], r['quantity'])
+        if r['device'] != 'cpu':
+            out.append(dict(r, clean_time_rule='13b (GPU): one clean timing, the median of five under 1 s'))
+            continue
+        others = []
+        for n, rep in enumerate(reps, 1):
+            o = rep.get(key)
+            if o is None or o.get('error') or o.get('clean_time_s') in ('', None):
+                raise ValueError(f"replicate {n}: no clean time for {key}")
+            if int(o['iterations']) != int(r['iterations']):
+                raise ValueError(f"replicate {n}: {key} took {o['iterations']} iterations, "
+                                 f"wave 4's {r['iterations']}: not the same solve")
+            others.append(float(o['clean_time_s']))
+        times = [float(r['clean_time_s'])] + others
+        out.append(dict(r, clean_time_s=statistics.median(times), clean_time_timings_s=json.dumps(times),
+                        clean_time_spread=max(times) / min(times),
+                        clean_time_rule=f'median of {len(times)} clean timings: 13a and 14b replicates 1-{len(others)}'))
+    return out
+
+
+def compose_package(pkg):
+    """In an assembled package: keep wave 4's table as ``clean_timing_single.csv``,
+    write the composed one (:func:`compose_median` with every
+    ``fixes/option_b_replicate_*`` table) as ``clean_timing.csv``, which
+    Section 4.6 and the four-method LiL-Q rows read, and record the rule
+    and each run's timings in ``WAVES.json`` (``clean_timing``). Returns the
+    rows, or ``None`` if there are no replicates."""
+    pkg = Path(pkg)
+    ct = pkg / 'B_instrumentation' / 'clean_timing'
+    replicates = sorted(pkg.glob(REPLICATE_TABLES))
+    if not replicates:
+        return None
+    shutil.copy2(ct / 'clean_timing.csv', ct / SINGLE_TABLE)
+
+    def read(path):
+        with open(path, newline='') as f:
+            return list(csv.DictReader(f))
+    rows = compose_median(read(ct / SINGLE_TABLE), [read(p) for p in replicates])
+    cols = list(dict.fromkeys(c for r in rows for c in r))
+    with open(ct / 'clean_timing.csv', 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=cols, restval='')
+        w.writeheader()
+        w.writerows(rows)
+    waves_path = pkg / 'WAVES.json'
+    if waves_path.exists():
+        waves = json.loads(waves_path.read_text())
+        waves['clean_timing'] = {
+            'rule': ("CPU: the median of three independent clean timings, wave 4's job 13a and job 14b's two "
+                     "replicates (option B, the advisor's reply to wave 4, item 1); GPU: job 13b, one clean "
+                     "timing, the median of five under 1 s"),
+            'replicates': [p.relative_to(pkg).as_posix() for p in replicates],
+            'single_timing_table': (ct / SINGLE_TABLE).relative_to(pkg).as_posix(),
+            'timings_s': {f"{r['run']}|{r['quantity']}": json.loads(r['clean_time_timings_s'])
+                          for r in rows if r.get('clean_time_timings_s')},
+        }
+        waves_path.write_text(json.dumps(waves, indent=2))
+    return rows
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Clean timing of the quoted LiL-Q times.")
-    ap.add_argument('--out-root', required=True)
+    ap.add_argument('--out-root', default=None)
+    ap.add_argument('--compose-package', default=None,
+                    help="Instead of timing: in this assembled package, make every CPU clean time the median "
+                         "of wave 4's and the fixes/ replicates' (compose_package).")
     ap.add_argument('--benchmarks', nargs='+', choices=BENCHMARKS, default=list(BENCHMARKS))
     ap.add_argument('--devices', nargs='+', choices=('cpu', 'cuda'), default=['cpu'])
     ap.add_argument('--logged-roots', nargs='*', default=[],
                     help='B_instrumentation folders of the logged runs, searched in order.')
     ap.add_argument('--smoke', action='store_true', help='Smallest size of each, few iterations (tests).')
     args = ap.parse_args(argv)
+    if args.compose_package:
+        rows = compose_package(args.compose_package)
+        print(f"Composed {len(rows)} clean-timing rows (CPU: median of the replicates)" if rows is not None
+              else "No replicate tables: clean_timing.csv left as it is")
+        return
+    if not args.out_root:
+        ap.error('--out-root is required')
     out = Path(args.out_root) / 'B_instrumentation' / 'clean_timing'
     out.mkdir(parents=True, exist_ok=True)
     save_provenance(out / f"provenance_{'_'.join(args.devices)}")   # one folder per job's devices

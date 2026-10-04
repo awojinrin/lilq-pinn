@@ -17,6 +17,59 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-03 -- The final package: option B's clean times, the stall-based rule's tables, status final (the advisor's reply to wave 4, item 1)
+
+The advisor adopted option B of the clean-timing fix: every quoted CPU time
+is the median of three independent clean timings. These are wave 4's job
+13a and the two replicates of job 14b, run on 3 October at 17b3539 on
+exclusive CPU nodes. The package is to be reassembled as final.
+
+**Option B in the code:**
+- `clean_timing.compose_median` makes every CPU row of wave 4's table the
+  median of its clean time and the replicates'.
+  - It records the timings (`clean_time_timings_s`), their spread and the
+    rule.
+  - It refuses a replicate that lacks the row, failed, or took a different
+    number of iterations (not the same solve).
+  - GPU rows (13b: all under 1 s, medians of five) stay as they are.
+- **`compose_package`** (`clean_timing.py --compose-package`) does this in
+  an assembled package:
+  - wave 4's table is kept as `clean_timing_single.csv`;
+  - the composed table becomes `clean_timing.csv`, which Section 4.6 and
+    the four-method LiL-Q rows read;
+  - `WAVES.json` gains `clean_timing`: the rule, the replicate tables and
+    every run's three timings.
+- **`90_finalize` runs it right after the assembly,** before anything reads
+  the clean times. The replicates reach the package as `fixes/`, copied
+  from `results/wave4/fixes/`.
+- **The two job scripts are kept with the code** in
+  `scripts/cluster/after_wave4/`. They are not in a wave's submit script:
+  they were submitted by hand, from outside the bundle, so that wave 4's
+  lock held.
+
+**The rest of the final package:**
+- `assemble_package.py --final` (`LILQ_PACKAGE_FINAL=1` in `90_finalize`)
+  sets `status` to final.
+- `WAVES.json` records the commit of the assembling code
+  (`assembled_by_commit`).
+- `90_finalize` adds `B_instrumentation/stopping_rule/`, from
+  `stopping_rule_table.py`:
+  - Table 16 and the held-out evaluation;
+  - **`stall_columns.csv`:** for every `iterations.csv` in the package, the
+    first stall as logged (tau_r = 0.1), the first at tau_r = 0.01, and the
+    n_s = 2 rule's step, returned iterate and censoring. These sit beside
+    the tables' `first_stall_iteration` columns, which stay as logged.
+
+**On Grace:** `env.sh` locks `results/wave$LILQ_WAVE` to the code's commit,
+so `90_finalize` on code newer than wave 4's (17b3539) would fail the wave
+4 lock. This final assembly is run on the downloaded waves, as the advisor
+asked for no further Grace jobs. Grace's `package1` stays provisional until
+it is reassembled there at the code release, under a lock root of its own.
+
+Tests: `tests/test_wave4_reply.py`.
+
+---
+
 ## 2026-10-03 -- The revised stall-based termination rule: tau_r = 0.01, n_s = 2 (the advisor's reply to wave 4, item 2(b))
 
 **The manuscript's rule has changed.** Both conditions of the stall

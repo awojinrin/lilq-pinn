@@ -6,6 +6,12 @@
 # (task B5), the Section 4.6 Kovasznay comparison, the merged B8 and B9
 # tables (B9's allocation and resume columns filled first), and the run
 # index. Submitted with wave 4 (LILQ_WAVE=4). Minutes.
+# After the advisor's reply to wave 4: the CPU clean times are the median of
+# three (wave 4's 13a and the after_wave4/14b replicates, option B), the
+# stall-based rule's tables are added (stopping_rule/), and
+# LILQ_PACKAGE_FINAL=1 marks the package final. On code newer than a wave's
+# lock, run the same steps outside the wave folders' lock (env.sh locks
+# results/wave$LILQ_WAVE).
 # lilq-resources: cpu   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-finalize
 #SBATCH --time=01:00:00
@@ -14,9 +20,11 @@
 source scripts/cluster/env.sh
 set -euo pipefail
 
-python scripts/cluster/assemble_package.py --results "$RESULTS" --out "$RESULTS/package1"
+python scripts/cluster/assemble_package.py --results "$RESULTS" --out "$RESULTS/package1" ${LILQ_PACKAGE_FINAL:+--final}
 export PKG="$RESULTS/package1"
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"
+# Option B (the advisor's reply to wave 4, item 1): before anything reads the clean times.
+python experiments/clean_timing.py --compose-package "$PKG"
 
 python experiments/component_b.py --save-reference --save-code --out-root "$PKG"
 python experiments/four_method_tables.py --out-dir "$B" --merge-from "$B"/four_method_jobs/*/
@@ -24,6 +32,9 @@ python experiments/component_b.py --reproduction-check --out-root "$PKG"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass paper --out-dir "$B/residual_band_figures/paper"
 python experiments/residual_band_figures.py --from-logs "$PKG" --pass kmax  --out-dir "$B/residual_band_figures/kmax"
 python experiments/kovasznay_comparison.py --package "$PKG"
+# The stall-based termination rule (item 2(b)): Table 16, the held-out runs, every log's stall columns.
+python experiments/stopping_rule_table.py --b-root "$B" --oversampling-root "$C/runs" \
+    --out-dir "$B/stopping_rule" --stall-columns-root "$PKG"
 # B9 tables written before the allocation / resumed_at columns (wave 3): fill them
 # (the advisor's follow-up of 1 October, item 4).
 python experiments/darcy_fv_comparison.py --annotate "$B/darcy_fv"
