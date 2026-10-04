@@ -17,6 +17,53 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 4: the Kovasznay square-system pilot (P_N - P_{N-2})
+
+**The system** (Package 2, Section 4.2, step 1). `baselines/square_kovasznay.py`
+is square spectral collocation of steady Navier-Stokes, Re = 40, on [-0.5, 1]
+x [-0.5, 1.5], in the code's convective form.
+- **Spaces:** velocity in the tensor Chebyshev space of p_d modes per
+  direction, pressure in p_d - 2.
+- **Rows:** the momentum and continuity equations at the (p_d - 2)^2
+  interior CGL points, and the exact velocity at the 4 p_d - 4 boundary CGL
+  points. That gives 3 p_d^2 - 4 p_d + 4 unknowns and equations.
+- **The pin:** the continuity row at the interior point nearest (-0.5, -0.5)
+  is replaced by a pressure pin, either at that corner or, as the fallback,
+  at that interior point.
+- **Newton:** from zero, stopping at relative coefficient change < 1e-9,
+  K_max = 60, solved by LU.
+- **Errors:** on the 301 x 401 test grid, as in the paper.
+- **Rank and kappa_2:** by SVD of the Jacobian, rank threshold n eps
+  sigma_max.
+
+**Results** (`experiments/p2_3_classical.py kovasznay-pilot`;
+`P2_3_classical/kovasznay/pilot.md`):
+
+| p_d | unknowns | rank (corner pin) | kappa_2 (corner / interior pin) | Newton | eps_u | eps_v | eps_p, mean-free | eps_p, pin gauge (corner / interior) |
+|---|---|---|---|---|---|---|---|---|
+| 10 | 264 | 264 | 1.8e4 / 4.4e3 | 10 | 2.3e-2 | 8.8e-2 | 3.8e-2 | 0.92 / 0.18 |
+| 15 | 619 | 619 | 3.4e5 / 1.0e5 | 6 | 1.85e-5 | 1.16e-4 | 9.1e-5 | 7.2e-3 / 2.1e-3 |
+
+**Reading:**
+- **The system has full rank with the corner pin at both sizes,** so the
+  fallback is not needed. It is shown for comparison.
+- **The pin changes only the pressure gauge:** the velocity and mean-free
+  pressure errors are identical.
+- **At p_d = 15** the velocity space has 450 coefficients against LiL-Q's
+  675 at P = 675, and eps_u is 1.85e-5 against LiL-Q's 1.23e-5 there.
+- **The decision** on the Stage 2 Kovasznay baseline is the advisor's, in
+  his Stage-1 reply.
+
+**Tests** (`tests/test_square_kovasznay.py`):
+- the counts;
+- **the Newton matrix against the finite-difference Jacobian of the
+  nonlinear residual**, which checks the linearization itself;
+- the boundary data and the pin at the solution;
+- convergence with p_d;
+- that the pin changes only the gauge.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 3: the Burgers reference (Cole-Hopf), the eps_ref column, the scalar network models' reference errors
 
 **The Burgers reference** (Package 2, Section 6.2; check C4).
