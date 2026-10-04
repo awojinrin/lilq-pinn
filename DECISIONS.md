@@ -17,6 +17,58 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 1, batch 6c: the manuscript folder's scripts rerun on our results
+
+**What.** The figures, the screening tables (B.3) and the best-approximation
+numbers of Section 6.6 come from the advisor's scripts. They are in
+`manuscript_snapshot_2026-10-04/our_scripts`, and the snapshot's README maps
+them. `experiments/manuscript_scripts.py`:
+- copies the scripts;
+- points their `/home/claude/...` paths at our files;
+- runs them otherwise unchanged;
+- compares their output with the manuscript.
+
+Two comparisons:
+- **Figures:** each PDF is rendered beside the manuscript's file (PyMuPDF,
+  100 dpi), and the share of pixels differing by more than 10 grey levels
+  is reported.
+- **Screening tables:** compared row by row with `main.tex`.
+
+The images are not compared byte for byte: the files differ in their
+metadata only.
+
+**Results:**
+- **On the wave folders as published on `wave1..4-results`** (the scripts'
+  own inputs), everything is identical:
+  - all 20 data figures, pixel for pixel (`fig_compA` also at 300 dpi with
+    any grey change counted);
+  - all 48 screening rows;
+  - `delta.py` prints the numbers of Section 6.6.
+
+  The comparison does detect a real difference: two different figures of
+  the manuscript differ in 10.7% of their pixels.
+- **On `package1`:** 18 of the 20 figures and all 48 screening rows are
+  identical. The two figures of `fig_conv.py` that remain
+  (`fig_conv_bl_gravity_by_method`, `fig_conv_bratu_by_size`) are not
+  produced, because the script stops at an assertion:
+  - `conv_data.lilq_run` asserts that gravity BL P = 64's paper pass is
+    wave 2's (K_max = 20, not converged);
+  - `package1` holds wave 4's K_max = 60 rerun of it (WAVES.json overrides),
+    which reaches the target at k = 43 itself;
+  - its `norm_R_h` equals the wave-1 K_max pass that the script uses up to
+    k = 43, to 1.1e-16.
+
+  So the figures are the same; the assertion is about which file holds the
+  curve.
+- **`fig_compA.py`** read wave 4's `fixes/option_b/section46` copy of
+  `kovasznay_comparison.csv`. That copy predates the item-4 correction (F1
+  medians of the minimum logged errors). On `package1` it is pointed at the
+  corrected file, and the figure is unchanged.
+
+Tests: `tests/test_manuscript_scripts.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 1, batch 6b: the manuscript's tables regenerated from package1 and checked against main.tex
 
 **Why.** Gate G1 (Package 2, Section 2, item 1) requires a script for every
@@ -38,7 +90,7 @@ ours built them.
 
   Published rows (other papers' solvers) are not checked.
 
-19 tables, 2,601 cells. Every cell agrees except 4, all in
+19 tables, 2,576 cells (the commit message of a63e38d says 2,601; 2,576 is right). Every cell agrees except 4, all in
 `tab:bl_reference_errors`, where the manuscript has a rounding slip:
 - viscous, P = 576: E_S (stop) and min E_S are 9.0458e-4, printed 9.1e-4
   (should be 9.0e-4);
