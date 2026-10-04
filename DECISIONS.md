@@ -17,6 +17,82 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-03 -- The revised stall-based termination rule: tau_r = 0.01, n_s = 2 (the advisor's reply to wave 4, item 2(b))
+
+**The manuscript's rule has changed.** Both conditions of the stall
+detector,
+
+    chi_k <= tau_chi   and   | ||R_lin^(k)|| - ||R_lin^(k-1)|| | <= tau_r ||R_lin^(k)||,
+
+must now hold at n_s consecutive steps, with tau_chi = 0.1, tau_r = 0.01
+and n_s = 2. The rule returns u^(k+1) at the first step k where this holds.
+The code had tau_r = 0.1 and a single step.
+
+**`lilq/instrumentation.py`:**
+- `DEFAULT_TAU_R` = 0.01, and the new `DEFAULT_N_S` = 2.
+- `stall_flags`: the single-step flag over a solve.
+- `stall_rule_index`: the first k at which the flag has held at n_s
+  consecutive steps k - n_s + 1, ..., k, all >= 1; `None` if the steps run
+  out. n_s = 1 is the earlier rule.
+
+**`lilq/iteration_log.py`:**
+- `stall_flag` stays the single-step indicator, now at tau_r = 0.01.
+- **New last column `stall_rule_fires`:** the flag has held at n_s
+  consecutive steps, this one included. `n_s` is a tracker argument,
+  default 2.
+- **Logged only:** neither column stops a run, as before.
+- **Existing logs keep their columns:** `stall_flag` at tau_r = 0.1, and
+  no `stall_rule_fires`.
+
+**`experiments/stopping_rule_table.py`** is new. The `stopping_rule_table.py`
+the advisor mentions is his own analysis script, not in this repository.
+It recomputes from existing logs, rerunning nothing, and evaluates the
+rule on `chi` and `norm_Rlin_h`, not on the logged `stall_flag`.
+- **Table 16:** from the 22 kmax passes. For each run and n_s it gives the
+  returned iterate, its class (round-off limited or not), R (its
+  ||R||_h over the pass's smallest), and E (its eps_u over the eps_u at the
+  paper pass's stop). Over the runs it counts early stops (R > 1.02) and
+  stops before the error minimum (eps_u > 2x the smallest).
+- **The held-out evaluation:** on Component C's 192 runs without the
+  paper-grid ones. How many fire, how many are censored (the single-step
+  conditions are met only at the last logged step), the largest R, and the
+  Kovasznay E statistics.
+
+**It reproduces the advisor's `ns_eval.py`** (his `termfix/`) on the
+downloaded data:
+- **Row by row:** 66 Table 16 rows (22 runs x n_s = 1, 2, 3) and 576
+  held-out rows, with no difference in returned iterate, class, R, E or
+  outcome. This holds although this script reads package1's paper passes
+  (wave 2's and wave 4's gravity BL P = 64), where `ns_eval.py` reads wave
+  1's.
+- **Table 16 summary:** early 0 and errstop 0 at every n_s; R max 1.0055,
+  1.0023 and 1.0013 for n_s = 1, 2 and 3.
+- **Held out, the manuscript's numbers:** for n_s = 2, 69 of 192 fire, 76
+  are censored, and R max is 1.00039 (within 0.04% of the smallest). For
+  n_s = 1: 145, 0, 1.00320. For n_s = 3: 59, 86, 1.00009.
+- **Kovasznay, for n_s = 2:** 55 fire. E against each run's smallest eps_u
+  is at most 1.746 (median 1.0039); against its last eps_u, 0.982-1.041.
+  At P = 1,200, all 14 are of class C.
+
+**Not changed: columns that read the logged single-step flag.** These
+are, in existing results:
+- `first_stall_iteration` in the run index, B8, B10, Component C and Table
+  3;
+- B8's `stall_flag_ever`.
+
+They were computed with tau_r = 0.1 when the runs were logged. They are
+left as they are, and a recomputation at tau_r = 0.01 can sit beside them
+if the manuscript quotes any.
+
+Tests:
+- `tests/test_stopping_rule_table.py`: the rule against a copy of
+  `ns_eval.py`'s `fire_ns` on 40 random sequences; persistence and
+  censoring; the logged column; Table 16 and the held-out evaluation on
+  synthetic logs; the command line.
+- `tests/test_instrumentation.py`, `tests/test_iteration_log.py`.
+
+---
+
 ## 2026-10-03 -- Section 4.6 reports the final errors (the advisor's reply to wave 4, item 2(a))
 
 **The discrepancy.** For the baselines, `kovasznay_comparison.csv`'s

@@ -23,9 +23,11 @@ def test_schema_has_exactly_the_spec_columns_in_order():
         "solver_path", "gpu_mem_peak_bytes",
         # Addendum v2.2 Section 2.7, after the spec's thirty:
         "kappa_raw", "kappa_retained", "num_rank_qr", "norm_beta",
+        # the termination rule (the advisor's reply to wave 4, item 2(b)):
+        "stall_rule_fires",
     )
     assert ITERATION_CSV_COLUMNS == expected
-    assert len(ITERATION_CSV_COLUMNS) == 34
+    assert len(ITERATION_CSV_COLUMNS) == 35
 
 
 def test_record_fills_unspecified_columns_with_none():

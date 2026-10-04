@@ -8,7 +8,9 @@ iteration, exactly as the manuscript defines them:
 
 - :func:`phase_indicator` -- Eq. (phase_indicator), $\\chi_k$.
 - :func:`observed_order` -- Eq. (observed_order), $o_k$.
-- :func:`stall_flag` -- Eq. (stall_detector), with $\\tau_\\chi=\\tau_r=0.1$.
+- :func:`stall_flag` -- Eq. (stall_detector), with $\\tau_\\chi=0.1$,
+  $\\tau_r=0.01$; :func:`stall_rule_index` -- the termination rule, both
+  conditions at $n_s$ consecutive steps ($n_s=2$).
 - :func:`roundoff_comparison` -- the round-off comparison of Algorithm 1.
 
 These are pure functions of already-computed residual norms (and, for
@@ -45,8 +47,12 @@ EPS_MACH = float(np.finfo(np.float64).eps)
 # DECISIONS.md, "Beltrami's real slowdown cause").
 DEFAULT_SVD_CONDITIONING_THRESHOLD = 3200
 
+# The stall detector's tolerances and the termination rule's persistence:
+# tau_r = 0.01 and n_s = 2 since the manuscript's revised rule (the advisor's
+# reply to wave 4, item 2(b); tau_r was 0.1, the rule a single step).
 DEFAULT_TAU_CHI = 0.1
-DEFAULT_TAU_R = 0.1
+DEFAULT_TAU_R = 0.01
+DEFAULT_N_S = 2
 
 
 def phase_indicator(R_next: np.ndarray, R_lin_k: np.ndarray) -> float:
@@ -139,7 +145,9 @@ def stall_flag(
         $\|\mathbf{R}_{\mathrm{lin}}^{(k)}\|_h$ and
         $\|\mathbf{R}_{\mathrm{lin}}^{(k-1)}\|_h$.
     tau_chi, tau_r : float
-        Both default to 0.1, the spec's stated value.
+        0.1 and 0.01 (``DEFAULT_TAU_CHI``, ``DEFAULT_TAU_R``), the
+        manuscript's revised values; tau_r was 0.1 before the advisor's
+        reply to wave 4 (item 2(b)), and logs written before then used it.
     """
     if np.isnan(chi_k):
         return False
@@ -147,6 +155,35 @@ def stall_flag(
         chi_k <= tau_chi
         and abs(norm_Rlin_k - norm_Rlin_km1) <= tau_r * norm_Rlin_k
     )
+
+
+def stall_flags(chi, norm_Rlin, tau_chi: float = DEFAULT_TAU_CHI, tau_r: float = DEFAULT_TAU_R) -> np.ndarray:
+    """:func:`stall_flag` at every step of a solve: ``chi[k]`` and
+    ``norm_Rlin[k]`` are row k's; false at k = 0, which has no k - 1."""
+    chi, norm_Rlin = np.asarray(chi, dtype=float), np.asarray(norm_Rlin, dtype=float)
+    flags = np.zeros(len(chi), dtype=bool)
+    for k in range(1, len(chi)):
+        flags[k] = stall_flag(float(chi[k]), float(norm_Rlin[k]), float(norm_Rlin[k - 1]), tau_chi, tau_r)
+    return flags
+
+
+def stall_rule_index(chi, norm_Rlin, n_s: int = DEFAULT_N_S, tau_chi: float = DEFAULT_TAU_CHI,
+                     tau_r: float = DEFAULT_TAU_R):
+    r"""The manuscript's termination rule (the advisor's reply to wave 4,
+    item 2(b)): the first step $k$ at which both conditions of the stall
+    detector have held at the $n_s$ consecutive steps $k-n_s+1, \dots, k$
+    (all $\ge 1$); the rule then returns $u^{(k+1)}$. ``None`` if it never
+    holds within the given steps. $n_s = 1$ is the earlier single-step
+    rule."""
+    if n_s < 1:
+        raise ValueError(f"n_s must be at least 1, not {n_s}")
+    flags = stall_flags(chi, norm_Rlin, tau_chi, tau_r)
+    run = 0
+    for k in range(1, len(flags)):
+        run = run + 1 if flags[k] else 0
+        if run >= n_s:
+            return k
+    return None
 
 
 def roundoff_comparison(norm_Rlin_k: float, norm_f_k: float, kappa: float) -> tuple:

@@ -24,6 +24,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 import numpy as np
 
 from .instrumentation import (
+    DEFAULT_N_S,
     DEFAULT_SVD_CONDITIONING_THRESHOLD,
     EPS_MACH,
     conditioning_via_pivoted_qr,
@@ -56,6 +57,10 @@ ITERATION_CSV_COLUMNS = (
     # the retained part (sigma_1/sigma_r, or the pivoted QR's retained
     # diagonal), the pivoted QR's numerical rank, and ||beta^(k)||_2.
     "kappa_raw", "kappa_retained", "num_rank_qr", "norm_beta",
+    # The termination rule (the advisor's reply to wave 4, item 2(b)): the
+    # stall detector's conditions have held at n_s consecutive steps, this
+    # one included. ``stall_flag`` stays the single-step indicator.
+    "stall_rule_fires",
 )
 
 
@@ -189,6 +194,7 @@ class LilQDiagnosticsTracker:
         interior_weight: Optional[float] = None,
         test_error_fn: Optional[Callable[[np.ndarray], Dict[str, float]]] = None,
         conditioning_every_iteration: bool = False,
+        n_s: int = DEFAULT_N_S,
     ) -> None:
         """``test_error_fn(beta)`` returns the test-error columns
         (``eps_u``, ``eps_v``, ``eps_p``, ``eps_p_meanfree``, ``maxerr_*``,
@@ -200,12 +206,17 @@ class LilQDiagnosticsTracker:
         ``conditioning_every_iteration``: above the SVD threshold, compute
         the pivoted QR at every iteration rather than at the final iterate
         only (Beltrami; Addendum v2.2 Section 2.7). Off the clock, like
-        every diagnostic here."""
+        every diagnostic here.
+
+        ``n_s``: the termination rule's persistence, for the
+        ``stall_rule_fires`` column (logged only; it stops nothing)."""
         self._test_error_fn = test_error_fn
         self._conditioning_every_iteration = conditioning_every_iteration
         self._final_beta: Optional[np.ndarray] = None
         self._norm_R_h_km1: Optional[float] = None
         self._norm_Rlin_h_km1: Optional[float] = None
+        self._n_s = n_s
+        self._stall_run = 0              # consecutive steps with the stall flag set
         self._conditioning_svd_threshold = conditioning_svd_threshold
         self._t_cum_s: float = 0.0
         self._n_interior_rows = n_interior_rows
@@ -299,6 +310,7 @@ class LilQDiagnosticsTracker:
             if self._norm_Rlin_h_km1 is not None
             else False
         )
+        self._stall_run = self._stall_run + 1 if stall else 0
 
         roundoff_ratio, kappa_eps = roundoff_comparison(
             norm_Rlin_h, norm_f_h, kappa=float("nan"),
@@ -327,7 +339,7 @@ class LilQDiagnosticsTracker:
             norm_Rlin_h=norm_Rlin_h, norm_Rlin_interior=norm_Rlin_interior,
             norm_f_h=norm_f_h,
             norm_dbeta=raw_dbeta, rel_dbeta=rel_dbeta,
-            chi=chi, order_obs=order_obs, stall_flag=stall,
+            chi=chi, order_obs=order_obs, stall_flag=stall, stall_rule_fires=self._stall_run >= self._n_s,
             roundoff_ratio=roundoff_ratio, kappa_eps=kappa_eps,
             kappa=cond_result["kappa"], kappa_method=cond_result["kappa_method"],
             num_rank_svd=cond_result["num_rank_svd"],

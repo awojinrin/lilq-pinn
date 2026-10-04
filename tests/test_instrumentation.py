@@ -90,8 +90,8 @@ def test_observed_order_nan_on_degenerate_zero_denominator_log():
 # ── stall_flag ────────────────────────────────────────────────────────
 
 def test_stall_flag_true_when_both_conditions_hold():
-    # chi_k <= 0.1 and |Rlin_k - Rlin_km1| <= 0.1 * Rlin_k
-    assert stall_flag(chi_k=0.05, norm_Rlin_k=1.0, norm_Rlin_km1=1.02) is True
+    # chi_k <= 0.1 and |Rlin_k - Rlin_km1| <= 0.01 * Rlin_k
+    assert stall_flag(chi_k=0.05, norm_Rlin_k=1.0, norm_Rlin_km1=1.005) is True
 
 
 def test_stall_flag_false_when_chi_too_large():
@@ -104,9 +104,10 @@ def test_stall_flag_false_when_residual_still_moving():
 
 
 def test_stall_flag_respects_custom_tolerances():
-    # Would be a stall at default tau=0.1, but not at a stricter tau=0.01.
-    assert stall_flag(chi_k=0.05, norm_Rlin_k=1.0, norm_Rlin_km1=1.02) is True
-    assert stall_flag(chi_k=0.05, norm_Rlin_k=1.0, norm_Rlin_km1=1.02, tau_chi=0.01) is False
+    # A 2% change: a stall at the earlier tau_r = 0.1, not at the default 0.01.
+    assert stall_flag(chi_k=0.05, norm_Rlin_k=1.0, norm_Rlin_km1=1.02) is False
+    assert stall_flag(chi_k=0.05, norm_Rlin_k=1.0, norm_Rlin_km1=1.02, tau_r=0.1) is True
+    assert stall_flag(chi_k=0.05, norm_Rlin_k=1.0, norm_Rlin_km1=1.02, tau_chi=0.01, tau_r=0.1) is False
 
 
 def test_stall_flag_false_on_nan_chi():
