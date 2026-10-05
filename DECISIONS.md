@@ -17,6 +17,57 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 2, batch 3: item 1's Burgers baseline (Section 4.3)
+
+**Why now.** Section 4.3 runs "only if item 1 ends below 250 SU". Item 1 requests 144 SU and expects
+about 52, so it runs. The batch-1 commit had left it out.
+
+**Code:**
+- `baselines/square_burgers.py`: square space-time Chebyshev collocation of the Burgers problem of
+  Section 6.3 (nu = 0.1, u(x, 0) = -sin(pi x), u(+-1, t) = 0) on the p x p CGL grid.
+  - The trial space is T_i(x) T_j(2t - 1), the space of item 3's Burgers runs.
+  - Boundary rows at every x = +-1 point, the corners included (the initial datum vanishes
+    there).
+  - Initial rows at the interior-x points of t = 0.
+  - The equation at the remaining (p - 2)(p - 1) points: the free-coefficient count of
+    Section 4.3.
+  - Newton from zero, LU, and the stop, K_max, history and plateau conventions of
+    `square_chebyshev`, whose `solve_linear`, `TOL` and `PLATEAU` it uses.
+- `experiments/p2_3_classical.py burgers`, with the 4.1 protocol: a diagnostic run, then one
+  warm-up and the median of three clean runs.
+- The work-precision figure gains a Burgers panel, and draws only the problems whose stages ran.
+- Job `p2s2_classical_burgers.slurm` (timed-cpu, 1 h).
+
+**One reading of the text.** Section 4.3 says the paper's LiL-Q Burgers runs "are not rerun; their
+reference errors come from Section 6.2", and also "timing as in 4.1". 4.1 reruns the paper's
+LiL-Q in the same job for the same-day time ratio, and takes its errors from elsewhere. Burgers is
+done the same way: LiL-Q is rerun for time only (seconds), and its errors are Stage 1's. To state
+in the report.
+
+**Laptop rehearsal:**
+- Every size has full rank and converges in 5-6 Newton iterations; kappa runs from 2.4e2 to 2.1e4.
+- Errors against Cole-Hopf: 1.75e-1, 5.4e-2, 4.8e-3, 9.2e-4 and 1.55e-4 at 30, 110, 240, 420 and
+  650 free coefficients.
+- Refinement continues spectrally (9.8e-8 at p = 48), so the solver and the reference agree far
+  below the reported sizes.
+- **Finding:** unlike Bratu, the paper's LiL-Q is the more accurate at matched size on Burgers:
+  5.7e-3, 2.2e-3, 1.9e-4 and 4.6e-5 at P = 100, 225, 400 and 625.
+
+**A laptop timing artifact to check in Grace's results.** The square solve's time jumps from
+0.013 s at p = 17 to 0.54 s at p = 22. A 484 x 484 LU takes 0.09 s with the laptop's 24 BLAS
+threads and 0.002 s with one: thread start-up dominates the mid-size solves. Grace runs at the
+paper's 48 threads, as Section 4.1 prescribes, and the same-day LiL-Q runs share the setting.
+If Grace shows the same jump, report it beside the times rather than changing the protocol.
+
+Tests: `tests/test_p2s2_classical.py`. They check:
+- the row counts and squareness;
+- the quasilinearization identity;
+- the residual of x(2t - 1) by hand;
+- spectral convergence against a fine solution;
+- the stage's outputs and the job.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 2: the references are written atomically
 
 Several Stage 2 jobs make the Bratu or Burgers reference in `$PKG/reference` when it is missing:

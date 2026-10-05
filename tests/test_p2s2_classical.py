@@ -88,8 +88,54 @@ def test_same_day_lilq_compares_with_package1(tmp_path):
     assert rows[1]['time_s'] == 2.0 and rows[1]['within_15pct'] is False
 
 
+def test_burgers_square_system():
+    import baselines.square_burgers as sb
+    s = sb.System(9)
+    assert (s.n_pde, s.n_initial, s.n_boundary) == (sb.free_coefficients(9), 7, 18) and s.n == 81
+    assert s.n_pde + s.n_initial + s.n_boundary == s.n                       # square
+    assert np.all(s.points['pde'][1] > 0) and np.all(np.abs(s.points['pde'][0]) < 1)
+    beta = np.random.default_rng(0).standard_normal(81) * 0.1
+    A, f, R = s.assemble(beta)
+    np.testing.assert_allclose(A @ beta - f, R, atol=1e-12)                 # the quasilinearization identity
+    # the residual of a member of the space, by hand: u = T_1(x) T_1(2t - 1) = x (2t - 1)
+    b = np.zeros(81)
+    b[1 * 9 + 1] = 1.0
+    (x, t) = s.points['pde']
+    u, ux, ut = x * (2 * t - 1), 2 * t - 1, 2 * x
+    np.testing.assert_allclose(s.assemble(b)[2][:s.n_pde], ut + u * ux, atol=1e-12)
+
+
+def test_burgers_converges_spectrally():
+    import baselines.square_burgers as sb
+    fine = sb.newton(40, diagnostics=False)
+    x, t = np.linspace(-1, 1, 41), np.linspace(0, 1, 21)
+    ref = ((x, t), fine['system'].grid_values(fine['beta'], x, t))
+    errs = [sb.newton(p, reference=ref)['err_final'] for p in (12, 17, 22)]
+    assert errs[0] > errs[1] > errs[2] and errs[2] < 2e-3
+    r = sb.newton(12, reference=ref)
+    assert r['stop'] == 'tolerance' and r['rank'] == 144 and r['k_plateau'] <= r['k_stop']
+
+
+def test_burgers_stage_writes_the_rows(tmp_path):
+    import baselines.square_burgers as sb
+    fine = sb.newton(30, diagnostics=False)
+    x, t = np.linspace(-1, 1, 21), np.linspace(0, 1, 11)
+    ref = tmp_path / 'reference'
+    ref.mkdir()
+    np.savez_compressed(ref / 'burgers_cole_hopf.npz', x=x, t=t, u=fine['system'].grid_values(fine['beta'], x, t))
+    rows, _ = p2.burgers_stage(tmp_path, reference_dir=ref, sizes=(7, 12), repeats=1, same_day=False)
+    assert [r['free_coeff'] for r in rows] == [30, 110]
+    out = tmp_path / 'P2_3_classical' / 'burgers'
+    with open(out / 'rows.csv') as f:
+        got = list(csv.DictReader(f))
+    for col in ('free_coeff', 'k_stop', 'k_plateau', 'err_ref', 't_assemble_s', 't_solve_s', 't_plateau_s',
+                't_stop_s', 'kappa', 'rank'):
+        assert col in got[0]
+    assert (out / 'history_SQ-CGL_p12.csv').exists() and json.loads((out / 'run.json').read_text())['section'] == '4.3'
+
+
 def test_item_1_jobs():
-    for name in ('p2s2_classical_bratu', 'p2s2_classical_kovasznay'):
+    for name in ('p2s2_classical_bratu', 'p2s2_classical_kovasznay', 'p2s2_classical_burgers'):
         text = (REPO / 'scripts' / 'cluster' / 'package2' / f'{name}.slurm').read_text()
         assert '# lilq-resources: timed-cpu' in text and '#SBATCH --time=01:00:00' in text
         assert '--package1 "$RESULTS/package1_v2.0.0/package1"' in text and 'LILQ_WAVE=p2s2' in text

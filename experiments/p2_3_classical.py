@@ -51,6 +51,15 @@ Stage 2 (Sections 4.1, 4.2 step 2, 4.4; the advisor's Stage-1 reply, Section 4):
     wave 4's Clenshaw-Curtis CGL runs at N/P = 5 (B10). Writes
     ``kovasznay/rows.csv``, ``kovasznay/history_SQ-PNPN2_pd<p>.csv``,
     ``kovasznay/timing_lilq.csv`` and ``kovasznay/run.json``.
+``burgers``
+    Section 4.3 (optional; run because item 1 stays below 250 SU): square
+    space-time Chebyshev collocation of Burgers (``baselines/square_burgers.py``)
+    at p = 7, 12, 17, 22, 27 (30-650 free coefficients), the same
+    diagnostics and timing protocol, the error against the Cole-Hopf
+    reference. The paper's LiL-Q Burgers runs are rerun the same day for the
+    time ratio only; their errors are Stage 1's. Writes ``burgers/rows.csv``,
+    ``burgers/history_SQ-CGL_p<p>.csv``, ``burgers/timing_lilq.csv`` and
+    ``burgers/run.json``.
 ``figures``
     The work-precision figure of Section 4.4 (error against free
     coefficients and against time, one panel each per problem), from the
@@ -64,6 +73,7 @@ Usage::
     python experiments/p2_3_classical.py kovasznay-pilot --out <package2_results>
     python experiments/p2_3_classical.py bratu --out <stage root> --package1 <package1>
     python experiments/p2_3_classical.py kovasznay --out <stage root> --package1 <package1>
+    python experiments/p2_3_classical.py burgers --out <stage root> --package1 <package1> --reference-dir <dir>
     python experiments/p2_3_classical.py figures --out <stage root> --package1 <package1> \\
         --lilq-errors <stage 1>/P2_12_reference_errors/scalar_reference_errors.csv
 """
@@ -199,6 +209,7 @@ BRATU_RUNS = ([('SQ-CGL', p) for p in sorted({7, 12, 17} | set(range(6, 25, 2)))
               + [('LS-hard-CGL-1.5', p) for p in sorted({5, 10, 15} | set(range(6, 25, 2)))]
               + [('LS-weakMS-CGL-3', p) for p in (5, 10, 15)])
 KOVASZNAY_SIZES = (10, 15, 20, 25)
+BURGERS_SIZES = (7, 12, 17, 22, 27)     # (p - 2)(p - 1) = 30, 110, 240, 420, 650 free coefficients (Section 4.3)
 B10_SAME_DAY = (10, 20, 25)     # wave 4's Clenshaw-Curtis CGL runs at N/P = 5 (P = 300, 1,200, 1,875)
 
 
@@ -343,6 +354,44 @@ def kovasznay_stage(out_dir, package1=None, sizes=KOVASZNAY_SIZES, repeats=REPEA
     return rows, timing
 
 
+def burgers_stage(out_dir, package1=None, reference_dir=None, sizes=BURGERS_SIZES, repeats=REPEATS, same_day=True):
+    """Section 4.3: square space-time Chebyshev collocation of Burgers
+    (``baselines/square_burgers.py``) at p = 7, 12, 17, 22, 27, with the
+    diagnostics and timing protocol of 4.1 and the error against the
+    Cole-Hopf reference. Section 4.3 does not rerun the paper's LiL-Q
+    Burgers runs for their errors (they come from Section 6.2); they are run
+    here for the same-day time ratio only, as in 4.1."""
+    import baselines.square_burgers as sb
+    from lilq.references import load_reference, reference_path
+    out = Path(out_dir) / 'P2_3_classical' / 'burgers'
+    ref_dir = Path(reference_dir) if reference_dir else Path(out_dir) / 'reference'
+    (x, t), u, _ = load_reference(reference_path(ref_dir, 'burgers'))
+    rows = []
+    for p in sizes:
+        d = sb.newton(p, reference=((x, t), u))
+        tm = timed(lambda: sb.newton(p, diagnostics=False), d['k_plateau'], repeats)
+        assert tm['k_stop_clean'] == [d['k_stop']], (p, tm['k_stop_clean'], d['k_stop'])
+        _write_csv(out / f'history_SQ-CGL_p{p}.csv',
+                   [{k: h.get(k) for k in ('k', 'err', 'norm_R', 'norm_Rlin', 'rel_dbeta', 'chi', 't_assemble_s',
+                                           't_solve_s')} for h in d['history']])
+        rows.append({'method': 'SQ-CGL', 'p': p, 'free_coeff': d['free_coeff'], 'P_trial': d['P_trial'], 'N': d['N'],
+                     'k_stop': d['k_stop'], 'stop': d['stop'], 'k_plateau': d['k_plateau'], 'err_ref': d['err_final'],
+                     't_assemble_s': tm['t_assemble_s'], 't_solve_s': tm['t_solve_s'], 't_plateau_s': tm['t_plateau_s'],
+                     't_stop_s': tm['t_stop_s'], 't_stop_runs_s': tm['t_stop_runs_s'], 'kappa': d['kappa'],
+                     'rank': d['rank']})
+        print(f"  SQ-CGL p = {p:2d} ({d['free_coeff']} free): {d['k_stop']} iterations, plateau {d['k_plateau']}, "
+              f"error {d['err_final']:.2e}, {tm['t_stop_s']:.4f} s")
+    _write_csv(out / 'rows.csv', rows)
+    timing = []
+    if same_day:
+        import experiments.clean_timing as ct
+        timing = same_day_lilq(ct._scalar('burgers', smoke=False), 'training_time', package1, repeats)
+        _write_csv(out / 'timing_lilq.csv', timing)
+    _run_json(out, 'burgers', {'section': '4.3', 'K_max': sb.K_MAX, 'tol': sc.TOL, 'nu': sb.NU,
+                               'reference': 'Cole-Hopf (Section 6.2)', 'error_grid': '201 x 201', 'runs': len(rows)})
+    return rows, timing
+
+
 def _b10_runs(sizes):
     """Wave 4's Clenshaw-Curtis CGL Kovasznay runs at N/P = 5 (B10), as timed runs."""
     import experiments.clean_timing as ct
@@ -366,30 +415,46 @@ def _csv_rows(path):
 
 
 def work_precision_data(out_dir, package1, lilq_errors):
-    """``{problem: {series: [(free coefficients, time s, error), ...]}}``. Bratu:
-    error against the p = 48 reference (the LiL-Q runs': Stage 1's eps_ref).
-    Kovasznay: E_u (LiL-Q and B10 from package1, which these timings rerun)."""
+    """``{problem: {series: [(free coefficients, time s, error), ...]}}`` for every
+    problem whose stage has run. Bratu: error against the p = 48 reference (the
+    LiL-Q runs': Stage 1's eps_ref). Kovasznay: E_u (LiL-Q and B10 from
+    package1, which these timings rerun). Burgers: error against Cole-Hopf
+    (the LiL-Q runs': Stage 1's eps_ref)."""
     root = Path(out_dir) / 'P2_3_classical'
-    data = {'bratu': {}, 'kovasznay': {}}
-    for r in _csv_rows(root / 'bratu' / 'rows.csv'):
-        data['bratu'].setdefault(r['method'], []).append((int(r['free_coeff']), float(r['t_stop_s']), float(r['err_ref48'])))
-    t_bratu = {t['run']: float(t['time_s']) for t in _csv_rows(root / 'bratu' / 'timing_lilq.csv')}
-    for r in _csv_rows(lilq_errors):
-        if r['benchmark'] == 'bratu' and r['method'] == 'LiL-Q':
-            P = int(r['P'])
-            data['bratu'].setdefault('LiL-Q (paper)', []).append((P, t_bratu[f'bratu_P{P}_cpu_paper'], float(r['eps_ref_final'])))
-    for r in _csv_rows(root / 'kovasznay' / 'rows.csv'):
-        data['kovasznay'].setdefault(r'SQ $P_N$-$P_{N-2}$', []).append((int(r['free_coeff']), float(r['t_stop_s']), float(r['eps_u'])))
-    t_kov = {t['run']: float(t['time_s']) for t in _csv_rows(root / 'kovasznay' / 'timing_lilq.csv')}
-    B = Path(package1) / 'B_instrumentation'
-    for P in (75, 300, 675, 1200, 1875):
-        run = f'kovasznay_P{P}_cpu_paper'
-        if run in t_kov:
-            e = json.loads((B / run / 'summary.json').read_text())['test_eps_u']
-            data['kovasznay'].setdefault('LiL-Q (paper)', []).append((P, t_kov[run], float(e)))
-    for r in _csv_rows(B / 'b10' / 'b10.csv'):
-        if r['run'] in t_kov:
-            data['kovasznay'].setdefault('LiL-Q, CGL + CC, N/P = 5', []).append((int(r['P']), t_kov[r['run']], float(r['eps_u'])))
+    data = {'bratu': {}, 'kovasznay': {}, 'burgers': {}}
+    lilq = [r for r in _csv_rows(lilq_errors) if r['method'] == 'LiL-Q'] if lilq_errors else []
+
+    def lilq_points(bench, times):
+        for r in lilq:
+            run = f"{bench}_P{r['P']}_cpu_paper"
+            if r['benchmark'] == bench and run in times:
+                data[bench].setdefault('LiL-Q (paper)', []).append((int(r['P']), times[run], float(r['eps_ref_final'])))
+
+    if (root / 'bratu' / 'rows.csv').exists():
+        for r in _csv_rows(root / 'bratu' / 'rows.csv'):
+            data['bratu'].setdefault(r['method'], []).append((int(r['free_coeff']), float(r['t_stop_s']),
+                                                             float(r['err_ref48'])))
+        lilq_points('bratu', {t['run']: float(t['time_s']) for t in _csv_rows(root / 'bratu' / 'timing_lilq.csv')})
+    if (root / 'kovasznay' / 'rows.csv').exists():
+        for r in _csv_rows(root / 'kovasznay' / 'rows.csv'):
+            data['kovasznay'].setdefault(r'SQ $P_N$-$P_{N-2}$', []).append((int(r['free_coeff']), float(r['t_stop_s']),
+                                                                           float(r['eps_u'])))
+        t_kov = {t['run']: float(t['time_s']) for t in _csv_rows(root / 'kovasznay' / 'timing_lilq.csv')}
+        B = Path(package1) / 'B_instrumentation'
+        for P in (75, 300, 675, 1200, 1875):
+            run = f'kovasznay_P{P}_cpu_paper'
+            if run in t_kov:
+                e = json.loads((B / run / 'summary.json').read_text())['test_eps_u']
+                data['kovasznay'].setdefault('LiL-Q (paper)', []).append((P, t_kov[run], float(e)))
+        for r in _csv_rows(B / 'b10' / 'b10.csv'):
+            if r['run'] in t_kov:
+                data['kovasznay'].setdefault('LiL-Q, CGL + CC, N/P = 5', []).append((int(r['P']), t_kov[r['run']],
+                                                                                    float(r['eps_u'])))
+    if (root / 'burgers' / 'rows.csv').exists():          # Section 4.3, run under its skip rule
+        for r in _csv_rows(root / 'burgers' / 'rows.csv'):
+            data['burgers'].setdefault('SQ-CGL', []).append((int(r['free_coeff']), float(r['t_stop_s']), float(r['err_ref'])))
+        lilq_points('burgers', {t['run']: float(t['time_s']) for t in _csv_rows(root / 'burgers' / 'timing_lilq.csv')})
+    data = {k: v for k, v in data.items() if v}
     for d in data.values():
         for v in d.values():
             v.sort()
@@ -401,9 +466,11 @@ def work_precision_figure(out_dir, package1, lilq_errors):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     data = work_precision_data(out_dir, package1, lilq_errors)
-    fig, axes = plt.subplots(2, 2, figsize=(9, 7))
-    titles = {'bratu': 'Bratu (error against the p = 48 reference)', 'kovasznay': 'Kovasznay ($E_u$)'}
-    for i, prob in enumerate(('bratu', 'kovasznay')):
+    problems = [p for p in ('bratu', 'kovasznay', 'burgers') if p in data]
+    fig, axes = plt.subplots(len(problems), 2, figsize=(9, 3.5 * len(problems)), squeeze=False)
+    titles = {'bratu': 'Bratu (error against the p = 48 reference)', 'kovasznay': 'Kovasznay ($E_u$)',
+              'burgers': 'Burgers (error against Cole-Hopf)'}
+    for i, prob in enumerate(problems):
         for label, pts in data[prob].items():
             P, t, e = zip(*pts)
             axes[i, 0].loglog(P, e, 'o-', ms=4, label=label)
@@ -427,11 +494,13 @@ def work_precision_figure(out_dir, package1, lilq_errors):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Package 2, item 1: the classical baselines (P2-3).")
-    ap.add_argument('stage', choices=('reference', 'check-pilot', 'kovasznay-pilot', 'bratu', 'kovasznay', 'figures'))
+    ap.add_argument('stage', choices=('reference', 'check-pilot', 'kovasznay-pilot', 'bratu', 'kovasznay', 'burgers',
+                                      'figures'))
     ap.add_argument('--out', required=True, help='package2_results (Stage 1) or the stage root (Stage 2)')
     ap.add_argument('--pilot-rows', default=None, help="the pilot's rows.json (check-pilot)")
     ap.add_argument('--package1', default=None, help="package1, for the same-day comparison and the figure")
-    ap.add_argument('--reference-dir', default=None, help='the Bratu references (default: <out>/reference, made if absent)')
+    ap.add_argument('--reference-dir', default=None, help='the Bratu (made if absent) and Burgers references '
+                    '(default: <out>/reference)')
     ap.add_argument('--lilq-errors', default=None, help="Stage 1's scalar_reference_errors.csv (figures)")
     args = ap.parse_args(argv)
     if args.stage == 'bratu':
@@ -441,6 +510,11 @@ def main(argv=None):
         return
     if args.stage == 'kovasznay':
         rows, timing = kovasznay_stage(args.out, args.package1)
+        for t in timing:
+            print(f"  LiL-Q {t['run']}: {t['time_s']:.4f} s, package1 {t['package1_time_s']}, within 15%: {t['within_15pct']}")
+        return
+    if args.stage == 'burgers':
+        rows, timing = burgers_stage(args.out, args.package1, args.reference_dir)
         for t in timing:
             print(f"  LiL-Q {t['run']}: {t['time_s']:.4f} s, package1 {t['package1_time_s']}, within 15%: {t['within_15pct']}")
         return
