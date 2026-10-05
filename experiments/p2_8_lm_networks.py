@@ -310,8 +310,11 @@ def eps_ref_function(net, ref, device):
 
 def lm(res, theta, target, eps_ref, log_path, max_iterations=MAX_ITERATIONS, wall_cap_s=WALL_CAP_S):
     """The F2 Levenberg-Marquardt loop with the item's stopping rules.
-    Returns ``(theta, summary)``; writes ``log.csv`` as it goes."""
-    columns = list(LOG_COLUMNS)
+    Returns ``(theta, summary)``; writes ``log.csv`` as it goes. A residual
+    with ``log_columns`` and ``log_values(theta)`` (item 5's Darcy) logs its
+    own loss components between ``loss`` and ``wall_time``, in place of the
+    four-method ones."""
+    columns = list(getattr(res, 'log_columns', LOG_COLUMNS))
     fh = open(log_path, 'w', newline='')
     w = csv.DictWriter(fh, fieldnames=columns)
     w.writeheader()
@@ -326,12 +329,19 @@ def lm(res, theta, target, eps_ref, log_path, max_iterations=MAX_ITERATIONS, wal
         nonlocal excluded
         t = time.perf_counter() - t0 - excluded
         te = time.perf_counter()
-        comp = res.components(theta)
+        if hasattr(res, 'log_values'):
+            row = {'iteration': it, 'n_func_evals': n_evals, 'loss': repr(loss), **res.log_values(theta),
+                   'wall_time': f'{t:.6f}', 'mu': repr(mu), 'n_jacobian_evals': n_jac, 'accepted': int(accepted),
+                   'restarts': restarts}
+        else:
+            comp = res.components(theta)
+            row = dict(zip(columns, (it, n_evals, repr(loss), repr(comp[1]), repr(comp[2]), repr(comp[3]),
+                                     f'{t:.6f}', repr(comp[4]), repr(comp[5]), repr(mu), n_jac, int(accepted),
+                                     restarts)))
         e = eps_ref(theta)
+        row['eps_ref'] = repr(e)
         excluded += time.perf_counter() - te
-        w.writerow(dict(zip(columns, (it, n_evals, repr(loss), repr(comp[1]), repr(comp[2]), repr(comp[3]),
-                                      f'{t:.6f}', repr(comp[4]), repr(comp[5]), repr(mu), n_jac, int(accepted),
-                                      restarts, repr(e)))))
+        w.writerow(row)
         fh.flush()
         return t, e
 

@@ -17,6 +17,86 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 4: item 5 (P2-15), the Darcy network with hard Dirichlet conditions, on FASTER
+
+**What** (Section 8, as the reply of 5 October, Section 1.1, settles it).
+`experiments/p2_15_darcy_hardbc.py` takes the paper's Darcy NiL run (`DarcyPINN`, Table 15) and
+changes two things only:
+
+1. **The pressure output is lifted.** h* = y* + omega NN_h, with omega = 4 y*(1 - y*), so that
+   P = (y* + omega NN_h) DELTA_P + P_BOTTOM. The Dirichlet data then hold exactly, and y* is
+   the LiL lifting function.
+2. **The optimizer is Levenberg-Marquardt** with item 2's F2 damping and stall rule. The
+   target is 0 (tolerances 0, one restart). The caps are 2,000 iterations or 30 min of
+   training time.
+
+**Everything else is the paper's run:**
+- three SiLU networks, 2 x 32 each, 3,555 parameters in float64, built after
+  `torch.manual_seed(seed)` in the paper's order. That means the same initial weights for
+  seeds 0, 1 and 2 (tested);
+- the normalized inputs and output scales;
+- the Darcy-x, Darcy-y and continuity residuals at the 60 x 220 cell centres, each 50 x a
+  mean square;
+- the paper's own lateral rows, U = 0 on each lateral face, each 20 x a mean square. So
+  Section 8's -K dh/dn rows are not introduced, as the reply asks.
+
+The paper's top and bottom Dirichlet rows vanish identically under the lifting, so they are
+left out.
+
+**How it is checked:**
+- **Check C3:** at the start, r . r equals the paper's own `_compute_loss` on the lifted
+  network to 1e-12, and that loss's Dirichlet terms are exactly zero. On S1 seed 0 the
+  difference is 0.
+- **The Jacobian:** `vmap(jacrev)` per point over an explicit forward pass with input
+  gradients through the SiLU layers. It is tested against reverse mode on the whole residual.
+- **The error:** delta_FV against the finite-volume reference at the cell centres is logged
+  every iteration, off the clock.
+
+`experiments.p2_8_lm_networks.lm` gained one hook, a residual's own `log_columns` and
+`log_values`, so `log.csv` carries Darcy's loss components. Item 2's logs are unchanged.
+
+**Outputs:**
+- per run, `P2_15_darcy_hardbc/<field>_seed<s>/`: `run.json`, `log.csv`,
+  `pressure_field.npz`, `network.pt` and `hardware.json`;
+- `darcy_hardbc_rows.csv`: Section 8's columns, plus the final loss, C3, and the paper's
+  soft-BC Adam NiL and LiL delta_FV of the same field and seed (`--package1`).
+
+**On FASTER:**
+- `scripts/cluster/package2/p2s2_darcy_hardbc.slurm` is an array of 12 (field t // 3,
+  seed t % 3) on a shared A100, with a 45-min walltime.
+- `submit_p2s2_faster.sh` sets `CLUSTER=faster` and submits the preflight, the array
+  (afterok) and the report (afterany). Its `--test-only` dry run and its chain were checked
+  with a stand-in `sbatch`.
+- FASTER's `results/package2_stage2` locks to the same commit as Grace's.
+  `stage_report.py` names FASTER's tarball `package2_stage2_faster.tar.gz`, and
+  `p2_assemble.py stage2 --faster` merges it and refuses another commit.
+- The cost is 1,382 SU requested and about 700 expected, within item 5's 1,500 on FASTER.
+
+**Laptop smoke run (S1, seed 0, the cap cut to 5 min, RTX 5080):**
+- 150 LM iterations at about 2 s each in float64, stopped by the shortened cap;
+- delta_FV 1.39e-4 and maximum difference 3.0 psi;
+- the paper's soft-BC Adam NiL on the same field and seed: 2.14e-2 and 183 psi after 150,000
+  epochs;
+- LiL: 1.37e-4.
+
+With the boundary confound removed and the optimizer changed, the network reaches LiL's
+error. The two changes are not separated by this design, as the advisor intends. The A100
+runs are the result. They are in
+`package2_results/laptop_preview/P2_15_darcy_hardbc/S1_seed0_5min_smoke`.
+
+Tests: `tests/test_p2s2_darcy_hardbc.py` covers:
+- the lifting;
+- the paper's initialization;
+- C3 and the logged components;
+- the Jacobian;
+- a run and its rows;
+- the job, and the FASTER chain and dry run. The bash ones are skipped on Windows and were
+  run by hand.
+
+`tests/test_p2s2_submission.py` covers FASTER's tarball name and the assembly's merge.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: item 4's normal-equation control, two variants
 
 **Why** (the reply of 5 October, Section 3.1). As first specified, the control was Cholesky

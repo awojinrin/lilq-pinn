@@ -45,7 +45,14 @@ replaced, and the replacements are listed.
   - item 7's scaling table, exponents and check C8'
     (``p2_1_scaling.py summarize``), against ``--package1``;
   - item 2's ``gpu-list``: a configuration named there needs the A100
-    reruns before the package is complete.
+    reruns before the package is complete;
+  - item 5's rows (``p2_15_darcy_hardbc.py summarize``), beside the paper's
+    NiL and LiL delta_FV from ``--package1``.
+- **FASTER's part** (item 5; ``--faster``, the extracted
+  ``package2_stage2_faster.tar.gz``): it must be locked to the same commit
+  as Grace's. Its item folder is copied like the others; its ``sacct.txt``,
+  ``report_log.txt`` and Slurm logs go to ``stage2_faster_sacct.txt``,
+  ``stage2_faster_report_log.txt`` and ``slurm_logs/stage2_faster/``.
 
   Each step is logged in ``assembly_log.txt``; a failing step is recorded,
   not fatal.
@@ -54,7 +61,7 @@ Usage::
 
     python experiments/p2_assemble.py stage1 --stage <downloaded results/package2_stage1> --out <package2_results>
     python experiments/p2_assemble.py stage2 --stage <downloaded results/package2_stage2> --out <package2_results> \\
-        --package1 <package1>
+        --package1 <package1> [--faster <FASTER's package2_stage2>]
 """
 
 import argparse
@@ -172,7 +179,7 @@ def _step(cmd, log):
     return out
 
 
-def stage2(stage, out, package1=None, summaries=True, check_commit=True):
+def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=None):
     """Assemble Stage 2 into ``out``; returns the assembly record."""
     stage, out = Path(stage), Path(out)
     lock = json.loads((stage / 'COMMIT').read_text())
@@ -193,6 +200,21 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True):
             _copy(stage / name, out / target, replaced)
     if (stage / 'slurm_logs').is_dir():
         _copy_tree(stage / 'slurm_logs', out / 'slurm_logs' / 'stage2', replaced)
+    faster_commit = None
+    if faster is not None:
+        faster = Path(faster)
+        faster_commit = json.loads((faster / 'COMMIT').read_text())['commit']
+        if faster_commit != commit:
+            raise SystemExit(f"FASTER's part is locked to {faster_commit}, Grace's to {commit}: "
+                             'Stage 2 must come from one commit')
+        for item in sorted(p for p in faster.iterdir() if p.is_dir() and p.name.startswith('P2_')):
+            _copy_tree(item, out / item.name, replaced)
+            items.append(item.name)
+        for name, target in (('sacct.txt', 'stage2_faster_sacct.txt'), ('report_log.txt', 'stage2_faster_report_log.txt')):
+            if (faster / name).exists():
+                _copy(faster / name, out / target, replaced)
+        if (faster / 'slurm_logs').is_dir():
+            _copy_tree(faster / 'slurm_logs', out / 'slurm_logs' / 'stage2_faster', replaced)
     stage1_commit = out / 'reference' / 'stage1' / 'COMMIT'
     stage1_commit = stage1_commit if stage1_commit.exists() else out / 'P2_12_reference_errors' / 'COMMIT'
     if stage1_commit.exists():
@@ -216,6 +238,9 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True):
                    '--lbfgs-errors', str(s1), str(bl)], log)
             g = _step(['experiments/p2_8_lm_networks.py', 'gpu-list', '--out', str(out)], log)
             gpu_list = g.stdout.split() if g.returncode == 0 else None
+        if (out / 'P2_15_darcy_hardbc').is_dir():
+            _step(['experiments/p2_15_darcy_hardbc.py', 'summarize', '--out', str(out)]
+                  + (['--package1', str(package1)] if package1 else []), log)
         if (out / 'P2_1_scaling').is_dir():
             _step(['experiments/p2_1_scaling.py', 'summarize', '--out', str(out), '--package1', str(package1)], log)
     (out / 'assembly_log.txt').write_text('\n\n'.join(log) + '\n')
@@ -226,7 +251,7 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True):
               'code_files': len(code_files),
               'hardware': 'hardware.json and environment.txt are the CPU scaling job\'s (a whole Grace CPU node); '
                           'every item folder holds its own job\'s',
-              'item_2_gpu_list': gpu_list}
+              'item_2_gpu_list': gpu_list, 'faster_commit': faster_commit}
     (out / 'provenance.json').write_text(json.dumps(record, indent=2))
     return record
 
@@ -237,9 +262,10 @@ def main(argv=None):
     ap.add_argument('--stage', required=True, help="the stage's results root (results/package2_stage1 or _stage2)")
     ap.add_argument('--out', required=True, help='package2_results')
     ap.add_argument('--package1', help="stage2: package1 (item 7's check C8', the figures)")
+    ap.add_argument('--faster', help="stage2: FASTER's package2_stage2 (item 5), from package2_stage2_faster.tar.gz")
     args = ap.parse_args(argv)
     if args.stage_name == 'stage2':
-        r = stage2(args.stage, args.out, args.package1)
+        r = stage2(args.stage, args.out, args.package1, faster=args.faster)
         print(f"Stage 2 at {r['stage2_commit'][:7]}: {len(r['items'])} item folders, {r['code_files']} code files")
         for name, rec in r['references'].items():
             print(f"  reference/{name}: {rec}")

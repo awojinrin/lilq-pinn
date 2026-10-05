@@ -10,7 +10,9 @@ Run by ``p2s2_report.slurm`` after every job of a Package 2 stage (afterany):
   rates, ``wave_report.su_rows``, which reproduced waves 2 and 3's charges;
 * ``results/package2_<stage name>.tar.gz``: the whole stage folder (the stage
   results are small; Stage 1's was downloaded whole too) and the stage's
-  Slurm logs, under ``slurm_logs/``.
+  Slurm logs, under ``slurm_logs/``. On FASTER (item 5 of Stage 2),
+  ``package2_<stage name>_faster.tar.gz``, so the two downloads do not
+  collide.
 
 A failing step is recorded in ``report_log.txt``, not fatal.
 
@@ -66,7 +68,8 @@ def report(stage, results, logs_dir=REPO / 'logs', sacct=True):
         else:
             log.append('su_per_job.csv not written (sacct unavailable, or not on Grace)')
     (root / 'report_log.txt').write_text('\n\n'.join(log) + '\n')
-    tar_path = Path(results) / f'{STAGES[stage]}.tar.gz'
+    cluster = os.environ.get('CLUSTER', 'grace')            # FASTER's part of a stage: <stage>_faster.tar.gz
+    tar_path = Path(results) / f"{STAGES[stage]}{'' if cluster == 'grace' else '_' + cluster}.tar.gz"
     with tarfile.open(tar_path, 'w:gz') as tar:
         tar.add(root, arcname=STAGES[stage])
         for job, p in jobs.items():

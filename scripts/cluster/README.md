@@ -192,7 +192,7 @@ bash scripts/cluster/package2/submit_p2s2.sh
 4. `p2s2_report` runs after all of them (afterany). It writes `sacct.txt` and `su_per_job.csv`,
    and packs `results/package2_stage2.tar.gz`: the whole stage and its Slurm logs.
 
-The plan is 1,250 SU requested, about 606 expected (`package2_results/su_plan.csv`).
+The plan is 1,274 SU requested, about 618 expected (`package2_results/su_plan.csv`).
 
 **Item 2's A100 reruns are not in the chain.** When the three LM jobs are done, run:
 
@@ -203,16 +203,37 @@ python experiments/p2_8_lm_networks.py gpu-list --out results/package2_stage2
 Submit `p2s2_lm_networks_gpu.slurm` only if it names a configuration
 (`LILQ_WAVE=p2s2 bash scripts/cluster/sbatch.sh scripts/cluster/package2/p2s2_lm_networks_gpu.slurm`).
 
-**Assembly, on the laptop.** Download the tarball and check out the stage's commit. Then:
+**Item 5 (Darcy) runs on FASTER, from the same commit.** Upload the same bundle to FASTER's
+`$SCRATCH/lilq-run/lilq-pinn` and extract it there. FASTER's venv needs the same PyTorch 2.10.0;
+the preflight checks it. Then, on a FASTER login node:
+
+```bash
+cd $SCRATCH/lilq-run/lilq-pinn
+DRY_RUN=1 bash scripts/cluster/package2/submit_p2s2_faster.sh    # 3 jobs through sbatch --test-only
+bash scripts/cluster/package2/submit_p2s2_faster.sh
+```
+
+The script sets `CLUSTER=faster` itself. The chain is:
+1. `p2s2_preflight` checks the environment and locks FASTER's `results/package2_stage2` to the
+   commit.
+2. `p2s2_darcy_hardbc` runs 12 array tasks (4 fields x 3 seeds), each capped at 2,000 LM
+   iterations or 30 min of training.
+3. `p2s2_report` packs `results/package2_stage2_faster.tar.gz`.
+
+That is 1,382 SU requested and about 700 expected, within item 5's 1,500 on FASTER.
+
+**Assembly, on the laptop.** Download the tarball(s), FASTER's too, and check out the stage's
+commit. Then:
 
 ```bash
 python experiments/p2_assemble.py stage2 --stage <extracted>/package2_stage2 --out ../package2_results \
-    --package1 <package1>
+    --package1 <package1> --faster <extracted FASTER>/package2_stage2
 ```
 
 This copies the item folders and references into the Section 12.1 layout, writes `code/`, and
-runs the summaries that need Stage 1's laptop-side CSVs. Back up the tarball to
-`$HOME/lilq-results` before deleting anything on `$SCRATCH`.
+runs the summaries that need Stage 1's laptop-side CSVs. `--faster` refuses a FASTER folder
+locked to another commit, and adds item 5's rows. Back up both tarballs to `$HOME/lilq-results`
+(on each cluster) before deleting anything on `$SCRATCH`.
 
 ## Resource use
 

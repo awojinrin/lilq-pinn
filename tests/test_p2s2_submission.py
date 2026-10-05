@@ -14,6 +14,7 @@ REPO = Path(__file__).resolve().parents[1]
 P2 = REPO / 'scripts' / 'cluster' / 'package2'
 SUBMIT = P2 / 'submit_p2s2.sh'
 CONTINGENT = {'p2s2_lm_networks_gpu'}          # submitted by hand, only if gpu-list names something
+FASTER = {'p2s2_darcy_hardbc'}                 # item 5, submitted on FASTER (submit_p2s2_faster.sh)
 COMPUTE = {'p2s2_classical_bratu', 'p2s2_classical_kovasznay', 'p2s2_classical_burgers', 'p2s2_lm_networks_bratu',
            'p2s2_lm_networks_burgers', 'p2s2_lm_networks_bl', 'p2s2_certified', 'p2s2_elm', 'p2s2_nu_refinement',
            'p2s2_bases', 'p2s2_scaling_cpu_a', 'p2s2_scaling_cpu_b', 'p2s2_scaling_gpu',
@@ -22,11 +23,12 @@ COMPUTE = {'p2s2_classical_bratu', 'p2s2_classical_kovasznay', 'p2s2_classical_b
 
 def test_every_stage_2_job_is_submitted_or_contingent():
     jobs = {p.stem for p in P2.glob('p2s2_*.slurm')}
-    assert jobs == COMPUTE | CONTINGENT | {'p2s2_preflight', 'p2s2_references', 'p2s2_report'}
+    assert jobs == COMPUTE | CONTINGENT | FASTER | {'p2s2_preflight', 'p2s2_references', 'p2s2_report'}
     text = SUBMIT.read_text()
-    for job in jobs - CONTINGENT:
+    for job in jobs - CONTINGENT - FASTER:
         assert text.count(f'/{job}.slurm') == 1, job
     assert 'p2s2_lm_networks_gpu.slurm' not in text.split('LILQ_WAVE=p2s2')[1]
+    assert 'p2s2_darcy_hardbc.slurm' not in text.split('LILQ_WAVE=p2s2')[1]
     for p in P2.glob('p2s2_*.slurm'):
         t = p.read_text()
         assert re.search(r'#SBATCH --job-name=lilq-p2s2-', t), p.name          # the report finds the logs by it
@@ -107,6 +109,8 @@ def test_stage_report_packs_the_stage_and_its_logs(tmp_path, monkeypatch):
     assert 'package2_stage2/P2_16_certified/terminal.csv' in names
     assert 'package2_stage2/slurm_logs/lilq-p2s2-certified.201.out' in names
     assert not any('report.299' in n or 'p2s1' in n for n in names) and 'package2_stage2/report_log.txt' in names
+    monkeypatch.setenv('CLUSTER', 'faster')                     # FASTER's part: its own tarball name
+    assert sr.report('p2s2', tmp_path / 'results', logs_dir=logs, sacct=False).name == 'package2_stage2_faster.tar.gz'
 
 
 # ---------------------------------------------------------------- the local assembly (p2_assemble.py stage2)
@@ -158,3 +162,28 @@ def test_stage2_assembly_refuses_another_commit(tmp_path):
     stage, out = _fake_stage(tmp_path, '0' * 40)
     with pytest.raises(SystemExit, match='locked to'):
         pa.stage2(stage, out, summaries=False)
+
+
+def test_stage2_assembly_merges_fasters_part(tmp_path):
+    import json
+    import subprocess
+    import experiments.p2_assemble as pa
+    head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True, text=True).stdout.strip()
+    if not head:
+        pytest.skip('no git checkout')
+    stage, out = _fake_stage(tmp_path, head)
+    faster = tmp_path / 'faster' / 'package2_stage2'
+    (faster / 'P2_15_darcy_hardbc' / 'S1_seed0').mkdir(parents=True)
+    (faster / 'P2_15_darcy_hardbc' / 'S1_seed0' / 'run.json').write_text('{}')
+    (faster / 'sacct.txt').write_text('faster sacct\n')
+    (faster / 'slurm_logs').mkdir()
+    (faster / 'slurm_logs' / 'lilq-p2s2-darcy-hardbc.7_0.out').write_text('log\n')
+    (faster / 'COMMIT').write_text(json.dumps({'commit': head}))
+    r = pa.stage2(stage, out, summaries=False, faster=faster)
+    assert r['faster_commit'] == head and 'P2_15_darcy_hardbc' in r['items']
+    assert (out / 'P2_15_darcy_hardbc' / 'S1_seed0' / 'run.json').exists()
+    assert (out / 'stage2_faster_sacct.txt').read_text() == 'faster sacct\n'
+    assert (out / 'slurm_logs' / 'stage2_faster' / 'lilq-p2s2-darcy-hardbc.7_0.out').exists()
+    (faster / 'COMMIT').write_text(json.dumps({'commit': '1' * 40}))
+    with pytest.raises(SystemExit, match='one commit'):
+        pa.stage2(stage, tmp_path / 'out2', summaries=False, faster=faster)
