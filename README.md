@@ -160,12 +160,13 @@ lilq-pinn/
 
 | Tag | Paper version |
 |---|---|
+| `v2.0.1` | the code release the revised manuscript cites: `v2.0.0` with corrected citation metadata (`CITATION.cff`) only |
 | `v2.0.0` | the revised manuscript (4 October 2026). [RELEASE.md](RELEASE.md) maps every table and figure of its Sections 6 and Appendix B to the script that regenerates it and the result files it reads. |
 | `v1.0-manuscript` | the arXiv version |
 
 ## Citation
 
-Manuscript under review. The BibTeX citation entry will be updated here upon acceptance.
+G. T. Awojinrin, A.-A. Olawoyin, R. M. Younis, *Quasilinearized Physics-Informed Least-Squares Collocation in Linear-in-Learnables Trial Spaces: Convergence Theory and Practical Stopping Criteria*, arXiv:2606.18175 (2026); revised version in preparation. [CITATION.cff](CITATION.cff) has the software and paper citations.
 
 ---
 
