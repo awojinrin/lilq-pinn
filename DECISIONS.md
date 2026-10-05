@@ -17,6 +17,49 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: check C8 (item 6a), and a correction to batch 1
+
+**What** (the advisor's reply of 5 October, Section 1.2). `check_c8` passes a rerun at Grace's
+own run-to-run level:
+- the same iterations;
+- `norm_R_h` at every k within the level;
+- the final loss and the final `eps_u` within the level.
+
+The 1e-10 comparison of Section 12.3 (`passed_at_1e-10`) and the columns `gelsy` keeps, final
+and at every k with package1's, are recorded beside it.
+
+**Correction to batch 1 (below), found while writing this.** Batch 1 said package1's two
+passes "agree only to 6.3e-5 (P = 576) and 1.1e-4 (P = 1,024)", from different Grace jobs.
+From that it concluded that Grace does not reproduce these runs. That was wrong, and the
+pre-submission note repeated it to the advisor.
+
+- **Where the difference really is.** The two passes agree exactly (difference 0) at every
+  shared k except the paper pass's last row. Their `eps_u` agrees exactly at every shared k,
+  that row included, so the iterates themselves are identical.
+- **Why that row differs.** It is the final iterate, with no solve after it, and
+  `LilQDiagnosticsTracker` takes its `norm_R_h` from the solver's loss (`sqrt(total_loss)`).
+  The K_max pass's row at the same k has a solve, so its `norm_R_h` comes from the assembled
+  system, `||A^(k) beta^(k) - f^(k)||`. The two are equal in exact arithmetic (the
+  quasilinearization identity) but differ by about 1e-4 at kappa about 1e16.
+- **What this means.** Grace does reproduce these runs bit for bit across jobs. The 6.3e-5
+  and 1.1e-4 compare two different computations of the residual.
+
+**So the level is measured like for like.** It comes from the rows both passes computed from
+a solve, and is at least 1e-10. For package1 that is 0, so the level is 1e-10, and the check
+is the one Section 12.3 specified. The mixed-row figure is kept in the record
+(`package1_paper_vs_kmax_mixed_rows`).
+
+**Machine to machine.** The laptop differs from Grace by 2e-4 to 6e-3 in `norm_R_h` and up
+to 1.7e-2 in `eps_u`, with the same iterations. At P = 1,024, `gelsy` keeps 1,008 columns
+against Grace's 1,005 and 1,006. This is the cross-machine figure. It is larger than the
+"about 1e-4" the advisor proposed to write in the manuscript, which came from the mixed rows.
+
+Tests: `tests/test_p2s2_nu_refinement.py`. A difference on the paper pass's last row leaves
+the level at 1e-10. A difference on a row with a solve sets the level. Differences beyond
+the level fail, in `norm_R_h` and in `eps_u`.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: item 8 (P2-10), a manufactured solution compatible with the bases
 
 **What** (the advisor's reply of 5 October, Section 3.2). The stall of the specified

@@ -47,8 +47,26 @@ grid. The finer of the pair is the reference:
 - the overshoot min S and max S - 1 on the test grid at the stop and at
   k = 60 (Gibbs onset).
 
-**Check C8.** At nu = 0.1, P = 576 and 1,024, each pass's ``norm_R_h``
-equals package1's (``bl_P<P>_cpu_<pass>``) at every k to 1e-10 relative.
+**Check C8** (the advisor's reply of 5 October, Section 1.2: at Grace's own
+run-to-run level). At nu = 0.1, P = 576 and 1,024, each pass is compared with
+package1's (``bl_P<P>_cpu_<pass>``). It passes if
+(i) the iterations, and so the stopping iteration, agree;
+(ii) ``norm_R_h`` agrees at every k to within the agreement package1's own
+paper and K_max passes (different Grace jobs) show for the same configuration;
+(iii) the final loss and the reference error (``eps_u``) agree to that level.
+
+That level is measured only on rows that compute ``norm_R_h`` the same way.
+A row with a solve computes it from the assembled system,
+||A^(k) beta^(k) - f^(k)||. The log's last row has no solve, and takes it from
+the solver's loss. At kappa about 1e16 the two differ by about 1e-4. Compared
+like for like, package1's two passes agree exactly (0 at P = 576 and 1,024),
+so the level is the 1e-10 of Section 12.3. The figure from the mixed rows
+(6.3e-5 and 1.1e-4, quoted in the pre-submission note) is recorded as well.
+
+Also recorded: the comparison at 1e-10 that Section 12.3 specified, and the
+number of columns ``gelsy`` keeps in each run, at the last solve and at every
+k. These systems are numerically rank-deficient, so which columns the
+pivoting keeps depends on the BLAS and the machine.
 
 **Outputs** under ``P2_2_nu_refinement/``:
 - ``<case>_P<P>_nu<nu>_<pass>/{run.json, iterations.csv, solution.pt}``;
@@ -249,39 +267,69 @@ def _max_rel(a_rows, b_rows):
     return max(abs(_f(a['norm_R_h']) - _f(b['norm_R_h'])) / abs(_f(b['norm_R_h'])) for a, b in zip(a_rows, b_rows))
 
 
-def check_c8(out, package1, sizes=(24, 32), tol=C8_TOLERANCE):
-    """C8: at nu = 0.1 each pass's norm_R_h equals package1's at every k to
-    ``tol`` (pass/fail exactly as Section 12.3 states). Recorded beside it,
-    so that the result can be read:
+def _gelsy(rows):
+    return [int(_f(r['num_rank_gelsy'])) if r.get('num_rank_gelsy') not in ('', None) else None for r in rows]
 
-    - ``same_stop`` and the relative differences of the loss and of
-      ``eps_u`` at the last row;
-    - ``package1_paper_vs_kmax``: how closely package1's own two passes (from
-      different Grace jobs) agree over the rows they share. That is
-      Grace's run-to-run reproducibility of the same configuration, the floor
-      of any rerun's agreement. At kappa about 1e16-1e17 it is about 1e-4,
-      not 1e-10 (DECISIONS.md, batch 1)."""
+
+def _last_solve(values):
+    """The value at the last solve: the log's last row is the final iterate, with no solve."""
+    return next((v for v in reversed(values) if v is not None), None)
+
+
+def _self_agreement(paper, kmax):
+    """How closely package1's two passes agree in ``norm_R_h``: over the rows
+    both computed from a solve (``num_rank_gelsy`` set), and over every shared
+    row, the paper pass's last row (no solve) included."""
+    shared = list(zip(paper, kmax[:len(paper)]))
+    like = [(a, b) for a, b in shared if a.get('num_rank_gelsy') not in ('', None)
+            and b.get('num_rank_gelsy') not in ('', None)]
+    return _max_rel(*zip(*like)) if like else float('nan'), _max_rel(paper, kmax[:len(paper)])
+
+
+def check_c8(out, package1, sizes=(24, 32), tol=C8_TOLERANCE):
+    """C8 at Grace's run-to-run level (the advisor's reply of 5 October,
+    Section 1.2). The level is per configuration: how closely package1's own
+    two passes (different Grace jobs) agree in ``norm_R_h`` over the rows both
+    computed from a solve (``package1_paper_vs_kmax``), and at least ``tol``.
+    A pass passes if its iterations agree with package1's, and if its
+    ``norm_R_h`` at every k, its final loss and its final ``eps_u`` agree with
+    package1's to within that level.
+
+    Recorded beside it:
+    - ``package1_paper_vs_kmax_mixed_rows``: the same agreement over every
+      shared row, the figure quoted before;
+    - ``passed_at_1e-10``: the check as Section 12.3 specified it;
+    - the columns ``gelsy`` keeps, final and per k, with package1's."""
     rows = []
     for N in sizes:
         p1 = {pass_: _log(Path(package1) / 'B_instrumentation' / f'bl_P{N * N}_cpu_{pass_}')
               for pass_ in ('paper', 'kmax')}
-        n_paper = len(p1['paper'])
-        p1_self = _max_rel(p1['paper'], p1['kmax'][:n_paper])
+        p1_self, p1_mixed = _self_agreement(p1['paper'], p1['kmax'])
+        level = max(p1_self, tol)
         for pass_ in ('paper', 'kmax'):
             new = _log(Path(out) / f'viscous_P{N * N}_nu0.1_{pass_}')
             old = p1[pass_]
             same_k = [r['k'] for r in new] == [r['k'] for r in old]
             rel = _max_rel(new, old)
+            loss = abs(_f(new[-1]['norm_R_h']) ** 2 - _f(old[-1]['norm_R_h']) ** 2) / _f(old[-1]['norm_R_h']) ** 2
+            eps = abs(_f(new[-1]['eps_u']) - _f(old[-1]['eps_u'])) / _f(old[-1]['eps_u'])
+            g_new, g_old = _gelsy(new), _gelsy(old)
             rows.append({'run': f'bl_P{N * N}_cpu_{pass_}', 'rows': len(new), 'rows_package1': len(old),
-                         'same_iterations': same_k, 'max_rel_diff_norm_R_h': rel,
-                         'passed': bool(same_k and rel <= tol),
-                         'same_stop': new[-1]['k'] == old[-1]['k'],
-                         'final_loss_rel_diff': abs(_f(new[-1]['norm_R_h']) ** 2 - _f(old[-1]['norm_R_h']) ** 2)
-                         / _f(old[-1]['norm_R_h']) ** 2,
-                         'final_eps_u_rel_diff': abs(_f(new[-1]['eps_u']) - _f(old[-1]['eps_u'])) / _f(old[-1]['eps_u']),
-                         'package1_paper_vs_kmax': p1_self})
-    return {'check': 'C8 (item 6)', 'tolerance': tol, 'passed': all(r['passed'] for r in rows), 'runs': rows,
-            'commit': current_commit()}
+                         'package1_paper_vs_kmax': p1_self, 'package1_paper_vs_kmax_mixed_rows': p1_mixed,
+                         'level': level,
+                         'same_iterations': same_k, 'same_stop': new[-1]['k'] == old[-1]['k'],
+                         'max_rel_diff_norm_R_h': rel, 'final_loss_rel_diff': loss, 'final_eps_u_rel_diff': eps,
+                         'passed': bool(same_k and rel <= level and loss <= level and eps <= level),
+                         'passed_at_1e-10': bool(same_k and rel <= tol),
+                         'gelsy_columns_kept_final': _last_solve(g_new),
+                         'gelsy_columns_kept_final_package1': _last_solve(g_old),
+                         'gelsy_columns_kept_same_at_every_k': g_new == g_old,
+                         'gelsy_columns_kept': g_new, 'gelsy_columns_kept_package1': g_old})
+    return {'check': "C8 (item 6), at Grace's run-to-run level (the advisor's reply of 5 October, Section 1.2)",
+            'level': "per configuration, package1's own agreement on like rows, at least the tolerance",
+            'tolerance_section_12_3': tol,
+            'passed': all(r['passed'] for r in rows), 'passed_at_1e-10': all(r['passed_at_1e-10'] for r in rows),
+            'runs': rows, 'commit': current_commit()}
 
 
 def run_all(out_root, package1=None, cases=('viscous', 'gravity'), ref_dir=None):
@@ -317,9 +365,12 @@ def run_all(out_root, package1=None, cases=('viscous', 'gravity'), ref_dir=None)
     if package1 and 'viscous' in cases:
         c8 = check_c8(out, package1)
         (out / 'check_c8.json').write_text(json.dumps(c8, indent=2))
-        print(f"  C8: {'passed' if c8['passed'] else 'FAILED'} (max relative difference "
-              f"{max(r['max_rel_diff_norm_R_h'] for r in c8['runs']):.1e}; package1's own two passes agree to "
-              f"{max(r['package1_paper_vs_kmax'] for r in c8['runs']):.1e})")
+        for r in c8['runs']:
+            print(f"  C8 {r['run']}: {'passed' if r['passed'] else 'FAILED'} (same iterations {r['same_iterations']}; "
+                  f"norm_R_h {r['max_rel_diff_norm_R_h']:.1e}, loss {r['final_loss_rel_diff']:.1e}, "
+                  f"eps_u {r['final_eps_u_rel_diff']:.1e} against the level {r['level']:.1e}; "
+                  f"at 1e-10 {'passed' if r['passed_at_1e-10'] else 'failed'}; gelsy keeps "
+                  f"{r['gelsy_columns_kept_final']} columns, package1 {r['gelsy_columns_kept_final_package1']})")
     save_provenance(out)
     figure(out, rows)
     return rows

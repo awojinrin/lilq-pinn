@@ -95,16 +95,44 @@ def test_small_pass_pair_row_and_check_c8(tmp_path):
     p1 = tmp_path / 'p1' / 'B_instrumentation'
     for pass_, d in (('paper', p_dir), ('kmax', k_dir)):
         shutil.copytree(d, p1 / f'bl_P64_cpu_{pass_}')
-    assert m.check_c8(out, tmp_path / 'p1', sizes=(8,))['passed']
-    path = p1 / 'bl_P64_cpu_kmax' / 'iterations.csv'
-    rows = list(csv.DictReader(open(path)))
-    rows[5]['norm_R_h'] = repr(float(rows[5]['norm_R_h']) * (1 + 1e-8))
-    with open(path, 'w', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0]))
-        w.writeheader()
-        w.writerows(rows)
     c8 = m.check_c8(out, tmp_path / 'p1', sizes=(8,))
-    assert not c8['passed'] and json.dumps(c8)
+    assert c8['passed'] and c8['passed_at_1e-10'] and json.dumps(c8)
+    assert all(r['gelsy_columns_kept_same_at_every_k'] and 0 < r['gelsy_columns_kept_final'] <= 64 for r in c8['runs'])
+    n_paper = c8['runs'][0]['rows']
+
+    def perturb(pass_, field, factor, k_rows):
+        path = p1 / f'bl_P64_cpu_{pass_}' / 'iterations.csv'
+        with open(path, newline='') as f:
+            rows = list(csv.DictReader(f))
+        for i in k_rows:
+            rows[i][field] = repr(float(rows[i][field]) * factor)
+        with open(path, 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0]))
+            w.writeheader()
+            w.writerows(rows)
+
+    # a difference on the paper pass's last row (no solve) is not run-to-run: the level stays 1e-10
+    perturb('paper', 'norm_R_h', 1 + 1e-4, [n_paper - 1])
+    c8 = m.check_c8(out, tmp_path / 'p1', sizes=(8,))
+    r = c8['runs'][0]
+    assert r['package1_paper_vs_kmax'] == 0 and r['level'] == 1e-10
+    assert r['package1_paper_vs_kmax_mixed_rows'] == pytest.approx(1e-4, rel=1e-3) and not r['passed']
+    perturb('paper', 'norm_R_h', 1 / (1 + 1e-4), [n_paper - 1])
+    # package1's own passes disagree by 1e-4 on a row with a solve, so the level is 1e-4: a
+    # 1e-8 difference against package1 passes the check but not the 1e-10 comparison
+    perturb('kmax', 'norm_R_h', 1 + 1e-4, [1])
+    perturb('paper', 'norm_R_h', 1 + 1e-8, [2])
+    c8 = m.check_c8(out, tmp_path / 'p1', sizes=(8,))
+    assert c8['runs'][0]['package1_paper_vs_kmax'] == pytest.approx(1e-4, rel=1e-3)
+    assert c8['passed'] and not c8['passed_at_1e-10']
+    # beyond the level: norm_R_h on a K_max row after the shared ones, then the paper pass's final eps_u
+    perturb('kmax', 'norm_R_h', 1 + 1e-3, [n_paper + 1])
+    c8 = m.check_c8(out, tmp_path / 'p1', sizes=(8,))
+    assert c8['runs'][0]['passed'] and not c8['runs'][1]['passed']
+    perturb('kmax', 'norm_R_h', 1 / (1 + 1e-3), [n_paper + 1])
+    perturb('paper', 'eps_u', 1 + 1e-3, [n_paper - 1])
+    c8 = m.check_c8(out, tmp_path / 'p1', sizes=(8,))
+    assert not c8['runs'][0]['passed'] and c8['runs'][1]['passed'] and not c8['passed']
 
 
 def test_item_6a_job():
