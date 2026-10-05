@@ -17,6 +17,70 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 3: item 7a (P2-1), Kovasznay scaling in P and N
+
+**Code** (Section 10): `experiments/p2_1_scaling.py` (stages `one`, `series`, `summarize`), built so
+batch 4 adds Beltrami as further series.
+
+**Series:**
+- P series: p_d = 25, 30, 35, 40, 50 (P = 1,875-7,500), with the paper's grid formula, stop and
+  K_max.
+- N series: P = 1,200 at N/P = 3, 5, 10, 20, with the density chosen exactly as Component C
+  (`k_for_ratio`, `_config`) on the paper's equispaced grid type.
+
+**Protocol.** Each (series, size, device) runs in a fresh process, since peak host memory is a
+per-process maximum:
+1. one untimed warm-up;
+2. the GPU peak counter reset;
+3. one timed run with the diagnostics off (Section 10's single timing, disclosed in `run.json`);
+4. the peak host memory (`ru_maxrss` on Linux; it includes the interpreter's baseline, about
+   0.9 GB with PyTorch loaded) and the GPU peak (`max_memory_allocated`, Package 1's accounting);
+5. off the clock: the errors (`make_test_error_fn`, the function behind package1's `test_eps_*`)
+   and kappa and rank of the last system by SVD (`return_final_system`).
+
+A finished run is skipped on resubmission.
+
+**Shared code.** `solve_kovasznay` keeps `history['t_assemble']`, `['t_solve']` and
+`['gpu_mem_peak_bytes']` per iteration, with the diagnostics off too. These values were already
+measured, now appended; nothing else changes. The paper's Kovasznay runs (P = 75-1,875), two
+B10 runs and the elasticity runs give results bit-identical to ab0484d (35 of 35 arrays).
+
+**Check C8'.** At P = 1,875, E_u, E_v, E_p and the mean-free E_p must equal package1's to 10 digits
+on each device, and the CPU time must be within 15% of package1's clean time.
+- **Attainable on Grace.** Unlike BL (batch 1), package1's own two P = 1,875 passes (waves 1 and
+  2, different jobs) agree bit for bit on every `norm_R_h` and on E_u, on both CPU and GPU, at
+  kappa about 4e5.
+- **On the laptop it fails, as expected:** errors at round-off (7e-13) differ by 8e-3 (CPU) and
+  9e-2 (GPU) relative to Grace's, and the laptop time is not Grace's.
+
+**Laptop rehearsal** (CPU 26 min, RTX 5080 GPU 5 min):
+- Every run has full rank and converges in 6 iterations.
+- **Times:**
+
+  | P | CPU (s) | GPU (s) |
+  |---|---|---|
+  | 1,875 | 5.8 | 1.6 |
+  | 2,700 | 20 | 3.6 |
+  | 3,675 | 53 | 7.9 |
+  | 4,800 | 105 | 13.8 |
+  | 7,500 | 474 | 42 |
+
+- **Exponents:** CPU time ~ P^3.13 and ~ N^1.15; GPU ~ P^2.34 and ~ N^0.99. The A100's lower P
+  exponent is expected at these sizes: assembly stays on the CPU, and the QR is not yet in its
+  cubic regime.
+- **Memory at P = 7,500:** host 7.4 GB, GPU 4.5 GB, far below 40 GB.
+- **kappa:** 3.9e5 (P = 1,875) to 4.8e10 (P = 7,500).
+
+Jobs:
+- `p2s2_scaling_cpu_a.slurm` (timed-cpu) and `p2s2_scaling_gpu.slurm` (timed) carry the
+  Kovasznay series.
+- Batch 4 adds Beltrami and sets their walltimes (the SU plan's 2 h and 1.5 h until then).
+- `summarize` runs at assembly, after both devices.
+
+Tests: `tests/test_p2s2_scaling.py`.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 2: item 6b (P2-9), boundary-conforming bases
 
 **Code** (Section 9.2): `experiments/p2_9_bases.py`. New, plus a small refactor of item 6a's driver

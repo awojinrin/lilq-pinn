@@ -753,6 +753,9 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         'pde_residual': [], 'continuity_residual': [],
         'solve_time': [], 'cond_number': [],
         'cholesky_shift': [], 'kappa_AtA': [],      # linear_solver='normal' only
+        # Package 2, item 7 (scaling): the clock's two parts per iteration, kept
+        # with the diagnostics off too, and the GPU solve's peak memory (None on CPU)
+        't_assemble': [], 't_solve': [], 'gpu_mem_peak_bytes': [],
     }
 
     tracker = None
@@ -948,6 +951,9 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         history['pde_residual'].append(pde_res)
         history['continuity_residual'].append(cont_res)
         history['solve_time'].append(dt)
+        history['t_assemble'].append(t_assemble_s)
+        history['t_solve'].append(t_solve_s)
+        history['gpu_mem_peak_bytes'].append(gpu_mem_peak_bytes)
         history['cond_number'].append(
             float(np.linalg.cond(A_sys)) if analyze_conditioning else float('nan')
         )
