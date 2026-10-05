@@ -139,32 +139,37 @@ def refine(config, first=FIRST_INTERVALS, last=MAX_INTERVALS, agreement=AGREEMEN
     return prev, {'n_intervals': n // 2, 'steps': steps, 'passed': False}
 
 
-def write_references(out_root, cases=('viscous', 'gravity')):
-    from lilq.references import save_npz_atomic, write_text_atomic
+def write_reference(out_root, case, nu):
+    """Refine and store one reference, ``reference/bl_fd_ref_<case>_nu<nu>.npz``
+    (written atomically: concurrent jobs may write the same file, with the
+    same contents). Returns its refinement record."""
+    from lilq.references import save_npz_atomic
     from problems.buckley_leverett import TEST_GRID
     ref_dir = Path(out_root) / 'reference'
     ref_dir.mkdir(parents=True, exist_ok=True)
-    records = []
-    for case in cases:
-        for nu in NUS[case]:
-            config, _, _ = setup(case, SIZES[case][0], nu)
-            u, rec = refine(config)
-            x = np.linspace(*config.x_domain, TEST_GRID[0])
-            t = np.linspace(0.0, config.T_final, TEST_GRID[1])
-            meta = {'problem': f'Buckley-Leverett, {case}, nu = {nu_label(nu)} (D = {config.D_coef:g}), N_g = '
-                               f'{config.N_g:g}, M = {config.M_param:g}, T = {config.T_final:g}',
-                    'method': 'finite differences (problems.buckley_leverett.reference_solution), refined by '
-                              f'doubling from {FIRST_INTERVALS} intervals until two successive solutions agree '
-                              f'to {AGREEMENT:g}', 'grid': '201 x 201, u[i, j] at (x[i], t[j])',
-                    **rec, 'commit': current_commit()}
-            save_npz_atomic(reference_path(ref_dir, case, nu), x=x, t=t, u=u, meta=np.array(json.dumps(meta)))
-            records.append({'case': case, 'nu': nu, **rec})
-            last = rec['steps'][-1]['rel_diff_to_previous']
-            print(f"  {case:7s} nu = {nu_label(nu):5s}: {rec['n_intervals']} intervals, last difference "
-                  f"{last:.2e} ({'C7 passed' if rec['passed'] else 'C7 FAILED'})", flush=True)
+    config, _, _ = setup(case, SIZES[case][0], nu)
+    u, rec = refine(config)
+    x = np.linspace(*config.x_domain, TEST_GRID[0])
+    t = np.linspace(0.0, config.T_final, TEST_GRID[1])
+    meta = {'problem': f'Buckley-Leverett, {case}, nu = {nu_label(nu)} (D = {config.D_coef:g}), N_g = '
+                       f'{config.N_g:g}, M = {config.M_param:g}, T = {config.T_final:g}',
+            'method': 'finite differences (problems.buckley_leverett.reference_solution), refined by '
+                      f'doubling from {FIRST_INTERVALS} intervals until two successive solutions agree '
+                      f'to {AGREEMENT:g}', 'grid': '201 x 201, u[i, j] at (x[i], t[j])',
+            **rec, 'commit': current_commit()}
+    save_npz_atomic(reference_path(ref_dir, case, nu), x=x, t=t, u=u, meta=np.array(json.dumps(meta)))
+    last = rec['steps'][-1]['rel_diff_to_previous']
+    print(f"  {case:7s} nu = {nu_label(nu):5s}: {rec['n_intervals']} intervals, last difference "
+          f"{last:.2e} ({'C7 passed' if rec['passed'] else 'C7 FAILED'})", flush=True)
+    return {'case': case, 'nu': nu, **rec}
+
+
+def write_references(out_root, cases=('viscous', 'gravity')):
+    from lilq.references import write_text_atomic
+    records = [write_reference(out_root, case, nu) for case in cases for nu in NUS[case]]
     c7 = {'check': 'C7 (item 6)', 'agreement': AGREEMENT, 'passed': all(r['passed'] for r in records),
           'references': records, 'commit': current_commit()}
-    write_text_atomic(ref_dir / 'bl_fd_refinement.json', json.dumps(c7, indent=2))
+    write_text_atomic(Path(out_root) / 'reference' / 'bl_fd_refinement.json', json.dumps(c7, indent=2))
     return c7
 
 

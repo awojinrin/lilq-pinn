@@ -17,6 +17,80 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 2: item 6b (P2-9), boundary-conforming bases
+
+**Code** (Section 9.2): `experiments/p2_9_bases.py`. New, plus a small refactor of item 6a's driver
+(`write_reference`, one reference at a time; the reference it writes is bit-identical). LiL-Q,
+K_max = 60 with the target off; the paper rule's stop is read from the log (the iteration is
+deterministic).
+
+**Bratu**, P = 25, 100, 225, from zero:
+- `sin_sin`: `create_basis_2d('sin_sin')`, sin(i pi x) sin(j pi y), i, j <= p_d;
+- `chebyshev_weak`: T_i(2x-1) T_j(2y-1) with the paper's weak rows (lambda_bc = 10);
+- everything else is `run_bratu.paper_setup`, with `eps_ref` against the p = 48 reference.
+
+**BL, both cases**, P = 64-1,024, from both initial guesses:
+- `lifted_sine` is the basis as specified: S = (1 - x) + x(1 - x) sum beta_ij sin(i pi x) phi_j(t),
+  with phi_j the mixed Fourier set in t (viscous) or the cosine set (gravity).
+- **Made without touching shared code.** The lifting is one extra column with its coefficient
+  fixed at 1, moved to the right-hand side. The system, loss and residual vector are the paper's
+  own builders (`_make_lil_q_system_fn` etc.), so the quasilinearization and weights are
+  exactly the paper's. The tracker's B2 check (A beta - b against the residual) is <= 4e-14 on
+  every run.
+- **Grid:** the paper's (the same call as `run_lil_q`; same counts and weights as the paper rows,
+  tested).
+- **Guesses:** `zero` is beta = 0 (S = 1 - x); `ic` is the paper's least-squares fit of the
+  initial profile minus the lifting.
+- **References:** nu = 0.1, refined to 1e-6 as in item 6a; gravity at nu = 0.1 is new here
+  (8,000 intervals).
+
+**Additions, labelled as such:**
+- the paper's bases on the same references and machine (Bratu from zero; BL both guesses, as B8);
+- `lifted_plain_sine`, BL with the same lifting and plain sin(i pi x) phi_j(t);
+- `delta_P` on every row (the reference's least-squares distance to the trial space on the test
+  grid, the lifting subtracted) and `eps_over_delta`.
+
+**Why the plain-sine variant.** The specified factor x(1 - x) makes the space a sine series of
+w / (x(1 - x)), w = S - (1 - x), which does not vanish at x = 0, 1, so it converges slowly. The
+plain sine series of w does vanish there, and its odd extension is smooth because
+S_xx(0) = S_xx(1) = 0 (f'(1) = f'(0) = 0). Best-approximation distances of the viscous reference:
+
+| P | as specified | plain sine | paper's basis |
+|---|---|---|---|
+| 64 | 2.4e-2 | 6.1e-3 | 1.3e-2 |
+| 256 | 9.2e-3 | 4.1e-4 | 1.0e-3 |
+| 576 | 5.2e-3 | 1.0e-4 | 1.2e-4 |
+| 1,024 | 3.4e-3 | 4.9e-5 | 2.4e-5 |
+
+For gravity all three are within a factor of about 3 (the front dominates).
+
+**Laptop results** (57 runs, 28 min):
+- **Bratu sin_sin is poor:** eps_ref 3.1e-2, 9.5e-3, 3.0e-2, never meeting the target. Its space
+  converges slowly (delta_P 5.5e-3 to 5.2e-4). Every sin(i pi x) sin(j pi y) has zero Laplacian
+  on the boundary, where the solution has Delta u = -lambda = -6.2, so the collocated residual
+  cannot vanish near the boundary.
+- **Bratu chebyshev_weak** (6.7e-4 and 1.2e-4 at the stop, P = 100 and 225) is at parity with the
+  paper's basis (3.5e-4, 5.8e-5).
+- **BL viscous, `lifted_sine` as specified:** 0.11-0.15, never meeting the target.
+- **BL viscous, `lifted_plain_sine`, the best basis tested:**
+  - errors at the stop of 1.9e-3 (P = 256), 3.6e-4 (P = 576) and 9.9e-5 (P = 1,024) from the
+    initial profile, against the paper's 3.8e-2, 9.0e-4 and 1.9e-4;
+  - the paper's target met in 3-4 iterations at P >= 256 (2 and 9 at P = 64);
+  - kappa 4e5-3e12 against the paper's 4e9-1e17, with rank 576 of 576 at P = 576 (the paper:
+    561).
+- **BL gravity:** the paper's cosine x Fourier basis is best (1.2e-2 at P = 1,024). The sine
+  variants are 3e-2 to 7e-2 and do not meet the targets.
+- **Consistency:** the paper-basis rows reproduce Package 1: gravity P = 64 from zero meets the
+  target at k = 43, as wave 4; viscous P = 576 from the initial profile gives 9.011e-4, as
+  item 6a's nu = 0.1 run.
+
+**For Dr. Younis:** the x(1 - x) factor of Section 9.2 makes the lifted basis a poor
+approximation space; the plain-sine lifting confirms Section 7.4's guidance for the viscous case.
+
+Job: `scripts/cluster/package2/p2s2_bases.slurm` (cpu, 1 h). Tests: `tests/test_p2s2_bases.py`.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 1: item 6a (P2-2), the Buckley-Leverett nu-refinement
 
 **Code** (Section 9.1): `experiments/p2_2_nu_refinement.py`, with stages `reference` and `runs`.
