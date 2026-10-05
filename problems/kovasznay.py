@@ -39,7 +39,7 @@ from lilq.instrumentation import EPS_MACH
 from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker, last_solve_row
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
-from lilq.test_errors import max_abs, rel_l2, tensor_grid_values
+from lilq.test_errors import grid_evaluator, max_abs, rel_l2, tensor_grid_values
 
 try:
     import torch
@@ -82,6 +82,19 @@ class KovasznayConfig:
     # edge sqrt(lambda_bc / n_edge)), or 'clenshaw_curtis' (CGL grids only):
     # tensor Clenshaw-Curtis quadrature weights, see _row_weights.
     weights: str = 'equal'
+    # Package 2, item 4 (P2-4): the ELM basis and the normal-equation control.
+    # basis_type='elm_uniform': one tanh random-feature basis of elm_neurons,
+    # weights and biases U(-elm_sigma, elm_sigma) drawn with elm_seed, shared by
+    # u, v and p (each field its own coefficients). layout_P > 0 sizes the
+    # collocation set as for that P (the paper's P = 1,875 layout for the
+    # 1,800-coefficient ELM). linear_solver='normal' solves each subproblem
+    # from A^T A beta = A^T f by Cholesky, with a shift 1e-16 tr(A^T A) / P only
+    # if Cholesky fails. The defaults change nothing.
+    elm_neurons: int = 600
+    elm_sigma: float = 1.0
+    elm_seed: int = 0
+    layout_P: int = 0
+    linear_solver: str = 'gelsy'
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -401,6 +414,28 @@ def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray, timings: Optional[dict] = None):
     return x_host, R_diag, peak_mem_bytes
 
 
+def _solve_normal_equations(A: np.ndarray, b: np.ndarray):
+    """Package 2, item 4 (the normal-equation control): A^T A beta = A^T b by
+    Cholesky, in double precision, no penalty. Only if the factorization fails,
+    the diagonal is shifted by 1e-16 tr(A^T A) / P and it is retried.
+    Returns ``(beta, status, A^T A)``, status 'none' (no shift), 'shifted', or
+    'failed' (Cholesky failed with the shift too; beta is None -- the
+    specification has no further step, and a larger shift would be the
+    penalty it excludes)."""
+    AtA, Atb = A.T @ A, A.T @ b
+    try:
+        return scipy.linalg.cho_solve(scipy.linalg.cho_factor(AtA, lower=False, check_finite=False), Atb,
+                                      check_finite=False), 'none', AtA
+    except np.linalg.LinAlgError:
+        shift = 1e-16 * np.trace(AtA) / AtA.shape[0]
+        M = AtA + shift * np.eye(AtA.shape[0])
+        try:
+            return scipy.linalg.cho_solve(scipy.linalg.cho_factor(M, lower=False, check_finite=False), Atb,
+                                          check_finite=False), 'shifted', AtA
+        except np.linalg.LinAlgError:
+            return None, 'failed', AtA
+
+
 def _qr_degeneracy_ratio(R_diag: np.ndarray) -> float:
     """$\\min_p|R_{pp}|/\\max_p|R_{pp}|$ -- Section 3.2's rank-degeneracy
     flag threshold check is ``< 1e-13`` on this ratio."""
@@ -528,11 +563,15 @@ def make_test_error_fn(physics, basis_u, basis_v, basis_p):
     ue, ve, pe = physics.exact_u(X, Y), physics.exact_v(X, Y), physics.exact_p(X, Y)
     pe_mf = pe - pe.mean()
     Pu, Pv = basis_u.n_basis, basis_v.n_basis
+    # A shared non-tensor basis (the ELM of Package 2, item 4) is evaluated on the grid once.
+    ev_u = grid_evaluator(basis_u, [xs, ys])
+    ev_v = ev_u if basis_v is basis_u else grid_evaluator(basis_v, [xs, ys])
+    ev_p = ev_u if basis_p is basis_u else grid_evaluator(basis_p, [xs, ys])
 
     def test_errors(beta):
-        u = tensor_grid_values(basis_u, beta[:Pu], [xs, ys])
-        v = tensor_grid_values(basis_v, beta[Pu:Pu + Pv], [xs, ys])
-        p = tensor_grid_values(basis_p, beta[Pu + Pv:], [xs, ys])
+        u = ev_u(beta[:Pu])
+        v = ev_v(beta[Pu:Pu + Pv])
+        p = ev_p(beta[Pu + Pv:])
         return {
             'eps_u': rel_l2(u, ue), 'eps_v': rel_l2(v, ve), 'eps_p': rel_l2(p, pe),
             'eps_p_meanfree': rel_l2(p - p.mean(), pe_mf),
@@ -618,12 +657,19 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     nu = physics.nu
 
     # Create bases (same for u, v, p)
-    basis_u = create_basis_2d(config.basis_type, config.N_x, config.N_y,
-                              config.x_domain, config.y_domain)
-    basis_v = create_basis_2d(config.basis_type, config.N_x, config.N_y,
-                              config.x_domain, config.y_domain)
-    basis_p = create_basis_2d(config.basis_type, config.N_x, config.N_y,
-                              config.x_domain, config.y_domain)
+    if config.basis_type == 'elm_uniform':
+        from lilq.basis import ELMBasis2D_Uniform
+        basis_u = basis_v = basis_p = ELMBasis2D_Uniform(config.elm_neurons, config.x_domain, config.y_domain,
+                                                         sigma=config.elm_sigma, seed=config.elm_seed)
+    else:
+        basis_u = create_basis_2d(config.basis_type, config.N_x, config.N_y,
+                                  config.x_domain, config.y_domain)
+        basis_v = create_basis_2d(config.basis_type, config.N_x, config.N_y,
+                                  config.x_domain, config.y_domain)
+        basis_p = create_basis_2d(config.basis_type, config.N_x, config.N_y,
+                                  config.x_domain, config.y_domain)
+    if config.linear_solver not in ('gelsy', 'normal') or (config.linear_solver == 'normal' and config.use_gpu):
+        raise ValueError(f"linear_solver {config.linear_solver!r} (normal equations on the CPU only)")
 
     Pu, Pv, Pp = basis_u.n_basis, basis_v.n_basis, basis_p.n_basis
     P_total = Pu + Pv + Pp
@@ -639,7 +685,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
     t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
 
     # Collocation
-    pts = _generate_collocation(config, P_total)
+    pts = _generate_collocation(config, config.layout_P or P_total)
     xp, yp = pts['x_pde'], pts['y_pde']
     n_pde = pts['n_pde']
 
@@ -706,6 +752,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         'iteration': [], 'coeff_change': [],
         'pde_residual': [], 'continuity_residual': [],
         'solve_time': [], 'cond_number': [],
+        'cholesky_shift': [], 'kappa_AtA': [],      # linear_solver='normal' only
     }
 
     tracker = None
@@ -744,6 +791,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         t_diag += time.perf_counter() - t_diag0
 
     # ── Quasilinearization loop ──
+    normal_failed = False             # linear_solver='normal': Cholesky failed even with the shift
+    pde_res = cont_res = float('nan')  # set by the first iteration (absent if the control stops at k = 0)
     for k in range(config.max_iter):
         t_iter = time.perf_counter()
         t0 = time.perf_counter()
@@ -843,6 +892,18 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 # Section 3.2 -- the GPU iterate itself still drives the
                 # quasilinearization forward; substituting the CPU result
                 # here would silently change what "the GPU run" measures.
+        elif config.linear_solver == 'normal':
+            t0 = time.perf_counter()
+            theta_new, status, AtA = _solve_normal_equations(A_sys, b_sys)
+            t_solve_s = time.perf_counter() - t0
+            solver_path, rank_gelsy = 'cpu_normal_cholesky', None
+            history['cholesky_shift'].append(status)
+            history['kappa_AtA'].append(float(np.linalg.cond(AtA)) if diagnostics else float('nan'))
+            if theta_new is None:     # the control cannot continue: the iterate stays, the run stops
+                normal_failed = True
+                if verbose:
+                    print(f"  Iter {k:3d}: Cholesky of A^T A failed even with the shift; stopping.")
+                break
         else:
             t0 = time.perf_counter()
             theta_new, _residues, rank_gelsy, _s = scipy.linalg.lstsq(
@@ -921,7 +982,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
 
     if tracker is not None:
         t_diag0 = time.perf_counter()
-        iteration_logger.record(**tracker.finish(k=k + 1))
+        iteration_logger.record(**tracker.finish(k=k if normal_failed else k + 1))
         t_diag += time.perf_counter() - t_diag0
 
     # The Section 3.1 diagnostics are passive: off the method's clock.
@@ -961,7 +1022,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                           for edge in bc_blocks}
         w_pin = float(np.sqrt(config.lambda_bc))
         thread_env = capture_blas_thread_env()
-        final_rel_delta = history['coeff_change'][-1]
+        final_rel_delta = history['coeff_change'][-1] if history['coeff_change'] else float('inf')
         metadata = build_run_metadata(
             N_total=3 * n_pde + 2 * 4 * n_bc_edge + 1,
             N_composition={
@@ -1000,10 +1061,12 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 'p': {'modes_x': config.N_x, 'modes_y': config.N_y, 'total': int(Pp)},
             },
             initial_coefficients='zero',
-            solver_driver='gpu_qr' if config.use_gpu else 'gelsy', rcond=EPS_MACH,
+            solver_driver='gpu_qr' if config.use_gpu else ('normal_cholesky' if config.linear_solver == 'normal'
+                                                             else 'gelsy'), rcond=EPS_MACH,
             stopping_rule={'type': 'rel_coeff_change', 'tolerance': config.tol},
             K_max=config.max_iter,
-            stopping_reason='target' if final_rel_delta < config.tol else 'iteration_cap',
+            stopping_reason=('cholesky_failed' if normal_failed else
+                             'target' if final_rel_delta < config.tol else 'iteration_cap'),
             first_stall_iteration=first_stall_iteration(iteration_logger.rows),
             b2_check=tracker.b2_check,
             kappa_qr_raw_ratio=tracker.kappa_qr_raw_ratio,
@@ -1017,7 +1080,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         'basis_u': basis_u, 'basis_v': basis_v, 'basis_p': basis_p,
         'theta_u': theta_u, 'theta_v': theta_v, 'theta_p': theta_p,
         'n_params': P_total,
-        'n_outer_iters': k + 1,
+        'n_outer_iters': k if normal_failed else k + 1,
+        'normal_failed': normal_failed,
         'solve_time_total': total_time,
         'diagnostics_time': t_diag,
         'rel_l2_u': rel_l2_u, 'rel_l2_v': rel_l2_v, 'rel_l2_p': rel_l2_p,

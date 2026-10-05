@@ -17,6 +17,46 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 2, batch 2b: item 4 (P2-14, P2-4), the ELM sweep, the ELM basis on Kovasznay, the normal-equation control
+
+**Code** (Section 7). New, opt-in; the defaults change nothing (the paper's Kovasznay coefficients
+are bit-identical at P = 75, 300 and 1,875):
+- `lilq.basis.ELMBasis2D_Uniform`: weights and biases U(-sigma, sigma), drawn in the order of the
+  other ELM classes. sigma = sqrt(6/627) and 1/sqrt(2) reproduce the Xavier and PyTorch-default
+  bases exactly.
+- `KovasznayConfig`: `basis_type='elm_uniform'` (one basis of `elm_neurons` shared by u, v, p, as in
+  Zhou & Zhang: 3 x 600 coefficients), `layout_P` (the collocation set sized as for that P: the
+  paper's 1,875 layout, 5,564 rows), and `linear_solver='normal'` (A^T A beta = A^T f by Cholesky;
+  the shift 1e-16 tr / P only if it fails).
+- `lilq.test_errors.grid_evaluator`: the per-iterate test errors for a non-tensor basis (the
+  basis is evaluated on the grid once).
+- `experiments/p2_14_elm.py`, with two stages: `sweep` (7.1) and `kovasznay` (C5, the sigma
+  sweep, seeds 0-4 by QR and by the normal equations).
+
+**Rehearsal findings (laptop):**
+- **C5 passes:** on the Chebyshev basis at P = 300, the normal-equation and QR solves agree at
+  k = 1 to 2.9e-14 (1e-8 required); kappa(A^T A) is 1.1e5, so kappa(A) is about 330.
+- **The normal-equation control breaks down at the first subproblem on the ELM bases:** Cholesky
+  fails even with the prescribed shift at sigma = 0.3, 1 and 3 (kappa(A^T A) as computed: 3e20
+  to 1e21; the QR runs have kappa(A) about 5e18). The specification has no step after the shift,
+  and a larger shift would be the penalty it excludes. So the run stops there: stopping reason
+  `cholesky_failed`, with the status and kappa(A^T A) in `normal_eq.csv`. This is a result for
+  the advisor -- as specified, the control produces no iterates, so it cannot show the
+  stagnation it was meant to test.
+- **QR on the ELM basis is accurate.** At sigma = 1 it reaches E_u 2.2e-10 (seed 0) and 3.3e-10
+  (seed 1) at K_max = 60 without meeting the coefficient-change rule. The rank is 723-726 of
+  1,800 and kappa(A) about 5e18. Each run takes about 3 min.
+- **The Table 3 check runs:** seed 42 reproduces the two ELM rows' ranks (43, 176) and their
+  ||R||_h^2 to the printed digits (4.9e-2, 4.4e-4), but not bit for bit on this laptop (0.06%
+  and 0.2% apart; kappa about 1e18, rank-deficient, so gelsy's rank decisions follow the BLAS).
+  Grace, the original hardware, will show whether it is exact there. Each sweep run takes about
+  35 s.
+
+Job: `scripts/cluster/package2/p2s2_elm.slurm` (cpu, 2 h; about 1 h expected). Tests:
+`tests/test_p2s2_elm.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 2, batch 2a: item 8 (P2-10), the manufactured elasticity solution -- and why it stalls
 
 **What** (Section 11). `problems.elasticity.ManufacturedElasticityPhysics`:

@@ -50,6 +50,21 @@ def tensor_grid_values(basis, coeffs: np.ndarray, axes: Sequence[np.ndarray],
     return result
 
 
+def grid_evaluator(basis, axes: Sequence[np.ndarray]):
+    """``coeffs -> values on the tensor grid axes[0] x axes[1]``. A
+    tensor-product basis uses :func:`tensor_grid_values`; any other basis (a
+    random-feature ELM, say) is evaluated on the grid once and the matrix
+    kept, so each later call is one matrix-vector product."""
+    try:
+        _factor_bases(basis)
+        return lambda coeffs: tensor_grid_values(basis, coeffs, axes)
+    except TypeError:
+        mesh = np.meshgrid(*[np.asarray(a, dtype=np.float64) for a in axes], indexing='ij')
+        Phi = basis.evaluate(*[m.ravel() for m in mesh])
+        shape = mesh[0].shape
+        return lambda coeffs: (Phi @ np.asarray(coeffs, dtype=np.float64)).reshape(shape)
+
+
 def rel_l2(pred: np.ndarray, exact: np.ndarray) -> float:
     """``||pred - exact||_2 / ||exact||_2`` over the test grid (equal to the
     relative RMS error every problem in this codebase reports)."""

@@ -648,6 +648,41 @@ class ELMBasis2D_TorchDefault(ELMBasis2D_Xavier):
         self.gamma = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-bound, bound)
 
 
+class ELMBasis2D_Uniform(ELMBasis2D_Xavier):
+    """ELM basis with weights and biases uniform on (-sigma, sigma), drawn in
+    the order of the other ELM classes (alpha, beta, gamma), so that sigma =
+    sqrt(6 / (2 + n_hidden)) reproduces ``ELMBasis2D_Xavier`` and sigma =
+    1/sqrt(2) ``ELMBasis2D_TorchDefault`` for the same seed. Package 2,
+    item 4 (the hidden-weight scale sweep and the ELM basis on Kovasznay)."""
+
+    def __init__(self, n_hidden: int,
+                 domain_x: Tuple[float, float],
+                 domain_y: Tuple[float, float],
+                 sigma: float,
+                 activation: str = 'tanh',
+                 seed: Optional[int] = 42,
+                 dtype=None,
+                 device: str = 'cpu'):
+        if dtype is None:
+            dtype = torch.float64
+        self._n_hidden = n_hidden
+        self._domain_x = (float(domain_x[0]), float(domain_x[1]))
+        self._domain_y = (float(domain_y[0]), float(domain_y[1]))
+        self._activation = activation
+        self._dtype = dtype
+        self._device = device
+        self._ax, self._bx = self._domain_x
+        self._ay, self._by = self._domain_y
+        self._Lx = self._bx - self._ax
+        self._Ly = self._by - self._ay
+        self.sigma = float(sigma)
+        if seed is not None:
+            torch.manual_seed(seed)
+        self.alpha = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-self.sigma, self.sigma)
+        self.beta = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-self.sigma, self.sigma)
+        self.gamma = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-self.sigma, self.sigma)
+
+
 # ==============================================================================
 #                      AUGMENTED BASIS (with polynomial lift)
 # ==============================================================================
