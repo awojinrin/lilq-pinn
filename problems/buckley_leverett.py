@@ -584,9 +584,20 @@ def make_test_error_fn(basis, config: BLConfig):
     return test_errors
 
 
+def _with_eps_ref(test_error_fn, basis, reference_npz):
+    """The log's test errors, plus ``eps_ref`` against the reference in
+    ``reference_npz`` when one is given (as ``problems.bratu._with_eps_ref``)."""
+    if reference_npz is None:
+        return test_error_fn
+    from lilq.references import make_eps_ref_fn
+    eps_ref = make_eps_ref_fn(basis, reference_npz)
+    return lambda beta: {**test_error_fn(beta), **eps_ref(beta)}
+
+
 def run_lil_q(config: BLConfig, opt: BLOptConfig,
               verbose=True, diagnostics_callback=None,
-              iteration_logger=None, run_json_path=None, diagnostics=True):
+              iteration_logger=None, run_json_path=None, diagnostics=True,
+              reference_npz=None):
     """Run LiL-Q for Buckley-Leverett (viscous or gravity, transparently --
     ``physics.flux``/``flux_derivative`` handle both via ``config.N_g``).
 
@@ -605,6 +616,12 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,
         variants: gravity starts from zero, viscous (no gravity) from the
         least-squares fit of ``exp(-10*x)`` -- the spec's own callout
         ("the fitted initial profile for viscous Buckley-Leverett").
+    reference_npz : str or Path, optional
+        Package 2 (Section 9.1): a reference saturation (``x, t, u`` on the
+        test grid, ``lilq.references`` format); the log then also carries
+        ``eps_ref`` against it, beside ``eps_u`` against
+        :func:`reference_solution`. Diagnostics only: the solve does not see
+        it. Omitted, nothing changes.
     """
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
@@ -664,7 +681,7 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,
             compute_residual_vector_fn=residual_vector_fn,
             n_interior_rows=n_pde,
             interior_weight=np.sqrt(opt.lambda_pde / n_pde),
-            test_error_fn=make_test_error_fn(basis, config),
+            test_error_fn=_with_eps_ref(make_test_error_fn(basis, config), basis, reference_npz),
         )
 
     coefficients, metrics, summary = solve_lil_q(

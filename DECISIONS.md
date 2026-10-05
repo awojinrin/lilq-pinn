@@ -17,6 +17,93 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 1: item 6a (P2-2), the Buckley-Leverett nu-refinement
+
+**Code** (Section 9.1): `experiments/p2_2_nu_refinement.py`, with stages `reference` and `runs`.
+
+**Configurations:**
+- Each run is `run_bl.paper_setup(N, gravity)` with only D = -nu changed: basis, random tensor
+  grid (seed 42, N/P 9.75), weights, initial guess and K_max = 60 are the paper's.
+- Viscous: nu in {0.1, 0.05, 0.02, 0.01} at P = 576 and 1,024, plus P = 1,600 at nu <= 0.02.
+- Gravity: nu in {0.05, 0.02} at P = 576 and 1,024. It runs: item 6 spends far below the
+  220 SU at which its skip rule would apply.
+- nu < 0.01 is refused in code.
+
+**Two passes, as Package 1's:**
+- `paper`: the paper's loss target, K_max = 60. It gives the stop, its error and its field for
+  the overshoot.
+- `kmax`: target 0, all 60 iterations. It gives eps_ref at 60, kappa, rank, and the termination
+  rule (n_s = 2, tau_chi = 0.1, tau_r = 0.01) with its A/C class (`stopping_rule_table`).
+- P = 1,600 has no paper target, so it has the kmax pass only.
+
+**References (C7).** Package 1's finite-difference reference is refined by doubling from 4,000
+intervals until two successive solutions agree to 1e-6 on the 201 x 201 grid. Stored as
+`reference/bl_fd_ref_<case>_nu<nu>.npz`. On the laptop:
+
+| Case | nu | Intervals | Last difference |
+|---|---|---|---|
+| viscous | 0.1 | 8,000 | 1.5e-7 |
+| viscous | 0.05 | 8,000 | 3.1e-7 |
+| viscous | 0.02 | 16,000 | 2.7e-7 |
+| viscous | 0.01 | 16,000 | 7.5e-7 |
+| gravity | 0.05 | 8,000 | 7.3e-7 |
+| gravity | 0.02 | 16,000 | 5.7e-7 |
+
+Each reference takes seconds. SciPy's BDF integrator can warn ("invalid value encountered in
+subtract") on a trial step it then rejects. The accepted solutions are finite, in [0, 1], and
+identical bit for bit between two runs, and the refinement now refuses any reference that is not.
+
+**Shared code.** `problems.buckley_leverett.run_lil_q` gains `reference_npz`: an `eps_ref` column
+against a given reference, beside `eps_u` (the pattern of Bratu and Burgers). Without it nothing
+changes: the paper's BL runs (both cases, every P) give coefficients, `norm_R_h` and `eps_u`
+identical bit for bit to the released code (ab0484d).
+
+**Check C8 cannot be met at 1e-10 for these two runs, even on Grace.** The nu = 0.1 reruns must
+equal package1's `norm_R_h` at every k to 1e-10. On the laptop they differ by 2e-4 to 6e-3,
+already 1.6e-10 at k = 0, amplified at kappa 1e16 (P = 576) and 9e16 (P = 1,024); at P = 1,024
+gelsy keeps 1,007 columns against Grace's 1,004. The code is not the cause: release and
+`v3-dev` give identical bits on the same machine. **Grace does not reproduce these runs to 1e-10
+either:**
+- package1's two passes share their first rows, but come from different Grace jobs (wave 1 at
+  8a3f5f7, wave 2 at 905e58c);
+- `solve_lil_q` and the BL code are identical between those commits;
+- both ran on 48 threads;
+- yet they agree only to 6.3e-5 (P = 576) and 1.1e-4 (P = 1,024).
+
+What was done:
+- C8 is implemented exactly as written: pass/fail at 1e-10.
+- It also records, per pass: the same stopping iteration (the laptop matches on all four), the
+  relative differences of the final loss and `eps_u`, and package1's own paper-vs-kmax agreement,
+  the floor any rerun can reach.
+- The job runs on a whole 48-thread node, package1's setting, for C8's best chance.
+
+**For Dr. Younis:** C8 at 1e-10 is unattainable for viscous BL at these sizes; propose that it
+read as agreement to Grace's own run-to-run level, with the same stopping iteration.
+
+**Laptop results** (for the report; Grace's are the reported ones):
+- **nu = 0.1:** target at k = 4; eps_ref 9.0e-4 (P = 576), 1.9e-4 (P = 1,024).
+- **nu <= 0.05:** no run meets the paper's target in 60 iterations.
+- **Error at the stop:**
+
+  | nu | P = 576 | P = 1,024 |
+  |---|---|---|
+  | 0.05 | 3.6e-2 | 1.6e-2 |
+  | 0.02 | 0.15 | 0.13 |
+  | 0.01 | 0.22 | 0.19 |
+
+- **Overshoot (Gibbs onset):** grows as nu falls, to 0.09 at P = 1,024, nu = 0.01.
+- **P = 1,600:** the undamped iteration does not converge in 60 steps. The loss goes up and down
+  (9.2, 6.7, 0.77, 0.98, ..., 0.24 at nu = 0.01). Errors are 0.25 (nu = 0.02) and 0.79
+  (nu = 0.01), with overshoots of 3.4 and 5.1. At nu = 0.01 the termination rule never fires.
+  N/P and the grid are the paper's, checked.
+- **Gravity:** errors 3.3e-2 to 0.10; classed A everywhere.
+
+Job: `scripts/cluster/package2/p2s2_nu_refinement.slurm` (timed-cpu, 1.5 h; 37 min on the laptop).
+`su_plan.csv`: item 6's combined row is split into `p2s2_nu_refinement` and `p2s2_bases`
+(batch 2). Tests: `tests/test_p2s2_nu_refinement.py`.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 0: item 2's A100 rerun job within the item's cap
 
 The audit of 5 October (`Post-JCP/Package2_Stage2_status.md`, Section 6) found a problem in the
