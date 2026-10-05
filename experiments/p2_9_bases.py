@@ -20,7 +20,8 @@ Everything else is ``run_bratu.paper_setup``. ``eps_ref`` is against the p = 48
 reference.
 
 **Buckley-Leverett, both cases** (P = 64, 256, 576, 1,024), with the lifted
-sine basis ``lifted_sine``:
+sine basis ``lifted_sine_x(1-x)`` (the labels are the advisor's, reply of
+5 October, Section 2; run folders ``lifted_sine_x1mx``):
 
     S = (1 - x) + x (1 - x) sum_ij beta_ij sin(i pi x) phi_j(t),
 
@@ -52,8 +53,9 @@ nu = 0.1, refined to 1e-6 as in item 6a
 - **The paper's bases**, on the same references and machine. Bratu: the
   paper's mixed Fourier, from zero. BL: the paper's basis, both guesses, as
   B8. Their ``basis`` column reads ``paper (<type>)``.
-- **BL ``lifted_plain_sine``:** the same lifting with plain sin(i pi x) phi_j(t),
-  without the factor x(1 - x).
+- **BL ``lifted_sine_plain``:** the same lifting with plain sin(i pi x) phi_j(t),
+  without the factor x(1 - x). The advisor's reply asks for both, and the
+  manuscript will state the plain-sine result.
 
 Why the second one. The factor makes the space a sine series of
 w / (x(1 - x)), w = S - (1 - x), which does not vanish at the ends, so it
@@ -192,9 +194,14 @@ def bratu_run(basis_label, N, out, ref_dir):
 
 # ---------------------------------------------------------------- Buckley-Leverett
 
+# the lifted bases: label -> (run folder name, with the factor x(1 - x))
+LIFTED = {'lifted_sine_x(1-x)': ('lifted_sine_x1mx', True), 'lifted_sine_plain': ('lifted_sine_plain', False)}
+
+
 def bl_run(case, basis_label, N, guess, out, ref_dir):
-    """One BL run, K_max = 60 with the target off. ``basis_label`` 'lifted_sine'
-    (the specified basis), 'lifted_plain_sine' or 'paper'; ``guess`` 'zero' or 'ic'."""
+    """One BL run, K_max = 60 with the target off. ``basis_label``
+    'lifted_sine_x(1-x)' (the specified basis), 'lifted_sine_plain' or 'paper';
+    ``guess`` 'zero' or 'ic'."""
     if basis_label == 'paper':
         return _bl_paper_run(case, N, guess, out, ref_dir)
     from experiments.run_bl import GRAVITY_TARGET_LOSSES, TARGET_LOSSES, paper_setup
@@ -211,7 +218,8 @@ def bl_run(case, basis_label, N, guess, out, ref_dir):
     assert tuple(config.x_domain) == (0.0, 1.0) and (config.S_left, config.S_right) == (1.0, 0.0)
     physics = bl.BLPhysics(config)
     T = config.T_final
-    basis = LiftedSineBasis(N, (0.0, T), 'cos' if gravity else 'both', weighted=basis_label == 'lifted_sine')
+    folder, weighted = LIFTED[basis_label]
+    basis = LiftedSineBasis(N, (0.0, T), 'cos' if gravity else 'both', weighted=weighted)
     # the paper's grid (run_lil_q's call) and matrices
     np.random.seed(config.seed)
     pts = generate_collocation_points_2d(config.x_domain, (0, T), config.N_x, config.N_t, k_ratio=config.k_ratio,
@@ -242,7 +250,7 @@ def bl_run(case, basis_label, N, guess, out, ref_dir):
         init, _ = pretrain_lil(basis, lambda x, t: physics.initial_condition(x) - lifting(x), config.x_domain, (0, T),
                                n_grid=opt.pretrain_grid, verbose=False)
     eps = _bl_error_fn(basis, config, Path(ref_dir) / f'bl_fd_ref_{case}_nu0.1.npz')
-    run_dir = Path(out) / f'bl_{case}_{basis_label}_P{N * N}_{guess}'
+    run_dir = Path(out) / f'bl_{case}_{folder}_P{N * N}_{guess}'
     run_dir.mkdir(parents=True, exist_ok=True)
     logger = IterationLogger()
     coeffs, _, summary = solve_lil_q(system_fn, lambda beta: loss_aug(one(beta)), init, max_quasi_iters=K_MAX,
@@ -392,7 +400,7 @@ def run_all(out_root, benchmarks=('bratu', 'bl')):
         for case in ('viscous', 'gravity'):
             for N in BL_SIZES:
                 for guess in ('zero', 'ic'):
-                    for label in ('lifted_sine', 'lifted_plain_sine', 'paper'):
+                    for label in (*LIFTED, 'paper'):
                         rows.append(bl_run(case, label, N, guess, out, ref_dir))
                         _print(rows[-1])
     cols = list(dict.fromkeys(k for r in rows for k in r))

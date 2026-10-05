@@ -17,6 +17,46 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: items 2 and 6b, and Beltrami's CPU path
+
+**Item 2 (reply, Section 2, 3.2): the reference error beside iterations and loss, every size
+in the table.** `four_method_lm_medians.csv` gains `eps_ref_min` and `eps_ref_max` over the
+seeds, for LM and for L-BFGS. `summarize` also writes `lm_vs_lbfgs.md`, with one row per
+benchmark, P and device:
+- LM's median iterations (with the markers), median final loss, and median `eps_ref` with
+  its range over the seeds;
+- the same three for L-BFGS (package1's GPU runs and their Stage-1 errors);
+- the target loss.
+
+Every size is there, the small ones included. On the laptop, Bratu P = 25 has LM's median
+`eps_ref` 1.04 (0.066 to 1.5) against L-BFGS's 0.085. Times stay in the medians CSV but are
+not in the table: the optimizers ran on different devices, so no ratio is formed.
+
+**Item 6b (reply, 3.5): the advisor's labels.** The `basis` column reads `lifted_sine_x(1-x)`
+and `lifted_sine_plain`, in place of `lifted_sine` and `lifted_plain_sine`. The run folders
+are `bl_<case>_lifted_sine_x1mx_...` and `bl_<case>_lifted_sine_plain_...`, without
+parentheses so they are safe in the shell. delta_P is on every row already, the paper's
+bases and Bratu included.
+
+**Beltrami (reply, 3.6): the statement and its test.** The GPU path was repaired in batch 4
+(`_lstsq`, `gelsd` replaced by the shared GPU QR), and the CPU path is unchanged.
+`tests/test_beltrami_release_identity.py` shows it:
+- It runs the release tree (`git archive ab0484d`; `problems/beltrami.py` is the same at
+  v2.0.0) and this checkout in two subprocesses on the same machine.
+- The configuration is the paper's pinned one at a small size: N_vel = 3, N_p = 4, 499
+  coefficients, three iterations, with and without the diagnostics.
+- It asserts bitwise equality of the coefficients, the coefficient changes, and the logged
+  `norm_R_h`, `norm_Rlin_h`, kappa, `gelsy` rank, `eps_u` and ||beta||.
+
+Comparing within one machine keeps the test exact anywhere. It skips where git or the commit
+is missing, such as the cluster bundle, so Grace's preflight is unaffected.
+
+**The laptop previews** moved out of the session scratchpad, so the final report can set
+them beside the Grace results (reply, Section 5). They are in
+`Post-JCP/package2_results/laptop_preview/` (outside the repository), with an index.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: check C8 (item 6a), and a correction to batch 1
 
 **What** (the advisor's reply of 5 October, Section 1.2). `check_c8` passes a rerun at Grace's

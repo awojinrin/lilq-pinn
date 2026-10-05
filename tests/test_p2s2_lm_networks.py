@@ -121,7 +121,10 @@ def test_run_records_c3_and_the_log(tmp_path, bench):
     assert float(rows[0]['loss']) == r['c3']['lm_r_dot_r_iteration_0']
     runs, med = m.summarize(tmp_path)
     assert len(runs) == 1 and med[0]['n_seeds'] == 1
+    assert med[0]['eps_ref_min'] == med[0]['eps_ref_max'] == r['eps_ref_final']
     assert (tmp_path / 'P2_8_lm_networks' / 'four_method_lm_rows.csv').exists()
+    table = (tmp_path / 'P2_8_lm_networks' / 'lm_vs_lbfgs.md').read_text()
+    assert f'| {bench} | 25 | cpu |' in table and 'eps_ref' in table and 'time' not in table.split('\n')[4]
 
 
 def test_markers():

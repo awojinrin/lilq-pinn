@@ -63,21 +63,21 @@ def test_lifted_bl_run_on_the_paper_grid(tmp_path):
     out = tmp_path / 'P2_9_bases'
     specified = {}
     for case in ('viscous', 'gravity'):
-        lifted = specified[case] = m.bl_run(case, 'lifted_sine', 8, 'ic', out, ref)
+        lifted = specified[case] = m.bl_run(case, 'lifted_sine_x(1-x)', 8, 'ic', out, ref)
         paper = m.bl_run(case, 'paper', 8, 'ic', out, ref)
         assert lifted['bc_max_violation'] < 1e-14 and lifted['b2_max_rel_err'] < 1e-12
         assert 0 < lifted['eps_ref_60'] < 1 and lifted['rank'] <= 64
-        rl = json.loads((out / f'bl_{case}_lifted_sine_P64_ic' / 'run.json').read_text())
+        rl = json.loads((out / f'bl_{case}_lifted_sine_x1mx_P64_ic' / 'run.json').read_text())
         rp = json.loads((out / f'bl_{case}_paper_P64_ic' / 'run.json').read_text())
         assert rl['N_composition'] == rp['N_composition'] and rl['row_weights'] == rp['row_weights']   # the paper's grid
-    plain = m.bl_run('viscous', 'lifted_plain_sine', 8, 'ic', out, ref)
+    plain = m.bl_run('viscous', 'lifted_sine_plain', 8, 'ic', out, ref)
     assert plain['bc_max_violation'] < 1e-14 and plain['b2_max_rel_err'] < 1e-12
     assert 0 < plain['delta_P'] < specified['viscous']['delta_P']           # the plain sines fit better
-    assert 'plain' in json.loads((out / 'bl_viscous_lifted_plain_sine_P64_ic' / 'run.json').read_text())[
+    assert 'plain' in json.loads((out / 'bl_viscous_lifted_sine_plain_P64_ic' / 'run.json').read_text())[
         'basis_description']['family']
-    zero = m.bl_run('viscous', 'lifted_sine', 8, 'zero', out, ref)
+    zero = m.bl_run('viscous', 'lifted_sine_x(1-x)', 8, 'zero', out, ref)
     assert zero['eps_over_delta'] == pytest.approx(zero['eps_ref_stop'] / zero['delta_P'])
-    assert zero['guess'] == 'zero'
+    assert zero['guess'] == 'zero' and zero['basis'] == 'lifted_sine_x(1-x)' and plain['basis'] == 'lifted_sine_plain'
     for col in ('benchmark', 'case', 'basis', 'P', 'guess', 'k_target', 'k_rule', 'eps_ref_stop', 'eps_ref_60',
                 'kappa', 'rank'):
         assert col in zero                                            # Section 9.2's columns

@@ -535,6 +535,7 @@ def summarize(out_root, package1=None, lbfgs_errors=None):
             'time_s_median': statistics.median(r['training_time'] for r in g),
             'final_loss_median': statistics.median(r['final_loss'] for r in g),
             'eps_ref_median': statistics.median(r['eps_ref_final'] for r in g),
+            'eps_ref_min': min(r['eps_ref_final'] for r in g), 'eps_ref_max': max(r['eps_ref_final'] for r in g),
             'reasons': ' '.join(r['stopping_reason'] for r in g),
             'lbfgs_iterations_median': statistics.median(int(r['total_iterations']) for r in lb) if lb else '',
             'lbfgs_markers': _markers([r['stopping_reason'] for r in lb]) if lb else '',
@@ -542,14 +543,44 @@ def summarize(out_root, package1=None, lbfgs_errors=None):
             'lbfgs_final_loss_median': statistics.median(float(r['final_loss']) for r in lb) if lb else '',
             'lbfgs_eps_ref_median': statistics.median(e) if (e := [lbfgs_eps[(bench, P, int(r['seed']))] for r in lb
                                                                    if (bench, P, int(r['seed'])) in lbfgs_eps]) else '',
+            'lbfgs_eps_ref_min': min(e) if e else '', 'lbfgs_eps_ref_max': max(e) if e else '',
             'lbfgs_device': 'cuda (the tables\' runs)' if lb else ''})
     if med:
         with open(out / 'four_method_lm_medians.csv', 'w', newline='') as fh:
             w = csv.DictWriter(fh, fieldnames=list(med[0]))
             w.writeheader()
             w.writerows(med)
+        comparison_table(out, med)
     figures(out, runs, package1, lbfgs_eps)
     return runs, med
+
+
+def _g(v):
+    return f'{v:.2e}' if isinstance(v, float) else (str(v) if v not in ('', None) else '--')
+
+
+def comparison_table(out, med):
+    """``lm_vs_lbfgs.md``: LM against L-BFGS at every size, the small ones
+    included (the advisor's reply of 5 October, Section 2, 3.2). Per size:
+    the median iterations with the markers, the median final loss, and the
+    median reference error with its range over the seeds. The times are in
+    ``four_method_lm_medians.csv``; they are not compared here, because the
+    two optimizers ran on different devices."""
+    lines = ['# NiL-N: Levenberg-Marquardt against L-BFGS', '',
+             'Medians over the seeds; `eps_ref` with its [min, max] over the seeds. L-BFGS: the tables\' '
+             'GPU runs (package1) and their Stage-1 reference errors. No time ratios: the devices differ.', '',
+             '| benchmark | P | LM device | LM iterations | LM final loss | LM eps_ref [min, max] '
+             '| L-BFGS iterations | L-BFGS final loss | L-BFGS eps_ref [min, max] | target loss |',
+             '|---|---|---|---|---|---|---|---|---|---|']
+    for r in med:
+        lm_it = f"{_g(r['iterations_median'])} {r['markers']}".strip()
+        lb_it = f"{_g(r['lbfgs_iterations_median'])} {r['lbfgs_markers']}".strip()
+        lb_eps = (f"{_g(r['lbfgs_eps_ref_median'])} [{_g(r['lbfgs_eps_ref_min'])}, {_g(r['lbfgs_eps_ref_max'])}]"
+                  if r['lbfgs_eps_ref_median'] != '' else '--')
+        lines.append(f"| {r['benchmark']} | {r['P']} | {r['device']} | {lm_it} | {_g(r['final_loss_median'])} | "
+                     f"{_g(r['eps_ref_median'])} [{_g(r['eps_ref_min'])}, {_g(r['eps_ref_max'])}] | {lb_it} | "
+                     f"{_g(r['lbfgs_final_loss_median'])} | {lb_eps} | {_g(r['target_mse'])} |")
+    (out / 'lm_vs_lbfgs.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
 
 def _lbfgs_rows(package1):
