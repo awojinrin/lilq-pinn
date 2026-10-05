@@ -160,7 +160,7 @@ lilq-pinn/
 
 | Tag | Paper version |
 |---|---|
-| `v2.0.1` | the code release the revised manuscript cites: `v2.0.0` with corrected citation metadata (`CITATION.cff`) only |
+| `v2.0.1` | the code release the revised manuscript cites (DOI [10.5281/zenodo.23167177](https://doi.org/10.5281/zenodo.23167177)): `v2.0.0` with corrected citation metadata (`CITATION.cff`) only |
 | `v2.0.0` | the revised manuscript (4 October 2026). [RELEASE.md](RELEASE.md) maps every table and figure of its Sections 6 and Appendix B to the script that regenerates it and the result files it reads. |
 | `v1.0-manuscript` | the arXiv version |
 

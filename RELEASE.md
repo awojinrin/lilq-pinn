@@ -20,7 +20,9 @@ corrected manuscript of 4 October, and the archive DOIs.
 preferred citation, the results record's DOI 10.5281/zenodo.23147620): the
 code is that of `v2.0.0`, and `package1` stays "assembled at v2.0.0
 (5339f60)". The release check against the corrected manuscript (commit
-ab0484d, Section 2) is on `main`, not in either tag.
+ab0484d, Section 2) is on `main`, not in either tag. Zenodo: code
+`v2.0.1` 10.5281/zenodo.23167177 (all versions 10.5281/zenodo.23167176);
+results 10.5281/zenodo.23147620.
 
 ## 1. The results
 
