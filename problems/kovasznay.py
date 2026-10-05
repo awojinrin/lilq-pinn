@@ -87,9 +87,10 @@ class KovasznayConfig:
     # weights and biases U(-elm_sigma, elm_sigma) drawn with elm_seed, shared by
     # u, v and p (each field its own coefficients). layout_P > 0 sizes the
     # collocation set as for that P (the paper's P = 1,875 layout for the
-    # 1,800-coefficient ELM). linear_solver='normal' solves each subproblem
-    # from A^T A beta = A^T f by Cholesky, with a shift 1e-16 tr(A^T A) / P only
-    # if Cholesky fails. The defaults change nothing.
+    # 1,800-coefficient ELM). linear_solver 'normal_shifted' or 'normal_eigh'
+    # solves each subproblem from A^T A beta = A^T f (the advisor's reply of
+    # 5 October, Section 3.1; _solve_normal_shifted, _solve_normal_eigh). The
+    # defaults change nothing.
     elm_neurons: int = 600
     elm_sigma: float = 1.0
     elm_seed: int = 0
@@ -414,26 +415,37 @@ def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray, timings: Optional[dict] = None):
     return x_host, R_diag, peak_mem_bytes
 
 
-def _solve_normal_equations(A: np.ndarray, b: np.ndarray):
-    """Package 2, item 4 (the normal-equation control): A^T A beta = A^T b by
-    Cholesky, in double precision, no penalty. Only if the factorization fails,
-    the diagonal is shifted by 1e-16 tr(A^T A) / P and it is retried.
-    Returns ``(beta, status, A^T A)``, status 'none' (no shift), 'shifted', or
-    'failed' (Cholesky failed with the shift too; beta is None -- the
-    specification has no further step, and a larger shift would be the
-    penalty it excludes)."""
+# Package 2, item 4, the normal-equation control (the advisor's reply of
+# 5 October, Section 3.1): two variants, both solving A^T A beta = A^T f in
+# double precision at every outer iteration, with no penalty.
+NORMAL_SHIFTS = (1e-16, 1e-14, 1e-12, 1e-10, 1e-8)     # x tr(A^T A) / P
+
+
+def _solve_normal_shifted(A: np.ndarray, b: np.ndarray, factor=None):
+    """Shifted Cholesky: (A^T A + s I) beta = A^T b with s = factor tr(A^T A) / P.
+    With ``factor=None`` (the first iteration) the smallest factor of
+    ``NORMAL_SHIFTS`` for which the factorization succeeds is chosen; later
+    iterations pass it back, fixed. Returns ``(beta, factor, A^T A)``;
+    ``beta`` is None if no factor of the sequence (or the fixed one) works."""
     AtA, Atb = A.T @ A, A.T @ b
-    try:
-        return scipy.linalg.cho_solve(scipy.linalg.cho_factor(AtA, lower=False, check_finite=False), Atb,
-                                      check_finite=False), 'none', AtA
-    except np.linalg.LinAlgError:
-        shift = 1e-16 * np.trace(AtA) / AtA.shape[0]
-        M = AtA + shift * np.eye(AtA.shape[0])
+    scale = np.trace(AtA) / AtA.shape[0]
+    for f in (NORMAL_SHIFTS if factor is None else (factor,)):
         try:
-            return scipy.linalg.cho_solve(scipy.linalg.cho_factor(M, lower=False, check_finite=False), Atb,
-                                          check_finite=False), 'shifted', AtA
+            c = scipy.linalg.cho_factor(AtA + f * scale * np.eye(AtA.shape[0]), lower=False, check_finite=False)
         except np.linalg.LinAlgError:
-            return None, 'failed', AtA
+            continue
+        return scipy.linalg.cho_solve(c, Atb, check_finite=False), f, AtA
+    return None, factor, AtA
+
+
+def _solve_normal_eigh(A: np.ndarray, b: np.ndarray):
+    """Unshifted pseudo-inverse: A^T A = V diag(lambda) V^T, the eigenvalues
+    below P lambda_max eps_mach dropped (the normal-equation analogue of the QR
+    rank tolerance). Returns ``(beta, n_kept, A^T A)``."""
+    AtA, Atb = A.T @ A, A.T @ b
+    lam, V = scipy.linalg.eigh(AtA, check_finite=False)
+    keep = lam > AtA.shape[0] * lam.max() * EPS_MACH
+    return V[:, keep] @ ((V[:, keep].T @ Atb) / lam[keep]), int(keep.sum()), AtA
 
 
 def _qr_degeneracy_ratio(R_diag: np.ndarray) -> float:
@@ -668,7 +680,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                                   config.x_domain, config.y_domain)
         basis_p = create_basis_2d(config.basis_type, config.N_x, config.N_y,
                                   config.x_domain, config.y_domain)
-    if config.linear_solver not in ('gelsy', 'normal') or (config.linear_solver == 'normal' and config.use_gpu):
+    normal = config.linear_solver in ('normal_shifted', 'normal_eigh')
+    if config.linear_solver not in ('gelsy', 'normal_shifted', 'normal_eigh') or (normal and config.use_gpu):
         raise ValueError(f"linear_solver {config.linear_solver!r} (normal equations on the CPU only)")
 
     Pu, Pv, Pp = basis_u.n_basis, basis_v.n_basis, basis_p.n_basis
@@ -752,7 +765,9 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         'iteration': [], 'coeff_change': [],
         'pde_residual': [], 'continuity_residual': [],
         'solve_time': [], 'cond_number': [],
-        'cholesky_shift': [], 'kappa_AtA': [],      # linear_solver='normal' only
+        # the normal equations only: the shift factor (normal_shifted) or the
+        # eigenvalues kept (normal_eigh), and kappa(A^T A), per solve
+        'normal_shift_or_rank': [], 'kappa_AtA': [],
         # Package 2, item 7 (scaling): the clock's two parts per iteration, kept
         # with the diagnostics off too, and the GPU solve's peak memory (None on CPU)
         't_assemble': [], 't_solve': [], 'gpu_mem_peak_bytes': [],
@@ -794,7 +809,8 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
         t_diag += time.perf_counter() - t_diag0
 
     # ── Quasilinearization loop ──
-    normal_failed = False             # linear_solver='normal': Cholesky failed even with the shift
+    normal_failed = False             # normal_shifted: no shift of the sequence (or the fixed one) factors
+    shift_factor = None               # normal_shifted: chosen at the first iteration, then fixed
     pde_res = cont_res = float('nan')  # set by the first iteration (absent if the control stops at k = 0)
     for k in range(config.max_iter):
         t_iter = time.perf_counter()
@@ -895,17 +911,21 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 # Section 3.2 -- the GPU iterate itself still drives the
                 # quasilinearization forward; substituting the CPU result
                 # here would silently change what "the GPU run" measures.
-        elif config.linear_solver == 'normal':
+        elif normal:
             t0 = time.perf_counter()
-            theta_new, status, AtA = _solve_normal_equations(A_sys, b_sys)
+            if config.linear_solver == 'normal_shifted':
+                theta_new, shift_factor, AtA = _solve_normal_shifted(A_sys, b_sys, shift_factor)
+                shift_or_rank = shift_factor
+            else:
+                theta_new, shift_or_rank, AtA = _solve_normal_eigh(A_sys, b_sys)
             t_solve_s = time.perf_counter() - t0
-            solver_path, rank_gelsy = 'cpu_normal_cholesky', None
-            history['cholesky_shift'].append(status)
+            solver_path, rank_gelsy = f'cpu_{config.linear_solver}', None
+            history['normal_shift_or_rank'].append(shift_or_rank)
             history['kappa_AtA'].append(float(np.linalg.cond(AtA)) if diagnostics else float('nan'))
             if theta_new is None:     # the control cannot continue: the iterate stays, the run stops
                 normal_failed = True
                 if verbose:
-                    print(f"  Iter {k:3d}: Cholesky of A^T A failed even with the shift; stopping.")
+                    print(f"  Iter {k:3d}: Cholesky of A^T A + s I failed for every shift; stopping.")
                 break
         else:
             t0 = time.perf_counter()
@@ -1067,8 +1087,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,
                 'p': {'modes_x': config.N_x, 'modes_y': config.N_y, 'total': int(Pp)},
             },
             initial_coefficients='zero',
-            solver_driver='gpu_qr' if config.use_gpu else ('normal_cholesky' if config.linear_solver == 'normal'
-                                                             else 'gelsy'), rcond=EPS_MACH,
+            solver_driver='gpu_qr' if config.use_gpu else config.linear_solver, rcond=EPS_MACH,
             stopping_rule={'type': 'rel_coeff_change', 'tolerance': config.tol},
             K_max=config.max_iter,
             stopping_reason=('cholesky_failed' if normal_failed else

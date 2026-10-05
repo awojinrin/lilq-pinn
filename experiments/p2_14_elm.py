@@ -2,7 +2,8 @@
 Package 2, item 4 (P2-14 and P2-4): the ELM scale sweep, the ELM basis on Kovasznay, the normal-equation control
 ================================================================================================================
 
-The advisor's instructions of 4 October 2026, Section 7. Untimed.
+The advisor's instructions of 4 October 2026, Section 7, and his reply of
+5 October (Sections 2, 3.1). Untimed.
 
 ``sweep`` (Section 7.1, P2-14)
     Table 3's ELM row as a curve: Burgers, the basis study's setting (P = 625
@@ -19,16 +20,29 @@ The advisor's instructions of 4 October 2026, Section 7. Untimed.
     and rank against sigma, median with the min-max band).
 ``kovasznay`` (Sections 7.2, 7.3, P2-4)
     Kovasznay with one tanh random-feature basis of 600 neurons shared by u,
-    v, p (1,800 coefficients), inputs scaled to [-1, 1]^2, from zero, on the
-    paper's P = 1,875 layout (5,564 rows), the paper's stopping rule, K_max =
-    60. First check C5: on the paper's Chebyshev basis at P = 300 the
-    normal-equation and QR solves agree at k = 1 to 1e-8. Then a short sweep,
-    sigma in {0.3, 1, 3}, seed 0, QR, the best sigma by the final ||R||_h (not
-    by test error); at that sigma, seeds 0-4 solved by QR (``gelsy``) and by
-    the normal equations (Cholesky, a shift 1e-16 tr / P only if it fails).
-    Writes ``P2_4_elm_kovasznay/{sigma_sweep,qr,normal}/.../{run.json,
-    iterations.csv}`` (``normal_eq.csv`` with kappa(A^T A) and the shift per
-    iteration for the normal runs), ``check_c5.json`` and ``summary.csv``.
+    v, p (``basis: shared``; 1,800 coefficients), inputs scaled to [-1, 1]^2,
+    from zero, on the paper's P = 1,875 layout (5,564 rows), the paper's
+    stopping rule, K_max = 60. A short sweep, sigma in {0.3, 1, 3}, seed 0,
+    QR, picks the best sigma by the final ||R||_h (not by test error). At
+    that sigma, seeds 0-4 are solved by QR (``gelsy``) and by the two
+    normal-equation variants of the reply (``problems.kovasznay``):
+
+    - ``normal_shifted``: Cholesky of A^T A + s I, s the smallest of
+      {1e-16, ..., 1e-8} x tr(A^T A) / P that factors at the first iteration,
+      then fixed;
+    - ``normal_eigh``: the pseudo-inverse through the eigendecomposition of
+      A^T A, the eigenvalues below P lambda_max eps_mach dropped.
+
+    The same three solvers run on the surrogate, the paper's Chebyshev basis
+    at P = 300 on its grid. Check C5 there: both variants agree with QR at
+    k = 1 to 1e-8. The result is each variant's error history against QR's
+    on the same basis. Writes ``P2_4_elm_kovasznay/``:
+
+    - ``sigma_sweep/``;
+    - ``<solver>/seed<s>/`` and ``chebyshev_P300/<solver>/``, each with
+      ``run.json`` and ``iterations.csv`` (the normal runs with
+      ``kappa_AtA`` and ``shift_or_rank`` per iteration);
+    - ``check_c5.json``, ``summary.csv`` and ``figures/normal_vs_qr.{pdf,png}``.
 
 Usage::
 
@@ -39,7 +53,6 @@ Usage::
 
 import argparse
 import csv
-import dataclasses
 import json
 import os
 import sys
@@ -63,6 +76,10 @@ TARGET_625 = 5e-9                               # Table 2/3's loss target at P =
 TABLE3_ROWS = {'elm': np.sqrt(6.0 / 627.0), 'elm_default': 1.0 / np.sqrt(2.0)}   # seed 42
 KOV_SIGMAS = (0.3, 1.0, 3.0)
 KOV_NEURONS, KOV_LAYOUT_P = 600, 1875
+
+
+def _e(v):
+    return f'{v:.1e}' if isinstance(v, float) else (str(v) or '-')
 
 
 def _write(path, rows):
@@ -163,6 +180,9 @@ def sweep_figure(out, rows):
 
 # ---------------------------------------------------------------- 7.2, 7.3, Kovasznay
 
+SOLVERS = {'gelsy': 'qr', 'normal_shifted': 'normal_shifted', 'normal_eigh': 'normal_eigh'}   # solver: label
+
+
 def kovasznay_config(sigma, seed, solver='gelsy', k_max=None):
     from experiments.run_kovasznay import K_RATIO, MAX_ITER, TOL
     from problems.kovasznay import KovasznayConfig
@@ -171,47 +191,93 @@ def kovasznay_config(sigma, seed, solver='gelsy', k_max=None):
                            layout_P=KOV_LAYOUT_P, linear_solver=solver)
 
 
-def kovasznay_run(config, run_dir):
+def kovasznay_run(config, run_dir, basis='shared'):
+    """One run, logged in full. For the normal-equation variants,
+    ``iterations.csv`` gains ``kappa_AtA`` and ``shift_or_rank`` on every row
+    with a solve (the last row, the final iterate, has none)."""
     from problems.kovasznay import solve_kovasznay
     run_dir.mkdir(parents=True, exist_ok=True)
     logger = IterationLogger()
     r = solve_kovasznay(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json')
     logger.to_csv(run_dir / 'iterations.csv')
-    save_provenance(run_dir)
     h = r['history']
-    if config.linear_solver == 'normal':
-        # one row per normal-equation solve attempted (the last may be the failed one)
-        _write(run_dir / 'normal_eq.csv', [{'k': k, 'cholesky': s, 'kappa_AtA': c}
-                                           for k, (s, c) in enumerate(zip(h['cholesky_shift'], h['kappa_AtA']))])
+    if config.linear_solver != 'gelsy':
+        with open(run_dir / 'iterations.csv', newline='') as f:
+            rows = list(csv.DictReader(f))
+        for i, row in enumerate(rows):
+            row['kappa_AtA'] = h['kappa_AtA'][i] if i < len(h['kappa_AtA']) else ''
+            row['shift_or_rank'] = h['normal_shift_or_rank'][i] if i < len(h['normal_shift_or_rank']) else ''
+        _write(run_dir / 'iterations.csv', rows)
+    save_provenance(run_dir)
     final = logger.rows[-1]
     cond = last_solve_row(logger.rows) if len(logger.rows) > 1 else None
     if r['normal_failed']:
         reason = 'cholesky_failed'
     else:
         reason = 'tolerance' if h['coeff_change'] and h['coeff_change'][-1] < config.tol else 'k_max'
-    return {'solver': 'qr' if config.linear_solver == 'gelsy' else 'normal', 'seed': config.elm_seed,
-            'sigma': config.elm_sigma, 'k_stop': len(h['iteration']), 'reason': reason,
+    shift_or_rank = [v for v in h['normal_shift_or_rank'] if v is not None]
+    return {'solver': 'qr' if config.linear_solver == 'gelsy' else 'normal', 'variant': SOLVERS[config.linear_solver],
+            'basis': basis, 'seed': config.elm_seed if basis == 'shared' else '',
+            'sigma': config.elm_sigma if basis == 'shared' else '', 'k_stop': len(h['iteration']), 'reason': reason,
             'eps_u': final['eps_u'], 'eps_v': final['eps_v'], 'eps_p_meanfree': final['eps_p_meanfree'],
             'kappa_A': cond['kappa'] if cond else '', 'rank': cond['num_rank_svd'] if cond else '',
             'final_norm_R_h': final['norm_R_h'],
-            'cholesky_status': ';'.join(h['cholesky_shift']) if h['cholesky_shift'] else '',
+            # normal_shifted: the factor of tr(A^T A) / P, fixed; normal_eigh: the eigenvalues kept at the last solve
+            'shift_or_rank': shift_or_rank[-1] if shift_or_rank else '',
             'kappa_AtA_last': h['kappa_AtA'][-1] if h['kappa_AtA'] else ''}
 
 
+def _chebyshev_config(solver='gelsy', k_max=None):
+    """The surrogate: the paper's Chebyshev basis at P = 300 on its grid."""
+    from experiments.run_kovasznay import K_RATIO, MAX_ITER, TOL
+    from problems.kovasznay import KovasznayConfig
+    return KovasznayConfig(N_x=10, N_y=10, k_ratio=K_RATIO, max_iter=MAX_ITER if k_max is None else k_max, tol=TOL,
+                           linear_solver=solver)
+
+
 def check_c5():
-    """C5: on the paper's Chebyshev basis at P = 300 the normal-equation and QR
-    solves agree at k = 1 to 1e-8 relative."""
-    from experiments.run_kovasznay import K_RATIO, TOL
-    from problems.kovasznay import KovasznayConfig, solve_kovasznay
-    c = KovasznayConfig(N_x=10, N_y=10, k_ratio=K_RATIO, max_iter=1, tol=TOL)
-    q = solve_kovasznay(c, verbose=False, diagnostics=False)
-    n = solve_kovasznay(dataclasses.replace(c, linear_solver='normal'), verbose=False)
-    tq = np.concatenate([q[f'theta_{f}'] for f in 'uvp'])
-    tn = np.concatenate([n[f'theta_{f}'] for f in 'uvp'])
-    rel = float(np.linalg.norm(tn - tq) / np.linalg.norm(tq))
-    return {'check': 'C5', 'basis': 'Chebyshev, P = 300', 'rel_difference_k1': rel, 'tolerance': 1e-8,
-            'cholesky_shift': n['history']['cholesky_shift'][0], 'kappa_AtA': n['history']['kappa_AtA'][0],
-            'passed': rel <= 1e-8, 'commit': current_commit()}
+    """C5: on the surrogate, each normal-equation variant agrees with QR at
+    k = 1 (the first solve) to 1e-8 relative."""
+    from problems.kovasznay import solve_kovasznay
+
+    def theta(solver):
+        r = solve_kovasznay(_chebyshev_config(solver, k_max=1), verbose=False, diagnostics=solver != 'gelsy')
+        return np.concatenate([r[f'theta_{f}'] for f in 'uvp']), r['history']
+
+    tq, _ = theta('gelsy')
+    variants = {}
+    for solver in ('normal_shifted', 'normal_eigh'):
+        tn, h = theta(solver)
+        rel = float(np.linalg.norm(tn - tq) / np.linalg.norm(tq))
+        variants[solver] = {'rel_difference_k1': rel, 'shift_or_rank': h['normal_shift_or_rank'][0],
+                            'kappa_AtA': h['kappa_AtA'][0], 'passed': rel <= 1e-8}
+    return {'check': 'C5', 'basis': 'Chebyshev, P = 300', 'tolerance': 1e-8, 'variants': variants,
+            'passed': all(v['passed'] for v in variants.values()), 'commit': current_commit()}
+
+
+def normal_vs_qr_figure(out, runs):
+    """Each variant's error history against QR's: one panel per basis (the
+    surrogate, then the ELM seeds)."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    panels = list(dict.fromkeys(p for p, _ in runs))
+    fig, axes = plt.subplots(1, len(panels), figsize=(3.2 * len(panels), 3), squeeze=False)
+    for ax, panel in zip(axes[0], panels):
+        for (p, solver), run_dir in runs.items():
+            if p != panel:
+                continue
+            with open(run_dir / 'iterations.csv', newline='') as f:
+                rows = [r for r in csv.DictReader(f) if r['eps_u'] not in ('', None)]
+            ax.semilogy([int(r['k']) for r in rows], [float(r['eps_u']) for r in rows], label=SOLVERS[solver])
+        ax.set(title=panel, xlabel='k')
+    axes[0][0].set_ylabel('relative L2 error of u')
+    axes[0][0].legend(fontsize=7)
+    fig.tight_layout()
+    (out / 'figures').mkdir(exist_ok=True)
+    fig.savefig(out / 'figures' / 'normal_vs_qr.pdf')
+    fig.savefig(out / 'figures' / 'normal_vs_qr.png', dpi=150)
+    plt.close(fig)
 
 
 def kovasznay(out_root, sigmas=KOV_SIGMAS, seeds=SEEDS, k_max=None):
@@ -219,21 +285,32 @@ def kovasznay(out_root, sigmas=KOV_SIGMAS, seeds=SEEDS, k_max=None):
     out.mkdir(parents=True, exist_ok=True)
     c5 = check_c5()
     (out / 'check_c5.json').write_text(json.dumps(c5, indent=2))
-    print(f"  C5: normal vs QR at k = 1 on Chebyshev P = 300: {c5['rel_difference_k1']:.1e} "
-          f"({'passed' if c5['passed'] else 'FAILED'})")
+    print('  C5 (Chebyshev P = 300, k = 1, against QR): ' + ', '.join(
+        f"{s} {v['rel_difference_k1']:.1e} ({v['shift_or_rank']})" for s, v in c5['variants'].items())
+        + f" -> {'passed' if c5['passed'] else 'FAILED'}")
+    rows, runs = [], {}
+    for solver, label in SOLVERS.items():
+        run_dir = out / 'chebyshev_P300' / label
+        r = kovasznay_run(_chebyshev_config(solver, k_max), run_dir, basis='chebyshev')
+        rows.append(r)
+        runs[('Chebyshev P = 300', solver)] = run_dir
+        print(f"  Chebyshev {label:14s}: {r['k_stop']} iterations ({r['reason']}), E_u {r['eps_u']:.2e}, "
+              f"kappa(A) {_e(r['kappa_A'])}, shift or rank {r['shift_or_rank'] or '-'}")
     sweep_rows = [kovasznay_run(kovasznay_config(s, 0, k_max=k_max), out / 'sigma_sweep' / f'sigma{s:g}')
                   for s in sigmas]
     best = min(sweep_rows, key=lambda r: r['final_norm_R_h'])['sigma']
     print('  sigma sweep (seed 0, QR): ' + ', '.join(f"{r['sigma']:g}: ||R||_h {r['final_norm_R_h']:.2e}"
                                                     for r in sweep_rows) + f"; best {best:g}")
-    rows = []
-    for solver, label in (('gelsy', 'qr'), ('normal', 'normal')):
+    for solver, label in SOLVERS.items():
         for seed in seeds:
-            r = kovasznay_run(kovasznay_config(best, seed, solver, k_max), out / label / f'seed{seed}')
+            run_dir = out / label / f'seed{seed}'
+            r = kovasznay_run(kovasznay_config(best, seed, solver, k_max), run_dir)
             rows.append(r)
-            print(f"  {label:6s} seed {seed}: {r['k_stop']} iterations ({r['reason']}), E_u {r['eps_u']:.2e}, "
-                  f"kappa(A) {r['kappa_A']}, rank {r['rank']}, Cholesky {r['cholesky_status'] or '-'}")
+            runs[(f'ELM seed {seed}', solver)] = run_dir
+            print(f"  {label:14s} seed {seed}: {r['k_stop']} iterations ({r['reason']}), E_u {r['eps_u']:.2e}, "
+                  f"kappa(A) {_e(r['kappa_A'])}, rank {r['rank']}, shift or rank {r['shift_or_rank'] or '-'}")
     _write(out / 'summary.csv', rows)
+    normal_vs_qr_figure(out, runs)
     _write(out / 'sigma_sweep.csv', [{**r, 'chosen': r['sigma'] == best} for r in sweep_rows])
     save_provenance(out)
     return c5, sweep_rows, rows

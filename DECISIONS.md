@@ -17,6 +17,64 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: item 4's normal-equation control, two variants
+
+**Why** (the reply of 5 October, Section 3.1). As first specified, the control was Cholesky
+with a shift of 1e-16 tr/P applied only on failure. It failed at the first factorization on
+every ELM basis, with kappa(A^T A) about 1e21, which said nothing. He replaced it with two
+variants. Each solves A^T A beta = A^T f at every outer iteration, with no penalty
+(`problems/kovasznay.py`, `linear_solver`):
+- **`normal_shifted`:** Cholesky of A^T A + s I, with s = f tr(A^T A)/P. The factor f is the
+  smallest of {1e-16, 1e-14, 1e-12, 1e-10, 1e-8} that factors at the first iteration, then
+  fixed. If the fixed factor fails at a later iteration, the run stops (`cholesky_failed`).
+- **`normal_eigh`:** the pseudo-inverse through `eigh(A^T A)`, dropping eigenvalues below
+  P lambda_max eps_mach, the normal-equation analogue of the QR rank tolerance.
+
+The old `'normal'` setting is gone. The paper's runs (`'gelsy'`) are unchanged.
+
+**What `experiments/p2_14_elm.py kovasznay` runs and records:**
+- QR and both variants on the five ELM seeds, and on the surrogate (the paper's Chebyshev
+  basis at P = 300). Every run is logged in full.
+- For the normal runs, `iterations.csv` gains `kappa_AtA` and `shift_or_rank` per iteration.
+- C5 for both variants: agreement with QR at k = 1 to 1e-8 on the surrogate.
+- `summary.csv` gains `variant`, `shift_or_rank` and `basis` (`shared` for the ELM, as the
+  reply asks under 3.4; `chebyshev` for the surrogate).
+- `figures/normal_vs_qr` plots each variant's error history against QR's, one panel per
+  basis.
+
+The job's walltime goes from 2 h to 3 h, because the normal runs now take their 60
+iterations. Stage 2's totals become 1,274 SU requested and about 618 expected, from 1,250
+and 606.
+
+**Result (laptop, sigma = 1 chosen by the sweep):**
+- **The surrogate: no difference.** The three solvers give the same error history, ending at
+  2.9e-2 after 9 iterations. C5 passes: 3.7e-13 (shifted, f = 1e-16) and 5.2e-13 (eigh, all
+  300 eigenvalues kept).
+- **The ELM bases: both variants stall.** kappa(A) is about 1e18-1e20 and kappa(A^T A) about
+  1e21-1e22.
+
+| Solver | u error, k = 60, five seeds | When it stops changing | Kept |
+|---|---|---|---|
+| QR (`gelsy`) | 1.8e-10 to 3.3e-10 | about k = 5 | rank 723-734 |
+| `normal_shifted` | 2.6e-4 to 6.0e-4 | about k = 3 | f = 1e-12 on every seed |
+| `normal_eigh` | 2.8e-3 to 9.3e-3 | about k = 3 | 228-233 of the 1,800 eigenvalues |
+
+The eigendecomposition keeps about a third of the columns QR resolves, and the shift
+regularizes the same directions away. This is the Section 7 conjecture of the manuscript
+shown directly: squaring kappa stalls the Gauss-Newton ELM, between 1e-4 and 1e-2 here, on
+the bases where QR reaches 1e-10. The preview is in
+`package2_results/laptop_preview/P2_4_elm_kovasznay/all`.
+
+Tests: `tests/test_p2s2_elm.py` covers:
+- each variant against `lstsq`;
+- the shift chosen and then fixed, with a strict factorization;
+- the pseudo-inverse against `pinv` on a rank-deficient system;
+- the solver options and the failure path;
+- C5;
+- the driver at a small size, with the logs, summary and figure.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: items 2 and 6b, and Beltrami's CPU path
 
 **Item 2 (reply, Section 2, 3.2): the reference error beside iterations and loss, every size

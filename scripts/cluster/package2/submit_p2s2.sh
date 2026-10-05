@@ -16,7 +16,7 @@
 #     `python experiments/p2_8_lm_networks.py gpu-list --out results/package2_stage2`
 #     names a configuration once the three LM jobs are done (Section 5);
 #   - item 5 (Darcy) runs on FASTER, from its own script.
-# 17 jobs: 1,250 SU requested (walltime x rate, su_plan.csv), about 606 expected (charged by
+# 17 jobs: 1,274 SU requested (walltime x rate, su_plan.csv), about 618 expected (charged by
 # elapsed time); 1,730 requested if the contingent A100 job is submitted too.
 # Run from a login node:
 #   DRY_RUN=1 bash scripts/cluster/package2/submit_p2s2.sh     (checks every job; submits nothing)
@@ -24,7 +24,7 @@
 LILQ_WAVE=p2s2
 source "$(dirname "$0")/../submit_lib.sh"
 P=$S/package2
-confirm_balance "1,250 SU requested, about 606 expected (su_plan.csv; 17 jobs)"
+confirm_balance "1,274 SU requested, about 618 expected (su_plan.csv; 17 jobs)"
 
 submit pre  $P/p2s2_preflight.slurm
 submit refs $P/p2s2_references.slurm             --dependency=afterok:$pre
