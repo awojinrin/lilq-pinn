@@ -118,6 +118,74 @@ class ElasticityPhysics:
                 -mu*(2*pi**2*np.cos(pi*y)*np.sin(2*pi*x) + Q*y**4*pi**2*np.sin(pi*x)/4.0)
                 +6*Q*mu*y**2*np.sin(pi*x))
 
+    # Traction data of the 'paper' boundary conditions
+    def traction_top_syy(self, x):
+        """sigma_yy on the top face, y = 1."""
+        return self.C11 * self.Q * np.sin(pi * x)
+
+    def traction_lateral_sxx(self, x, y):
+        """sigma_xx on the lateral faces, x = 0 and 1: traction-free."""
+        return np.zeros_like(y)
+
+
+class ManufacturedElasticityPhysics(ElasticityPhysics):
+    """Package 2, item 8 (P2-10): a manufactured solution outside the span of
+    both bases (delta_P > 0), with the operator, domain, bases and
+    boundary-condition types of the paper's case:
+
+        u_x = y (1 - y) e^{xy} / 10,    u_y = x (1 - x) y e^{x+y} / 20.
+
+    It satisfies the displacement conditions exactly (u_x = u_y = 0 at the
+    bottom, u_x = 0 at the top, u_y = 0 on the lateral faces). The body force,
+    the top traction sigma_yy and the lateral tractions sigma_xx (not zero
+    here: the only change of data) are computed from it. ``Q`` is unused."""
+
+    # u_x = a(x, y) e^{xy} / 10 with a = y (1 - y); u_y = g(x) h(y) / 20 with
+    # g = x (1 - x) e^x, h = y e^y. Derivatives in closed form (tested against
+    # sympy and finite differences, tests/test_p2s2_elasticity.py).
+    @staticmethod
+    def _u(x, y):
+        e, a = np.exp(x * y), y * (1 - y)
+        return {'': a * e, 'x': y * a * e, 'xx': y * y * a * e, 'y': ((1 - 2 * y) + x * a) * e,
+                'yy': (-2 + 2 * x * (1 - 2 * y) + x * x * a) * e, 'xy': (a + y * ((1 - 2 * y) + x * a)) * e}
+
+    @staticmethod
+    def _v(x, y):
+        ex, ey = np.exp(x), np.exp(y)
+        g, g1, g2 = x * (1 - x) * ex, (1 - x - x * x) * ex, -x * (x + 3) * ex
+        h, h1, h2 = y * ey, (1 + y) * ey, (2 + y) * ey
+        return {'': g * h, 'x': g1 * h, 'xx': g2 * h, 'y': g * h1, 'yy': g * h2, 'xy': g1 * h1}
+
+    def exact_ux(self, x, y):
+        return self._u(x, y)[''] / 10.0
+
+    def exact_uy(self, x, y):
+        return self._v(x, y)[''] / 20.0
+
+    def exact_exx(self, x, y):
+        return self._u(x, y)['x'] / 10.0
+
+    def exact_eyy(self, x, y):
+        return self._v(x, y)['y'] / 20.0
+
+    def exact_exy(self, x, y):
+        return 0.5 * (self._u(x, y)['y'] / 10.0 + self._v(x, y)['x'] / 20.0)
+
+    def body_force_x(self, x, y):
+        """The operator applied to the exact solution: C11 u_xx + mu u_yy + (lam + mu) v_xy."""
+        u, v = self._u(x, y), self._v(x, y)
+        return self.C11 * u['xx'] / 10.0 + self.mu * u['yy'] / 10.0 + (self.lam + self.mu) * v['xy'] / 20.0
+
+    def body_force_y(self, x, y):
+        u, v = self._u(x, y), self._v(x, y)
+        return self.mu * v['xx'] / 20.0 + self.C11 * v['yy'] / 20.0 + (self.lam + self.mu) * u['xy'] / 10.0
+
+    def traction_top_syy(self, x):
+        return self.exact_syy(x, np.ones_like(x))
+
+    def traction_lateral_sxx(self, x, y):
+        return self.exact_sxx(x, y)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Collocation
@@ -178,7 +246,8 @@ def make_test_error_fn(physics, basis_u, basis_v, config):
 
 
 def solve_elasticity(config: ElasticityConfig, verbose=True,
-                     iteration_logger=None, run_json_path=None, diagnostics: bool = True) -> Dict:
+                     iteration_logger=None, run_json_path=None, diagnostics: bool = True,
+                     physics: ElasticityPhysics = None) -> Dict:
     """Solve linear elasticity via a single LiL-Q QR solve.
 
     ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
@@ -190,6 +259,9 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
         so the interior norms are populated.
     ``run_json_path`` : str or Path, optional
         Writes the Section 3.1 ``run.json``; requires ``iteration_logger``.
+    ``physics`` : the exact solution, body force and traction data
+        (default: the paper's, ``ElasticityPhysics(config)``;
+        ``ManufacturedElasticityPhysics`` for Package 2, item 8).
     """
     if run_json_path is not None and iteration_logger is None:
         raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
@@ -198,7 +270,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
     # passive work; the errors after the solve are in solve_time_total only.
     if not diagnostics and iteration_logger is not None:
         raise ValueError("diagnostics=False excludes iteration_logger.")
-    physics = ElasticityPhysics(config)
+    physics = ElasticityPhysics(config) if physics is None else physics
     lam, mu = physics.lam, physics.mu
     C11, C12 = physics.C11, physics.C12
     C_cross = lam + mu
@@ -269,7 +341,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
         # sigma_yy = C11*v_y + C12*u_x
         A_syy = np.hstack([C12 * basis_u.derivative(xt, yt, dx=1, dy=0),
                            C11 * basis_v.derivative(xt, yt, dx=0, dy=1)])
-        b_syy = C11 * physics.Q * np.sin(pi * xt)
+        b_syy = physics.traction_top_syy(xt)
         A_rows.append(wb * A_syy)
         b_rows.append(wb * b_syy)
         n_bc_total += 2 * ne
@@ -280,7 +352,7 @@ def solve_elasticity(config: ElasticityConfig, verbose=True,
             A_sxx = np.hstack([C11 * basis_u.derivative(xe, ye, dx=1, dy=0),
                                C12 * basis_v.derivative(xe, ye, dx=0, dy=1)])
             A_rows.append(wb * A_sxx)
-            b_rows.append(wb * np.zeros(ne))
+            b_rows.append(wb * physics.traction_lateral_sxx(xe, ye))
             A_rows.append(wb * np.hstack([np.zeros((ne, Pu)), basis_v.evaluate(xe, ye)]))
             b_rows.append(wb * np.zeros(ne))
             n_bc_total += 2 * ne

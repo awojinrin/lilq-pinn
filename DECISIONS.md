@@ -17,6 +17,46 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 2, batch 2a: item 8 (P2-10), the manufactured elasticity solution -- and why it stalls
+
+**What** (Section 11). `problems.elasticity.ManufacturedElasticityPhysics`:
+- the solution u_x = y(1-y)e^{xy}/10, u_y = x(1-x)y e^{x+y}/20;
+- its strains, stresses and body forces in closed form (tested against sympy to 1e-13);
+- the top traction sigma_yy and the lateral tractions sigma_xx taken from it.
+
+`solve_elasticity` takes `physics=`, and the two traction data terms that were constants
+(C11 Q sin(pi x) on top, zero on the lateral faces) are now methods of the physics class. The
+paper's case is unchanged: its coefficients are bit-identical at all five sizes, checked
+against the code before the change. `experiments/p2_10_elasticity_manufactured.py` writes
+`rows.csv` with, per P:
+- the errors, delta_P (least-squares fit on the 200 x 200 test grid) and their ratio;
+- kappa and the rank;
+- `P<P>/{run.json, iterations.csv}`.
+
+**Result (laptop): the errors stall at about 0.22 (u_x) and 0.14 (u_y) at every P, while
+delta_P falls from 1.1e-2 to 7.3e-4 (u_x) and from 9.7e-3 to 2.2e-4 (u_y).** The systems have
+full rank, and kappa is between 1.1e2 and 4.4e4. Diagnosed:
+- **The lateral traction cannot be met.** The paper's bases (u_x: cosine in x, sine in y;
+  u_y: sine in x, Chebyshev in y) give d(u_x)/dx = 0 and d(u_y)/dy = 0 on x = 0 and 1 for every
+  basis function. So sigma_xx is zero there for every coefficient vector: the lateral
+  traction rows are zero rows. The manufactured traction (up to 0.06) cannot be met, and
+  setting it to zero changes nothing.
+- **The bases cannot resolve the equations near the faces either.** With the displacement
+  prescribed on every face, the errors still stall (0.13, 0.04). The bases carry the paper
+  solution's parities; the manufactured solution breaks them (d u_x/dx != 0 at x = 0,
+  d^2 u_y/dx^2 != 0 at x = 1, d^2 u_x/dy^2 != 0 at y = 0). The series still converge in L2
+  (delta_P falls), but not the second derivatives on which the equations are collocated.
+
+Implemented as specified. `rows.csv` records `lateral_sxx_trial_max` (1e-14 to 1e-11) beside
+`lateral_sxx_required_max` (0.06). For the advisor: a manufactured solution compatible with
+the bases' parities, or other bases, would give the intended error ~ delta_P comparison.
+Either is a change of his specification, so it is his decision.
+
+Job: `scripts/cluster/package2/p2s2_elasticity_manufactured.slurm` (cpu, 30 min). Tests:
+`tests/test_p2s2_elasticity.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 2, batch 1: item 1 (P2-3), the classical baselines on Bratu and Kovasznay
 
 **What** (Sections 4.1, 4.2 step 2, 4.4; the advisor's Stage-1 reply, Section 4, item 1).
