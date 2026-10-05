@@ -17,15 +17,62 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 5: fixes from a review in another session
+
+A separate session reviewed Stage 2's code at 28eccb6, at Gbenga's request. Each finding was
+checked here before acting; what was confirmed is fixed below. The wording changes are made
+in the entries they concern (items 4 and 5, below).
+
+**Item 7: the timing is saved before the off-clock SVD.** `p2_1_scaling.run_one` wrote
+`run.json` only after the SVD of the final system. For the largest Beltrami run
+(`p2s2_scaling_cpu_b`, 6 h):
+- the warm-up and the timed run take 3.2-4.4 h, scaled as P^3 to P^3.3;
+- the SVD of about 67,000 x 22,288 comes after them;
+- a walltime kill there would have lost the timing.
+
+Raising the walltime would take that one job past the 300-SU skip threshold. Instead,
+`run.json` is now written with `status: timed` as soon as the timing is measured, and
+rewritten with `status: ok` when the errors, kappa and rank are done. A resubmitted series
+skips a `timed` run, the summary uses its times, and check C8' skips it (C8' needs the
+errors; its points are the paper's sizes, which are small). Test:
+`test_the_timing_is_saved_before_the_svd`.
+
+**Item 3: what the paper's loss target is compared with.** `k_target` compares the run's
+CC-weighted ||R||_h^2 with the paper's target.
+- **Bratu: the same quantity.** Its LiL loss puts all boundary points in one mean square
+  (`problems/bratu.py`), the perimeter average the CC weights `|e|/|dOmega|` give.
+- **Burgers: not the same quantity.** Its LiL loss sums the per-line mean squares
+  (initial, left, right; `problems/burgers.py`), each weighted 1. The CC weights give the
+  initial line 2/6 and each lateral line 1/6.
+
+The conclusion does not change: under the paper's weighting the boundary terms weigh more,
+so Burgers still never meets its targets. The report says so in one line.
+
+**Not changed, after checking:**
+- **Item 8's specified solution.** The advisor asked to "keep the run of the specified
+  solution as it is and report it in one row and one sentence". The job keeps its five
+  sizes, and the report shows one row.
+- **FASTER's PyTorch.** The 2.10.0 requirement (ce4d776, 28 September) came after
+  FASTER's venv was built on 2.9.1 (23 September). Only FASTER can tell whether it was
+  upgraded since, so Gbenga checks before submitting; the upgrade command is in
+  `scripts/cluster/README.md`.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 4: item 5 (P2-15), the Darcy network with hard Dirichlet conditions, on FASTER
 
 **What** (Section 8, as the reply of 5 October, Section 1.1, settles it).
 `experiments/p2_15_darcy_hardbc.py` takes the paper's Darcy NiL run (`DarcyPINN`, Table 15) and
 changes two things only:
 
-1. **The pressure output is lifted.** h* = y* + omega NN_h, with omega = 4 y*(1 - y*), so that
-   P = (y* + omega NN_h) DELTA_P + P_BOTTOM. The Dirichlet data then hold exactly, and y* is
-   the LiL lifting function.
+1. **The pressure output is lifted.** h* = y* + omega NN_h / 2, with omega = 4 y*(1 - y*), so
+   that P = y* DELTA_P + omega NN_h P_HALF + P_BOTTOM. The Dirichlet data then hold exactly,
+   and y* is the LiL lifting function. The factor 1/2 is the paper's output gain: its network
+   gives P = NN P_HALF + P_MID, that is h* = 1/2 + NN/2. So one unit of NN_h moves the pressure
+   by P_HALF in both runs, and the starting correction is at the paper's scale. Read literally,
+   the advisor's h* = y* + omega NN_h would double it at mid-height. Gbenga chose the paper's
+   gain on 5 October, after a review from another session pointed this out; the first commit
+   (28eccb6) used the literal form.
 2. **The optimizer is Levenberg-Marquardt** with item 2's F2 damping and stall rule. The
    target is 0 (tolerances 0, one restart). The caps are 2,000 iterations or 30 min of
    training time.
@@ -34,7 +81,7 @@ changes two things only:
 - three SiLU networks, 2 x 32 each, 3,555 parameters in float64, built after
   `torch.manual_seed(seed)` in the paper's order. That means the same initial weights for
   seeds 0, 1 and 2 (tested);
-- the normalized inputs and output scales;
+- the normalized inputs and output scales (u* and v* times V_SCALE, NN_h times P_HALF);
 - the Darcy-x, Darcy-y and continuity residuals at the 60 x 220 cell centres, each 50 x a
   mean square;
 - the paper's own lateral rows, U = 0 on each lateral face, each 20 x a mean square. So
@@ -46,7 +93,7 @@ left out.
 **How it is checked:**
 - **Check C3:** at the start, r . r equals the paper's own `_compute_loss` on the lifted
   network to 1e-12, and that loss's Dirichlet terms are exactly zero. On S1 seed 0 the
-  difference is 0.
+  difference is at round-off (1.8e-16).
 - **The Jacobian:** `vmap(jacrev)` per point over an explicit forward pass with input
   gradients through the SiLU layers. It is tested against reverse mode on the whole residual.
 - **The error:** delta_FV against the finite-volume reference at the cell centres is logged
@@ -72,17 +119,22 @@ left out.
   `p2_assemble.py stage2 --faster` merges it and refuses another commit.
 - The cost is 1,382 SU requested and about 700 expected, within item 5's 1,500 on FASTER.
 
-**Laptop smoke run (S1, seed 0, the cap cut to 5 min, RTX 5080):**
-- 150 LM iterations at about 2 s each in float64, stopped by the shortened cap;
-- delta_FV 1.39e-4 and maximum difference 3.0 psi;
-- the paper's soft-BC Adam NiL on the same field and seed: 2.14e-2 and 183 psi after 150,000
-  epochs;
-- LiL: 1.37e-4.
+**Laptop smoke runs (S1, seed 0, the cap cut to 5 min, RTX 5080):** about 150 LM iterations
+each, at about 2 s per iteration in float64, stopped by the shortened cap.
 
-With the boundary confound removed and the optimizer changed, the network reaches LiL's
-error. The two changes are not separated by this design, as the advisor intends. The A100
-runs are the result. They are in
-`package2_results/laptop_preview/P2_15_darcy_hardbc/S1_seed0_5min_smoke`.
+| Run | delta_FV | Max difference |
+|---|---|---|
+| The paper's output gain (P_HALF; the code now) | 2.22e-4 | 4.5 psi |
+| The literal gain (DELTA_P; 28eccb6) | 1.39e-4 | 3.0 psi |
+| The paper's soft-BC Adam NiL, same field and seed, 150,000 epochs | 2.14e-2 | 183 psi |
+| LiL | 1.37e-4 | -- |
+
+**How to read it.** The run changes two things at once, the boundary treatment and the
+optimizer, as the advisor designed it. So the gain over the paper's NiL cannot be credited to
+either one alone; the report states the result with both changes named, and attributes it to
+neither. A soft-BC + LM control would separate them. It is not in the package, and it is put
+to the advisor as a question, with its cost. The A100 runs (2,000 iterations or 30 min) are
+the result. The smoke runs are in `package2_results/laptop_preview/P2_15_darcy_hardbc/`.
 
 Tests: `tests/test_p2s2_darcy_hardbc.py` covers:
 - the lifting;
@@ -139,10 +191,21 @@ and 606.
 | `normal_shifted` | 2.6e-4 to 6.0e-4 | about k = 3 | f = 1e-12 on every seed |
 | `normal_eigh` | 2.8e-3 to 9.3e-3 | about k = 3 | 228-233 of the 1,800 eigenvalues |
 
-The eigendecomposition keeps about a third of the columns QR resolves, and the shift
-regularizes the same directions away. This is the Section 7 conjecture of the manuscript
-shown directly: squaring kappa stalls the Gauss-Newton ELM, between 1e-4 and 1e-2 here, on
-the bases where QR reaches 1e-10. The preview is in
+**What sets the stall level: the cutoffs.**
+- The eigendecomposition drops eigenvalues of A^T A below P lambda_max eps_mach. That is
+  singular values of A below sqrt(P eps_mach) sigma_max, about 6.3e-7 sigma_max at P = 1,800.
+  It keeps about 230 directions.
+- The shift f = 1e-12 tr(A^T A)/P damps singular values below about 1e-6 sigma_max (less,
+  since tr/P <= lambda_max). The smaller shifts 1e-16 and 1e-14 do not factor, because
+  kappa(A^T A) is about 1e21.
+- QR (`gelsy`, rcond = eps_mach) resolves singular values down to about eps_mach sigma_max:
+  rank about 730.
+
+So each normal-equation variant stalls at the best approximation its cutoff allows. The
+cutoffs are not arbitrary choices: forming A^T A in double precision leaves nothing below
+about sqrt(eps_mach) sigma_max, and that is the squaring of kappa the manuscript's Section 7
+conjecture names. The report states the cutoffs beside the stall levels (1e-4 to 1e-2, where
+QR reaches 1e-10), not the stall alone as proof. The preview is in
 `package2_results/laptop_preview/P2_4_elm_kovasznay/all`.
 
 Tests: `tests/test_p2s2_elm.py` covers:

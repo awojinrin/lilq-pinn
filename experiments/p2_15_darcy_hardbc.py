@@ -10,11 +10,16 @@ paper's NiL baseline in two things only:
 
 1. **The pressure output is lifted.** The Dirichlet data hold identically:
 
-       h* = y* + omega(y*) NN_h,   P = h* (P_top - P_bot) + P_bot,
+       h* = y* + omega(y*) NN_h / 2,   P = h* (P_top - P_bot) + P_bot,
        omega = 4 y* (1 - y*)   (unit maximum, zero on the top and bottom faces),
 
    with y* = y / L_y and y* the LiL lifting function (``solve_lilq_darcy``:
-   P = (y* + h_tilde*) DELTA_P + P_BOTTOM).
+   P = (y* + h_tilde*) DELTA_P + P_BOTTOM). The factor 1/2 is the paper's
+   output gain. The paper's network gives P = NN P_HALF + P_MID, that is
+   h* = 1/2 + NN/2, so one unit of NN_h moves the pressure by P_HALF in both
+   runs: P = y* DELTA_P + omega NN_h P_HALF + P_BOTTOM. The advisor's
+   h* = y* + omega NN_h, read with the paper's gain (Gbenga's decision of
+   5 October), keeps the starting correction at the paper's scale.
 2. **The optimizer is Levenberg-Marquardt** with item 2's F2 damping
    (``experiments.p2_8_lm_networks.lm``).
 
@@ -24,7 +29,7 @@ Everything else is the paper's run (``problems.darcy.DarcyPINN``):
   paper's order. That is PyTorch's default initialization, so the same
   weights as the paper's run for each seed.
 - **Inputs and scales:** the normalized inputs and the output scales
-  (u*, v* times V_SCALE).
+  (u*, v* times V_SCALE; NN_h times P_HALF, as above).
 - **The residuals,** at the 60 x 220 cell centres: Darcy-x, Darcy-y and
   continuity, in the paper's normalization, each a mean square weighted 50.
 - **The lateral no-flow rows:** U = 0 at the 220 lateral cell-face centres
@@ -106,14 +111,14 @@ def config_for(field):
 
 
 class HardBCDarcyPINN(DarcyPINN):
-    """The paper's network with the pressure output lifted:
-    P = (y* + omega(y*) NN_h) DELTA_P + P_BOTTOM, omega = 4 y* (1 - y*)."""
+    """The paper's network with the pressure output lifted, at the paper's gain:
+    P = y* DELTA_P + omega(y*) NN_h P_HALF + P_BOTTOM, omega = 4 y* (1 - y*)."""
 
     def _get_P(self, x, y):
         xn, yn = self._norm_input(x, y)
         ys = y.to(self.dtype) / self.physics.LY
         h = self.net_P(torch.cat([xn, yn], dim=1))
-        return (ys + 4.0 * ys * (1.0 - ys) * h) * self.physics.DELTA_P + self.config.P_BOTTOM
+        return ys * self.physics.DELTA_P + 4.0 * ys * (1.0 - ys) * h * self.P_HALF + self.config.P_BOTTOM
 
 
 # ---------------------------------------------------------------- the networks as functions of theta
@@ -157,7 +162,7 @@ class DarcyResidual:
         self.w_int = math.sqrt(W_PDE / self.n_int)
         self.w_lat = [math.sqrt(W_BC / n) for n in self.n_lat]
         self.XS, self.YS, self.LY = pinn.X_SCALE, pinn.Y_SCALE, float(ph.LY)
-        self.DP, self.PB = float(ph.DELTA_P), float(pinn.config.P_BOTTOM)
+        self.DP, self.PB, self.PH = float(ph.DELTA_P), float(pinn.config.P_BOTTOM), pinn.P_HALF
         self.VS, self.CE, self.norm = pinn.V_SCALE, pinn.CE_SCALE, pinn.sqrt_K0 * pinn.dP_scale
         self._t = t
 
@@ -194,8 +199,8 @@ class DarcyResidual:
         v, dv = _mlp(pV, Xn)
         ys = X[:, 1] / self.LY
         om, dom = 4.0 * ys * (1.0 - ys), 4.0 * (1.0 - 2.0 * ys) / self.LY
-        Px = self.DP * om * dh[:, 0] / self.XS
-        Py = self.DP * (1.0 / self.LY + dom * h + om * dh[:, 1] / self.YS)
+        Px = self.PH * om * dh[:, 0] / self.XS
+        Py = self.DP / self.LY + self.PH * (dom * h + om * dh[:, 1] / self.YS)
         U, V = u * self.VS, v * self.VS
         Ux, Vy = du[:, 0] / self.XS * self.VS, dv[:, 1] / self.YS * self.VS
         return ((U / sk + sk * Px) / self.norm, (V / sk + sk * Py) / self.norm, (Ux + Vy) / self.CE)
@@ -210,7 +215,7 @@ class DarcyResidual:
         pP, _, _ = self._unflat(theta)
         h, _ = _mlp(pP, self._norm(X))
         ys = X[:, 1] / self.LY
-        return (ys + 4.0 * ys * (1.0 - ys) * h) * self.DP + self.PB
+        return ys * self.DP + 4.0 * ys * (1.0 - ys) * h * self.PH + self.PB
 
     def vector(self, theta):
         dx, dy, ce = self._interior(theta, self.X_int, self.sqrt_K)
@@ -271,7 +276,7 @@ def run(field, seed, out_root, device=None, max_iterations=MAX_ITERATIONS, wall_
                 q.copy_(v)
     from lilq.saved_models import save_checkpoint
     save_checkpoint(run_dir / 'network.pt', {'networks': pinn.network_state(), 'field': field,
-                                             'lifting': 'P = (y* + 4 y*(1 - y*) NN_h) DELTA_P + P_BOTTOM'})
+                                             'lifting': 'P = y* DELTA_P + 4 y*(1 - y*) NN_h P_HALF + P_BOTTOM'})
     record = {
         'field': field, 'seed': seed, 'method': METHOD, 'device': str(device),
         'gpu': torch.cuda.get_device_name(device) if device.type == 'cuda' else None,
@@ -279,7 +284,8 @@ def run(field, seed, out_root, device=None, max_iterations=MAX_ITERATIONS, wall_
         'delta_FV': delta_fv(P, P_fv, config.P_BOTTOM), 'max_diff_psi': float(np.abs(P - P_fv).max()),
         'time_s': summary['training_time'], 'final_loss': summary['final_loss'], 'c3': c3,
         'n_theta': int(theta.numel()), 'n_rows': int(r0.numel()),
-        'differs_from_the_paper_nil': ['the pressure output is lifted (hard Dirichlet conditions)',
+        'differs_from_the_paper_nil': ['the pressure output is lifted (hard Dirichlet conditions), '
+                                       "at the paper's output gain P_HALF",
                                        'Levenberg-Marquardt instead of Adam'],
         'network': '3 x MLP(2, 32, 1, 2 hidden layers, SiLU), float64, torch.manual_seed(seed), the paper\'s order',
         'loss': {'interior': 'Darcy-x, Darcy-y, continuity: each 50 x mean square (the paper\'s normalization)',

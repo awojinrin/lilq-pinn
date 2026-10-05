@@ -47,7 +47,20 @@ def test_one_small_run(tmp_path):
     with open(d / 'iterations.csv') as f:
         rows = list(csv.DictReader(f))
     assert len(rows) == rec['iterations'] and {'t_assemble_s', 't_solve_s'} <= set(rows[0])
-    assert 'single timing' in rec['timing_protocol']
+    assert 'single timing' in rec['timing_protocol'] and rec['status'] == 'ok'
+
+
+def test_the_timing_is_saved_before_the_svd(tmp_path, monkeypatch):
+    """A kill during the off-clock SVD keeps the timing (status 'timed'), and the
+    summary still uses it for the times."""
+    def killed(*a, **k):
+        raise KeyboardInterrupt('walltime')
+    monkeypatch.setattr(m.np.linalg, 'svd', killed)
+    with pytest.raises(KeyboardInterrupt):
+        m.run_one('kovasznay_P', 5, 'cpu', tmp_path)
+    rec = json.loads((tmp_path / 'P2_1_scaling' / 'kovasznay' / 'kovasznay_P_5_cpu' / 'run.json').read_text())
+    assert rec['status'] == 'timed' and rec['total_time_s'] > 0 and rec['P'] == 75 and 'kappa' not in rec
+    assert [r['status'] for r in m._runs(tmp_path)] == ['timed']
 
 
 def test_exponent():

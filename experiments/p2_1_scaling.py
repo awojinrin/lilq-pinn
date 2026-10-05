@@ -197,7 +197,13 @@ def _errors(problem, config, r):
 def run_one(series, size, device, out_root):
     """Warm-up, the timed run, the memory readings, then the errors and the
     conditioning off the clock. Writes the run folder; returns run.json. On
-    the A100, a system that does not fit is recorded as ``did_not_fit``."""
+    the A100, a system that does not fit is recorded as ``did_not_fit``.
+
+    The timing is saved before the off-clock part: ``run.json`` is first
+    written with ``status: timed`` (no errors, kappa or rank), then rewritten
+    with ``status: ok``. A walltime kill during the SVD of the largest
+    Beltrami system (about 67,000 x 22,288) then keeps the timing; the series
+    skips the run on a resubmission, and the summary uses it for the times."""
     problem = SERIES[series]['problem']
     config = config_for(series, size, device)
     run_dir = Path(out_root) / 'P2_1_scaling' / problem / run_name(series, size, device)
@@ -233,15 +239,8 @@ def run_one(series, size, device, out_root):
         return record
     host_peak = peak_host_bytes()
     gpu_peak = int(torch.cuda.max_memory_allocated()) if cuda else None
-    # off the clock
     h = r['history']
-    errors = _errors(problem, config, r)
-    A = r.pop('A_final')
-    N_rows, P = A.shape
-    s = np.linalg.svd(A, compute_uv=False)
-    kappa = float(s[0] / s[-1])
-    rank = int((s > max(A.shape) * np.finfo(float).eps * s[0]).sum())
-    del A
+    N_rows, P = r['A_final'].shape
     rows = []
     for i, k in enumerate(h['iteration']):
         row = {'k': k, 't_assemble_s': h['t_assemble'][i], 't_solve_s': h['t_solve'][i],
@@ -260,16 +259,24 @@ def run_one(series, size, device, out_root):
               'N_t_bc': config.N_t_bc, 'N_ic': config.N_ic, 'pins': config.n_pressure_pin_levels}
              if problem == 'beltrami' else {'p_d': config.N_x, 'k_ratio': config.k_ratio})
     record = {
-        **base, 'status': 'ok', 'P': int(P), 'N': int(N_rows), 'N_over_P': N_rows / P, **extra,
+        **base, 'status': 'timed', 'P': int(P), 'N': int(N_rows), 'N_over_P': N_rows / P, **extra,
         'iterations': len(h['iteration']), 'stop': 'tolerance' if h['coeff_change'][-1] < config.tol else 'K_max',
         'K_max': config.max_iter, 'tol': config.tol,
         'total_time_s': r['solve_time_total'], 'wall_time_s': wall_s, 'warmup_time_s': warm_s,
         't_assemble_total_s': float(sum(h['t_assemble'])), 't_solve_total_s': float(sum(h['t_solve'])),
         'peak_host_bytes': host_peak, 'peak_gpu_bytes': gpu_peak, 'A_bytes': 8 * int(N_rows) * int(P),
-        'kappa': kappa, 'rank': rank, **errors,
         'timing_protocol': 'one untimed warm-up, then one timed run with the diagnostics off (Section 10: a single '
                            'timing, not the median of three)',
     }
+    (run_dir / 'run.json').write_text(json.dumps(record, indent=2))   # the timing, before the off-clock part
+    # off the clock: the errors, then kappa and the rank
+    errors = _errors(problem, config, r)
+    A = r.pop('A_final')
+    s = np.linalg.svd(A, compute_uv=False)
+    kappa = float(s[0] / s[-1])
+    rank = int((s > max(A.shape) * np.finfo(float).eps * s[0]).sum())
+    del A
+    record.update(status='ok', kappa=kappa, rank=rank, **errors)
     (run_dir / 'run.json').write_text(json.dumps(record, indent=2))
     return record
 
@@ -293,6 +300,10 @@ def run_series(series_list, device, out_root, sizes=None):
                       f"(A alone {r['A_bytes'] / 1e9:.1f} GB): {r['error'][:120]}", flush=True)
                 continue
             gpu = f", GPU peak {r['peak_gpu_bytes'] / 1e9:.2f} GB" if r['peak_gpu_bytes'] else ''
+            if r['status'] == 'timed':
+                print(f"  {run_name(series, size, device)}: P = {r['P']}, {r['total_time_s']:.2f} s; the off-clock "
+                      f"errors and SVD did not finish", flush=True)
+                continue
             print(f"  {run_name(series, size, device)}: P = {r['P']}, N = {r['N']} (N/P {r['N_over_P']:.2f}), "
                   f"{r['iterations']} iterations, {r['total_time_s']:.2f} s (assembly {r['t_assemble_total_s']:.2f}, "
                   f"solve {r['t_solve_total_s']:.2f}), host peak {r['peak_host_bytes'] / 1e9:.2f} GB{gpu}, "
@@ -305,7 +316,8 @@ def run_series(series_list, device, out_root, sizes=None):
 
 def _runs(out_root, ok_only=True):
     runs = [json.loads(p.read_text()) for p in sorted((Path(out_root) / 'P2_1_scaling').glob('*/*/run.json'))]
-    return [r for r in runs if r.get('status', 'ok') == 'ok'] if ok_only else runs
+    # 'timed': the timing was saved, and the off-clock part (errors, kappa, rank) did not finish
+    return [r for r in runs if r.get('status', 'ok') in ('ok', 'timed')] if ok_only else runs
 
 
 def exponent(xs, ys):
@@ -354,7 +366,7 @@ def check_c8prime(runs, package1):
         for device in ('cpu', 'cuda'):
             run = next((r for r in runs if (r['series'], r['size'], r['device']) == (series, size, device)), None)
             p1 = _package1_errors(B, SERIES[series]['problem'], device, run['P']) if run else None
-            if run is None or p1 is None:
+            if run is None or p1 is None or run.get('status') == 'timed':
                 continue
             name, iters, errors = p1
             diffs = {k: abs(run[k] - v) / abs(v) for k, v in errors.items()}

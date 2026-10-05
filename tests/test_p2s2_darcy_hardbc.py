@@ -34,6 +34,11 @@ def test_the_lifting_meets_the_dirichlet_data_exactly(s1):
     assert torch.all(bottom == config.P_BOTTOM) and torch.all(top == config.P_TOP)
     mid = pinn._get_P(x, torch.full_like(x, physics.LY / 2))
     assert not torch.allclose(mid, torch.full_like(mid, (config.P_TOP + config.P_BOTTOM) / 2))   # the network acts
+    # the paper's output gain: at mid-height (omega = 1) one unit of NN moves P by P_HALF, as in DarcyPINN
+    paper = DarcyPINN(config, physics, device='cpu', seed=0)
+    nn_mid = pinn.net_P(torch.cat(pinn._norm_input(x, torch.full_like(x, physics.LY / 2)), dim=1))
+    assert torch.allclose(mid - (config.P_TOP + config.P_BOTTOM) / 2, nn_mid * pinn.P_HALF, rtol=1e-13, atol=1e-9)
+    assert torch.allclose(paper._get_P(x, torch.full_like(x, physics.LY / 2)) - paper.P_MID, nn_mid * paper.P_HALF)
 
 
 def test_the_papers_networks_and_initialization(s1):
