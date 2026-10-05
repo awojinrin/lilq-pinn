@@ -17,6 +17,47 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 2, batch 1: item 1 (P2-3), the classical baselines on Bratu and Kovasznay
+
+**What** (Sections 4.1, 4.2 step 2, 4.4; the advisor's Stage-1 reply, Section 4, item 1).
+`experiments/p2_3_classical.py` gains three stages:
+- `bratu`: every method and size of Section 4.1 (SQ-CGL p = 6..24 and 7, 12, 17;
+  LS-hard-CGL-1.5 p = 5..24 and 5, 10, 15; LS-weakMS-CGL-3, lambda_bc = 10, p = 5, 10, 15);
+- `kovasznay`: the P_N - P_{N-2} square system, corner pin, p_d = 10, 15, 20, 25, with the
+  unknowns split into velocity and pressure (e.g. 450 + 169 at p_d = 15);
+- `figures`: the work-precision figure (error against free coefficients and against time).
+
+**Per run:** one diagnostic run (per-iteration error, the plateau iterate -- the first within
+5% of the final error -- kappa and rank by SVD), then the timing protocol: one untimed warm-up,
+the median of three clean runs with the diagnostics off, assembly and solve timed separately,
+time to the plateau and to the stop. The clean runs must stop where the diagnostic run did
+(asserted). The paper's LiL-Q is timed the same day under the same protocol (Bratu P = 25, 100,
+225; Kovasznay P = 75 .. 1,875, and wave 4's Clenshaw-Curtis runs at N/P = 5), with package1's
+clean time and the 15% check (`timing_lilq.csv`). Outputs: `rows.csv` (the columns of Section
+4.4), one `history_*.csv` per run, `run.json` with the commit and the thread setting, and the
+job's `hardware.json`.
+
+**Rehearsed on the laptop** (the full sizes; 15 s for Bratu, 2 min for Kovasznay): every Bratu
+method converges within K_max = 20 (LS-weakMS-CGL-3 at p = 5 takes 13 iterations), LS-hard at
+p = 12 gives 1.09e-5 against the reference as in the pilot; Kovasznay is full rank at every
+size, E_u 2.3e-2, 1.85e-5, 4.8e-9, 1.9e-13 at p_d = 10, 15, 20, 25 (LiL-Q at the matching P:
+2.9e-2, 1.2e-5, 7.4e-9, 7.0e-13). The laptop's times are not the result; the 15% check applies
+on the Grace node.
+
+**Jobs:** `scripts/cluster/package2/p2s2_classical_{bratu,kovasznay}.slurm` (timed-cpu,
+exclusive, 48 threads, 1 h each, against `results/package1_v2.0.0/package1`).
+
+**Not yet submitted, by design.** `env.sh` locks each stage's folder to the commit of its first
+job, and the package requires one commit per stage (Section 12.1). So Stage 2's jobs are
+submitted together from one bundle once every item's code is written and rehearsed; item 1
+runs in minutes, so nothing is lost by waiting.
+
+Tests: `tests/test_p2s2_classical.py` (the plateau and time sums, warm-up and median, both
+stages on small sizes including a size that does not converge, the same-day comparison, the
+jobs).
+
+---
+
 ## 2026-10-04 -- After the advisor's Stage-1 reply: the release check against the corrected manuscript, 20 of 20 figures on package1
 
 **The reply** (`Computational_Package2/response_stage1/Reply_to_stage1_2026-10-04.md`):
