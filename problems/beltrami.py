@@ -185,17 +185,27 @@ def _cgl_temporal_pin_nodes(n_pin, t_domain):
     return 0.5 * (b - a) * (xi + 1.0) + a
 
 
-def _lstsq(A, b, use_gpu=False):
-    if use_gpu and HAS_TORCH_CUDA:
-        At = torch.as_tensor(A, dtype=torch.float64, device='cuda')
-        bt = torch.as_tensor(b, dtype=torch.float64, device='cuda').unsqueeze(1)
-        result = torch.linalg.lstsq(At, bt, driver='gelsd')
-        x = result.solution.squeeze(1).cpu().numpy()
-        rank = int(result.rank) if result.rank is not None else At.shape[1]
-        return x, rank
-    else:
-        x, _, rank, _ = scipy.linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy')
-        return x, rank
+def _lstsq(A, b, use_gpu=False, timings=None):
+    """``(x, rank, gpu_peak_bytes)``. CPU: ``gelsy`` (the paper's runs; rank
+    from its rank-revealing QR, no GPU peak). GPU: the full-rank Householder
+    QR of Kovasznay's GPU path (``problems.kovasznay._lstsq_gpu_qr``, the
+    algorithm of LAPACK's ``gels``); rank is P by assumption, and the peak is
+    the solve's own ``max_memory_allocated``.
+
+    Package 2, item 7 (DECISIONS.md, batch 4): the GPU branch called
+    ``torch.linalg.lstsq(driver='gelsd')``, which PyTorch refuses on CUDA
+    (only ``gels`` is supported there), so no Beltrami GPU run could
+    complete. Package 1 ran Beltrami on the CPU only, which is why it was
+    never seen. It also fell back to the CPU silently when no GPU was
+    present; it now raises, as Kovasznay's does."""
+    if use_gpu:
+        if not HAS_TORCH_CUDA:
+            raise RuntimeError("config.use_gpu=True but no CUDA device is available.")
+        from problems.kovasznay import _lstsq_gpu_qr
+        x, _R_diag, peak = _lstsq_gpu_qr(A, b, timings=timings)
+        return x, A.shape[1], peak
+    x, _, rank, _ = scipy.linalg.lstsq(A, b, cond=EPS_MACH, lapack_driver='gelsy')
+    return x, rank, None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -362,8 +372,13 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
                     analyze_conditioning: bool = False,
                     iteration_logger=None,
                     run_json_path=None,
-                    diagnostics: bool = True) -> Dict:
+                    diagnostics: bool = True,
+                    return_final_system: bool = False) -> Dict:
     """Solve 3D Beltrami flow via multi-field LiL-Q.
+
+    ``return_final_system`` (Package 2, item 7): also return the last
+    iteration's weighted system (``A_final``, ``b_final``), for its kappa and
+    rank off the clock; it is N x P, so only on request.
 
     Parameters
     ----------
@@ -512,7 +527,10 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
     theta_w = np.zeros(Pw); theta_p = np.zeros(Pp)
 
     history = {k: [] for k in ['iteration', 'coeff_change', 'pde_residual',
-                                'continuity_residual', 'solve_time', 'cond_number']}
+                                'continuity_residual', 'solve_time', 'cond_number',
+                                # Package 2, item 7: the clock's two parts per iteration (kept with
+                                # the diagnostics off too) and the GPU solve's peak memory and parts
+                                't_assemble', 't_solve', 'gpu_mem_peak_bytes', 'gpu_parts']}
 
     tracker = None
     loss_fn = None
@@ -624,8 +642,13 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         b_sys = np.concatenate(b_rows)
         t_assemble_s = time.perf_counter() - t0
 
+        parts = {} if config.use_gpu else None
+        if config.use_gpu and HAS_TORCH_CUDA:
+            torch.cuda.synchronize()          # a GPU clock read is preceded by a synchronization
         t0 = time.perf_counter()
-        theta_new, rank = _lstsq(A_sys, b_sys, use_gpu=config.use_gpu)
+        theta_new, rank, gpu_peak = _lstsq(A_sys, b_sys, use_gpu=config.use_gpu, timings=parts)
+        if config.use_gpu and HAS_TORCH_CUDA:
+            torch.cuda.synchronize()
         t_solve_s = time.perf_counter() - t0
         dt_iter = time.perf_counter() - t_iter
 
@@ -661,6 +684,10 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         history['pde_residual'].append(pde_res)
         history['continuity_residual'].append(cont_res)
         history['solve_time'].append(dt_iter)
+        history['t_assemble'].append(t_assemble_s)
+        history['t_solve'].append(t_solve_s)
+        history['gpu_mem_peak_bytes'].append(gpu_peak)
+        history['gpu_parts'].append(parts)
         history['cond_number'].append(
             float(np.linalg.cond(A_sys)) if analyze_conditioning else float('nan')
         )
@@ -768,6 +795,7 @@ def solve_beltrami(config: BeltramiConfig, verbose=True,
         'diagnostics_time': t_diag,
         **rel_l2, 'pde_mse': pde_res, 'cont_mse': cont_res,
         'history': history, 'snapshots': snap,
+        **({'A_final': A_sys, 'b_final': b_sys} if return_final_system else {}),
     }
 
 

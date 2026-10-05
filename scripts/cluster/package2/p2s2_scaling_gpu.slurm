@@ -6,7 +6,10 @@
 # Kovasznay: the P series (p_d = 25 .. 50, N/P about 3) and the N series (P = 1,200,
 # N/P = 3, 5, 10, 20). Each run in its own process: one untimed warm-up, one timed run
 # with the diagnostics off, the peak memory, then kappa, rank and errors off the clock.
-# Batch 4 adds Beltrami where it fits in 40 GB, and sets the walltime.
+# Beltrami at 7,984, 13,764 and 22,288 coefficients: a size that does not fit in the
+# A100's 40 GB is recorded as did_not_fit with the system's size (Section 10); 22,288 is
+# expected not to fit (the laptop measured 18.9 GB at 13,764; scaled with A, about 44 GB).
+# Expected about 45 min.
 # Results in results/package2_stage2/P2_1_scaling.
 # Submit: LILQ_WAVE=p2s2 bash scripts/cluster/sbatch.sh scripts/cluster/package2/p2s2_scaling_gpu.slurm
 # lilq-resources: timed   (applied by scripts/cluster/sbatch.sh from the cluster profile)
@@ -16,4 +19,4 @@
 
 source scripts/cluster/env.sh
 set -euo pipefail
-python experiments/p2_1_scaling.py series --series kovasznay_P kovasznay_N --device cuda --out "$PKG"
+python experiments/p2_1_scaling.py series --series kovasznay_P kovasznay_N beltrami --device cuda --out "$PKG"
