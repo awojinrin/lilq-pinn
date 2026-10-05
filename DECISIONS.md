@@ -17,6 +17,53 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, after the advisor's reply: item 8 (P2-10), a manufactured solution compatible with the bases
+
+**What** (the advisor's reply of 5 October, Section 3.2). The stall of the specified
+solution (batch 2a, below) was a defect of the specification, and he replaced the
+solution. `problems.elasticity.CompatibleManufacturedElasticityPhysics`:
+- the solution u_x = e^{cos(pi x)} e^{cos(2 pi y)} sin(pi y)/10 and
+  u_y = sin(pi x) e^{cos(2 pi x)} y e^y/20;
+- derivatives in closed form, tested against sympy to 1e-13.
+
+It meets every boundary condition of Section 6.5 with the paper's data types. The lateral
+faces are traction-free (sigma_xx = 0 there to 1e-13, tested), so the lateral datum is the
+paper's zero. Only the body force and the top traction sigma_yy come from the solution.
+It matches the bases' symmetries: u_x is even in x and odd in y about the faces, and u_y is
+odd in x. The exponentials keep it outside the span of both bases at every P.
+
+**Also kept, as he asked: the specified solution.** It is reported in one row and one
+sentence as the negative result.
+
+`experiments/p2_10_elasticity_manufactured.py` runs both solutions:
+- `rows.csv` gains the column `solution` (`compatible`, `specified`);
+- run folders are `<solution>/P<P>/`.
+
+The job stays the same (seconds).
+
+**Result (laptop): the compatible solution converges with delta_P, with no stall.**
+
+| P | error u_x | error u_y | delta_P (u_x, u_y) | error / delta_P (u_x, u_y) |
+|---|---|---|---|---|
+| 50 | 3.8e-2 | 1.1e-1 | 2.4e-2 | 1.6, 4.8 |
+| 200 | 4.8e-4 | 2.1e-3 | 3.0e-4 | 1.6, 7.0 |
+| 450 | 2.4e-7 | 1.2e-6 | 1.1e-7 | 2.1, 10.8 |
+| 800 | 8.8e-10 | 4.5e-9 | 3.2e-10 | 2.8, 14.1 |
+| 1,250 | 8.1e-14 | 4.2e-13 | 2.4e-14, 3.3e-14 | 3.4, 12.6 |
+
+Every system has full rank, and kappa runs from 1.1e2 to 4.4e4. The specified solution
+reproduces its stall at 0.22 (u_x) and 0.14 (u_y).
+
+**Why delta_P is the same for both fields.** Up to P = 800 the u_x and u_y values agree to
+three digits. Each field's slowest-converging factor is the same 1-D function,
+e^{cos(2 pi t)} sin(pi t), in the same N-mode sine basis: in y for u_x, in x for u_y. So
+the two best-approximation errors coincide until round-off separates them.
+
+Tests: `tests/test_p2s2_elasticity.py`, covering the derivatives of both solutions, the
+compatible solution's boundary data, and the rows of both solutions.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 6: the submission machinery
 
 **On Grace:** `scripts/cluster/package2/submit_p2s2.sh` (the pattern of `submit_wave<N>.sh`,

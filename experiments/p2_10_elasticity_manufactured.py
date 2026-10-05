@@ -2,18 +2,31 @@
 Package 2, item 8 (P2-10): a manufactured elasticity solution outside the span of the basis
 ==========================================================================================
 
-The advisor's instructions of 4 October 2026, Section 11. The paper's
-elasticity case (Section 6.5) has its exact solution in the span of the
-basis, so it only checks assembly and solve. This runs the same operator,
-domain, bases, boundary-condition types and P (50 .. 1,250) with
+The advisor's instructions of 4 October 2026, Section 11, and his reply of
+5 October (Section 3.2). The paper's elasticity case (Section 6.5) has its
+exact solution in the span of the basis, so it only checks assembly and
+solve. This runs the same operator, domain, bases, boundary-condition types
+and P (50 .. 1,250) with two manufactured solutions outside the span of both
+bases (delta_P > 0), one solve per P each (``solve_elasticity`` with the
+manufactured physics; the paper's case is unchanged, bit for bit):
 
-    u_x = y (1 - y) e^{xy} / 10,    u_y = x (1 - x) y e^{x+y} / 20
+- ``compatible`` (the reply's replacement; the result):
 
-(``problems.elasticity.ManufacturedElasticityPhysics``), which lies outside
-the span of both bases, so delta_P > 0. One solve per P (``solve_elasticity``
-with the manufactured physics; the paper's case is unchanged, bit for bit).
+      u_x = e^{cos(pi x)} e^{cos(2 pi y)} sin(pi y) / 10,
+      u_y = sin(pi x) e^{cos(2 pi x)} y e^y / 20
 
-Per P:
+  (``CompatibleManufacturedElasticityPhysics``). It matches the bases'
+  symmetries and meets every boundary condition with the paper's data types
+  (the lateral faces traction-free), so delta_P falls geometrically with P
+  and error / delta_P is the quantity of interest.
+- ``specified`` (the instructions' solution, kept as a negative result):
+
+      u_x = y (1 - y) e^{xy} / 10,    u_y = x (1 - x) y e^{x+y} / 20
+
+  (``ManufacturedElasticityPhysics``). It breaks the symmetry built into the
+  bases (below), and its errors stall while delta_P falls.
+
+Per solution and P:
 - the relative L2 errors of u_x and u_y against the exact solution on the
   200 x 200 test grid, and the stresses';
 - delta_P, the relative discrete L2 distance of the exact solution to the
@@ -24,16 +37,17 @@ Per P:
 
 Also per P, ``lateral_sxx_trial_max`` and ``lateral_sxx_required_max``: the
 largest |sigma_xx| any trial function can have on the lateral faces, and the
-largest the manufactured data asks for. With the paper's bases (u_x: cosine
-in x; u_y: sine in x), every trial function has d(u_x)/dx = 0 and
+largest the manufactured data asks for (zero for ``compatible``). With the
+paper's bases (u_x: cosine in x; u_y: sine in x), every trial function has d(u_x)/dx = 0 and
 d(u_y)/dy = 0 on x = 0 and 1, so sigma_xx is zero there for every
 coefficient vector: the lateral traction rows are zero rows, and the
-manufactured (non-zero) traction cannot be met. The same parity makes the
+``specified`` (non-zero) traction cannot be met. The same parity makes the
 second derivatives the equations are collocated on unresolvable near the
 faces (DECISIONS.md, Package 2, Stage 2, batch 2a).
 
-Writes ``P2_10_elasticity_manufactured/rows.csv`` and, per P, ``P<P>/``
-with ``run.json`` and ``iterations.csv``.
+Writes ``P2_10_elasticity_manufactured/rows.csv`` (column ``solution``) and,
+per solution and P, ``<solution>/P<P>/`` with ``run.json`` and
+``iterations.csv``.
 
 Usage::
 
@@ -56,7 +70,10 @@ import numpy as np
 from experiments.run_elasticity import DEFAULT_N_VALUES, K_RATIO
 from lilq.iteration_log import IterationLogger
 from lilq.provenance import save_provenance
-from problems.elasticity import TEST_GRID, ElasticityConfig, ManufacturedElasticityPhysics, solve_elasticity
+from problems.elasticity import (TEST_GRID, CompatibleManufacturedElasticityPhysics, ElasticityConfig,
+                                 ManufacturedElasticityPhysics, solve_elasticity)
+
+SOLUTIONS = {'compatible': CompatibleManufacturedElasticityPhysics, 'specified': ManufacturedElasticityPhysics}
 
 
 def best_approximation(basis, exact, xs, ys):
@@ -83,10 +100,10 @@ def lateral_traction(basis_u, basis_v, physics, n=101):
     return trial, required
 
 
-def one(N, out_dir):
+def one(N, out_dir, solution='compatible'):
     config = ElasticityConfig(N_x=N, N_y=N, k_ratio=K_RATIO)
-    physics = ManufacturedElasticityPhysics(config)
-    run_dir = Path(out_dir) / f'P{2 * N * N}'
+    physics = SOLUTIONS[solution](config)
+    run_dir = Path(out_dir) / solution / f'P{2 * N * N}'
     run_dir.mkdir(parents=True, exist_ok=True)
     logger = IterationLogger()
     r = solve_elasticity(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json',
@@ -100,7 +117,7 @@ def one(N, out_dir):
     d_both = float(np.hypot(du, dv) / np.hypot(nu, nv))
     row = logger.rows[0]
     trial_sxx, required_sxx = lateral_traction(r['basis_u'], r['basis_v'], physics)
-    return {'N': N, 'P': r['n_params'], 'P_u': r['basis_u'].n_basis, 'P_v': r['basis_v'].n_basis,
+    return {'solution': solution, 'N': N, 'P': r['n_params'], 'P_u': r['basis_u'].n_basis, 'P_v': r['basis_v'].n_basis,
             'eps_ux': eu, 'eps_uy': ev, 'eps_both': e_both,
             'delta_ux': du / nu, 'delta_uy': dv / nv, 'delta_both': d_both,
             'ratio_ux': eu / (du / nu), 'ratio_uy': ev / (dv / nv), 'ratio_both': e_both / d_both,
@@ -110,9 +127,9 @@ def one(N, out_dir):
             'lateral_sxx_trial_max': trial_sxx, 'lateral_sxx_required_max': required_sxx}
 
 
-def run(out_root, sizes=DEFAULT_N_VALUES):
+def run(out_root, sizes=DEFAULT_N_VALUES, solutions=tuple(SOLUTIONS)):
     out = Path(out_root) / 'P2_10_elasticity_manufactured'
-    rows = [one(N, out) for N in sizes]
+    rows = [one(N, out, solution) for solution in solutions for N in sizes]
     with open(out / 'rows.csv', 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
         w.writeheader()
@@ -124,9 +141,10 @@ def run(out_root, sizes=DEFAULT_N_VALUES):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Package 2, item 8: the manufactured elasticity solution.")
     ap.add_argument('--out', required=True, help='the stage root')
+    ap.add_argument('--solutions', nargs='+', choices=list(SOLUTIONS), default=list(SOLUTIONS))
     args = ap.parse_args(argv)
-    for r in run(args.out):
-        print(f"P = {r['P']:5d}: error u_x {r['eps_ux']:.2e} u_y {r['eps_uy']:.2e} | delta_P {r['delta_ux']:.2e} "
+    for r in run(args.out, solutions=args.solutions):
+        print(f"{r['solution']:10s} P = {r['P']:5d}: error u_x {r['eps_ux']:.2e} u_y {r['eps_uy']:.2e} | delta_P {r['delta_ux']:.2e} "
               f"{r['delta_uy']:.2e} | ratio {r['ratio_ux']:.2f} {r['ratio_uy']:.2f} | kappa {r['kappa']:.1e} "
               f"rank {r['rank_svd']} of {r['P']}")
 

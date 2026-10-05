@@ -187,6 +187,50 @@ class ManufacturedElasticityPhysics(ElasticityPhysics):
         return self.exact_sxx(x, y)
 
 
+def _exp_cos(t, k):
+    """e^{cos(k pi t)} and its first two derivatives."""
+    e, s, c = np.exp(np.cos(k * pi * t)), np.sin(k * pi * t), np.cos(k * pi * t)
+    return e, -k * pi * s * e, (k * pi) ** 2 * (s * s - c) * e
+
+
+class CompatibleManufacturedElasticityPhysics(ManufacturedElasticityPhysics):
+    """Package 2, item 8 (P2-10), the advisor's replacement of 5 October 2026:
+    a manufactured solution outside the span of both bases that matches their
+    symmetries,
+
+        u_x = e^{cos(pi x)} e^{cos(2 pi y)} sin(pi y) / 10,
+        u_y = sin(pi x) e^{cos(2 pi x)} y e^y / 20.
+
+    u_x is even about x = 0 and 1 and odd about y = 0 and 1 (the cosine-sine
+    basis of u_x); u_y is odd about x = 0 and 1 (the sine-Chebyshev basis of
+    u_y). Every boundary condition of Section 6.5 holds with the paper's data
+    types: u_x = u_y = 0 at the bottom, u_x = 0 at the top, u_y = 0 and
+    sigma_xx = 0 on the lateral faces (d(u_x)/dx and d(u_y)/dy both vanish
+    there). So the lateral traction datum is the paper's zero, and only the
+    body force and the top traction sigma_yy come from the solution."""
+
+    @staticmethod
+    def _u(x, y):
+        a, a1, a2 = _exp_cos(x, 1)                         # e^{cos(pi x)}
+        e, e1, e2 = _exp_cos(y, 2)                         # e^{cos(2 pi y)}
+        s, s1, s2 = np.sin(pi * y), pi * np.cos(pi * y), -pi * pi * np.sin(pi * y)
+        b, b1, b2 = e * s, e1 * s + e * s1, e2 * s + 2 * e1 * s1 + e * s2
+        return {'': a * b, 'x': a1 * b, 'xx': a2 * b, 'y': a * b1, 'yy': a * b2, 'xy': a1 * b1}
+
+    @staticmethod
+    def _v(x, y):
+        f, f1, f2 = _exp_cos(x, 2)                         # e^{cos(2 pi x)}
+        t, t1, t2 = np.sin(pi * x), pi * np.cos(pi * x), -pi * pi * np.sin(pi * x)
+        g, g1, g2 = t * f, t1 * f + t * f1, t2 * f + 2 * t1 * f1 + t * f2
+        ey = np.exp(y)
+        h, h1, h2 = y * ey, (1 + y) * ey, (2 + y) * ey
+        return {'': g * h, 'x': g1 * h, 'xx': g2 * h, 'y': g * h1, 'yy': g * h2, 'xy': g1 * h1}
+
+    def traction_lateral_sxx(self, x, y):
+        """Traction-free, as in the paper: the solution's sigma_xx is zero there."""
+        return np.zeros_like(y)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Collocation
 # ─────────────────────────────────────────────────────────────────────────────
