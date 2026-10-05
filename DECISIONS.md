@@ -17,6 +17,19 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 2: the references are written atomically
+
+Several Stage 2 jobs make the Bratu or Burgers reference in `$PKG/reference` when it is missing:
+the certified grids, LM and ELM. Item 1's Bratu job always rewrites the Bratu reference (it needs
+p = 48 and 64). Jobs running at the same time could therefore read a reference while another job
+was writing it.
+- `lilq.references.save_npz_atomic` and `write_text_atomic` now write to a temporary file beside
+  the target and rename it, so a reader sees the old file or the new one, never part of one.
+- The writers are deterministic, so either is the same reference.
+- The values are unchanged; only how the files are written changed.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 2, batch 2d: item 2 (P2-8), NiL-N trained by Levenberg-Marquardt
 
 **Code** (Section 5): `experiments/p2_8_lm_networks.py`. It is new and changes no earlier run.
@@ -76,6 +89,26 @@ v3-dev three-way comparison run.
 Jobs: `scripts/cluster/package2/p2s2_lm_networks_{bratu,burgers,bl}.slurm` (timed-cpu, 0.5, 1 and
 1 h). BL runs: it is cheap, so far more than 150 SU remain under the item's cap. Tests:
 `tests/test_p2s2_lm_networks.py`.
+
+**Review fixes, same day:**
+- **Provenance per job.** The three CPU jobs run at the same time, and each wrote `hardware.json`
+  and `environment.txt` into the same folder. Each now writes to
+  `P2_8_lm_networks/provenance/<benchmark>_<device>/`.
+- **The L-BFGS reference errors.** Only the final L-BFGS models were saved. `summarize
+  --lbfgs-errors` reads their final `eps_ref` from the Stage-1 CSVs (`scalar_reference_errors.csv`,
+  `bl_reference_errors_networks.csv`, GPU rows). It puts them in the medians
+  (`lbfgs_eps_ref_median`) and on the figure, as a marker at the run's final time.
+- **What they show:**
+  - LM's lower loss gives a lower error at Burgers P = 400 and 625 (4e-5 and 9e-6 against 7e-4
+    and 6e-4) and at BL P >= 576.
+  - It does not at Burgers P = 225 (1.0e-3 against 9.8e-4).
+  - At the smallest sizes LM is worse: Burgers P = 25 0.45 against 0.13, BL P = 64 0.083 against
+    0.048, Bratu P = 25 1.04 against 0.085. There, the loose targets are met by functions far
+    from the solution.
+  - These are rehearsal medians from one seed for Burgers and BL; Grace runs all three.
+- **`p2s2_lm_networks_gpu.slurm`** (timed, 3.25 h): the contingent A100 reruns of whatever
+  `gpu-list` names, three seeds each. It exits at once if the list is empty, and is submitted
+  only if it is not.
 
 ---
 

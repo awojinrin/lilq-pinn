@@ -61,8 +61,8 @@ def burgers(out_dir):
             'grid': '201 x 201 on [-1,1] x [0,1], u[i, j] at (x[i], t[j])', 'checks': checks, 'commit': current_commit()}
     ref_dir = Path(out_dir) / 'reference'
     ref_dir.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(ref_dir / 'burgers_cole_hopf.npz', x=x, t=t, u=u, meta=np.array(json.dumps(meta)))
-    (ref_dir / 'burgers_cole_hopf_checks.json').write_text(json.dumps(meta, indent=2))
+    R.save_npz_atomic(ref_dir / 'burgers_cole_hopf.npz', x=x, t=t, u=u, meta=np.array(json.dumps(meta)))
+    R.write_text_atomic(ref_dir / 'burgers_cole_hopf_checks.json', json.dumps(meta, indent=2))
     return checks
 
 

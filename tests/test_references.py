@@ -47,3 +47,15 @@ def test_eps_ref_helper_and_reference_files(tmp_path):
     assert meta == {'k': 1} and ref.shape == (11, 11)
     assert R.make_eps_ref_fn(basis, tmp_path / 'r.npz')(beta)['eps_ref'] == pytest.approx(1.0)
     assert R.reference_path(tmp_path, 'burgers').name == 'burgers_cole_hopf.npz'
+
+
+def test_save_npz_atomic_replaces_and_leaves_no_temporary(tmp_path):
+    import numpy as np
+    from lilq.references import save_npz_atomic, write_text_atomic
+    path = tmp_path / 'ref.npz'
+    save_npz_atomic(path, u=np.zeros(3))
+    save_npz_atomic(path, u=np.ones(3))
+    with np.load(path) as z:
+        assert z['u'].tolist() == [1.0, 1.0, 1.0]
+    write_text_atomic(tmp_path / 'a.json', '{}')
+    assert sorted(p.name for p in tmp_path.iterdir()) == ['a.json', 'ref.npz']

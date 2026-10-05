@@ -146,3 +146,26 @@ def test_run_stage_skips_finished_runs(tmp_path, monkeypatch, capsys):
         'eps_ref_final': 0.0, 'c3': {'rel_diff': 0.0}})
     m.main(['run', '--benchmark', 'bratu', '--P', '25', '--seeds', '0', '1', '--out', str(tmp_path)])
     assert [c[2] for c in calls] == [1] and 'done, skipping' in capsys.readouterr().out
+
+
+def test_gpu_rerun_job_and_list(tmp_path):
+    text = (REPO / 'scripts' / 'cluster' / 'package2' / 'p2s2_lm_networks_gpu.slurm').read_text()
+    assert '# lilq-resources: timed ' in text and 'gpu-list' in text and '--device cuda' in text
+    base = tmp_path / 'P2_8_lm_networks'
+    for name, reason, device in (('burgers_P625_seed0', 'wall_time_cap', 'cpu'), ('burgers_P625_seed1', 'target', 'cpu'),
+                                 ('bratu_P25_seed0', 'target', 'cpu'), ('bl_P1024_seed0_cuda', 'wall_time_cap', 'cuda')):
+        (base / name).mkdir(parents=True)
+        bench, P = name.split('_')[0], int(name.split('_')[1][1:])
+        (base / name / 'run.json').write_text(json.dumps({'benchmark': bench, 'P': P, 'device': device,
+                                                          'stopping_reason': reason}))
+    assert m.gpu_list(tmp_path) == [('burgers', 625)]
+
+
+def test_lbfgs_reference_errors(tmp_path):
+    a = tmp_path / 'scalar.csv'
+    a.write_text('\n'.join(['benchmark,P,method,seed,device,eps_ref_final', 'bratu,25,NiL-N,0,cuda,0.1',
+                            'bratu,25,NiL-N,0,cpu,0.2', 'bratu,25,NiL-Q,0,cuda,0.3']) + '\n')
+    b = tmp_path / 'bl.csv'
+    b.write_text('\n'.join(['case,P,method,seed,device,eps_ref_final', 'bl,64,NiL-N,1,cuda,0.4',
+                            'bl,64,LiL-N,,cuda,0.5']) + '\n')
+    assert m.lbfgs_reference_errors([a, b]) == {('bratu', 25, 0): 0.1, ('bl', 64, 1): 0.4}

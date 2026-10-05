@@ -92,13 +92,14 @@ C1_CASES = (('LS-hard-CGL-1.5', 12), ('LS-hard-CGL-1.5', 20), ('SQ-CGL', 14), ('
 
 
 def write_reference(out_dir):
+    from lilq.references import save_npz_atomic, write_text_atomic
     ref_dir = Path(out_dir) / 'reference'
     ref_dir.mkdir(parents=True, exist_ok=True)
     fields = {}
     for p in (REF_P, CHECK_P):
         beta, space, u, res = sc.reference(p, TEST_AXIS)
         fields[p] = u
-        np.savez_compressed(ref_dir / f'bratu_ref_p{p}.npz', coefficients=beta, p=p, x=TEST_AXIS, y=TEST_AXIS, u=u,
+        save_npz_atomic(ref_dir / f'bratu_ref_p{p}.npz', coefficients=beta, p=p, x=TEST_AXIS, y=TEST_AXIS, u=u,
                             meta=np.array(json.dumps({
                                 'problem': 'Bratu, lambda = 6.2, u = 0 on the boundary of (0,1)^2, lower branch',
                                 'method': f'SQ-CGL at p = {p}: square Chebyshev collocation on the {p} x {p} CGL grid, '
@@ -108,7 +109,7 @@ def write_reference(out_dir):
     record = {'reference': f'SQ-CGL p = {REF_P}', 'check': f'SQ-CGL p = {CHECK_P}', 'test_grid': '201 x 201 on [0,1]^2',
               'reference_error': err, 'max_abs_difference': float(np.abs(fields[REF_P] - fields[CHECK_P]).max()),
               'commit': current_commit()}
-    (ref_dir / 'bratu_reference_error.json').write_text(json.dumps(record, indent=2))
+    write_text_atomic(ref_dir / 'bratu_reference_error.json', json.dumps(record, indent=2))
     return record
 
 

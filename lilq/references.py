@@ -141,5 +141,25 @@ def make_eps_ref_fn(basis, reference_npz):
     return eps_ref
 
 
+def save_npz_atomic(path, **arrays):
+    """``np.savez_compressed`` to a temporary file beside ``path``, then a
+    rename: a job reading ``path`` while another writes it (concurrent Stage 2
+    jobs that each make a missing reference) sees the old file or the new one,
+    never a partial one. The writers are deterministic, so both are the same."""
+    import os
+    path = Path(path)
+    tmp = path.with_name(f'.{path.stem}.{os.getpid()}.tmp.npz')
+    np.savez_compressed(tmp, **arrays)
+    os.replace(tmp, path)
+
+
+def write_text_atomic(path, text):
+    import os
+    path = Path(path)
+    tmp = path.with_name(f'.{path.name}.{os.getpid()}.tmp')
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
 def reference_path(reference_dir, benchmark):
     return Path(reference_dir) / {'bratu': 'bratu_ref_p48.npz', 'burgers': 'burgers_cole_hopf.npz'}[benchmark]

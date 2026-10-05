@@ -64,6 +64,7 @@ own 20-step stagnation tolerance is a tolerance and is therefore off.
 
 **Outputs** under ``P2_8_lm_networks/``:
 - ``<benchmark>_P<P>_seed<s>/{run.json, log.csv, network.pt}``;
+- ``provenance/<benchmark>_<device>/``: each job's hardware and environment;
 - ``four_method_lm_rows.csv``: one row per run, in the columns of
   ``four_method_tables.csv``, plus the LM fields;
 - ``four_method_lm_medians.csv``: medians over the seeds with the tables'
@@ -79,7 +80,9 @@ Usage::
 
     python experiments/p2_8_lm_networks.py run --benchmark bratu --out <stage root> --reference-dir <dir> \\
         [--P 25 100] [--seeds 0 1 2] [--device cpu] [--package1 <package1>]
-    python experiments/p2_8_lm_networks.py summarize --out <stage root> --package1 <package1>
+    python experiments/p2_8_lm_networks.py summarize --out <stage root> --package1 <package1> \
+        --lbfgs-errors <stage 1>/P2_12_reference_errors/scalar_reference_errors.csv \
+        <stage 1>/G1_release/bl_reference_errors_networks.csv
     python experiments/p2_8_lm_networks.py gpu-list --out <stage root>
 """
 
@@ -490,9 +493,24 @@ def _markers(reasons):
     return ' '.join(marks)
 
 
-def summarize(out_root, package1=None):
+def lbfgs_reference_errors(paths):
+    """``{(benchmark, P, seed): eps_ref_final}`` of the NiL-N (L-BFGS) runs of the
+    tables (GPU), from the Stage-1 reference-error CSVs: ``scalar_reference_errors.csv``
+    (Bratu, Burgers) and ``bl_reference_errors_networks.csv`` (BL)."""
+    out = {}
+    for path in paths or ():
+        with open(path) as fh:
+            for r in csv.DictReader(fh):
+                bench = r.get('benchmark') or r.get('case')
+                if r['method'] == 'NiL-N' and r['device'] == 'cuda' and r['seed'] not in ('', None):
+                    out[(bench, int(r['P']), int(r['seed']))] = float(r['eps_ref_final'])
+    return out
+
+
+def summarize(out_root, package1=None, lbfgs_errors=None):
     out = Path(out_root) / 'P2_8_lm_networks'
     runs = _runs(out_root)
+    lbfgs_eps = lbfgs_reference_errors(lbfgs_errors)
     extra = ['n_jacobian_evals', 'eps_ref_final', 'c3_rel_diff', 'c3_passed', 'mu_final', 'lm_restarts', 'pretrain_loss']
     with open(out / 'four_method_lm_rows.csv', 'w', newline='') as fh:
         w = csv.DictWriter(fh, fieldnames=list(FOUR_METHOD_CSV_COLUMNS) + extra, extrasaction='ignore')
@@ -522,13 +540,15 @@ def summarize(out_root, package1=None):
             'lbfgs_markers': _markers([r['stopping_reason'] for r in lb]) if lb else '',
             'lbfgs_time_s_median': statistics.median(float(r['training_time_s']) for r in lb) if lb else '',
             'lbfgs_final_loss_median': statistics.median(float(r['final_loss']) for r in lb) if lb else '',
+            'lbfgs_eps_ref_median': statistics.median(e) if (e := [lbfgs_eps[(bench, P, int(r['seed']))] for r in lb
+                                                                   if (bench, P, int(r['seed'])) in lbfgs_eps]) else '',
             'lbfgs_device': 'cuda (the tables\' runs)' if lb else ''})
     if med:
         with open(out / 'four_method_lm_medians.csv', 'w', newline='') as fh:
             w = csv.DictWriter(fh, fieldnames=list(med[0]))
             w.writeheader()
             w.writerows(med)
-    figures(out, runs, package1)
+    figures(out, runs, package1, lbfgs_eps)
     return runs, med
 
 
@@ -540,7 +560,12 @@ def _lbfgs_rows(package1):
         return list(csv.DictReader(fh))
 
 
-def figures(out, runs, package1=None):
+def figures(out, runs, package1=None, lbfgs_eps=None):
+    """Loss and eps_ref against training time, one panel per size: NiL-N (LM),
+    and NiL-N (L-BFGS, the tables' GPU runs) from package1 -- its loss history,
+    and its final eps_ref as a marker at its final time (only the final models
+    were saved)."""
+    lbfgs_eps = lbfgs_eps or {}
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -565,8 +590,10 @@ def figures(out, runs, package1=None):
                             hist = list(csv.DictReader(fh))
                         axes[0, j].loglog([float(x['wall_time']) for x in hist][1:], [float(x['loss']) for x in hist][1:],
                                           'C1-', lw=0.9, label='NiL-N (L-BFGS, GPU)' if r['seed'] == 0 else None)
-            axes[0, j].axhline(runs[[x['P'] for x in runs].index(P)]['R_tol'] if False else
-                               next(x['R_tol'] for x in runs if x['benchmark'] == bench and x['P'] == P),
+                        e = lbfgs_eps.get((bench, P, int(r['seed'])))
+                        if e is not None:
+                            axes[1, j].loglog([float(hist[-1]['wall_time'])], [e], 'C1o', ms=4)
+            axes[0, j].axhline(next(x['R_tol'] for x in runs if x['benchmark'] == bench and x['P'] == P),
                                color='k', ls=':', lw=0.8)
             axes[0, j].set(title=f'{bench}, P = {P}', xlabel='training time (s)', ylabel='loss')
             axes[1, j].set(xlabel='training time (s)', ylabel='eps_ref')
@@ -596,19 +623,21 @@ def main(argv=None):
     ap.add_argument('--device', default='cpu')
     ap.add_argument('--reference-dir', help='the Bratu and Burgers references')
     ap.add_argument('--package1', help='package1 (the NiL-N (L-BFGS) runs)')
+    ap.add_argument('--lbfgs-errors', nargs='+', help='summarize: the Stage-1 reference-error CSVs of the L-BFGS runs')
     args = ap.parse_args(argv)
     if args.stage == 'gpu-list':
         for bench, P in gpu_list(args.out):
             print(f'{bench} {P}')
         return
     if args.stage == 'summarize':
-        _, med = summarize(args.out, args.package1)
+        _, med = summarize(args.out, args.package1, args.lbfgs_errors)
         for m in med:
             print(f"  {m['benchmark']:7s} P = {m['P']:4d} {m['device']}: {m['iterations_median']} its "
                   f"[{m['markers']}], {m['time_s_median']:.1f} s, loss {m['final_loss_median']:.2e}, "
                   f"eps_ref {m['eps_ref_median']:.2e}")
         return
-    save_provenance(Path(args.out) / 'P2_8_lm_networks')
+    # one folder per job: the three CPU jobs run at the same time
+    save_provenance(Path(args.out) / 'P2_8_lm_networks' / 'provenance' / f'{args.benchmark}_{args.device}')
     for P in args.P or sizes(args.benchmark):
         for seed in args.seeds:
             done = Path(args.out) / 'P2_8_lm_networks' / f'{args.benchmark}_P{P}_seed{seed}{"_cuda" if args.device != "cpu" else ""}' / 'run.json'
