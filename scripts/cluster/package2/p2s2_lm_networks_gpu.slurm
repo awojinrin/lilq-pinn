@@ -5,13 +5,16 @@
 # (`p2_8_lm_networks.py gpu-list`) is rerun on the A100, all three seeds, with
 # the same caps; the run folders end in _cuda. Submit only after the three CPU
 # jobs, and only if gpu-list names something (the laptop rehearsal names
-# nothing). About 48 SU per run at most (15 min at 192 SU/h); the walltime
-# covers four configurations (12 runs). Drop configurations from the largest
-# Burgers size downward if the item's cap would be exceeded (Section 5).
+# nothing). About 48 SU per run at most (15 min at 192 SU/h). The walltime,
+# 2.5 h (480 SU requested), keeps item 2 within its 600-SU cap with the three
+# CPU jobs (120 SU requested) and covers 10 runs. The configurations run in
+# gpu-list order (sorted: BL, Bratu, then Burgers by increasing P), so if the
+# walltime ends first, the reruns dropped are the largest Burgers sizes, as
+# Section 5 requires.
 # Submit: LILQ_WAVE=p2s2 bash scripts/cluster/sbatch.sh scripts/cluster/package2/p2s2_lm_networks_gpu.slurm
 # lilq-resources: timed   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-p2s2-lm-networks-gpu
-#SBATCH --time=03:15:00
+#SBATCH --time=02:30:00
 #SBATCH --output=logs/%x.%j.out
 
 source scripts/cluster/env.sh

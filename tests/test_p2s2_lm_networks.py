@@ -169,3 +169,28 @@ def test_lbfgs_reference_errors(tmp_path):
     b.write_text('\n'.join(['case,P,method,seed,device,eps_ref_final', 'bl,64,NiL-N,1,cuda,0.4',
                             'bl,64,LiL-N,,cuda,0.5']) + '\n')
     assert m.lbfgs_reference_errors([a, b]) == {('bratu', 25, 0): 0.1, ('bl', 64, 1): 0.4}
+
+
+def test_item_2_requests_stay_within_the_cap():
+    """Section 1: item 2's cap is 600 SU. Requested = walltime x rate: the three CPU
+    jobs at 48 SU/h (timed-cpu) and the contingent A100 job at 192 SU/h (timed)."""
+    import re
+    rate = {'timed-cpu': 48, 'timed': 192}
+    total = 0.0
+    for name in ('bratu', 'burgers', 'bl', 'gpu'):
+        text = (REPO / 'scripts' / 'cluster' / 'package2' / f'p2s2_lm_networks_{name}.slurm').read_text()
+        h, mnt, _ = map(int, re.search(r'--time=(\d+):(\d+):(\d+)', text).groups())
+        total += (h + mnt / 60) * rate[re.search(r'# lilq-resources: ([a-z-]+)', text).group(1)]
+    assert total <= 600
+
+
+def test_gpu_list_puts_the_largest_burgers_last(tmp_path):
+    """The A100 job runs gpu-list in order, so a walltime end drops the largest
+    Burgers reruns first (Section 5)."""
+    base = tmp_path / 'P2_8_lm_networks'
+    for bench, P in (('burgers', 625), ('bl', 1024), ('burgers', 225), ('bratu', 225)):
+        d = base / f'{bench}_P{P}_seed0'
+        d.mkdir(parents=True)
+        (d / 'run.json').write_text(json.dumps({'benchmark': bench, 'P': P, 'device': 'cpu',
+                                                'stopping_reason': 'wall_time_cap'}))
+    assert m.gpu_list(tmp_path) == [('bl', 1024), ('bratu', 225), ('burgers', 225), ('burgers', 625)]

@@ -17,6 +17,28 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 0: item 2's A100 rerun job within the item's cap
+
+The audit of 5 October (`Post-JCP/Package2_Stage2_status.md`, Section 6) found a problem in the
+plan:
+- The contingent A100 rerun job had 3.25 h of walltime: 624 SU requested at 192 SU/h.
+- With the three CPU jobs (120 SU requested), item 2's requested total was 744, against its
+  600-SU cap (Section 1).
+- It also put the Grace total requested at 1,740, against the 1,548 approved.
+
+**What runs is unchanged.** Billing is by elapsed time, and the job is submitted only if
+`gpu-list` names a configuration, which the rehearsal says it will not.
+
+**Fix:**
+- Walltime 2.5 h: 480 SU requested, so item 2 requests exactly 600, and the Grace total is 1,596.
+- 2.5 h covers 10 reruns of 15 min.
+- The job runs `gpu-list`'s sorted order (BL, Bratu, then Burgers by increasing P). If the
+  walltime ends first, the largest Burgers reruns are the ones dropped, as Section 5 requires.
+
+Tests: the requested total of item 2's jobs is within the cap, and the `gpu-list` order.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 2, batch 3: item 1's Burgers baseline (Section 4.3)
 
 **Why now.** Section 4.3 runs "only if item 1 ends below 250 SU". Item 1 requests 144 SU and expects
