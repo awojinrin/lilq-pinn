@@ -17,6 +17,55 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 2, batch 2c: item 3 (P2-16), the certified-grid runs
+
+**Code** (Section 6.3): `experiments/p2_16_certified.py`, a self-contained LiL-Q for Bratu and
+Burgers on tensor Chebyshev bases with weighted boundary and initial rows (lambda = 10, no
+lifting), on CGL grids with Clenshaw-Curtis weights. The nodes and weights are B10's
+(`lilq.collocation`), and the weighting is B10's: squared row weight lambda x w x |e|/|dOmega|. It
+is new and changes no earlier run. Choices the text leaves open:
+- **Burgers' lateral lines on (0, 1]:** the (n+1)-point CGL rule with t = 0 dropped, its weight
+  included. Each lateral line's weights then sum to 1 - w_0, where w_0 is about 1/n^2 (0.1% at
+  n = 25), and the corner is covered by the initial line.
+- **Both start from zero.** That is the paper's start for both benchmarks.
+- **k_target** is the first iterate with ||R||_h^2 at or below the paper's target. It reads this
+  run's own CC-weighted loss, since these runs have no other.
+- **Constants:** the ambient basis is tensor Legendre, orthonormal on the normalized measure, as
+  in the S8.5 script. dim >= N_interior is recorded as not computable (C6).
+
+**Check C4, reworded.** The text asks that the weighted collocation norm of a polynomial of degree
+<= M - 1 per direction equal its L2 norm to 1e-12. An M-point CC rule is exact for integrands of
+degree <= M - 1, and a squared norm of degree M - 1 has degree 2M - 2, so that is false: off by
+2e-2 at M = 11 (a test checks it). The check run instead covers:
+- integrals of degree <= M - 1, relative to the polynomial's L2 norm (the integral of a random
+  polynomial is its constant coefficient alone, so dividing by it measures cancellation);
+- squared norms of degree <= floor((M - 1)/2).
+
+Both are exact to 1e-12 on every grid: at most 2e-15 and 3e-13. To report to the advisor.
+
+**Laptop rehearsal** (all 24 runs, 14 min):
+- **Convergence:** every run converges in 4-5 iterations. The termination rule returns iterate 5
+  everywhere, and its error equals the k = 60 error to 4 digits.
+- **rho_r** is 1.000 at the final iterate of every run, and at most 1.37 over the iterations
+  (Burgers P = 625, N/P = 5).
+- **eps_ref / delta_P at k = 60:**
+  - Bratu: 70, 16 and 15 at P = 25, 100, 225;
+  - Burgers: 1.6, 3.7, 5.0, 4.4 and 3.0 at P = 25-625;
+  - the ratio is independent of N/P to 3 digits.
+- **Constants:**
+  - m = 2 at N/P = 20 gives c1 = c2 = 1. M >= 2 m p_d + 1 there, so CC computes the Gram
+    matrix exactly.
+  - m = 2 at N/P = 5 is not computable for Bratu or for Burgers P = 25 (dim = N_interior). For
+    Burgers P >= 100 it is computable but small: c1 = 0.28-0.75.
+  - Elsewhere c2/c1 <= 1.05.
+- **The paper's loss target:** Bratu meets it at k = 2-4. Burgers never does: its final
+  CC-weighted loss is 0.27-8e-5 against the targets 6e-2-5e-9. The targets belong to the paper's
+  sine-Fourier basis and equal weights, not to this Chebyshev space.
+
+Job: `scripts/cluster/package2/p2s2_certified.slurm` (cpu, 1 h). Tests: `tests/test_p2s2_certified.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 2, batch 2b: item 4 (P2-14, P2-4), the ELM sweep, the ELM basis on Kovasznay, the normal-equation control
 
 **Code** (Section 7). New, opt-in; the defaults change nothing (the paper's Kovasznay coefficients
