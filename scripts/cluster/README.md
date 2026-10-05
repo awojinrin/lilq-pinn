@@ -172,6 +172,48 @@ for wave 3. On
 FASTER, A100s sit in 4-16-GPU nodes, so an exclusive node holds several A100s
 at 128 SU each: the timed GPU jobs there would cost several times more.
 
+## 4. Package 2, Stage 2 (Grace; item 5 on FASTER)
+
+Stage 2 writes `results/package2_stage2`, locked to one commit like a wave.
+Build the bundle at that commit, upload it and extract it over the previous
+code (`results/` is not in the bundle, so Package 1 and Stage 1 stay as they
+are), then:
+
+```bash
+cd $SCRATCH/lilq-run/lilq-pinn
+DRY_RUN=1 bash scripts/cluster/package2/submit_p2s2.sh    # all 17 jobs through sbatch --test-only; submits nothing
+bash scripts/cluster/package2/submit_p2s2.sh
+```
+
+**The chain:**
+1. `p2s2_preflight` checks versions, the GPU and the test suite, and locks the folder.
+2. `p2s2_references` makes every reference once.
+3. The 14 compute jobs (items 1-4 and 6-8) wait for the references.
+4. `p2s2_report` runs after all of them (afterany). It writes `sacct.txt` and `su_per_job.csv`,
+   and packs `results/package2_stage2.tar.gz`: the whole stage and its Slurm logs.
+
+The plan is 1,250 SU requested, about 606 expected (`package2_results/su_plan.csv`).
+
+**Item 2's A100 reruns are not in the chain.** When the three LM jobs are done, run:
+
+```bash
+python experiments/p2_8_lm_networks.py gpu-list --out results/package2_stage2
+```
+
+Submit `p2s2_lm_networks_gpu.slurm` only if it names a configuration
+(`LILQ_WAVE=p2s2 bash scripts/cluster/sbatch.sh scripts/cluster/package2/p2s2_lm_networks_gpu.slurm`).
+
+**Assembly, on the laptop.** Download the tarball and check out the stage's commit. Then:
+
+```bash
+python experiments/p2_assemble.py stage2 --stage <extracted>/package2_stage2 --out ../package2_results \
+    --package1 <package1>
+```
+
+This copies the item folders and references into the Section 12.1 layout, writes `code/`, and
+runs the summaries that need Stage 1's laptop-side CSVs. Back up the tarball to
+`$HOME/lilq-results` before deleting anything on `$SCRATCH`.
+
 ## Resource use
 
 Timed jobs hold the whole node and start one thread per core for BLAS,

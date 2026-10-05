@@ -17,6 +17,77 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 6: the submission machinery
+
+**On Grace:** `scripts/cluster/package2/submit_p2s2.sh` (the pattern of `submit_wave<N>.sh`,
+through `submit_lib.sh`: the balance, a confirmation, `DRY_RUN=1`, dependency chaining).
+- **`p2s2_preflight`** (shared-gpu): PyTorch 2.10.0, the GPU, the test suite with the GPU visible,
+  so the GPU tests run, Beltrami's repaired path among them. It is the first job, so `env.sh`
+  locks `results/package2_stage2` to the commit there.
+- **`p2s2_references`** (cpu), after the preflight: every reference once.
+  - Bratu p = 48/64 and C2;
+  - Burgers with C4's checks;
+  - the BL references of item 6a (C7);
+  - the two BL references at nu = 0.1 for item 6b (`p2_9_bases.py --references-only`).
+
+  The compute jobs' make-if-missing lines then do nothing. Item 1's Bratu job now makes its
+  references only if missing; before, it always remade them.
+- **The 14 compute jobs**, each `afterok` the references.
+- **`p2s2_report`** (cpu), `afterany` all of them: `scripts/cluster/package2/stage_report.py`
+  writes `sacct.txt` and `su_per_job.csv`, using `wave_report.su_per_job` at Grace's rates (which
+  reproduced waves 2-3's charges). It packs `results/package2_stage2.tar.gz`: the whole stage
+  folder and the stage's Slurm logs, found by the `lilq-p2s2-` job-name prefix, its own excepted.
+- **Not in the chain:**
+  - item 2's contingent A100 reruns: by hand, only if `gpu-list` names a configuration;
+  - item 5 (FASTER, batch 5).
+- **Plan:** 17 jobs, 1,250 SU requested (walltime x rate), about 606 expected; the preflight,
+  references and report rows are added to `su_plan.csv`.
+
+`submit_lib.sh` names Package 2's stages correctly ("Package 2, stage 2 (results/package2_stage2)");
+the waves' wording is unchanged.
+
+**On the laptop:** `experiments/p2_assemble.py stage2`.
+- **The commit.** It refuses unless the local checkout is at the stage's locked commit: the
+  summaries it runs are part of the results.
+- **Copies:** the `P2_*` item folders, `su_per_job.csv`, sacct, the report log and the Slurm logs.
+- **References.** Stage 2's go into `reference/`, since its results used them. A Stage 1 copy that
+  differs moves to `reference/stage1/`, and `reference/stage2_vs_stage1.json` records the
+  differences. The Stage 1 reference errors were computed against Stage 1's copies, which are
+  kept.
+- **`code/`:** both commits, and every file changed between `v2.0.0` and the stage's commit
+  (Section 12.1, "new scripts").
+- **Hardware.** The root `hardware.json` and `environment.txt` are the CPU scaling job's (a whole
+  CPU node); each item folder keeps its own job's. `provenance.json` says so.
+- **Summaries,** whose inputs (Stage 1's `scalar_reference_errors.csv` and
+  `bl_reference_errors_networks.csv`) were made on the laptop and never existed on Grace:
+  - item 1's work-precision figure;
+  - item 2's rows, medians and figures;
+  - item 7's scaling table, exponents and C8';
+  - item 2's `gpu-list`.
+
+  Each step is logged in `assembly_log.txt`, and a failure is recorded, not fatal.
+- **Rehearsal.** A stand-in Stage 2 assembled from this session's rehearsal outputs (items 1, 2,
+  3, 6, 7 and the references) into a scratch copy of `package2_results`. All four summary steps
+  ran cleanly. The Bratu and Burgers references were bit-identical to Stage 1's, and Stage 1's
+  folders were untouched.
+
+**Tests** (`tests/test_p2s2_submission.py`):
+- every Stage 2 job is submitted exactly once, or is the contingent one;
+- the job-name prefix and the resource classes;
+- the references job's contents;
+- with a fake `sbatch`:
+  - the dry run checks all 17 jobs with the account and no dependencies;
+  - a real submission chains preflight -> references -> the 14 -> report (`afterany` on all
+    14), without the contingent job;
+- the stage report's tarball (the stage, the stage's logs, not its own or other stages');
+- the assembly (references kept and compared, both commits, `code/`), and its refusal at
+  another commit.
+
+The bash tests were run under Git Bash, with Package 1's submission tests, which still pass.
+`scripts/cluster/README.md` gains Section 4, Stage 2's steps.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 4: item 7b (P2-1), Beltrami scaling, and Beltrami's GPU path repaired
 
 **Series** (Section 10): the pinned configuration of Section 6.7 at N_vel = 6, 7, 8 with N_p = 8, 9, 10,

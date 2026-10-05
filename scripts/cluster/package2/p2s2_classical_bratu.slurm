@@ -13,5 +13,7 @@
 
 source scripts/cluster/env.sh
 set -euo pipefail
-python experiments/p2_3_classical.py reference --out "$PKG"
+# made by p2s2_references; only if missing
+[[ -f "$PKG/reference/bratu_ref_p48.npz" && -f "$PKG/reference/bratu_ref_p64.npz" ]] \
+    || python experiments/p2_3_classical.py reference --out "$PKG"
 python experiments/p2_3_classical.py bratu --out "$PKG" --package1 "$RESULTS/package1_v2.0.0/package1"

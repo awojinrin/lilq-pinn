@@ -89,6 +89,7 @@ paper rule's stop.
 Usage::
 
     python experiments/p2_9_bases.py --out <stage root> [--benchmarks bratu bl]
+    python experiments/p2_9_bases.py --references-only --out <stage root>
 """
 
 import argparse
@@ -414,7 +415,13 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description='Package 2, item 6b: boundary-conforming bases.')
     ap.add_argument('--out', required=True, help='the stage root')
     ap.add_argument('--benchmarks', nargs='+', choices=('bratu', 'bl'), default=['bratu', 'bl'])
+    ap.add_argument('--references-only', action='store_true',
+                    help="only make the two BL references at the paper's nu = 0.1 (Stage 2's references job)")
     args = ap.parse_args(argv)
+    if args.references_only:
+        for r in ensure_bl_references(args.out):
+            print(f"  BL {r['case']} nu = {r['nu']}: {r['n_intervals']} intervals")
+        return
     run_all(args.out, args.benchmarks)
 
 

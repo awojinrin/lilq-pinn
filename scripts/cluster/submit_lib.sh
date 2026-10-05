@@ -38,12 +38,18 @@ fi
 
 # Before each wave: the balance, then an explicit go-ahead (YES=1 skips the question).
 confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave>
-    echo "Wave $LILQ_WAVE of 4 (results/wave$LILQ_WAVE), code at $(code_commit)."
+    local what="wave $LILQ_WAVE"
+    if [[ "$LILQ_WAVE" == p2s* ]]; then   # Package 2's stages write results/package2_stage<N>
+        what="Package 2, stage ${LILQ_WAVE#p2s}"
+        echo "Package 2, stage ${LILQ_WAVE#p2s} (results/package2_stage${LILQ_WAVE#p2s}), code at $(code_commit)."
+    else
+        echo "Wave $LILQ_WAVE of 4 (results/wave$LILQ_WAVE), code at $(code_commit)."
+    fi
     echo "Estimated request: $1. Read the 'Requested SUs' line sbatch prints for each job."
     if command -v myproject >/dev/null; then myproject -l || true; else echo "(myproject not found: check the balance another way)"; fi
     [[ "$DRY_RUN" == 1 ]] && { echo "DRY RUN: checking each job with sbatch --test-only."; return 0; }
     if [[ "${YES:-0}" != 1 ]]; then
-        read -r -p "Balance checked; submit wave $LILQ_WAVE? [y/N] " answer
+        read -r -p "Balance checked; submit $what? [y/N] " answer
         [[ "$answer" =~ ^[yY] ]] || { echo "Nothing submitted."; exit 1; }
     fi
 }
