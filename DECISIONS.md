@@ -17,6 +17,68 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-04 -- Package 2, Stage 2, batch 2d: item 2 (P2-8), NiL-N trained by Levenberg-Marquardt
+
+**Code** (Section 5): `experiments/p2_8_lm_networks.py`. It is new and changes no earlier run.
+- **The same runs.** Each benchmark's own `run_nil_n` is called with the four-method configuration
+  and seed, and its `solve_nil_n` is swapped for the LM trainer during the call (`mock.patch`).
+  So the network, pretraining, collocation set, data, weights and target are Package 1's code,
+  not a copy.
+- **LM needs the residual as a vector:**
+  - every line is weighted by sqrt(lambda / n_line), so that r . r is the NiL loss;
+  - the input derivatives come from an explicit Taylor-mode pass through the tanh layers;
+  - J comes from `vmap(jacrev)` per point. Batched autograd through the Package 1 residual was
+    exact too, but took 51 s per Jacobian at P = 625. A whole LM iteration now takes about
+    0.06 s there.
+- **C3** compares r . r at iteration 0 with `solve_nil_n`'s objective (the Package 1 residual
+  functions) on the same network, to 1e-12. It passed on every rehearsal run: at most 3.8e-16,
+  Bratu, Burgers and BL. The Package 1 run's own start is recorded beside it (`package1_start`):
+  - Bratu P = 25 seed 0 on the GPU agrees to 4e-15;
+  - BL P = 64 to 3e-10, because the pretraining ran on another device.
+- **The LiL-normalized boundary term** (`bc_loss_lil`, `loss_lil`) is logged beside the NiL one.
+  It differs only for Bratu, where LiL pools the four edges.
+
+**Choices:**
+- **The F2 schedule unchanged:**
+  - the step equation (J^T J + mu diag(J^T J)) dtheta = -J^T r, with the diagonal floored at
+    1e-12;
+  - mu0 = 1e-3, x0.2 on an accepted step and x5 on a rejected one;
+  - acceptance if and only if the loss decreases.
+- **"f1" for LM.** A lost step is mu > 1e16 without an accepted step. The restart resets mu to mu0;
+  a second loss in a row is `optimizer_stall`. F2's 20-step stagnation tolerance is off (tolerances 0).
+- **Logs:**
+  - `loss` is r . r, the quantity tested against the target. It differs from the component sum
+    in the last bit.
+  - `eps_ref` is computed every iteration, off the clock, as F2's test errors are.
+  - BL's `eps_ref` is against `problems.buckley_leverett.reference_solution`: Section 6.2 has
+    references only for Bratu and Burgers.
+- **Medians** (`four_method_lm_medians.csv`):
+  - the tables' markers (`*`, `dagger`, r/3), plus `W` for the wall-time cap;
+  - beside each row, the NiL-N (L-BFGS) medians of the tables' own (GPU) runs. Times on two
+    devices are not comparable, so the report compares iterations and losses.
+- **Resume:** a run whose `run.json` exists is skipped, so a timed-out job can be resubmitted.
+
+**Laptop rehearsal** (Bratu all 9 runs; Burgers and BL seed 0):
+- **No run comes near the 15-min cap.** At most 0.06 s per iteration at Burgers P = 625: 2,000
+  iterations take about 2 min. The GPU reruns of Section 5 should not be needed.
+- **Where L-BFGS stalls, LM reaches the target:**
+  - Burgers P = 225, 400, 625: 52, 180 and 443 iterations, final loss 2e-5, 1e-7, 5e-9, eps_ref
+    1e-3, 4e-5, 9e-6. NiL-N (L-BFGS) stalls at 2e-5 to 3e-5 at all three sizes.
+  - BL meets the target at every size, P = 1,024 in 119 iterations. L-BFGS needs 7,436 there and
+    reaches it on 2 of 3 seeds.
+  - Bratu P = 100 and 225 end at the 2,000-iteration cap, but 10x and 140x below L-BFGS's
+    stalled loss: medians 2.3e-4 and 5.3e-6, against the targets 1e-4 and 2.5e-7.
+- **Bratu P = 25: a loose target met by a non-solution.** h = 4, so 37 parameters. Seed 0 meets the
+  target (loss 0.16 < 0.25) with a function whose centre value is -0.18, against the solution's
+  0.87: eps_ref 1.04. Seed 1 stays at loss 5.3 (a local minimum) for all 2,000 iterations. For
+  the report.
+
+Jobs: `scripts/cluster/package2/p2s2_lm_networks_{bratu,burgers,bl}.slurm` (timed-cpu, 0.5, 1 and
+1 h). BL runs: it is cheap, so far more than 150 SU remain under the item's cap. Tests:
+`tests/test_p2s2_lm_networks.py`.
+
+---
+
 ## 2026-10-04 -- Package 2, Stage 2, batch 2c: item 3 (P2-16), the certified-grid runs
 
 **Code** (Section 6.3): `experiments/p2_16_certified.py`, a self-contained LiL-Q for Bratu and
