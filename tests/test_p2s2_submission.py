@@ -175,6 +175,8 @@ def test_stage2_assembly_merges_fasters_part(tmp_path):
     faster = tmp_path / 'faster' / 'package2_stage2'
     (faster / 'P2_15_darcy_hardbc' / 'S1_seed0').mkdir(parents=True)
     (faster / 'P2_15_darcy_hardbc' / 'S1_seed0' / 'run.json').write_text('{}')
+    (faster / 'P2_16_certified').mkdir()                         # a snapshot of a Grace folder (shared $SCRATCH)
+    (faster / 'P2_16_certified' / 'terminal.csv').write_text('partial\n')
     (faster / 'sacct.txt').write_text('faster sacct\n')
     (faster / 'slurm_logs').mkdir()
     (faster / 'slurm_logs' / 'lilq-p2s2-darcy-hardbc.7_0.out').write_text('log\n')
@@ -182,6 +184,7 @@ def test_stage2_assembly_merges_fasters_part(tmp_path):
     r = pa.stage2(stage, out, summaries=False, faster=faster)
     assert r['faster_commit'] == head and 'P2_15_darcy_hardbc' in r['items']
     assert (out / 'P2_15_darcy_hardbc' / 'S1_seed0' / 'run.json').exists()
+    assert (out / 'P2_16_certified' / 'terminal.csv').read_text() == 'benchmark\nbratu\n'   # Grace's copy stands
     assert (out / 'stage2_faster_sacct.txt').read_text() == 'faster sacct\n'
     assert (out / 'slurm_logs' / 'stage2_faster' / 'lilq-p2s2-darcy-hardbc.7_0.out').exists()
     (faster / 'COMMIT').write_text(json.dumps({'commit': '1' * 40}))

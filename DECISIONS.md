@@ -17,6 +17,41 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-06 -- Package 2, Stage 2, batch 7: the preflight's failure, and a shared $SCRATCH
+
+**What happened.** Grace's preflight of the 97ec184 submission (job 20016267) failed on one
+test, `tests/test_p2s2_darcy_hardbc.py::test_faster_submission_chain`. Its dependents were
+cancelled (`--kill-on-invalid-dep`), and only the report (afterany) ran. No compute SU were
+spent. The cause was the environment, not the code:
+- A cluster job inherits its submission's environment (`sbatch --export=ALL`), which on
+  Grace includes `CPU_PARTITION=medium`.
+- The FASTER profile honours an inherited `CPU_PARTITION` (`${CPU_PARTITION:-cpu}`), so in
+  that test the FASTER report job went to `medium` and the assertion expecting `cpu` failed.
+- From a FASTER login shell the variable is unset, and the real FASTER dry run did use `cpu`.
+
+The same leak (`CLUSTER=faster`) would have failed two of FASTER's wave tests
+(`test_dry_run_checks_every_job...`, `test_wave_2_dry_run...`). These bash tests skip on
+Windows, so the laptop suite never ran them.
+
+**Fix.** An autouse fixture in `tests/conftest.py` clears `CLUSTER`, `CPU_PARTITION`,
+`LILQ_WAVE`, `LILQ_MODULES`, `DRY_RUN` and `YES` before every test.
+
+**How it was checked.** WSL (Ubuntu, bash) ran every bash test of the three files, through a
+stand-in for pytest, on the 97ec184 bundle as extracted (Unix line endings, as on the
+clusters), under a Grace job's and a FASTER job's inherited variables:
+- the old code: Grace fails the preflight's test, FASTER fails the two wave tests;
+- with the fixture: all pass on both. The one parametrized test (`test_b4_tasks...`) cannot
+  run through the stand-in; it passed in Grace's real preflight.
+
+**Grace and FASTER share `$SCRATCH`.** A Grace job's log could be read from FASTER, and the
+lock deleted on Grace vanished on FASTER. So both clusters' jobs write into one
+`results/package2_stage2`, under one source lock. That is right for one commit, but FASTER's
+tarball then also holds a snapshot of Grace's item folders, possibly taken mid-run.
+`p2_assemble.py stage2 --faster` now copies only `P2_15_darcy_hardbc` from it (tested: a
+stale Grace folder in FASTER's part does not overwrite Grace's).
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 6: item 5b, the Darcy control (added after the pre-submission note)
 
 **Why.** The advisor requested it in his reply before the Stage-2 submission (5 October,

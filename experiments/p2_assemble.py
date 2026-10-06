@@ -51,7 +51,9 @@ replaced, and the replacements are listed.
     paper's NiL and LiL delta_FV from ``--package1``.
 - **FASTER's part** (item 5; ``--faster``, the extracted
   ``package2_stage2_faster.tar.gz``): it must be locked to the same commit
-  as Grace's. Its item folder is copied like the others; its ``sacct.txt``,
+  as Grace's. Only its item folder (``P2_15_darcy_hardbc``) is copied: the two
+  clusters share ``$SCRATCH``, so its tarball also holds a snapshot of Grace's
+  item folders, which Grace's own tarball supersedes. Its ``sacct.txt``,
   ``report_log.txt`` and Slurm logs go to ``stage2_faster_sacct.txt``,
   ``stage2_faster_report_log.txt`` and ``slurm_logs/stage2_faster/``.
 
@@ -116,6 +118,7 @@ def stage1(stage, out):
 
 
 STAGE2_REFERENCES_SHARED = ('bratu_ref_p48.npz', 'bratu_ref_p64.npz', 'burgers_cole_hopf.npz')
+FASTER_ITEMS = ('P2_15_darcy_hardbc',)        # the item folders FASTER's part contributes (item 5)
 
 
 def _git(*args):
@@ -208,9 +211,13 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
         if faster_commit != commit:
             raise SystemExit(f"FASTER's part is locked to {faster_commit}, Grace's to {commit}: "
                              'Stage 2 must come from one commit')
-        for item in sorted(p for p in faster.iterdir() if p.is_dir() and p.name.startswith('P2_')):
-            _copy_tree(item, out / item.name, replaced)
-            items.append(item.name)
+        # only FASTER's own item: Grace and FASTER share $SCRATCH (observed 6 October), so FASTER's
+        # tarball also holds a snapshot of Grace's item folders, possibly taken mid-run
+        for name in FASTER_ITEMS:
+            if (faster / name).is_dir():
+                _copy_tree(faster / name, out / name, replaced)
+                if name not in items:
+                    items.append(name)
         for name, target in (('sacct.txt', 'stage2_faster_sacct.txt'), ('report_log.txt', 'stage2_faster_report_log.txt')):
             if (faster / name).exists():
                 _copy(faster / name, out / target, replaced)

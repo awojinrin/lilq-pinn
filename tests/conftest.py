@@ -18,6 +18,19 @@ import json  # noqa: E402
 
 import pytest  # noqa: E402
 
+# Set by a submission and inherited by every cluster job (sbatch --export=ALL), so
+# present when the preflight runs the tests: a profile honours CLUSTER and
+# CPU_PARTITION, and the submission scripts LILQ_WAVE, DRY_RUN and YES. A test that
+# runs those scripts must see none of them (Grace's preflight of 6 October failed
+# on CPU_PARTITION=medium; FASTER's would have on CLUSTER=faster).
+_SUBMISSION_ENV = ('CLUSTER', 'CPU_PARTITION', 'LILQ_WAVE', 'LILQ_MODULES', 'DRY_RUN', 'YES')
+
+
+@pytest.fixture(autouse=True)
+def _no_submission_environment(monkeypatch):
+    for name in _SUBMISSION_ENV:
+        monkeypatch.delenv(name, raising=False)
+
 
 @pytest.fixture
 def fake_bundle(tmp_path):

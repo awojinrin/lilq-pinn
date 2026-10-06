@@ -213,6 +213,12 @@ python experiments/p2_8_lm_networks.py gpu-list --out results/package2_stage2
 Submit `p2s2_lm_networks_gpu.slurm` only if it names a configuration
 (`LILQ_WAVE=p2s2 bash scripts/cluster/sbatch.sh scripts/cluster/package2/p2s2_lm_networks_gpu.slurm`).
 
+**Grace and FASTER share `$SCRATCH`** (observed 6 October 2026: a Grace job's log and lock were
+visible from FASTER). So one upload serves both, and both clusters' jobs write into the same
+`results/package2_stage2`, under one source lock. That is right, since Stage 2 is one commit.
+FASTER's tarball then also holds a snapshot of Grace's item folders, and
+`p2_assemble.py stage2 --faster` takes only item 5's folder from it.
+
 **Item 5 (Darcy) runs on FASTER, from the same commit.** Upload the same bundle to FASTER's
 `$SCRATCH/lilq-run/lilq-pinn` and extract it there. FASTER's venv needs the same PyTorch 2.10.0;
 the preflight checks it. Then, on a FASTER login node:
