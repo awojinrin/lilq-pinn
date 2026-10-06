@@ -11,4 +11,4 @@
 
 source scripts/cluster/env.sh
 set -euo pipefail
-python scripts/cluster/package2/stage_report.py --stage p2s2 --results "$RESULTS"
+python scripts/cluster/package2/stage_report.py --stage "$LILQ_WAVE" --results "$RESULTS"   # p2s2, or p2s2g (batch 8)

@@ -52,7 +52,7 @@ def test_c4_compares_norm_R_h_row_by_row(tmp_path):
 def test_stage_names_and_their_results_folders():
     env = (REPO / 'scripts/cluster/env.sh').read_text()
     assert 'p2s1) export PKG="$RESULTS/package2_stage1"' in env and 'p2s2) export PKG="$RESULTS/package2_stage2"' in env
-    assert '^([1234]|p2s[12])$' in (REPO / 'scripts/cluster/sbatch.sh').read_text()
+    assert '^([1234]|p2s[12]|p2s2g)$' in (REPO / 'scripts/cluster/sbatch.sh').read_text()   # p2s2g: batch 8's GPU addendum
     job = (REPO / 'scripts/cluster/package2/p2s1_scalar_reruns.slurm').read_text()
     assert '# lilq-resources: timed-cpu' in job and '--reference-dir "$PKG/reference"' in job
     assert '--package1 "$RESULTS/wave2/B_instrumentation"' in job

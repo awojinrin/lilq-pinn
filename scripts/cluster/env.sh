@@ -15,6 +15,16 @@ source "$SCRATCH/lilq-run/venv/bin/activate" || { echo "venv missing: $SCRATCH/l
 # 2.4) must come first. numpy and scipy still come from the modules.
 export PYTHONPATH="$(python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')${PYTHONPATH:+:$PYTHONPATH}"
 cd "$SCRATCH/lilq-run/lilq-pinn" || { echo "repo missing: $SCRATCH/lilq-run/lilq-pinn"; exit 1; }
+# The wheel's own NVIDIA libraries first (Package 2, Stage 2, batch 8). The module put
+# CUDA 12.6.0's libraries on LD_LIBRARY_PATH, which the loader searches before the
+# wheel's RUNPATH, so some of torch 2.10.0+cu126's companions came from the module.
+# With that mix, cuSOLVER's QR failed for a band of shapes around 11,036 x 3,675 on
+# Grace (job 20028701); with the wheel's folders first, every shape passed.
+# LILQ_MODULE_LD_LIBRARY_PATH keeps the module's path (the preflight records both).
+export LILQ_MODULE_LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+_lilq_nv="$(python -m lilq.cuda_libraries --ld-path)" || { echo "lilq.cuda_libraries failed"; exit 1; }
+[[ -n "$_lilq_nv" ]] && export LD_LIBRARY_PATH="$_lilq_nv${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+unset _lilq_nv
 
 # One thread per core the job holds: all of the node's for the timed
 # (--exclusive) jobs. BLAS, OpenMP and PyTorch all use this count
@@ -40,6 +50,7 @@ export RESULTS="$SCRATCH/lilq-run/lilq-pinn/results"
 case "$LILQ_WAVE" in
     p2s1) export PKG="$RESULTS/package2_stage1" ;;
     p2s2) export PKG="$RESULTS/package2_stage2" ;;
+    p2s2g) export PKG="$RESULTS/package2_stage2_gpu" ;;   # item 7's GPU series in the corrected environment (batch 8)
     *)    export PKG="$RESULTS/wave$LILQ_WAVE" ;;
 esac
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"

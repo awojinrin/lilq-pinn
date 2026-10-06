@@ -190,3 +190,49 @@ def test_stage2_assembly_merges_fasters_part(tmp_path):
     (faster / 'COMMIT').write_text(json.dumps({'commit': '1' * 40}))
     with pytest.raises(SystemExit, match='one commit'):
         pa.stage2(stage, tmp_path / 'out2', summaries=False, faster=faster)
+
+
+def test_stage2_assembly_merges_the_gpu_addendum(tmp_path):
+    """The main run's GPU scaling runs move to old_environment/ (kept for C8'
+    against Package 1); the addendum's take their place; the CPU runs stay."""
+    import json
+    import subprocess
+    import experiments.p2_assemble as pa
+    head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True, text=True).stdout.strip()
+    if not head:
+        pytest.skip('no git checkout')
+    stage, out = _fake_stage(tmp_path, head)
+    sc = stage / 'P2_1_scaling' / 'kovasznay'
+    for name, body in (('kovasznay_P_25_cuda', {'series': 'kovasznay_P', 'size': 25, 'env': 'old'}),
+                       ('kovasznay_P_35_cuda', None),                                  # the failed one: no run.json
+                       ('kovasznay_P_25_cpu', {'series': 'kovasznay_P', 'size': 25, 'device': 'cpu'})):
+        (sc / name).mkdir(parents=True)
+        if body:
+            (sc / name / 'run.json').write_text(json.dumps(body))
+    (stage / 'P2_1_scaling' / 'provenance_cuda_20017337').mkdir()
+    (stage / 'P2_1_scaling' / 'provenance_cuda_20017337' / 'hardware.json').write_text('{}')
+    gpu = tmp_path / 'gpu' / 'package2_stage2_gpu'
+    for name in ('kovasznay_P_25_cuda', 'kovasznay_P_35_cuda'):
+        (gpu / 'P2_1_scaling' / 'kovasznay' / name).mkdir(parents=True)
+        (gpu / 'P2_1_scaling' / 'kovasznay' / name / 'run.json').write_text(json.dumps({'env': 'new', 'run': name}))
+    (gpu / 'P2_1_scaling' / 'provenance_cuda_20030000').mkdir()
+    (gpu / 'P2_1_scaling' / 'provenance_cuda_20030000' / 'hardware.json').write_text('{}')
+    (gpu / 'cuda_libraries.json').write_text('{}')
+    (gpu / 'cuda_libraries_module_first.json').write_text('{}')
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': head}))
+    r = pa.stage2(stage, out, summaries=False, gpu=gpu)
+    s = out / 'P2_1_scaling'
+    assert json.loads((s / 'kovasznay' / 'kovasznay_P_25_cuda' / 'run.json').read_text())['env'] == 'new'
+    assert json.loads((s / 'kovasznay' / 'kovasznay_P_35_cuda' / 'run.json').read_text())['env'] == 'new'
+    assert json.loads((s / 'old_environment' / 'kovasznay' / 'kovasznay_P_25_cuda' / 'run.json').read_text())['env'] == 'old'
+    assert (s / 'kovasznay' / 'kovasznay_P_25_cpu' / 'run.json').exists()
+    assert (s / 'old_environment' / 'provenance_cuda_20017337').is_dir() and (s / 'provenance_cuda_20030000').is_dir()
+    assert (s / 'gpu_addendum' / 'cuda_libraries_module_first.json').exists()
+    assert (out / 'code' / 'COMMIT_stage2_gpu').exists() and (out / 'code' / 'FILES_CHANGED_IN_GPU_ADDENDUM.txt').exists()
+    assert r['gpu_addendum']['runs'] == ['kovasznay_P_25_cuda', 'kovasznay_P_35_cuda']
+    assert r['gpu_addendum']['old_environment_runs'] == ['kovasznay_P_25']
+    # a checkout at neither commit is refused
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': '2' * 40}))
+    (stage / 'COMMIT').write_text(json.dumps({'commit': '3' * 40}))
+    with pytest.raises(SystemExit, match='GPU addendum'):
+        pa.stage2(stage, tmp_path / 'out3', summaries=False, gpu=gpu)

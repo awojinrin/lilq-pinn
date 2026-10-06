@@ -219,6 +219,28 @@ visible from FASTER). So one upload serves both, and both clusters' jobs write i
 FASTER's tarball then also holds a snapshot of Grace's item folders, and
 `p2_assemble.py stage2 --faster` takes only item 5's folder from it.
 
+**The NVIDIA libraries (batch 8).** `env.sh` loads the PyTorch module, which puts CUDA
+12.6.0's libraries on `LD_LIBRARY_PATH`, then the venv's torch 2.10.0+cu126 wheel. The loader
+searches `LD_LIBRARY_PATH` before the wheel's RUNPATH, so some of the wheel's companion
+libraries came from the module. With that mix, cuSOLVER's QR failed on Grace for a band of
+shapes around 11,036 x 3,675 (item 7's Kovasznay P = 3,675; jobs 20017337 and 20018277;
+diagnosed by job 20028701). `env.sh` now puts the wheel's `nvidia/*/lib` folders first,
+keeping the module's path in `LILQ_MODULE_LD_LIBRARY_PATH`. The preflight records both
+environments' libraries (`cuda_libraries.json`, `cuda_libraries_module_first.json`), and
+requires the QR at that shape to pass.
+
+**The GPU addendum (item 7's GPU series, from the batch 8 commit).** On a Grace login node:
+
+```bash
+cd $SCRATCH/lilq-run/lilq-pinn
+DRY_RUN=1 bash scripts/cluster/package2/submit_p2s2g.sh
+bash scripts/cluster/package2/submit_p2s2g.sh
+```
+
+This writes `results/package2_stage2_gpu`, with its own lock, and packs
+`results/package2_stage2_gpu.tar.gz`. It costs 380 SU requested and about 160 expected. The
+assembly takes it with `--gpu` (`experiments/p2_assemble.py`).
+
 **Item 5 (Darcy) runs on FASTER, from the same commit.** Upload the same bundle to FASTER's
 `$SCRATCH/lilq-run/lilq-pinn` and extract it there. FASTER's venv needs the same PyTorch 2.10.0;
 the preflight checks it. Then, on a FASTER login node:

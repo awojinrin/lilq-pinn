@@ -39,7 +39,10 @@ fi
 # Before each wave: the balance, then an explicit go-ahead (YES=1 skips the question).
 confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave>
     local what="wave $LILQ_WAVE"
-    if [[ "$LILQ_WAVE" == p2s* ]]; then   # Package 2's stages write results/package2_stage<N>
+    if [[ "$LILQ_WAVE" == p2s2g ]]; then   # Stage 2's GPU addendum (batch 8): results/package2_stage2_gpu
+        what="Package 2, stage 2, the GPU addendum"
+        echo "Package 2, stage 2, the GPU addendum (results/package2_stage2_gpu), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p2s* ]]; then   # Package 2's stages write results/package2_stage<N>
         what="Package 2, stage ${LILQ_WAVE#p2s}"
         echo "Package 2, stage ${LILQ_WAVE#p2s} (results/package2_stage${LILQ_WAVE#p2s}), code at $(code_commit)."
     else

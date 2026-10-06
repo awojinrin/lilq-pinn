@@ -17,6 +17,70 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-06 -- Package 2, Stage 2, batch 8: the NVIDIA libraries, and item 7's GPU addendum
+
+**What failed.** Item 7's GPU scaling job (20017337, retried as 20018277) failed at
+Kovasznay P = 3,675, inside cuSOLVER's QR (`torch.geqrf`, `CUSOLVER_STATUS_INTERNAL_ERROR`).
+P = 1,875 and 2,700 ran first. The GPU solver is byte-identical to v2.0.0. Package 1 never
+went above P = 1,875, and the laptop (CUDA 13.0 build) ran every size.
+
+**Diagnosis.** Diagnostic job 20028701 (Grace, A100), run from the review session at
+Gbenga's request and read here, ran random float64 matrices through `torch.geqrf`:
+- **In the jobs' environment:** the cuSOLVER loaded was the wheel's own (11.7.1). Even so,
+  11,036 x 3,675 failed on three matrices, and so did a band around it: rows 11,030-11,100,
+  columns 3,670-3,680, and with 4 zero rows padded. Every other shape of the GPU series
+  passed.
+- **With the wheel's `nvidia/*/lib` folders first on `LD_LIBRARY_PATH`:** the same
+  cuSOLVER, and every shape passed.
+
+So it was a mismatch of library versions in our environment, not a defect of cuSOLVER at
+one shape (this corrects the reading of the first test, job 20024186). `env.sh` loads the
+PyTorch module, which puts CUDA 12.6.0's libraries on `LD_LIBRARY_PATH`, which the loader
+searches before the wheel's RUNPATH. Some of cuSOLVER's companions therefore came from the
+module; cuBLAS is the likely one, which the new record will show.
+
+**Fixes:**
+- **`env.sh`:** after the venv, it puts the wheel's library folders first
+  (`python -m lilq.cuda_libraries --ld-path`; no torch import, so CPU-only jobs are
+  unaffected). It keeps the module's path in `LILQ_MODULE_LD_LIBRARY_PATH`. This applies on
+  Grace and FASTER alike.
+- **`lilq/cuda_libraries.py` and the preflight:** the preflight records the NVIDIA
+  libraries actually loaded (from `/proc/self/maps`), with the `nvidia-*` wheel versions, in
+  both environments (`cuda_libraries.json`, `cuda_libraries_module_first.json`). It requires
+  the QR at 11,036 x 3,675 and at 5,564 x 1,875 to pass in the corrected one.
+- **Each GPU scaling run** records its `cuda_libraries` and `LD_LIBRARY_PATH`.
+
+**MAGMA was considered and dropped.** PyTorch's MAGMA QR does its panel factorizations on
+the CPU, so a "GPU" series run with it would partly time the host's 48 cores.
+
+**The GPU addendum.** `submit_p2s2g.sh` (`LILQ_WAVE=p2s2g`) reruns the whole GPU scaling
+series, 1,875 and 2,700 included, so the curve has one environment. It writes
+`results/package2_stage2_gpu`, locked to this commit, with the preflight first. It costs
+380 SU requested, about 160 expected (`su_plan.csv`). It is the one exception to "one
+commit": every other Stage 2 result is from 4f327f7.
+
+`p2_assemble.py stage2 --gpu`:
+- moves the main run's GPU runs to `P2_1_scaling/old_environment/`, and puts the
+  addendum's in their place;
+- runs check C8' twice. On the old-environment 1,875 point it uses Package 1's environment
+  (`check_c8prime_old_environment.json`); on the new point, the usual summary, which shows
+  whether the corrected libraries change the errors;
+- lists the files that differ between the two commits in
+  `code/FILES_CHANGED_IN_GPU_ADDENDUM.txt`;
+- may run with the addendum's commit checked out.
+
+**Not rerun.** The other GPU work used the old environment but not the failing routine:
+item 5 (FASTER) and item 5b (Grace), which train networks with matrix products and LM
+steps, and the preflights' GPU tests. All completed; the report says so in one line.
+
+**Checks.** WSL ran the bash tests on a Unix-line-ending copy, under both clusters' job
+environments: the addendum chain, `sbatch.sh` accepting `p2s2g`, and the earlier ones. The
+`env.sh` lines were tested with and without wheel folders. Tests:
+`tests/test_cuda_libraries.py`, and `tests/test_p2s2_submission.py`, which covers the
+assembly's `--gpu`.
+
+---
+
 ## 2026-10-06 -- Package 2, Stage 2, batch 7: the preflight's failure, and a shared $SCRATCH
 
 **What happened.** Grace's preflight of the 97ec184 submission (job 20016267) failed on one

@@ -56,6 +56,20 @@ replaced, and the replacements are listed.
   item folders, which Grace's own tarball supersedes. Its ``sacct.txt``,
   ``report_log.txt`` and Slurm logs go to ``stage2_faster_sacct.txt``,
   ``stage2_faster_report_log.txt`` and ``slurm_logs/stage2_faster/``.
+- **The GPU addendum** (item 7's GPU series; ``--gpu``, the extracted
+  ``package2_stage2_gpu.tar.gz``; batch 8). The main run's GPU scaling failed
+  at P = 3,675 in the module-first library environment. The addendum reran
+  the whole GPU series, with the torch wheel's NVIDIA libraries first, from
+  its own commit (``code/COMMIT_stage2_gpu``; the files that differ from the
+  main stage's are listed in ``code/FILES_CHANGED_IN_GPU_ADDENDUM.txt``).
+  - The main run's GPU runs move to ``P2_1_scaling/old_environment/``, where
+    they stay for check C8' against Package 1, which ran in that environment
+    (``check_c8prime_old_environment.json``).
+  - The addendum's GPU runs take their place, and the scaling summary uses
+    them.
+  - Its library records go to ``P2_1_scaling/gpu_addendum/``.
+  - With ``--gpu``, the checkout may be at the addendum's commit instead of
+    the main stage's; the summaries then run on that code.
 
   Each step is logged in ``assembly_log.txt``; a failing step is recorded,
   not fatal.
@@ -64,7 +78,7 @@ Usage::
 
     python experiments/p2_assemble.py stage1 --stage <downloaded results/package2_stage1> --out <package2_results>
     python experiments/p2_assemble.py stage2 --stage <downloaded results/package2_stage2> --out <package2_results> \\
-        --package1 <package1> [--faster <FASTER's package2_stage2>]
+        --package1 <package1> [--faster <FASTER's package2_stage2>] [--gpu <package2_stage2_gpu>]
 """
 
 import argparse
@@ -183,15 +197,50 @@ def _step(cmd, log):
     return out
 
 
-def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=None):
+def stage2_gpu(gpu, out, replaced):
+    """Merge the GPU addendum into ``out``'s ``P2_1_scaling``: the main run's GPU
+    runs move to ``old_environment/``, the addendum's take their place.
+    Returns ``(the old runs' run.json records, the addendum's GPU run names)``."""
+    gpu, scaling = Path(gpu), Path(out) / 'P2_1_scaling'
+    old = scaling / 'old_environment'
+    old_runs = []
+    if scaling.is_dir():
+        for d in sorted(p for p in scaling.glob('*/*') if p.is_dir() and (p.name.endswith('_cuda')
+                                                                         and p.parent.name != 'old_environment')):
+            target = old / d.parent.name / d.name
+            if target.exists():
+                shutil.rmtree(target)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(d), str(target))
+            if (target / 'run.json').exists():
+                old_runs.append(json.loads((target / 'run.json').read_text()))
+        for d in sorted(scaling.glob('provenance_cuda_*')):
+            target = old / d.name
+            if not target.exists():
+                shutil.move(str(d), str(target))
+    new = []
+    src = gpu / 'P2_1_scaling'
+    for d in sorted(p for p in src.glob('*/*') if p.is_dir() and p.name.endswith('_cuda')):
+        _copy_tree(d, scaling / d.parent.name / d.name, replaced)
+        new.append(d.name)
+    for d in sorted(src.glob('provenance_cuda_*')):
+        _copy_tree(d, scaling / d.name, replaced)
+    for f in sorted(gpu.glob('cuda_libraries*.json')):
+        _copy(f, scaling / 'gpu_addendum' / f.name, replaced)
+    return old_runs, new
+
+
+def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=None, gpu=None):
     """Assemble Stage 2 into ``out``; returns the assembly record."""
     stage, out = Path(stage), Path(out)
     lock = json.loads((stage / 'COMMIT').read_text())
     commit = lock['commit']
+    gpu_commit = json.loads((Path(gpu) / 'COMMIT').read_text())['commit'] if gpu is not None else None
     head = _git('rev-parse', 'HEAD')
-    if check_commit and head != commit:
-        raise SystemExit(f'the local checkout is at {head}, the stage is locked to {commit}: '
-                         f'check out {commit} (git checkout {commit[:7]}) and run again')
+    if check_commit and head not in (commit, gpu_commit):
+        raise SystemExit(f'the local checkout is at {head}, the stage is locked to {commit}'
+                         + (f' and the GPU addendum to {gpu_commit}' if gpu_commit else '')
+                         + f': check out {commit} (git checkout {commit[:7]}) and run again')
     out.mkdir(parents=True, exist_ok=True)
     replaced, items = [], []
     for item in sorted(p for p in stage.iterdir() if p.is_dir() and p.name.startswith('P2_')):
@@ -223,6 +272,19 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
                 _copy(faster / name, out / target, replaced)
         if (faster / 'slurm_logs').is_dir():
             _copy_tree(faster / 'slurm_logs', out / 'slurm_logs' / 'stage2_faster', replaced)
+    old_gpu_runs, gpu_runs, gpu_files = [], [], None
+    if gpu is not None:
+        gpu = Path(gpu)
+        old_gpu_runs, gpu_runs = stage2_gpu(gpu, out, replaced)
+        for name, target in (('sacct.txt', 'stage2_gpu_sacct.txt'), ('report_log.txt', 'stage2_gpu_report_log.txt'),
+                             ('COMMIT', 'code/COMMIT_stage2_gpu')):
+            if (gpu / name).exists():
+                _copy(gpu / name, out / target, replaced)
+        if (gpu / 'slurm_logs').is_dir():
+            _copy_tree(gpu / 'slurm_logs', out / 'slurm_logs' / 'stage2_gpu', replaced)
+        gpu_files = (_git('diff', '--name-only', f'{commit}..{gpu_commit}') or '').splitlines()
+        (out / 'code').mkdir(parents=True, exist_ok=True)
+        (out / 'code' / 'FILES_CHANGED_IN_GPU_ADDENDUM.txt').write_text('\n'.join(gpu_files) + '\n')
     stage1_commit = out / 'reference' / 'stage1' / 'COMMIT'
     stage1_commit = stage1_commit if stage1_commit.exists() else out / 'P2_12_reference_errors' / 'COMMIT'
     if stage1_commit.exists():
@@ -233,7 +295,8 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
         if (hardware[0].parent / 'environment.txt').exists():
             _copy(hardware[0].parent / 'environment.txt', out / 'environment.txt', replaced)
     code_files = stage2_code(commit, out)
-    log = [f"Stage 2 assembled {datetime.datetime.now(datetime.timezone.utc).isoformat()} at {commit}"]
+    log = [f"Stage 2 assembled {datetime.datetime.now(datetime.timezone.utc).isoformat()} at {commit}"
+           + (f", the GPU addendum at {gpu_commit}, the summaries run at {head}" if gpu_commit else '')]
     gpu_list = None
     if summaries:
         s1 = out / 'P2_12_reference_errors' / 'scalar_reference_errors.csv'
@@ -252,6 +315,14 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
                       + (['--package1', str(package1)] if package1 else []), log)
         if (out / 'P2_1_scaling').is_dir():
             _step(['experiments/p2_1_scaling.py', 'summarize', '--out', str(out), '--package1', str(package1)], log)
+        if old_gpu_runs and package1:              # C8' on the main run's GPU points, Package 1's environment
+            try:
+                from experiments.p2_1_scaling import check_c8prime
+                c8 = check_c8prime([r for r in old_gpu_runs if r.get('status', 'ok') == 'ok'], package1)
+                (out / 'P2_1_scaling' / 'check_c8prime_old_environment.json').write_text(json.dumps(c8, indent=2))
+                log.append(f"C8' on the old-environment GPU runs: {'passed' if c8['passed'] else 'FAILED'}")
+            except Exception as exc:               # recorded, not fatal
+                log.append(f"C8' on the old-environment GPU runs failed to run: {exc!r}")
     (out / 'assembly_log.txt').write_text('\n\n'.join(log) + '\n')
     record = {'stage2_commit': commit, 'stage2_lock': lock,
               'stage1_commit': json.loads(stage1_commit.read_text())['commit'] if stage1_commit.exists() else None,
@@ -260,7 +331,11 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
               'code_files': len(code_files),
               'hardware': 'hardware.json and environment.txt are the CPU scaling job\'s (a whole Grace CPU node); '
                           'every item folder holds its own job\'s',
-              'item_2_gpu_list': gpu_list, 'faster_commit': faster_commit}
+              'item_2_gpu_list': gpu_list, 'faster_commit': faster_commit,
+              'gpu_addendum': ({'commit': gpu_commit, 'runs': gpu_runs, 'files_changed': gpu_files,
+                                'old_environment_runs': [r.get('series', '') + '_' + str(r.get('size', ''))
+                                                         for r in old_gpu_runs],
+                                'summaries_at': head} if gpu_commit else None)}
     (out / 'provenance.json').write_text(json.dumps(record, indent=2))
     return record
 
@@ -272,9 +347,10 @@ def main(argv=None):
     ap.add_argument('--out', required=True, help='package2_results')
     ap.add_argument('--package1', help="stage2: package1 (item 7's check C8', the figures)")
     ap.add_argument('--faster', help="stage2: FASTER's package2_stage2 (item 5), from package2_stage2_faster.tar.gz")
+    ap.add_argument('--gpu', help="stage2: the GPU addendum's package2_stage2_gpu (item 7's GPU series, batch 8)")
     args = ap.parse_args(argv)
     if args.stage_name == 'stage2':
-        r = stage2(args.stage, args.out, args.package1, faster=args.faster)
+        r = stage2(args.stage, args.out, args.package1, faster=args.faster, gpu=args.gpu)
         print(f"Stage 2 at {r['stage2_commit'][:7]}: {len(r['items'])} item folders, {r['code_files']} code files")
         for name, rec in r['references'].items():
             print(f"  reference/{name}: {rec}")

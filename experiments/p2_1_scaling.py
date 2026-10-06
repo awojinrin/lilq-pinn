@@ -268,6 +268,10 @@ def run_one(series, size, device, out_root):
         'timing_protocol': 'one untimed warm-up, then one timed run with the diagnostics off (Section 10: a single '
                            'timing, not the median of three)',
     }
+    if cuda:                                       # which NVIDIA libraries did the solve (batch 8)
+        from lilq.cuda_libraries import loaded_libraries
+        record['cuda_libraries'] = loaded_libraries()
+        record['ld_library_path'] = os.environ.get('LD_LIBRARY_PATH', '').split(':')
     (run_dir / 'run.json').write_text(json.dumps(record, indent=2))   # the timing, before the off-clock part
     # off the clock: the errors, then kappa and the rank
     errors = _errors(problem, config, r)
