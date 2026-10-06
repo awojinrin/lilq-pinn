@@ -18,7 +18,7 @@ FASTER = {'p2s2_darcy_hardbc'}                 # item 5, submitted on FASTER (su
 COMPUTE = {'p2s2_classical_bratu', 'p2s2_classical_kovasznay', 'p2s2_classical_burgers', 'p2s2_lm_networks_bratu',
            'p2s2_lm_networks_burgers', 'p2s2_lm_networks_bl', 'p2s2_certified', 'p2s2_elm', 'p2s2_nu_refinement',
            'p2s2_bases', 'p2s2_scaling_cpu_a', 'p2s2_scaling_cpu_b', 'p2s2_scaling_gpu',
-           'p2s2_elasticity_manufactured'}
+           'p2s2_elasticity_manufactured', 'p2s2_darcy_softbc_lm'}
 
 
 def test_every_stage_2_job_is_submitted_or_contingent():
@@ -58,12 +58,12 @@ def _fake_sbatch(tmp_path, dry):
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
-def test_dry_run_checks_all_17_jobs_and_submits_nothing(tmp_path):
+def test_dry_run_checks_all_18_jobs_and_submits_nothing(tmp_path):
     out = subprocess.run(['bash', str(SUBMIT)], env=_fake_sbatch(tmp_path, True), capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
     assert 'Package 2, stage 2 (results/package2_stage2)' in out.stdout
     log = (tmp_path / 'log').read_text().splitlines()
-    assert len(log) == 17 and all('--account=000000000000' in l for l in log)
+    assert len(log) == 18 and all('--account=000000000000' in l for l in log)
     assert not any('--dependency' in l for l in log)
     assert all('--exclusive' in l for l in log if 'scaling_cpu' in l or 'classical' in l or 'lm_networks' in l
                or 'nu_refinement' in l)
@@ -74,7 +74,7 @@ def test_submission_chains_the_jobs(tmp_path):
     out = subprocess.run(['bash', str(SUBMIT)], env=_fake_sbatch(tmp_path, False), capture_output=True, text=True)
     assert out.returncode == 0, out.stdout + out.stderr
     log = (tmp_path / 'log').read_text().splitlines()
-    assert len(log) == 17
+    assert len(log) == 18
     ids = {re.search(r'(p2s2_[a-z_]+)\.slurm', l).group(1): 101 + i for i, l in enumerate(log)}
     assert '--dependency' not in log[0] and 'p2s2_preflight' in log[0]
     assert f"afterok:{ids['p2s2_preflight']}" in log[1] and 'p2s2_references' in log[1]

@@ -54,6 +54,19 @@ Seeds 0, 1, 2; fields S1, S2, S3, SPE10.
 **Where.** FASTER, a shared A100 (untimed). The time is reported with the
 hardware and is not compared with the manuscript's Grace times.
 
+**Item 5b, the control** (``--variant soft``; the advisor's reply before the
+Stage-2 submission, 5 October, item 5: an addition requested after the
+pre-submission note). The paper's network exactly as it is (``DarcyPINN``:
+P = NN_h P_HALF + P_MID, no lifting) with its Dirichlet rows (P = P_bot at
+y = 0 and P_top at y = L_y, at the 60 cell-centre abscissae, each face a mean
+square weighted 20, scaled by P_BOTTOM), trained by the same LM under the same
+cap and logging. Seed 0, the four fields, on a Grace shared A100; untimed, and
+its time is not quoted. Check C3: r . r equals the paper's own loss on the
+paper's network, its Dirichlet terms included. Item 5 (lifting + LM) against
+5b (rows + LM) isolates the boundary treatment; 5b against the paper's NiL run
+(rows + Adam) isolates the optimizer. Outputs under ``P2_15b_darcy_softbc_lm/``,
+the same files, and ``darcy_softbc_lm_rows.csv``.
+
 **Outputs** under ``P2_15_darcy_hardbc/``:
 - ``<field>_seed<s>/``: ``run.json``, ``log.csv``,
   ``pressure_field.npz`` (P, P_FV and the cell centres), ``network.pt``
@@ -66,7 +79,8 @@ hardware and is not compared with the manuscript's Grace times.
 Usage::
 
     python experiments/p2_15_darcy_hardbc.py run --field S1 --seed 0 --out <stage root> [--device cuda]
-    python experiments/p2_15_darcy_hardbc.py summarize --out <stage root> [--package1 <package1>]
+    python experiments/p2_15_darcy_hardbc.py run --variant soft --array-task 0 --out <stage root> --device cuda
+    python experiments/p2_15_darcy_hardbc.py summarize --out <stage root> [--package1 <package1>] [--variant soft]
 """
 
 import argparse
@@ -103,6 +117,13 @@ C3_TOL = 1e-12
 METHOD = 'NiL-N hard-BC (LM)'
 LOG_COLUMNS = ('iteration', 'n_func_evals', 'loss', 'darcy_x', 'darcy_y', 'continuity', 'bc_lr', 'wall_time',
                'mu', 'n_jacobian_evals', 'accepted', 'restarts', 'eps_ref')
+SOFT_LOG_COLUMNS = ('iteration', 'n_func_evals', 'loss', 'darcy_x', 'darcy_y', 'continuity', 'bc_bot', 'bc_top',
+                    'bc_lr', 'wall_time', 'mu', 'n_jacobian_evals', 'accepted', 'restarts', 'eps_ref')
+# item 5 (hard: the lifting + LM, FASTER) and item 5b (soft: the paper's rows + LM, Grace)
+VARIANTS = {'hard': {'folder': 'P2_15_darcy_hardbc', 'rows': 'darcy_hardbc_rows.csv', 'method': METHOD,
+                     'item': '5', 'seeds': SEEDS},
+            'soft': {'folder': 'P2_15b_darcy_softbc_lm', 'rows': 'darcy_softbc_lm_rows.csv',
+                     'method': 'NiL-N soft-BC (LM)', 'item': '5b', 'seeds': (0,)}}
 ROW_COLUMNS = ('field', 'seed', 'k_stop', 'reason', 'delta_FV', 'max_diff_psi', 'time_s', 'device')
 
 
@@ -142,13 +163,15 @@ def _mlp(ps, X):
 
 
 class DarcyResidual:
-    """The hard-BC loss as r . r (the paper's weights), its Jacobian, and the
-    components ``log.csv`` records (``lm``'s ``log_columns`` hook)."""
+    """The loss as r . r (the paper's weights), its Jacobian, and the components
+    ``log.csv`` records (``lm``'s ``log_columns`` hook). ``soft=False``: item 5,
+    the lifted pressure, no Dirichlet rows. ``soft=True``: item 5b, the paper's
+    pressure P = NN P_HALF + P_MID with its Dirichlet rows."""
 
     log_columns = LOG_COLUMNS
 
-    def __init__(self, pinn):
-        self.p = pinn
+    def __init__(self, pinn, soft=False):
+        self.p, self.soft = pinn, soft
         ph = pinn.physics
         self.shapes = [q.shape for net in (pinn.net_P, pinn.net_U, pinn.net_V) for q in net.parameters()]
         n_layers = len(list(pinn.net_P.parameters()))
@@ -165,6 +188,16 @@ class DarcyResidual:
         self.DP, self.PB, self.PH = float(ph.DELTA_P), float(pinn.config.P_BOTTOM), pinn.P_HALF
         self.VS, self.CE, self.norm = pinn.V_SCALE, pinn.CE_SCALE, pinn.sqrt_K0 * pinn.dP_scale
         self._t = t
+        if soft:
+            self.log_columns = SOFT_LOG_COLUMNS
+            self.PM, self.PS = pinn.P_MID, pinn.P_SCALE
+            self.X_dir = [torch.cat([pinn.xbot, pinn.ybot], 1).detach(), torch.cat([pinn.xtop, pinn.ytop], 1).detach()]
+            self.dir_target = [float(pinn.config.P_BOTTOM), float(pinn.config.P_TOP)]
+            self.w_dir = [math.sqrt(W_BC / len(X)) for X in self.X_dir]
+
+            def point_p(theta, X):
+                return self.pressure(theta, X[None])[0]
+            self._j_p = vmap(jacrev(point_p), (None, 0))
 
         def point_int(theta, X, sk):
             dx, dy, ce = self._interior(theta, X[None], sk[None])
@@ -197,10 +230,13 @@ class DarcyResidual:
         h, dh = _mlp(pP, Xn)
         u, du = _mlp(pU, Xn)
         v, dv = _mlp(pV, Xn)
-        ys = X[:, 1] / self.LY
-        om, dom = 4.0 * ys * (1.0 - ys), 4.0 * (1.0 - 2.0 * ys) / self.LY
-        Px = self.PH * om * dh[:, 0] / self.XS
-        Py = self.DP / self.LY + self.PH * (dom * h + om * dh[:, 1] / self.YS)
+        if self.soft:                                     # the paper's P = NN P_HALF + P_MID
+            Px, Py = self.PH * dh[:, 0] / self.XS, self.PH * dh[:, 1] / self.YS
+        else:                                             # the lifted P = y* DELTA_P + omega NN P_HALF + P_BOTTOM
+            ys = X[:, 1] / self.LY
+            om, dom = 4.0 * ys * (1.0 - ys), 4.0 * (1.0 - 2.0 * ys) / self.LY
+            Px = self.PH * om * dh[:, 0] / self.XS
+            Py = self.DP / self.LY + self.PH * (dom * h + om * dh[:, 1] / self.YS)
         U, V = u * self.VS, v * self.VS
         Ux, Vy = du[:, 0] / self.XS * self.VS, dv[:, 1] / self.YS * self.VS
         return ((U / sk + sk * Px) / self.norm, (V / sk + sk * Py) / self.norm, (Ux + Vy) / self.CE)
@@ -214,47 +250,65 @@ class DarcyResidual:
     def pressure(self, theta, X):
         pP, _, _ = self._unflat(theta)
         h, _ = _mlp(pP, self._norm(X))
+        if self.soft:
+            return h * self.PH + self.PM
         ys = X[:, 1] / self.LY
         return ys * self.DP + 4.0 * ys * (1.0 - ys) * h * self.PH + self.PB
 
+    def _dirichlet(self, theta):
+        """5b only: (P - P_face) / P_SCALE on the bottom and top faces (the paper's rows)."""
+        return [(self.pressure(theta, X) - t) / self.PS for X, t in zip(self.X_dir, self.dir_target)]
+
     def vector(self, theta):
         dx, dy, ce = self._interior(theta, self.X_int, self.sqrt_K)
-        lat = [w * self._lateral(theta, X) for w, X in zip(self.w_lat, self.X_lat)]
-        return torch.cat([self.w_int * dx, self.w_int * dy, self.w_int * ce] + lat)
+        rows = [self.w_int * dx, self.w_int * dy, self.w_int * ce]
+        if self.soft:
+            rows += [w * d for w, d in zip(self.w_dir, self._dirichlet(theta))]
+        rows += [w * self._lateral(theta, X) for w, X in zip(self.w_lat, self.X_lat)]
+        return torch.cat(rows)
 
     def jacobian(self, theta):
         Ji = self._j_int(theta, self.X_int, self.sqrt_K)              # (n, 3, n_theta)
         J = [self.w_int * Ji[:, 0], self.w_int * Ji[:, 1], self.w_int * Ji[:, 2]]
+        if self.soft:
+            J += [w / self.PS * self._j_p(theta, X) for w, X in zip(self.w_dir, self.X_dir)]
         J += [w * self._j_lat(theta, X) for w, X in zip(self.w_lat, self.X_lat)]
         return torch.cat(J)
 
     def log_values(self, theta):
         dx, dy, ce = self._interior(theta, self.X_int, self.sqrt_K)
         lat = sum(float(torch.mean(self._lateral(theta, X) ** 2)) for X in self.X_lat)
-        return {'darcy_x': repr(W_PDE * float(torch.mean(dx ** 2))), 'darcy_y': repr(W_PDE * float(torch.mean(dy ** 2))),
-                'continuity': repr(W_PDE * float(torch.mean(ce ** 2))), 'bc_lr': repr(W_BC * lat)}
+        out = {'darcy_x': repr(W_PDE * float(torch.mean(dx ** 2))), 'darcy_y': repr(W_PDE * float(torch.mean(dy ** 2))),
+               'continuity': repr(W_PDE * float(torch.mean(ce ** 2))), 'bc_lr': repr(W_BC * lat)}
+        if self.soft:
+            bot, top = self._dirichlet(theta)
+            out.update(bc_bot=repr(W_BC * float(torch.mean(bot ** 2))), bc_top=repr(W_BC * float(torch.mean(top ** 2))))
+        return out
 
 
 # ---------------------------------------------------------------- one run
 
-def run(field, seed, out_root, device=None, max_iterations=MAX_ITERATIONS, wall_cap_s=WALL_CAP_S):
+def run(field, seed, out_root, device=None, max_iterations=MAX_ITERATIONS, wall_cap_s=WALL_CAP_S, variant='hard'):
+    soft = variant == 'soft'
+    spec = VARIANTS[variant]
     device = torch.device(device or ('cuda' if torch.cuda.is_available() else 'cpu'))
-    run_dir = Path(out_root) / 'P2_15_darcy_hardbc' / f'{field}_seed{seed}'
+    run_dir = Path(out_root) / spec['folder'] / f'{field}_seed{seed}'
     run_dir.mkdir(parents=True, exist_ok=True)
     config = config_for(field)
     physics = DarcyPhysics(config, verbose=False)
     P_fv = solve_fvm(physics)
-    pinn = HardBCDarcyPINN(config, physics, device=device, dtype=torch.float64, seed=seed)
-    res = DarcyResidual(pinn)
+    pinn = (DarcyPINN if soft else HardBCDarcyPINN)(config, physics, device=device, dtype=torch.float64, seed=seed)
+    res = DarcyResidual(pinn, soft=soft)
     theta = res.theta0()
 
-    # C3: r . r against the paper's loss on the lifted network; its Dirichlet terms vanish
+    # C3: r . r against the paper's own loss on this network (item 5: the lifted network,
+    # whose Dirichlet terms vanish; item 5b: the paper's network, Dirichlet terms included)
     paper_loss, parts = pinn._compute_loss()
     r0 = res.vector(theta)
     c3 = {'paper_loss_iteration_0': float(paper_loss.detach()), 'lm_r_dot_r_iteration_0': float(r0 @ r0),
           'paper_dirichlet_terms': [parts['bc_bot'], parts['bc_top']]}
     c3['rel_diff'] = abs(c3['lm_r_dot_r_iteration_0'] - c3['paper_loss_iteration_0']) / c3['paper_loss_iteration_0']
-    c3['passed'] = bool(c3['rel_diff'] <= C3_TOL and parts['bc_bot'] == 0 and parts['bc_top'] == 0)
+    c3['passed'] = bool(c3['rel_diff'] <= C3_TOL and (soft or (parts['bc_bot'] == 0 and parts['bc_top'] == 0)))
 
     x_c = (np.arange(config.NX_CELLS) + 0.5) * (physics.LX / config.NX_CELLS)
     y_c = (np.arange(config.NY_CELLS) + 0.5) * (physics.LY / config.NY_CELLS)
@@ -275,22 +329,28 @@ def run(field, seed, out_root, device=None, max_iterations=MAX_ITERATIONS, wall_
             for q, v in zip(net.parameters(), ps):
                 q.copy_(v)
     from lilq.saved_models import save_checkpoint
-    save_checkpoint(run_dir / 'network.pt', {'networks': pinn.network_state(), 'field': field,
-                                             'lifting': 'P = y* DELTA_P + 4 y*(1 - y*) NN_h P_HALF + P_BOTTOM'})
+    save_checkpoint(run_dir / 'network.pt', {
+        'networks': pinn.network_state(), 'field': field, 'variant': variant,
+        'lifting': "none: the paper's P = NN_h P_HALF + P_MID" if soft else
+        'P = y* DELTA_P + 4 y*(1 - y*) NN_h P_HALF + P_BOTTOM'})
     record = {
-        'field': field, 'seed': seed, 'method': METHOD, 'device': str(device),
+        'field': field, 'seed': seed, 'method': spec['method'], 'item': spec['item'], 'variant': variant,
+        'device': str(device),
         'gpu': torch.cuda.get_device_name(device) if device.type == 'cuda' else None,
         'k_stop': summary['total_iterations'], 'reason': summary['stopping_reason'],
         'delta_FV': delta_fv(P, P_fv, config.P_BOTTOM), 'max_diff_psi': float(np.abs(P - P_fv).max()),
         'time_s': summary['training_time'], 'final_loss': summary['final_loss'], 'c3': c3,
         'n_theta': int(theta.numel()), 'n_rows': int(r0.numel()),
-        'differs_from_the_paper_nil': ['the pressure output is lifted (hard Dirichlet conditions), '
-                                       "at the paper's output gain P_HALF",
-                                       'Levenberg-Marquardt instead of Adam'],
+        'differs_from_the_paper_nil': (['Levenberg-Marquardt instead of Adam'] if soft else
+                                       ['the pressure output is lifted (hard Dirichlet conditions), '
+                                        "at the paper's output gain P_HALF",
+                                        'Levenberg-Marquardt instead of Adam']),
         'network': '3 x MLP(2, 32, 1, 2 hidden layers, SiLU), float64, torch.manual_seed(seed), the paper\'s order',
         'loss': {'interior': 'Darcy-x, Darcy-y, continuity: each 50 x mean square (the paper\'s normalization)',
                  'lateral': 'U / V_SCALE = 0 on each lateral face: 20 x mean square (the paper\'s rows)',
-                 'dirichlet': 'none: identically satisfied by the lifting'},
+                 'dirichlet': ("P = P_BOTTOM at y = 0 and P_TOP at y = L_y, (P - P_face) / P_BOTTOM: 20 x mean "
+                               "square per face (the paper's rows)") if soft else
+                              'none: identically satisfied by the lifting'},
         'optimizer': {'name': 'Levenberg-Marquardt (F2)', 'mu0': MU0, 'mu_up': MU_UP, 'mu_down': MU_DOWN,
                       'mu_max': MU_MAX, 'diag_floor': DIAG_FLOOR, 'stall_rule': 'tolerances 0, one restart'},
         'caps': {'iterations': max_iterations, 'wall_time_s': wall_cap_s},
@@ -316,20 +376,33 @@ def _paper_rows(package1):
     return nil, lil
 
 
-def summarize(out_root, package1=None):
-    out = Path(out_root) / 'P2_15_darcy_hardbc'
+def _deltas(out_root, variant):
+    """``{(field, seed): delta_FV}`` of a variant's runs."""
+    folder = Path(out_root) / VARIANTS[variant]['folder']
+    return {(r['field'], r['seed']): r['delta_FV']
+            for r in (json.loads(p.read_text()) for p in sorted(folder.glob('*_seed*/run.json')))}
+
+
+def summarize(out_root, package1=None, variant='hard'):
+    """The variant's rows, with the other three for the same field and seed:
+    item 5 (lifting + LM), 5b (rows + LM), the paper's NiL (rows + Adam), and LiL."""
+    out = Path(out_root) / VARIANTS[variant]['folder']
     runs = [json.loads(p.read_text()) for p in sorted(out.glob('*_seed*/run.json'))]
     nil, lil = _paper_rows(package1) if package1 else ({}, {})
+    other = 'soft' if variant == 'hard' else 'hard'
+    other_d = _deltas(out_root, other)
     rows = []
     for r in runs:
         row = {k: r[k] for k in ROW_COLUMNS}
         row.update(final_loss=r['final_loss'], c3_rel_diff=r['c3']['rel_diff'], c3_passed=r['c3']['passed'],
                    gpu=r['gpu'], restarts=r['summary'].get('lm_restarts'),
+                   **{'delta_FV_soft_bc_lm_5b' if other == 'soft' else 'delta_FV_hard_bc_lm_5':
+                      other_d.get((r['field'], r['seed']), '')},
                    delta_FV_paper_nil_soft_bc_adam=nil.get((r['field'], r['seed']), ''),
                    delta_FV_lil=lil.get(r['field'], ''))
         rows.append(row)
     if rows:
-        with open(out / 'darcy_hardbc_rows.csv', 'w', newline='') as f:
+        with open(out / VARIANTS[variant]['rows'], 'w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=list(rows[0]))
             w.writeheader()
             w.writerows(rows)
@@ -342,29 +415,33 @@ def main(argv=None):
     ap.add_argument('--out', required=True, help='the stage root')
     ap.add_argument('--field', choices=FIELDS)
     ap.add_argument('--seed', type=int, choices=SEEDS)
-    ap.add_argument('--array-task', type=int, help='0-11: field = FIELDS[task // 3], seed = task %% 3')
+    ap.add_argument('--variant', choices=tuple(VARIANTS), default='hard',
+                    help='hard: item 5 (the lifting); soft: item 5b (the paper\'s Dirichlet rows)')
+    ap.add_argument('--array-task', type=int,
+                    help='hard: 0-11, field = FIELDS[task // 3], seed = task %% 3; soft: 0-3, field = FIELDS[task], seed 0')
     ap.add_argument('--device', default=None)
     ap.add_argument('--package1', default=None)
     ap.add_argument('--max-iterations', type=int, default=MAX_ITERATIONS)
     ap.add_argument('--wall-cap-s', type=float, default=WALL_CAP_S)
     args = ap.parse_args(argv)
     if args.stage == 'summarize':
-        for r in summarize(args.out, args.package1):
+        for r in summarize(args.out, args.package1, args.variant):
             print(f"  {r['field']:5s} seed {r['seed']}: {r['k_stop']} iterations ({r['reason']}), "
                   f"delta_FV {r['delta_FV']:.3e} (paper NiL {r['delta_FV_paper_nil_soft_bc_adam'] or '-'}), "
                   f"max {r['max_diff_psi']:.1f} psi, {r['time_s']:.0f} s")
         return
+    seeds = VARIANTS[args.variant]['seeds']
     if args.array_task is not None:
-        field, seed = FIELDS[args.array_task // len(SEEDS)], SEEDS[args.array_task % len(SEEDS)]
+        field, seed = FIELDS[args.array_task // len(seeds)], seeds[args.array_task % len(seeds)]
     else:
         field, seed = args.field, args.seed
     if field is None or seed is None:
         ap.error('run needs --field and --seed, or --array-task')
-    done = Path(args.out) / 'P2_15_darcy_hardbc' / f'{field}_seed{seed}' / 'run.json'
+    done = Path(args.out) / VARIANTS[args.variant]['folder'] / f'{field}_seed{seed}' / 'run.json'
     if done.exists():
         print(f'  {done.parent}: done, skipping')
         return
-    r = run(field, seed, args.out, args.device, args.max_iterations, args.wall_cap_s)
+    r = run(field, seed, args.out, args.device, args.max_iterations, args.wall_cap_s, args.variant)
     print(f"  {field} seed {seed}: {r['k_stop']} iterations ({r['reason']}), delta_FV {r['delta_FV']:.3e}, "
           f"max {r['max_diff_psi']:.1f} psi, {r['time_s']:.0f} s on {r['gpu'] or r['device']}; C3 "
           f"{'passed' if r['c3']['passed'] else 'FAILED'} ({r['c3']['rel_diff']:.1e})")

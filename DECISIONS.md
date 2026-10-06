@@ -17,6 +17,55 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-05 -- Package 2, Stage 2, batch 6: item 5b, the Darcy control (added after the pre-submission note)
+
+**Why.** The advisor requested it in his reply before the Stage-2 submission (5 October,
+item 5), after the pre-submission note. Item 5 changes two things at once, the lifting and
+the optimizer, so the control separates them:
+- item 5 (lifting + LM) against 5b (the paper's rows + LM) isolates the boundary treatment;
+- 5b against the paper's NiL run (rows + Adam) isolates the optimizer.
+
+**What.** `p2_15_darcy_hardbc.py run --variant soft` takes the paper's network exactly as it
+is (`DarcyPINN`):
+- P = NN_h P_HALF + P_MID, with no lifting;
+- its Dirichlet rows: (P - P_face) / P_BOTTOM at the 60 cell-centre abscissae of the bottom
+  and top faces, each face 20 x a mean square;
+- everything else as item 5: the residuals, the lateral rows, the seed, and LM with the
+  same cap (2,000 iterations or 30 min) and logging. `log.csv` gains `bc_bot` and `bc_top`.
+
+Check C3: r . r equals the paper's own `_compute_loss` on the paper's network, its Dirichlet
+terms included (1.9e-16 on S2 seed 0, 1.7e-16 on S1 seed 0). The Jacobian is tested against
+reverse mode, the Dirichlet rows included.
+
+**Outputs:** `P2_15b_darcy_softbc_lm/<field>_seed0/` and `darcy_softbc_lm_rows.csv`. Each
+variant's rows carry the other's delta_FV for the same field and seed, beside the paper's NiL
+and LiL.
+
+**Where.** Seed 0, the four fields, as an array of 4 on a Grace shared A100
+(`p2s2_darcy_softbc_lm.slurm`). It is untimed, and its time is not quoted.
+- It is job 18 of `submit_p2s2.sh`, after the references, and the report waits for it.
+- It costs 240 SU requested (4 x 0.75 h x 80) and about 176 expected. Stage 2 on Grace
+  becomes 1,514 requested and about 794 expected; FASTER is unchanged.
+- `p2_assemble.py stage2` summarizes both variants.
+
+**Laptop smoke run** (S1, seed 0, the cap cut to 5 min): 146 iterations, delta_FV 2.88e-3.
+
+| S1, seed 0 | delta_FV |
+|---|---|
+| Item 5, lifting + LM (also 5-min smoke) | 2.22e-4 |
+| The paper's NiL, rows + Adam (150,000 epochs, A100) | 2.14e-2 |
+| LiL | 1.37e-4 |
+
+The Grace runs are the result.
+
+**The first submission was cancelled.** Stage 2 had been submitted on both clusters at
+ecf8d48 before the reply was read. It was cancelled before any compute job ran, so that
+everything comes from one commit with 5b in. The report jobs (`afterany`) started when their
+dependencies were cancelled, and locked each `results/package2_stage2` to ecf8d48 (a `COMMIT`
+file and nothing else). `scripts/cluster/README.md` now says to cancel the report job first.
+
+---
+
 ## 2026-10-05 -- Package 2, Stage 2, batch 5: fixes from a review in another session
 
 A separate session reviewed Stage 2's code at 28eccb6, at Gbenga's request. Each finding was

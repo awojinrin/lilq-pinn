@@ -181,18 +181,28 @@ are), then:
 
 ```bash
 cd $SCRATCH/lilq-run/lilq-pinn
-DRY_RUN=1 bash scripts/cluster/package2/submit_p2s2.sh    # all 17 jobs through sbatch --test-only; submits nothing
+DRY_RUN=1 bash scripts/cluster/package2/submit_p2s2.sh    # all 18 jobs through sbatch --test-only; submits nothing
 bash scripts/cluster/package2/submit_p2s2.sh
 ```
 
 **The chain:**
 1. `p2s2_preflight` checks versions, the GPU and the test suite, and locks the folder.
 2. `p2s2_references` makes every reference once.
-3. The 14 compute jobs (items 1-4 and 6-8) wait for the references.
+3. The 15 compute jobs (items 1-4, 6-8, and item 5's control 5b on a shared A100) wait for the
+   references.
 4. `p2s2_report` runs after all of them (afterany). It writes `sacct.txt` and `su_per_job.csv`,
    and packs `results/package2_stage2.tar.gz`: the whole stage and its Slurm logs.
 
-The plan is 1,274 SU requested, about 618 expected (`package2_results/su_plan.csv`).
+The plan is 1,514 SU requested, about 794 expected (`package2_results/su_plan.csv`).
+
+**Cancelling a submitted stage before it runs.** Cancel the report job first, then the rest:
+```bash
+scancel <report job>; scancel <the other jobs>
+```
+The report waits with `afterany`, so cancelling the compute jobs first satisfies its dependency.
+It then starts, and its `env.sh` locks `results/package2_stage2` to the commit, as happened on
+5 October. If that happened and no other job ran, the folder holds only `COMMIT`. Remove it
+before resubmitting from a new commit.
 
 **Item 2's A100 reruns are not in the chain.** When the three LM jobs are done, run:
 

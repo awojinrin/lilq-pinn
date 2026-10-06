@@ -10,21 +10,23 @@
 #        item 6: nu-refinement (timed-cpu), boundary-conforming bases (cpu)
 #        item 7: scaling, CPU (two timed-cpu jobs) and A100 (timed)
 #        item 8: manufactured elasticity (cpu)
+#        item 5b: the Darcy control, soft boundary rows + LM (shared A100, array of 4)
 #   -> p2s2_report (afterany): sacct, su_per_job.csv, results/package2_stage2.tar.gz.
 # Not submitted here:
 #   - item 2's contingent A100 reruns (p2s2_lm_networks_gpu.slurm): only if
 #     `python experiments/p2_8_lm_networks.py gpu-list --out results/package2_stage2`
 #     names a configuration once the three LM jobs are done (Section 5);
-#   - item 5 (Darcy) runs on FASTER, from its own script.
-# 17 jobs: 1,274 SU requested (walltime x rate, su_plan.csv), about 618 expected (charged by
-# elapsed time); 1,730 requested if the contingent A100 job is submitted too.
+#   - item 5 (Darcy) runs on FASTER, from its own script (submit_p2s2_faster.sh);
+#     its control, item 5b, runs here.
+# 18 jobs: 1,514 SU requested (walltime x rate, su_plan.csv), about 794 expected (charged by
+# elapsed time); 1,970 requested if the contingent A100 job is submitted too.
 # Run from a login node:
 #   DRY_RUN=1 bash scripts/cluster/package2/submit_p2s2.sh     (checks every job; submits nothing)
 #   bash scripts/cluster/package2/submit_p2s2.sh
 LILQ_WAVE=p2s2
 source "$(dirname "$0")/../submit_lib.sh"
 P=$S/package2
-confirm_balance "1,274 SU requested, about 618 expected (su_plan.csv; 17 jobs)"
+confirm_balance "1,514 SU requested, about 794 expected (su_plan.csv; 18 jobs)"
 
 submit pre  $P/p2s2_preflight.slurm
 submit refs $P/p2s2_references.slurm             --dependency=afterok:$pre
@@ -43,6 +45,7 @@ submit sa   $P/p2s2_scaling_cpu_a.slurm          $after
 submit sb   $P/p2s2_scaling_cpu_b.slurm          $after
 submit sg   $P/p2s2_scaling_gpu.slurm            $after
 submit ela  $P/p2s2_elasticity_manufactured.slurm $after
-submit rep  $P/p2s2_report.slurm                 --dependency=afterany:$c1:$c2:$c3:$l1:$l2:$l3:$cert:$elm:$nu:$bas:$sa:$sb:$sg:$ela
+submit d5b  $P/p2s2_darcy_softbc_lm.slurm        $after
+submit rep  $P/p2s2_report.slurm                 --dependency=afterany:$c1:$c2:$c3:$l1:$l2:$l3:$cert:$elm:$nu:$bas:$sa:$sb:$sg:$ela:$d5b
 [[ "$DRY_RUN" == 1 ]] || echo "Stage 2 submitted. When the LM jobs ($l1 $l2 $l3) finish, check item 2's gpu-list;"
 [[ "$DRY_RUN" == 1 ]] || echo "when job $rep finishes: results/package2_stage2.tar.gz to download."

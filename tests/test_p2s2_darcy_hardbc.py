@@ -148,3 +148,60 @@ def test_faster_dry_run(tmp_path):
                          capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
     assert len((tmp_path / 'log').read_text().splitlines()) == 3
+
+
+# ---------------------------------------------------------------- item 5b, the control (soft rows + LM)
+
+def test_5b_c3_the_loss_is_the_papers_with_its_dirichlet_terms(s1):
+    config, physics = s1
+    pinn = DarcyPINN(config, physics, device='cpu', seed=0)
+    res = m.DarcyResidual(pinn, soft=True)
+    r = res.vector(res.theta0())
+    loss, parts = pinn._compute_loss()
+    assert parts['bc_bot'] > 0 and parts['bc_top'] > 0                      # the paper's rows are in the loss
+    assert float(r @ r) == pytest.approx(float(loss.detach()), rel=1e-12)
+    logged = res.log_values(res.theta0())
+    assert list(res.log_columns) == list(m.SOFT_LOG_COLUMNS)
+    assert float(logged['bc_bot']) == pytest.approx(parts['bc_bot'], rel=1e-12)
+    assert float(logged['bc_top']) == pytest.approx(parts['bc_top'], rel=1e-12)
+    assert len(r) == 3 * 60 * 220 + 2 * 60 + 2 * 220
+    # the paper's pressure, not the lifted one
+    x = torch.linspace(0, physics.LX, 5, dtype=torch.float64)[:, None]
+    X = torch.cat([x, torch.zeros_like(x)], 1)
+    assert torch.allclose(res.pressure(res.theta0(), X), pinn._get_P(x, torch.zeros_like(x))[:, 0])
+
+
+def test_5b_the_jacobian_against_reverse_mode(s1):
+    config, physics = s1
+    res = m.DarcyResidual(DarcyPINN(config, physics, device='cpu', seed=0), soft=True)
+    idx = torch.arange(0, res.n_int, 700)
+    res.X_int, res.sqrt_K = res.X_int[idx], res.sqrt_K[idx]
+    res.X_lat = [X[:7] for X in res.X_lat]
+    res.X_dir = [X[:9] for X in res.X_dir]
+    theta = res.theta0()
+    J, J_ref = res.jacobian(theta), torch.func.jacrev(res.vector)(theta)
+    assert J.shape == J_ref.shape and torch.allclose(J, J_ref, rtol=1e-10, atol=1e-12)
+
+
+def test_5b_a_run_and_both_summaries(tmp_path):
+    r = m.run('S1', 0, tmp_path, device='cpu', max_iterations=1, variant='soft')
+    d = tmp_path / 'P2_15b_darcy_softbc_lm' / 'S1_seed0'
+    assert (d / 'run.json').exists() and (d / 'network.pt').exists()
+    assert r['c3']['passed'] and r['item'] == '5b' and r['differs_from_the_paper_nil'] == ['Levenberg-Marquardt instead of Adam']
+    with open(d / 'log.csv') as f:
+        assert next(csv.reader(f)) == list(m.SOFT_LOG_COLUMNS)
+    h = m.run('S1', 0, tmp_path, device='cpu', max_iterations=1)                  # item 5, the same field and seed
+    soft_rows = m.summarize(tmp_path, variant='soft')
+    hard_rows = m.summarize(tmp_path)
+    assert soft_rows[0]['delta_FV_hard_bc_lm_5'] == h['delta_FV']
+    assert hard_rows[0]['delta_FV_soft_bc_lm_5b'] == r['delta_FV']
+    assert (tmp_path / 'P2_15b_darcy_softbc_lm' / 'darcy_softbc_lm_rows.csv').exists()
+
+
+def test_the_5b_job_on_grace():
+    text = (P2 / 'p2s2_darcy_softbc_lm.slurm').read_text()
+    assert '# lilq-resources: shared-gpu' in text and '#SBATCH --array=0-3' in text
+    assert '--variant soft --array-task "$SLURM_ARRAY_TASK_ID"' in text and '--device cuda' in text
+    assert '/p2s2_darcy_softbc_lm.slurm' in (P2 / 'submit_p2s2.sh').read_text()
+    assert 'p2s2_darcy_softbc_lm' not in (P2 / 'submit_p2s2_faster.sh').read_text()
+    assert [m.FIELDS[t // len(m.VARIANTS['soft']['seeds'])] for t in range(4)] == list(m.FIELDS)

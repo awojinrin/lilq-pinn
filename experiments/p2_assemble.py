@@ -46,8 +46,9 @@ replaced, and the replacements are listed.
     (``p2_1_scaling.py summarize``), against ``--package1``;
   - item 2's ``gpu-list``: a configuration named there needs the A100
     reruns before the package is complete;
-  - item 5's rows (``p2_15_darcy_hardbc.py summarize``), beside the paper's
-    NiL and LiL delta_FV from ``--package1``.
+  - item 5's rows and its control 5b's (``p2_15_darcy_hardbc.py summarize``,
+    ``--variant hard`` and ``soft``), each beside the other and beside the
+    paper's NiL and LiL delta_FV from ``--package1``.
 - **FASTER's part** (item 5; ``--faster``, the extracted
   ``package2_stage2_faster.tar.gz``): it must be locked to the same commit
   as Grace's. Its item folder is copied like the others; its ``sacct.txt``,
@@ -238,9 +239,10 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
                    '--lbfgs-errors', str(s1), str(bl)], log)
             g = _step(['experiments/p2_8_lm_networks.py', 'gpu-list', '--out', str(out)], log)
             gpu_list = g.stdout.split() if g.returncode == 0 else None
-        if (out / 'P2_15_darcy_hardbc').is_dir():
-            _step(['experiments/p2_15_darcy_hardbc.py', 'summarize', '--out', str(out)]
-                  + (['--package1', str(package1)] if package1 else []), log)
+        for folder, variant in (('P2_15_darcy_hardbc', 'hard'), ('P2_15b_darcy_softbc_lm', 'soft')):
+            if (out / folder).is_dir():           # item 5 (FASTER) and its control 5b (Grace)
+                _step(['experiments/p2_15_darcy_hardbc.py', 'summarize', '--out', str(out), '--variant', variant]
+                      + (['--package1', str(package1)] if package1 else []), log)
         if (out / 'P2_1_scaling').is_dir():
             _step(['experiments/p2_1_scaling.py', 'summarize', '--out', str(out), '--package1', str(package1)], log)
     (out / 'assembly_log.txt').write_text('\n\n'.join(log) + '\n')
