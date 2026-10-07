@@ -174,7 +174,7 @@ Python Information:
 
 
 
-==================== torch 2.10.0+cu126 (from /scratch/user/gbenga-awojinrin/lilq-run/venv/lib/python3.12/site-packages/torch/__init__.py) ====================
+==================== torch 2.10.0+cu126 (from $SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/__init__.py) ====================
 PyTorch built with:
   - GCC 13.3
   - C++ Version: 201703

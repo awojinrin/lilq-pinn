@@ -62,5 +62,5 @@ stall controls: 5 runs ended on optimizer_stall
   control of bl P=1024 NiL-Q seed=2 device=cuda (original: 8153 iterations, optimizer_stall)
     NiL-Q  seed=2 [f1_stall_rule] device=cuda   iters= 20000 loss=1.757e-04 [iteration_cap] (401.2s)
 
-Wrote 33 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gpu/four_method_tables.csv (0 failures)
+Wrote 33 rows to $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gpu/four_method_tables.csv (0 failures)
 Total elapsed: 3374.3s

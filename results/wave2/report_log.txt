@@ -1,16 +1,16 @@
 wave 2 report, 2026-10-01T01:35:45.316555+00:00
 
-$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python -c from pathlib import Path; from experiments.component_b import write_index; write_index(Path('/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation'))
+$ $SCRATCH/lilq-run/venv/bin/python -c from pathlib import Path; from experiments.component_b import write_index; write_index(Path('$SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation'))
   exit 0
 
 
-$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python experiments/component_b.py --reproduction-check --out-root /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2
+$ $SCRATCH/lilq-run/venv/bin/python experiments/component_b.py --reproduction-check --out-root $SCRATCH/lilq-run/lilq-pinn/results/wave2
   exit 0
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/reproduction_check.csv: violation=15, missing=0, round-off=10, reported=31, ok=84
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/reproduction_check.csv: violation=15, missing=0, round-off=10, reported=31, ok=84
 
-$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python experiments/four_method_tables.py --out-dir /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation --merge-from /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_cpu/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gpu/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gravity_cpu/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gravity_gpu/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bratu_cpu_controls/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bratu_gpu_controls/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/burgers_cpu/ /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/burgers_gpu/
+$ $SCRATCH/lilq-run/venv/bin/python experiments/four_method_tables.py --out-dir $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation --merge-from $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_cpu/ $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gpu/ $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gravity_cpu/ $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bl_gravity_gpu/ $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bratu_cpu_controls/ $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/bratu_gpu_controls/ $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/burgers_cpu/ $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_jobs/burgers_gpu/
   exit 0
-Merged 112 rows from 8 job directories into /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_tables.csv; 54 stall controls into four_method_controls.csv
+Merged 112 rows from 8 job directories into $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/four_method_tables.csv; 54 stall controls into four_method_controls.csv
 
 Component A runs ended before their budget: 12
   checks/a2/a: max_steps after 4.624249139800668 s

@@ -1,11 +1,11 @@
 provenance lock OK: commit 905e58c480c7, tree 7b076215828a
 job 19905751 on c276: 48 threads, 48 cores usable, OverSubscribe=NO
 no GPU visible
-5 runs -> /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation
+5 runs -> $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation
   beltrami_P7984_cpu_paper: 4 iterations, t_cum=301.225s, wall=776.7s
   darcy_S1_cpu_paper: 1 iterations, t_cum=26.867s, wall=65.7s
   darcy_S2_cpu_paper: 1 iterations, t_cum=23.174s, wall=59.1s
   darcy_S3_cpu_paper: 1 iterations, t_cum=27.566s, wall=58.7s
   darcy_SPE10_cpu_paper: 1 iterations, t_cum=20.785s, wall=53.4s
 
-ok=5 skipped=0 failed=0 in 1016.2s; index: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/runs_index.csv
+ok=5 skipped=0 failed=0 in 1016.2s; index: $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/runs_index.csv

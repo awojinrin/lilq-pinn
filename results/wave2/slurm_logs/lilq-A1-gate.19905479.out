@@ -1,15 +1,15 @@
 provenance lock OK: commit 905e58c480c7, tree 7b076215828a
 job 19905479 on g048: 8 threads, 8 cores usable, OverSubscribe=OK
 NVIDIA A100-PCIE-40GB, 40960 MiB
-Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/A_calibration/search
+Saved $SCRATCH/lilq-run/lilq-pinn/results/wave2/A_calibration/search
 .......................................                                  [100%]
 =============================== warnings summary ===============================
 tests/test_f1_pinn.py: 18 warnings
-  /scratch/user/gbenga-awojinrin/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  $SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
     warnings.warn(
 
 tests/test_f1_pinn.py::test_short_run_logs_both_phases_and_is_deterministic
-  /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  $SCRATCH/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
   Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
     value = float(loss)
 
@@ -37,7 +37,7 @@ n_theta = 1467, rows = 1801, normal-equation memory ~ 0.06 GB
   "wall_s": 0.775792732834816
 }
 {"device": "cuda", "steps": [20, 20], "max_relative_difference": 0.0, "bit_identical": true, "passed": true}
-/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+$SCRATCH/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
 Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
   value = float(loss)
 {"eps_u": 5.7755578319914715e-05, "target": 0.001, "budget_s": 3600.0, "passed": true}

@@ -15,7 +15,7 @@
   "test_every": 1,
   "seed": 0,
   "device": "cuda",
-  "out": "/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/A_calibration/screening/F2_20_s0",
+  "out": "$SCRATCH/lilq-run/lilq-pinn/results/wave2/A_calibration/screening/F2_20_s0",
   "n_theta": 16835,
   "n_rows": 24001,
   "mem_estimate_bytes": 6905447640,

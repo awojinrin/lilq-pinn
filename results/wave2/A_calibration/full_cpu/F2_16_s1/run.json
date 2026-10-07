@@ -15,7 +15,7 @@
   "test_every": 1,
   "seed": 1,
   "device": "cpu",
-  "out": "/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/A_calibration/full_cpu/F2_16_s1",
+  "out": "$SCRATCH/lilq-run/lilq-pinn/results/wave2/A_calibration/full_cpu/F2_16_s1",
   "n_theta": 16835,
   "n_rows": 6001,
   "mem_estimate_bytes": 6905447640,

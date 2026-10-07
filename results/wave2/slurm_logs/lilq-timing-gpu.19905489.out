@@ -1,17 +1,17 @@
 provenance lock OK: commit 905e58c480c7, tree 7b076215828a
 job 19905489 on g050: 48 threads, 48 cores usable, OverSubscribe=OK
 NVIDIA A100-PCIE-40GB, 40960 MiB
-5 runs -> /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation
+5 runs -> $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation
   kovasznay_P75_cuda_paper: 16 iterations, t_cum=0.047s, wall=1.6s
   kovasznay_P300_cuda_paper: 9 iterations, t_cum=0.054s, wall=2.7s
   kovasznay_P675_cuda_paper: 6 iterations, t_cum=0.143s, wall=3.1s
   kovasznay_P1200_cuda_paper: 6 iterations, t_cum=0.436s, wall=7.7s
   kovasznay_P1875_cuda_paper: 6 iterations, t_cum=1.042s, wall=8.8s
 
-ok=5 skipped=0 failed=0 in 34.8s; index: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/runs_index.csv
+ok=5 skipped=0 failed=0 in 34.8s; index: $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/runs_index.csv
   P=75: beta diff 1.4e-15, R_lin diff 0.0e+00 -> equivalent; gelsy 0.003s, gels 0.003s, GPU QR 0.002s
   P=300: beta diff 3.7e-15, R_lin diff 2.3e-15 -> equivalent; gelsy 0.033s, gels 0.030s, GPU QR 0.005s
   P=675: beta diff 2.3e-15, R_lin diff 6.6e-13 -> equivalent; gelsy 0.100s, gels 0.097s, GPU QR 0.014s
   P=1200: beta diff 1.2e-14, R_lin diff 1.2e-09 -> equivalent; gelsy 0.247s, gels 0.269s, GPU QR 0.040s
   P=1875: beta diff 3.0e-14, R_lin diff 7.2e-04 -> NOT EQUIVALENT under the spec rule; equivalent under the amended rule (both residuals at the round-off floor); gelsy 0.642s, gels 0.633s, GPU QR 0.073s
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave2/B_instrumentation/gpu_cpu_equivalence.csv: spec rule fails at P=['1875']; amended rule passes at every size
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave2/B_instrumentation/gpu_cpu_equivalence.csv: spec rule fails at P=['1875']; amended rule passes at every size
