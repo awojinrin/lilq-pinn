@@ -4,4 +4,4 @@ NVIDIA A100-PCIE-40GB, 40960 MiB
   SPE10 LiL: delta_FV = 3.421e-02  (TPFA residual 9.5e-14 relative)
   SPE10 NiL seed 1 float64: delta_FV = 1.069e-01  (1417 s)
   SPE10 NiL seed 1 float32: delta_FV = 8.913e-02  (1384 s)
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave3/B_instrumentation/darcy_fv/SPE10_s1/darcy_fv_comparison.csv (3 rows)
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave3/B_instrumentation/darcy_fv/SPE10_s1/darcy_fv_comparison.csv (3 rows)

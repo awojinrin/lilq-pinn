@@ -4,4 +4,4 @@ NVIDIA A100-PCIE-40GB, 40960 MiB
   S2 LiL: delta_FV = 2.331e-04  (TPFA residual 1.6e-14 relative)
   S2 NiL seed 2 float64: delta_FV = 4.089e-02  (1378 s)
   S2 NiL seed 2 float32: delta_FV = 5.119e-02  (1355 s)
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave3/B_instrumentation/darcy_fv/S2_s2/darcy_fv_comparison.csv (3 rows)
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave3/B_instrumentation/darcy_fv/S2_s2/darcy_fv_comparison.csv (3 rows)

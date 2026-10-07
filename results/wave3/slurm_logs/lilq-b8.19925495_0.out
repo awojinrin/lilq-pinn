@@ -33,4 +33,4 @@ NVIDIA A100-PCIE-40GB, 40960 MiB
   viscous  zero P= 1024 NiL-Q  seed=0  iters=  7982 loss=3.727e-04 [optimizer_stall] (134.3s)
   viscous  zero P= 1024 NiL-Q  seed=1  iters= 10730 loss=3.540e-04 [optimizer_stall] (178.9s)
   viscous  zero P= 1024 NiL-Q  seed=2  iters=  8892 loss=3.348e-04 [optimizer_stall] (149.7s)
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave3/B_instrumentation/b8_jobs/viscous_zero/b8_initial_guess.csv
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave3/B_instrumentation/b8_jobs/viscous_zero/b8_initial_guess.csv

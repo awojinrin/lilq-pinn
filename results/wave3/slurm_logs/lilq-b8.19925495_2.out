@@ -33,4 +33,4 @@ NVIDIA A100-PCIE-40GB, 40960 MiB
   gravity  zero P= 1024 NiL-Q  seed=0  iters= 10000 loss=3.627e-02 [iteration_cap] (180.4s)
   gravity  zero P= 1024 NiL-Q  seed=1  iters= 10000 loss=4.303e-02 [iteration_cap] (177.7s)
   gravity  zero P= 1024 NiL-Q  seed=2  iters= 10000 loss=3.565e-02 [iteration_cap] (170.3s)
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave3/B_instrumentation/b8_jobs/gravity_zero/b8_initial_guess.csv
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave3/B_instrumentation/b8_jobs/gravity_zero/b8_initial_guess.csv
