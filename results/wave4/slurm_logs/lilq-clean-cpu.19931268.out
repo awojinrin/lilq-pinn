@@ -1,10 +1,10 @@
 provenance lock OK: commit 17b353982661, tree 00762ff259a0
 job 19931268 on c031: 48 threads, 48 cores usable, OverSubscribe=NO
 no GPU visible
-1 runs -> /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation
+1 runs -> $SCRATCH/lilq-run/lilq-pinn/results/wave4/B_instrumentation
   bl_gravity_P64_cpu_paper: 43 iterations, t_cum=0.223s, wall=3.7s
 
-ok=1 skipped=0 failed=0 in 3.9s; index: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/runs_index.csv
+ok=1 skipped=0 failed=0 in 3.9s; index: $SCRATCH/lilq-run/lilq-pinn/results/wave4/B_instrumentation/runs_index.csv
   bratu_P25_cpu_paper training_time: clean 0.0007286 s (warm-up 0.0008323 s, logged 0.000727526843547821)
   bratu_P100_cpu_paper training_time: clean 0.03142 s (warm-up 0.0294 s, logged 0.029688676819205284)
   bratu_P225_cpu_paper training_time: clean 0.199 s (warm-up 0.2031 s, logged 0.19512909278273582)
@@ -42,4 +42,4 @@ ok=1 skipped=0 failed=0 in 3.9s; index: /scratch/user/gbenga-awojinrin/lilq-run/
   darcy_S2_cpu_paper total_time: clean 20.69 s (warm-up 23.15 s, logged 23.430363908410072)
   darcy_S3_cpu_paper total_time: clean 27.31 s (warm-up 22.26 s, logged 27.83236687630415)
   darcy_SPE10_cpu_paper total_time: clean 19.48 s (warm-up 20.02 s, logged 21.127313440665603)
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/clean_timing/clean_timing.csv (37 rows)
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave4/B_instrumentation/clean_timing/clean_timing.csv (37 rows)

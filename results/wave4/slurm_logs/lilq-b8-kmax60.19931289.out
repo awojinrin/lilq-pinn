@@ -5,4 +5,4 @@ Rerunning 3 capped LiL-Q rows: [('gravity', 'ic', 16, 'LiL-Q', ''), ('gravity', 
   gravity  ic   P=  256 LiL-Q  seed=   iters=    23 loss=7.487e-02 [target reached] (3.4s)
   gravity  ic   P=  576 LiL-Q  seed=   iters=    23 loss=4.335e-02 [target reached] (8.4s)
   gravity  zero P=   64 LiL-Q  seed=   iters=    43 loss=2.367e-01 [target reached] (0.5s)
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/b8_jobs/lilq_kmax60/b8_initial_guess.csv
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave4/B_instrumentation/b8_jobs/lilq_kmax60/b8_initial_guess.csv

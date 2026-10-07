@@ -1,6 +1,6 @@
 # TAMU Grace. A100 nodes g001-g100: 2 x A100, 48 cores, 360 GB, gpu partition limit 4 days
 # (sinfo, 2026-09-25).
-ACCOUNT=132698954494
+ACCOUNT="${LILQ_ACCOUNT:-}"     # your HPRC allocation (myproject -l): export LILQ_ACCOUNT=<account>
 GPU_PARTITION=gpu
 GPU_GRES=gpu:a100:1
 NODE_CORES=48                # all cores of an A100 node: with all its memory, a timed job holds the node (one GPU charged)

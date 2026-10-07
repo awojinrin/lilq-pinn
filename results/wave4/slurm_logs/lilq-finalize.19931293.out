@@ -1,59 +1,59 @@
 provenance lock OK: commit 17b353982661, tree 00762ff259a0
 job 19931293 on c560: 24 threads, 24 cores usable, OverSubscribe=OK
 no GPU visible
-Assembled /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1: 3391 files; commits by wave {'1': '8a3f5f7cc4c21d301320dd20df0a657f52748bdf', '2': '905e58c480c7f2860443a5235bb8bbacd98efda0', '3': '905e58c480c7f2860443a5235bb8bbacd98efda0', '4': '17b3539826615c696d622dcd2e3833862c793542'}; 226 overrides; 26 runs marked superseded; status: provisional: the advisor reviews the wave 4 report first (his reply on wave 3, Section 4); assembled again with --final once he has approved it
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/reference
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/code
-Merged 140 rows from 10 job directories into /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/four_method_tables.csv; 54 stall controls into four_method_controls.csv
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/reproduction_check.csv: violation=15, missing=0, round-off=10, reported=31, ok=84
+Assembled $SCRATCH/lilq-run/lilq-pinn/results/package1: 3391 files; commits by wave {'1': '8a3f5f7cc4c21d301320dd20df0a657f52748bdf', '2': '905e58c480c7f2860443a5235bb8bbacd98efda0', '3': '905e58c480c7f2860443a5235bb8bbacd98efda0', '4': '17b3539826615c696d622dcd2e3833862c793542'}; 226 overrides; 26 runs marked superseded; status: provisional: the advisor reviews the wave 4 report first (his reply on wave 3, Section 4); assembled again with --final once he has approved it
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/package1/reference
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/package1/code
+Merged 140 rows from 10 job directories into $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/four_method_tables.csv; 54 stall controls into four_method_controls.csv
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/reproduction_check.csv: violation=15, missing=0, round-off=10, reported=31, ok=84
 
 ============================================================
 Bratu
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/bratu_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/bratu_residual_bands.pdf
 
 ============================================================
 Burgers
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/burgers_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/burgers_residual_bands.pdf
 
 ============================================================
 Buckley–Leverett (viscous)
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/bl_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/bl_residual_bands.pdf
 
 ============================================================
 Buckley–Leverett (gravity)
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/bl_gravity_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper/bl_gravity_residual_bands.pdf
 
-All figures and CSVs written to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper
+All figures and CSVs written to $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/paper
 
 ============================================================
 Bratu
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/bratu_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/bratu_residual_bands.pdf
 
 ============================================================
 Burgers
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/burgers_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/burgers_residual_bands.pdf
 
 ============================================================
 Buckley–Leverett (viscous)
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/bl_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/bl_residual_bands.pdf
 
 ============================================================
 Buckley–Leverett (gravity)
 ============================================================
-  Saved /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/bl_gravity_residual_bands.pdf
+  Saved $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax/bl_gravity_residual_bands.pdf
 
-All figures and CSVs written to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/A_calibration
-Filled 36 rows under /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/darcy_fv
+All figures and CSVs written to $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/residual_band_figures/kmax
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/package1/A_calibration
+Filled 36 rows under $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/darcy_fv
 Section 3.3 runs: 63 (0 failed)
 four-method rows: 140 (0 failures)
 B9 rows: 28 (NiL: 24 of 24: 4 fields x 3 seeds x 2 precisions)
 B8 rows: 131: 128 of wave 3 and its LiL-Q reruns with K_max = 60 (0 failures)
-Wrote 16 LiL-Q rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/package1/B_instrumentation/four_method_lilq.csv
+Wrote 16 LiL-Q rows to $SCRATCH/lilq-run/lilq-pinn/results/package1/B_instrumentation/four_method_lilq.csv

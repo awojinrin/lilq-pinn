@@ -1,12 +1,12 @@
 wave 4 report, 2026-10-03T03:26:58.860028+00:00
 
-$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python -c from pathlib import Path; from experiments.component_b import write_index; write_index(Path('/scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation'))
+$ $SCRATCH/lilq-run/venv/bin/python -c from pathlib import Path; from experiments.component_b import write_index; write_index(Path('$SCRATCH/lilq-run/lilq-pinn/results/wave4/B_instrumentation'))
   exit 0
 
 
-$ /scratch/user/gbenga-awojinrin/lilq-run/venv/bin/python experiments/component_b.py --reproduction-check --out-root /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4
+$ $SCRATCH/lilq-run/venv/bin/python experiments/component_b.py --reproduction-check --out-root $SCRATCH/lilq-run/lilq-pinn/results/wave4
   exit 0
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/reproduction_check.csv: violation=2, missing=137, round-off=0, reported=1, ok=0
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave4/B_instrumentation/reproduction_check.csv: violation=2, missing=137, round-off=0, reported=1, ok=0
 
 Representative threshold times: 21 runs
 

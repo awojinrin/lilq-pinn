@@ -17,4 +17,4 @@ no GPU visible
   kovasznay_P1875_r5_cgl_eq_kmax: 60 iterations, eps_u 5.863571941267284e-14
   kovasznay_P1875_r10_cgl_eq_paper: 6 iterations, eps_u 5.856462396878701e-14
   kovasznay_P1875_r10_cgl_eq_kmax: 60 iterations, eps_u 5.860008173676889e-14
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave4/B_instrumentation/b10/b10.csv (16 runs)
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave4/B_instrumentation/b10/b10.csv (16 runs)

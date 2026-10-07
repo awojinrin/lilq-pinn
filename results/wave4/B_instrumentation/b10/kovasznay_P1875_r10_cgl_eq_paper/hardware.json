@@ -25,7 +25,7 @@
     "SLURM_GPUS_ON_NODE": null,
     "CUDA_VISIBLE_DEVICES": null,
     "SLURMD_NODENAME": "c012",
-    "SLURM_JOB_ACCOUNT": "132698954494",
+    "SLURM_JOB_ACCOUNT": "<account>",
     "node": {
       "NodeName": "c012",
       "CPUTot": "48",
@@ -36,7 +36,7 @@
       "Partitions": "short,medium,long,xlong,special"
     },
     "job": {
-      "Account": "132698954494",
+      "Account": "<account>",
       "Partition": "medium",
       "NumCPUs": "24",
       "ReqTRES": "cpu=24,mem=32G,node=1,billing=24",
