@@ -1,0 +1,78 @@
+{
+  "tab:bratu_results": {
+    "checked": 30,
+    "problems": 0
+  },
+  "tab:burgers_iterations": {
+    "checked": 50,
+    "problems": 0
+  },
+  "tab:bl_case1_iterations": {
+    "checked": 40,
+    "problems": 0
+  },
+  "tab:bl_case2_iterations": {
+    "checked": 40,
+    "problems": 0
+  },
+  "tab:four_method_runs": {
+    "checked": 1872,
+    "problems": 0
+  },
+  "tab:stall_controls": {
+    "checked": 70,
+    "problems": 0
+  },
+  "tab:basis_configs": {
+    "checked": 30,
+    "problems": 0
+  },
+  "tab:bl_reference_errors": {
+    "checked": 42,
+    "problems": 0
+  },
+  "tab:elasticity_results": {
+    "checked": 40,
+    "problems": 0
+  },
+  "tab:elasticity_comparison": {
+    "checked": 15,
+    "problems": 0
+  },
+  "tab:kovasznay_results": {
+    "checked": 35,
+    "problems": 0
+  },
+  "tab:kovasznay_comparison": {
+    "checked": 26,
+    "problems": 0
+  },
+  "tab:beltrami_results": {
+    "checked": 24,
+    "problems": 0
+  },
+  "tab:beltrami_comparison": {
+    "checked": 6,
+    "problems": 0
+  },
+  "tab:darcy_training": {
+    "checked": 18,
+    "problems": 0
+  },
+  "tab:darcy_results": {
+    "checked": 52,
+    "problems": 0
+  },
+  "tab:condition_numbers": {
+    "checked": 36,
+    "problems": 0
+  },
+  "tab:stopping_demo": {
+    "checked": 132,
+    "problems": 0
+  },
+  "tab:stopping_variants": {
+    "checked": 36,
+    "problems": 0
+  }
+}

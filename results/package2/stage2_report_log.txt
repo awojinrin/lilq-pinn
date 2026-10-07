@@ -1,0 +1,32 @@
+p2s2 report, 2026-10-06T14:18:43.058956+00:00
+
+jobs: 20017334 20017324 20017326 20017331 3195644 20017339 20017338 20017332 20017325 20017329 20017327 20017328 20017333 20015354 20016267 20017322 3195643 20017323 20016284 3195645 20017335 20017336 20017337 20018277
+
+SUs by job (Grace's rates; su_per_job.csv): 376 in all
+  3195643 ARL_MGM_S9_Sim0105623: 0.5 (0.12 h at 4/h), COMPLETED
+  3195644 ARL_MGM_S9_Sim0106113: 0.6 (0.15 h at 4/h), COMPLETED
+  3195645 ARL_MGM_S9_Sim0106606: 0.6 (0.15 h at 4/h), COMPLETED
+  20015354 lilq-p2s2-preflight: 3.3 (0.04 h at 80/h), CANCELLED by 31822
+  20016267 lilq-p2s2-preflight: 11.8 (0.15 h at 80/h), FAILED
+  20016284 lilq-p2s2-report: 0.4 (0.02 h at 24/h), COMPLETED
+  20017322 lilq-p2s2-preflight: 10.1 (0.13 h at 80/h), COMPLETED
+  20017323 lilq-p2s2-references: 1.4 (0.06 h at 24/h), COMPLETED
+  20017324 lilq-p2s2-bratu: 0.4 (0.01 h at 48/h), COMPLETED
+  20017325 lilq-p2s2-kovasznay: 1.4 (0.03 h at 48/h), COMPLETED
+  20017326 lilq-p2s2-burgers: 0.4 (0.01 h at 48/h), COMPLETED
+  20017327 lilq-p2s2-lm-networks-bratu: 6.4 (0.13 h at 48/h), COMPLETED
+  20017328 lilq-p2s2-lm-networks-burgers: 6.1 (0.13 h at 48/h), COMPLETED
+  20017329 lilq-p2s2-lm-networks-bl: 1.3 (0.03 h at 48/h), COMPLETED
+  20017331 lilq-p2s2-certified: 3.0 (0.13 h at 24/h), COMPLETED
+  20017332 lilq-p2s2-elm: 24.7 (1.03 h at 24/h), COMPLETED
+  20017333 lilq-p2s2-nu-refinement: 26.8 (0.56 h at 48/h), COMPLETED
+  20017334 lilq-p2s2-bases: 11.6 (0.48 h at 24/h), COMPLETED
+  20017335 lilq-p2s2-scaling-cpu-a: 79.8 (1.66 h at 48/h), COMPLETED
+  20017336 lilq-p2s2-scaling-cpu-b: 148.7 (3.10 h at 48/h), COMPLETED
+  20017337 lilq-p2s2-scaling-gpu: 2.3 (0.01 h at 192/h), FAILED
+  20017338 lilq-p2s2-elast-mms: 0.3 (0.01 h at 24/h), COMPLETED
+  20017339_0 lilq-p2s2-darcy-softbc-lm: 7.6 (0.09 h at 80/h), COMPLETED
+  20017339_1 lilq-p2s2-darcy-softbc-lm: 7.6 (0.09 h at 80/h), COMPLETED
+  20017339_2 lilq-p2s2-darcy-softbc-lm: 7.6 (0.10 h at 80/h), COMPLETED
+  20017339_3 lilq-p2s2-darcy-softbc-lm: 7.6 (0.10 h at 80/h), COMPLETED
+  20018277 lilq-p2s2-scaling-gpu: 3.9 (0.02 h at 192/h), FAILED

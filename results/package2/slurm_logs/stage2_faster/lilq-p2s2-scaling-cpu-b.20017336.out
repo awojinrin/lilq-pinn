@@ -1,0 +1,4 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017336 on c539: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  beltrami_8_cpu: P = 22288, N = 75689 (N/P 3.40), 3 iterations, 5226.19 s (assembly 56.46, solve 5160.57), host peak 63.68 GB, kappa 3.4e+05, rank 22288, u(t=1) 1.63e-06, p(t=1) 1.53e-04

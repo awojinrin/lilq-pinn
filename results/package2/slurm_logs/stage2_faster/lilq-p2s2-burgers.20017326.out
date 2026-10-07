@@ -1,0 +1,13 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017326 on c668: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  SQ-CGL p =  7 (30 free): 5 iterations, plateau 2, error 1.75e-01, 0.0003 s
+  SQ-CGL p = 12 (110 free): 6 iterations, plateau 2, error 5.44e-02, 0.0047 s
+  SQ-CGL p = 17 (240 free): 5 iterations, plateau 3, error 4.85e-03, 0.0130 s
+  SQ-CGL p = 22 (420 free): 5 iterations, plateau 3, error 9.17e-04, 0.0276 s
+  SQ-CGL p = 27 (650 free): 5 iterations, plateau 3, error 1.55e-04, 0.0650 s
+  LiL-Q burgers_P25_cpu_paper: 0.0008 s, package1 0.000841282308101654, within 15%: True
+  LiL-Q burgers_P100_cpu_paper: 0.0315 s, package1 0.03245672397315502, within 15%: True
+  LiL-Q burgers_P225_cpu_paper: 0.1519 s, package1 0.150970371440053, within 15%: True
+  LiL-Q burgers_P400_cpu_paper: 0.4321 s, package1 0.42945947125554085, within 15%: True
+  LiL-Q burgers_P625_cpu_paper: 1.2191 s, package1 1.1827266979962587, within 15%: True

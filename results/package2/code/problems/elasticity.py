@@ -1,0 +1,574 @@
+"""
+Linear Elasticity Problem (LiL-Q Only)
+========================================
+
+2D plane-strain linear elasticity from
+Haghighat, Raissi, Moure, Gomez & Juanes (CMAME 2021).
+
+PDE (displacement formulation):
+    (lam+2*mu)*u_xx + mu*u_yy + (lam+mu)*v_xy = -f_x
+    mu*v_xx + (lam+2*mu)*v_yy + (lam+mu)*u_xy = -f_y
+
+Exact solution:
+    u_x(x,y) = cos(2*pi*x)*sin(pi*y)
+    u_y(x,y) = sin(pi*x)*Q*y^4/4
+
+Parameters: lambda=1, mu=0.5, Q=4
+
+This is a LINEAR PDE, so LiL-Q reduces to a single QR solve (no
+quasilinearization iterations needed).
+"""
+
+import numpy as np
+import os
+import scipy.linalg
+import time
+import math
+from dataclasses import dataclass
+from typing import Tuple, Dict
+
+from lilq.basis import create_basis_2d, TensorProductBasis2D
+from lilq.instrumentation import EPS_MACH
+from lilq.iteration_log import LilQDiagnosticsTracker
+from lilq.provenance import capture_blas_thread_env
+from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
+from lilq.test_errors import max_abs, rel_l2, tensor_grid_values
+
+pi = np.pi
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+@dataclass
+class ElasticityConfig:
+    # Material
+    lam: float = 1.0
+    mu: float = 0.5
+    Q: float = 4.0
+    x_domain: Tuple[float, float] = (0.0, 1.0)
+    y_domain: Tuple[float, float] = (0.0, 1.0)
+    # Discretization
+    N_x: int = 15
+    N_y: int = 15
+    k_ratio: int = 10
+    collocation_ratios: Tuple[float, float] = (0.85, 0.15)
+    seed: int = 42
+    basis_u: str = 'cos_sin'
+    basis_v: str = 'sin_cheb'
+    # Solver
+    lambda_pde: float = 1.0
+    lambda_bc: float = 10.0
+    bc_mode: str = 'paper'  # 'paper' or 'exact'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Physics
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ElasticityPhysics:
+    def __init__(self, config: ElasticityConfig):
+        self.lam = config.lam
+        self.mu = config.mu
+        self.Q = config.Q
+        self.x_domain = config.x_domain
+        self.y_domain = config.y_domain
+        self.C11 = config.lam + 2.0 * config.mu
+        self.C12 = config.lam
+        self.C33 = 2.0 * config.mu
+
+    # Exact displacements
+    def exact_ux(self, x, y):
+        return np.cos(2*pi*x) * np.sin(pi*y)
+
+    def exact_uy(self, x, y):
+        return np.sin(pi*x) * self.Q * y**4 / 4.0
+
+    # Exact strains
+    def exact_exx(self, x, y):
+        return -2*pi*np.sin(2*pi*x)*np.sin(pi*y)
+
+    def exact_eyy(self, x, y):
+        return np.sin(pi*x)*self.Q*y**3
+
+    def exact_exy(self, x, y):
+        return 0.5*(pi*np.cos(2*pi*x)*np.cos(pi*y) + pi*np.cos(pi*x)*self.Q*y**4/4.0)
+
+    # Exact stresses
+    def exact_sxx(self, x, y):
+        return self.C11*self.exact_exx(x,y) + self.C12*self.exact_eyy(x,y)
+
+    def exact_syy(self, x, y):
+        return self.C11*self.exact_eyy(x,y) + self.C12*self.exact_exx(x,y)
+
+    def exact_sxy(self, x, y):
+        return self.C33*self.exact_exy(x,y)
+
+    # Body forces
+    def body_force_x(self, x, y):
+        lam, mu, Q = self.lam, self.mu, self.Q
+        return (-lam*(4*pi**2*np.cos(2*pi*x)*np.sin(pi*y) - Q*y**3*pi*np.cos(pi*x))
+                -mu*(pi**2*np.cos(2*pi*x)*np.sin(pi*y) - Q*y**3*pi*np.cos(pi*x))
+                -8*mu*pi**2*np.cos(2*pi*x)*np.sin(pi*y))
+
+    def body_force_y(self, x, y):
+        lam, mu, Q = self.lam, self.mu, self.Q
+        return (lam*(3*Q*y**2*np.sin(pi*x) - 2*pi**2*np.cos(pi*y)*np.sin(2*pi*x))
+                -mu*(2*pi**2*np.cos(pi*y)*np.sin(2*pi*x) + Q*y**4*pi**2*np.sin(pi*x)/4.0)
+                +6*Q*mu*y**2*np.sin(pi*x))
+
+    # Traction data of the 'paper' boundary conditions
+    def traction_top_syy(self, x):
+        """sigma_yy on the top face, y = 1."""
+        return self.C11 * self.Q * np.sin(pi * x)
+
+    def traction_lateral_sxx(self, x, y):
+        """sigma_xx on the lateral faces, x = 0 and 1: traction-free."""
+        return np.zeros_like(y)
+
+
+class ManufacturedElasticityPhysics(ElasticityPhysics):
+    """Package 2, item 8 (P2-10): a manufactured solution outside the span of
+    both bases (delta_P > 0), with the operator, domain, bases and
+    boundary-condition types of the paper's case:
+
+        u_x = y (1 - y) e^{xy} / 10,    u_y = x (1 - x) y e^{x+y} / 20.
+
+    It satisfies the displacement conditions exactly (u_x = u_y = 0 at the
+    bottom, u_x = 0 at the top, u_y = 0 on the lateral faces). The body force,
+    the top traction sigma_yy and the lateral tractions sigma_xx (not zero
+    here: the only change of data) are computed from it. ``Q`` is unused."""
+
+    # u_x = a(x, y) e^{xy} / 10 with a = y (1 - y); u_y = g(x) h(y) / 20 with
+    # g = x (1 - x) e^x, h = y e^y. Derivatives in closed form (tested against
+    # sympy and finite differences, tests/test_p2s2_elasticity.py).
+    @staticmethod
+    def _u(x, y):
+        e, a = np.exp(x * y), y * (1 - y)
+        return {'': a * e, 'x': y * a * e, 'xx': y * y * a * e, 'y': ((1 - 2 * y) + x * a) * e,
+                'yy': (-2 + 2 * x * (1 - 2 * y) + x * x * a) * e, 'xy': (a + y * ((1 - 2 * y) + x * a)) * e}
+
+    @staticmethod
+    def _v(x, y):
+        ex, ey = np.exp(x), np.exp(y)
+        g, g1, g2 = x * (1 - x) * ex, (1 - x - x * x) * ex, -x * (x + 3) * ex
+        h, h1, h2 = y * ey, (1 + y) * ey, (2 + y) * ey
+        return {'': g * h, 'x': g1 * h, 'xx': g2 * h, 'y': g * h1, 'yy': g * h2, 'xy': g1 * h1}
+
+    def exact_ux(self, x, y):
+        return self._u(x, y)[''] / 10.0
+
+    def exact_uy(self, x, y):
+        return self._v(x, y)[''] / 20.0
+
+    def exact_exx(self, x, y):
+        return self._u(x, y)['x'] / 10.0
+
+    def exact_eyy(self, x, y):
+        return self._v(x, y)['y'] / 20.0
+
+    def exact_exy(self, x, y):
+        return 0.5 * (self._u(x, y)['y'] / 10.0 + self._v(x, y)['x'] / 20.0)
+
+    def body_force_x(self, x, y):
+        """The operator applied to the exact solution: C11 u_xx + mu u_yy + (lam + mu) v_xy."""
+        u, v = self._u(x, y), self._v(x, y)
+        return self.C11 * u['xx'] / 10.0 + self.mu * u['yy'] / 10.0 + (self.lam + self.mu) * v['xy'] / 20.0
+
+    def body_force_y(self, x, y):
+        u, v = self._u(x, y), self._v(x, y)
+        return self.mu * v['xx'] / 20.0 + self.C11 * v['yy'] / 20.0 + (self.lam + self.mu) * u['xy'] / 10.0
+
+    def traction_top_syy(self, x):
+        return self.exact_syy(x, np.ones_like(x))
+
+    def traction_lateral_sxx(self, x, y):
+        return self.exact_sxx(x, y)
+
+
+def _exp_cos(t, k):
+    """e^{cos(k pi t)} and its first two derivatives."""
+    e, s, c = np.exp(np.cos(k * pi * t)), np.sin(k * pi * t), np.cos(k * pi * t)
+    return e, -k * pi * s * e, (k * pi) ** 2 * (s * s - c) * e
+
+
+class CompatibleManufacturedElasticityPhysics(ManufacturedElasticityPhysics):
+    """Package 2, item 8 (P2-10), the advisor's replacement of 5 October 2026:
+    a manufactured solution outside the span of both bases that matches their
+    symmetries,
+
+        u_x = e^{cos(pi x)} e^{cos(2 pi y)} sin(pi y) / 10,
+        u_y = sin(pi x) e^{cos(2 pi x)} y e^y / 20.
+
+    u_x is even about x = 0 and 1 and odd about y = 0 and 1 (the cosine-sine
+    basis of u_x); u_y is odd about x = 0 and 1 (the sine-Chebyshev basis of
+    u_y). Every boundary condition of Section 6.5 holds with the paper's data
+    types: u_x = u_y = 0 at the bottom, u_x = 0 at the top, u_y = 0 and
+    sigma_xx = 0 on the lateral faces (d(u_x)/dx and d(u_y)/dy both vanish
+    there). So the lateral traction datum is the paper's zero, and only the
+    body force and the top traction sigma_yy come from the solution."""
+
+    @staticmethod
+    def _u(x, y):
+        a, a1, a2 = _exp_cos(x, 1)                         # e^{cos(pi x)}
+        e, e1, e2 = _exp_cos(y, 2)                         # e^{cos(2 pi y)}
+        s, s1, s2 = np.sin(pi * y), pi * np.cos(pi * y), -pi * pi * np.sin(pi * y)
+        b, b1, b2 = e * s, e1 * s + e * s1, e2 * s + 2 * e1 * s1 + e * s2
+        return {'': a * b, 'x': a1 * b, 'xx': a2 * b, 'y': a * b1, 'yy': a * b2, 'xy': a1 * b1}
+
+    @staticmethod
+    def _v(x, y):
+        f, f1, f2 = _exp_cos(x, 2)                         # e^{cos(2 pi x)}
+        t, t1, t2 = np.sin(pi * x), pi * np.cos(pi * x), -pi * pi * np.sin(pi * x)
+        g, g1, g2 = t * f, t1 * f + t * f1, t2 * f + 2 * t1 * f1 + t * f2
+        ey = np.exp(y)
+        h, h1, h2 = y * ey, (1 + y) * ey, (2 + y) * ey
+        return {'': g * h, 'x': g1 * h, 'xx': g2 * h, 'y': g * h1, 'yy': g * h2, 'xy': g1 * h1}
+
+    def traction_lateral_sxx(self, x, y):
+        """Traction-free, as in the paper: the solution's sigma_xx is zero there."""
+        return np.zeros_like(y)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Collocation
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _generate_collocation(config: ElasticityConfig, physics: ElasticityPhysics, P_total):
+    np.random.seed(config.seed)
+    ratios = config.collocation_ratios
+    norm_r = [r / sum(ratios) for r in ratios]
+    x_min, x_max = physics.x_domain
+    y_min, y_max = physics.y_domain
+
+    n_pde = config.k_ratio * norm_r[0] * P_total / 2
+    n_dim = max(math.ceil(np.sqrt(n_pde)), 10)
+
+    x_pde = np.linspace(x_min + 1e-6, x_max - 1e-6, n_dim, dtype=np.float64)
+    y_pde = np.linspace(y_min + 1e-6, y_max - 1e-6, n_dim, dtype=np.float64)
+    xx, yy = np.meshgrid(x_pde, y_pde)
+
+    n_bc = max(math.ceil(config.k_ratio * norm_r[1] * P_total / (2*4)), 10)
+    tx = np.linspace(x_min, x_max, n_bc, dtype=np.float64)
+    ty = np.linspace(y_min, y_max, n_bc, dtype=np.float64)
+
+    return {
+        'x_pde': xx.ravel(), 'y_pde': yy.ravel(), 'n_pde': xx.size,
+        'x_bot': tx, 'y_bot': np.full_like(tx, y_min),
+        'x_top': tx, 'y_top': np.full_like(tx, y_max),
+        'x_left': np.full_like(ty, x_min), 'y_left': ty,
+        'x_right': np.full_like(ty, x_max), 'y_right': ty,
+        'n_bc_edge': len(tx),
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Solver (single QR solve — linear PDE)
+# ─────────────────────────────────────────────────────────────────────────────
+
+TEST_GRID = (200, 200)  # the paper's elasticity evaluation grid (Section 2 names none)
+
+
+def make_test_error_fn(physics, basis_u, basis_v, config):
+    """``beta -> eps_u/eps_v/maxerr_*`` for the displacements u_x, u_y on a
+    uniform 200 x 200 grid (the grid behind Table 7's errors). ``beta`` is
+    ``[theta_u; theta_v]``."""
+    xs = np.linspace(*config.x_domain, TEST_GRID[0])
+    ys = np.linspace(*config.y_domain, TEST_GRID[1])
+    X, Y = np.meshgrid(xs, ys, indexing='ij')
+    ue, ve = physics.exact_ux(X, Y), physics.exact_uy(X, Y)
+    Pu = basis_u.n_basis
+
+    def test_errors(beta):
+        u = tensor_grid_values(basis_u, beta[:Pu], [xs, ys])
+        v = tensor_grid_values(basis_v, beta[Pu:], [xs, ys])
+        return {'eps_u': rel_l2(u, ue), 'eps_v': rel_l2(v, ve),
+                'maxerr_u': max_abs(u, ue), 'maxerr_v': max_abs(v, ve)}
+
+    return test_errors
+
+
+def solve_elasticity(config: ElasticityConfig, verbose=True,
+                     iteration_logger=None, run_json_path=None, diagnostics: bool = True,
+                     physics: ElasticityPhysics = None) -> Dict:
+    """Solve linear elasticity via a single LiL-Q QR solve.
+
+    ``iteration_logger`` : ``lilq.iteration_log.IterationLogger``, optional
+        When given, the Section 3.1 ``iterations.csv`` rows for this solve
+        are recorded -- the same layout as Darcy's (the other linear
+        problem): ``k=0`` for the single solve, assembled at the zero
+        vector, and the terminal ``k=1`` with the residual at the
+        solution. The PDE rows (both momentum equations) share one weight,
+        so the interior norms are populated.
+    ``run_json_path`` : str or Path, optional
+        Writes the Section 3.1 ``run.json``; requires ``iteration_logger``.
+    ``physics`` : the exact solution, body force and traction data
+        (default: the paper's, ``ElasticityPhysics(config)``;
+        ``ManufacturedElasticityPhysics`` for Package 2, item 8).
+    """
+    if run_json_path is not None and iteration_logger is None:
+        raise ValueError("run_json_path requires iteration_logger (for first_stall_iteration).")
+    # diagnostics=False (clean timing; the advisor's reply to wave 2): no
+    # logger. The timed phases (time_lil_s, solve_time_qr) have no other
+    # passive work; the errors after the solve are in solve_time_total only.
+    if not diagnostics and iteration_logger is not None:
+        raise ValueError("diagnostics=False excludes iteration_logger.")
+    physics = ElasticityPhysics(config) if physics is None else physics
+    lam, mu = physics.lam, physics.mu
+    C11, C12 = physics.C11, physics.C12
+    C_cross = lam + mu
+
+    basis_u = create_basis_2d(config.basis_u, config.N_x, config.N_y,
+                              config.x_domain, config.y_domain)
+    basis_v = create_basis_2d(config.basis_v, config.N_x, config.N_y,
+                              config.x_domain, config.y_domain)
+
+    Pu, Pv = basis_u.n_basis, basis_v.n_basis
+    P_total = Pu + Pv
+
+    if verbose:
+        print("=" * 70)
+        print("LiL DIRECT SOLVE: Linear Elasticity")
+        print(f"  P_u={Pu}, P_v={Pv}, P_total={P_total}")
+        print(f"  BC mode: {config.bc_mode}")
+        print("=" * 70)
+
+    t_start = time.perf_counter()
+    t0 = time.perf_counter()
+    pts = _generate_collocation(config, physics, P_total)
+    x_pde, y_pde = pts['x_pde'], pts['y_pde']
+    n_pde = pts['n_pde']
+
+    # PDE basis matrices
+    Phi_u_xx = basis_u.derivative(x_pde, y_pde, dx=2, dy=0)
+    Phi_u_yy = basis_u.derivative(x_pde, y_pde, dx=0, dy=2)
+    Phi_u_xy = basis_u.derivative(x_pde, y_pde, dx=1, dy=1)
+    Phi_v_xx = basis_v.derivative(x_pde, y_pde, dx=2, dy=0)
+    Phi_v_yy = basis_v.derivative(x_pde, y_pde, dx=0, dy=2)
+    Phi_v_xy = basis_v.derivative(x_pde, y_pde, dx=1, dy=1)
+
+    A_pde_uu = C11 * Phi_u_xx + mu * Phi_u_yy
+    A_pde_uv = C_cross * Phi_v_xy
+    A_pde_vu = C_cross * Phi_u_xy
+    A_pde_vv = mu * Phi_v_xx + C11 * Phi_v_yy
+
+    fx = physics.body_force_x(x_pde, y_pde)
+    fy = physics.body_force_y(x_pde, y_pde)
+    w_pde = np.sqrt(config.lambda_pde / n_pde)
+
+    A_rows = [
+        w_pde * np.hstack([A_pde_uu, A_pde_uv]),
+        w_pde * np.hstack([A_pde_vu, A_pde_vv]),
+    ]
+    b_rows = [w_pde * fx, w_pde * fy]
+
+    # BCs
+    n_bc_total = 0
+    lb = config.lambda_bc
+
+    if config.bc_mode == 'paper':
+        # Bottom: u_x=0, u_y=0
+        xb, yb = pts['x_bot'], pts['y_bot']
+        ne = len(xb); wb = np.sqrt(lb / ne)
+        A_rows.append(wb * np.hstack([basis_u.evaluate(xb, yb), np.zeros((ne, Pv))]))
+        b_rows.append(wb * np.zeros(ne))
+        A_rows.append(wb * np.hstack([np.zeros((ne, Pu)), basis_v.evaluate(xb, yb)]))
+        b_rows.append(wb * np.zeros(ne))
+        n_bc_total += 2 * ne
+
+        # Top: u_x=0, sigma_yy = C11*Q*sin(pi*x)
+        xt, yt = pts['x_top'], pts['y_top']
+        ne = len(xt); wb = np.sqrt(lb / ne)
+        A_rows.append(wb * np.hstack([basis_u.evaluate(xt, yt), np.zeros((ne, Pv))]))
+        b_rows.append(wb * np.zeros(ne))
+        # sigma_yy = C11*v_y + C12*u_x
+        A_syy = np.hstack([C12 * basis_u.derivative(xt, yt, dx=1, dy=0),
+                           C11 * basis_v.derivative(xt, yt, dx=0, dy=1)])
+        b_syy = physics.traction_top_syy(xt)
+        A_rows.append(wb * A_syy)
+        b_rows.append(wb * b_syy)
+        n_bc_total += 2 * ne
+
+        # Left/Right: sigma_xx=0, u_y=0
+        for xe, ye in [(pts['x_left'], pts['y_left']), (pts['x_right'], pts['y_right'])]:
+            ne = len(xe); wb = np.sqrt(lb / ne)
+            A_sxx = np.hstack([C11 * basis_u.derivative(xe, ye, dx=1, dy=0),
+                               C12 * basis_v.derivative(xe, ye, dx=0, dy=1)])
+            A_rows.append(wb * A_sxx)
+            b_rows.append(wb * physics.traction_lateral_sxx(xe, ye))
+            A_rows.append(wb * np.hstack([np.zeros((ne, Pu)), basis_v.evaluate(xe, ye)]))
+            b_rows.append(wb * np.zeros(ne))
+            n_bc_total += 2 * ne
+
+    elif config.bc_mode == 'exact':
+        for edge in ['bot', 'top', 'left', 'right']:
+            xe, ye = pts[f'x_{edge}'], pts[f'y_{edge}']
+            ne = len(xe); wb = np.sqrt(lb / ne)
+            A_rows.append(wb * np.hstack([basis_u.evaluate(xe, ye), np.zeros((ne, Pv))]))
+            b_rows.append(wb * physics.exact_ux(xe, ye))
+            A_rows.append(wb * np.hstack([np.zeros((ne, Pu)), basis_v.evaluate(xe, ye)]))
+            b_rows.append(wb * physics.exact_uy(xe, ye))
+            n_bc_total += 2 * ne
+
+    A_sys = np.vstack(A_rows)
+    b_sys = np.concatenate(b_rows)
+    t_assemble_s = time.perf_counter() - t0
+
+    t_solve = time.perf_counter()
+    t0 = time.perf_counter()
+    theta, _, rank, _ = scipy.linalg.lstsq(A_sys, b_sys, cond=EPS_MACH, lapack_driver='gelsy')
+    t_solve_s = time.perf_counter() - t0
+    solve_time = time.perf_counter() - t_solve
+
+    tracker = None
+    t_diag = 0.0  # time in the passive diagnostics, excluded from total_time
+    if iteration_logger is not None:
+        t_diag0 = time.perf_counter()
+        residual_vector_fn = lambda beta: A_sys @ beta - b_sys  # noqa: E731 -- linear: this *is* the operator
+        tracker = LilQDiagnosticsTracker(
+            n_interior_rows=2 * n_pde, interior_weight=float(w_pde),
+            test_error_fn=make_test_error_fn(physics, basis_u, basis_v, config),
+        )
+        iteration_logger.record(**tracker.step(
+            k=0, A_stacked=A_sys, b_stacked=b_sys,
+            beta_prev=np.zeros(P_total), beta_new=theta,
+            total_loss=float(np.sum(residual_vector_fn(theta) ** 2)), rank_gelsy=rank,
+            t_assemble_s=t_assemble_s, t_solve_s=t_solve_s,
+            is_final_iterate=True, compute_residual_vector_fn=residual_vector_fn,
+        ))
+        iteration_logger.record(**tracker.finish(k=1))
+        t_diag = time.perf_counter() - t_diag0
+
+    theta_u = theta[:Pu]
+    theta_v = theta[Pu:]
+
+    # PDE residuals
+    pde_res_x = A_pde_uu @ theta_u + A_pde_uv @ theta_v - fx
+    pde_res_y = A_pde_vu @ theta_u + A_pde_vv @ theta_v - fy
+    pde_mse = 0.5 * (float(np.mean(pde_res_x**2)) + float(np.mean(pde_res_y**2)))
+
+    # Errors on fine grid
+    n_ev = 200
+    x_ev = np.linspace(*config.x_domain, n_ev, dtype=np.float64)
+    y_ev = np.linspace(*config.y_domain, n_ev, dtype=np.float64)
+    XX, YY = np.meshgrid(x_ev, y_ev)
+    xf, yf = XX.ravel(), YY.ravel()
+
+    ux_pred = basis_u.evaluate(xf, yf) @ theta_u
+    uy_pred = basis_v.evaluate(xf, yf) @ theta_v
+    ux_exact = physics.exact_ux(xf, yf)
+    uy_exact = physics.exact_uy(xf, yf)
+
+    rel_l2_ux = np.sqrt(np.mean((ux_pred-ux_exact)**2)) / max(np.sqrt(np.mean(ux_exact**2)), 1e-15)
+    rel_l2_uy = np.sqrt(np.mean((uy_pred-uy_exact)**2)) / max(np.sqrt(np.mean(uy_exact**2)), 1e-15)
+
+    # Stress errors
+    exx_pred = basis_u.derivative(xf, yf, dx=1, dy=0) @ theta_u
+    eyy_pred = basis_v.derivative(xf, yf, dx=0, dy=1) @ theta_v
+    exy_pred = 0.5*(basis_u.derivative(xf, yf, dx=0, dy=1) @ theta_u
+                     + basis_v.derivative(xf, yf, dx=1, dy=0) @ theta_v)
+
+    sxx_pred = C11*exx_pred + C12*eyy_pred
+    syy_pred = C11*eyy_pred + C12*exx_pred
+    sxy_pred = physics.C33*exy_pred
+
+    sxx_exact = physics.exact_sxx(xf, yf)
+    syy_exact = physics.exact_syy(xf, yf)
+    sxy_exact = physics.exact_sxy(xf, yf)
+
+    rel_l2_sxx = np.sqrt(np.mean((sxx_pred-sxx_exact)**2)) / max(np.sqrt(np.mean(sxx_exact**2)), 1e-15)
+    rel_l2_syy = np.sqrt(np.mean((syy_pred-syy_exact)**2)) / max(np.sqrt(np.mean(syy_exact**2)), 1e-15)
+    rel_l2_sxy = np.sqrt(np.mean((sxy_pred-sxy_exact)**2)) / max(np.sqrt(np.mean(sxy_exact**2)), 1e-15)
+
+    total_time = time.perf_counter() - t_start - t_diag
+
+    if verbose:
+        print(f"\n  QR solve time: {solve_time:.4f}s")
+        print(f"  Total time: {total_time:.4f}s")
+        print(f"  PDE residual MSE: {pde_mse:.6e}")
+        print(f"  Displacement errors (rel L2): u_x={rel_l2_ux:.6e}, u_y={rel_l2_uy:.6e}")
+        print(f"  Stress errors (rel L2): sxx={rel_l2_sxx:.6e}, syy={rel_l2_syy:.6e}, sxy={rel_l2_sxy:.6e}")
+        print("=" * 70)
+
+    if run_json_path is not None:
+        n_bc_edge = pts['n_bc_edge']
+        thread_env = capture_blas_thread_env()
+        metadata = build_run_metadata(
+            N_total=int(A_sys.shape[0]),
+            N_composition={'pde_x': n_pde, 'pde_y': n_pde, 'bc': n_bc_total},
+            P_total=int(P_total),
+            P_composition={'u_x': int(Pu), 'u_y': int(Pv)},
+            row_weights={'pde': float(w_pde), 'bc': float(np.sqrt(lb / n_bc_edge))},
+            collocation_construction={
+                'method': 'equispaced tensor grid', 'n_pde': n_pde, 'n_bc_per_edge': n_bc_edge,
+                'k_ratio': config.k_ratio, 'collocation_ratios': list(config.collocation_ratios),
+                'bc_mode': config.bc_mode,
+            },
+            basis_description={
+                'u_x': {'family': config.basis_u, 'modes_x': config.N_x, 'modes_y': config.N_y},
+                'u_y': {'family': config.basis_v, 'modes_x': config.N_x, 'modes_y': config.N_y},
+            },
+            initial_coefficients='n/a (single direct linear solve, no iterative initial guess)',
+            solver_driver='gelsy', rcond=EPS_MACH,
+            stopping_rule={'type': 'single_direct_solve'},
+            K_max=1,
+            stopping_reason='direct_solve',
+            first_stall_iteration=first_stall_iteration(iteration_logger.rows),
+            b2_check=tracker.b2_check,
+            kappa_qr_raw_ratio=tracker.kappa_qr_raw_ratio,
+            device='cpu',
+            thread_count=int(thread_env.get('OMP_NUM_THREADS') or os.cpu_count() or 1),
+        )
+        write_run_json(run_json_path, metadata)
+
+    return {
+        'basis_u': basis_u, 'basis_v': basis_v,
+        'theta_u': theta_u, 'theta_v': theta_v,
+        'n_params': P_total,
+        'solve_time_qr': solve_time, 'solve_time_total': total_time, 'diagnostics_time': t_diag,
+        # Assembly + solve: the phase iterations.csv's t_cum_s measures
+        # (solve_time_total adds collocation and the error evaluation).
+        'time_assemble_s': t_assemble_s, 'time_lil_s': t_assemble_s + t_solve_s,
+        'pde_mse': pde_mse,
+        'rel_l2_ux': rel_l2_ux, 'rel_l2_uy': rel_l2_uy,
+        'rel_l2_sxx': rel_l2_sxx, 'rel_l2_syy': rel_l2_syy, 'rel_l2_sxy': rel_l2_sxy,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Evaluation
+# ─────────────────────────────────────────────────────────────────────────────
+
+def evaluate_all_fields(result, physics, n_eval=200):
+    """Evaluate displacements, strains, stresses on a grid."""
+    basis_u, basis_v = result['basis_u'], result['basis_v']
+    theta_u, theta_v = result['theta_u'], result['theta_v']
+
+    x_ev = np.linspace(*physics.x_domain, n_eval, dtype=np.float64)
+    y_ev = np.linspace(*physics.y_domain, n_eval, dtype=np.float64)
+    XX, YY = np.meshgrid(x_ev, y_ev)
+    xf, yf = XX.ravel(), YY.ravel()
+
+    ux = (basis_u.evaluate(xf, yf) @ theta_u).reshape(XX.shape)
+    uy = (basis_v.evaluate(xf, yf) @ theta_v).reshape(XX.shape)
+
+    exx = (basis_u.derivative(xf, yf, dx=1, dy=0) @ theta_u).reshape(XX.shape)
+    eyy = (basis_v.derivative(xf, yf, dx=0, dy=1) @ theta_v).reshape(XX.shape)
+    exy = (0.5*(basis_u.derivative(xf, yf, dx=0, dy=1) @ theta_u
+                + basis_v.derivative(xf, yf, dx=1, dy=0) @ theta_v)).reshape(XX.shape)
+
+    predicted = {'X': XX, 'Y': YY, 'ux': ux, 'uy': uy,
+                 'exx': exx, 'eyy': eyy, 'exy': exy,
+                 'sxx': physics.C11*exx + physics.C12*eyy,
+                 'syy': physics.C11*eyy + physics.C12*exx,
+                 'sxy': physics.C33*exy}
+
+    exact = {'X': XX, 'Y': YY,
+             'ux': physics.exact_ux(xf, yf).reshape(XX.shape),
+             'uy': physics.exact_uy(xf, yf).reshape(XX.shape),
+             'sxx': physics.exact_sxx(xf, yf).reshape(XX.shape),
+             'syy': physics.exact_syy(xf, yf).reshape(XX.shape),
+             'sxy': physics.exact_sxy(xf, yf).reshape(XX.shape)}
+
+    return predicted, exact

@@ -1,0 +1,41 @@
+{
+  "check": "C8' (item 7)",
+  "error_tolerance": 1e-10,
+  "time_tolerance": 0.15,
+  "points": [
+    {
+      "point": "kovasznay_P1875_cpu_paper",
+      "device": "cpu",
+      "errors_rel_diff": {
+        "eps_u": 5.584202518349936e-06,
+        "eps_v": 7.222304651361483e-05,
+        "eps_p": 0.008052692406619013,
+        "eps_p_meanfree": 0.00020740992782654965
+      },
+      "errors_pass": false,
+      "iterations": 6,
+      "iterations_package1": 6,
+      "time_s": 5.830488999956287,
+      "package1_time_s": 4.25593089312315,
+      "time_ratio": 1.3699679685535664,
+      "time_pass": false,
+      "passed": false
+    },
+    {
+      "point": "kovasznay_P1875_cuda_paper",
+      "device": "cuda",
+      "errors_rel_diff": {
+        "eps_u": 0.0008558734574835613,
+        "eps_v": 0.00012526610816389653,
+        "eps_p": 0.09218556709216097,
+        "eps_p_meanfree": 0.0004729861362752388
+      },
+      "errors_pass": false,
+      "iterations": 6,
+      "iterations_package1": 6,
+      "passed": false
+    }
+  ],
+  "passed": false,
+  "commit": "7a725b506a75db8386b90bff931af7e78ebe059d"
+}

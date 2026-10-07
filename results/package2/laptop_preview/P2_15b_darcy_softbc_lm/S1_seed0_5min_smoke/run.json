@@ -1,0 +1,68 @@
+{
+  "field": "S1",
+  "seed": 0,
+  "method": "NiL-N soft-BC (LM)",
+  "item": "5b",
+  "variant": "soft",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 5080 Laptop GPU",
+  "k_stop": 146,
+  "reason": "wall_time_cap",
+  "delta_FV": 0.0028752227657835405,
+  "max_diff_psi": 22.77200907578117,
+  "time_s": 300.27458839921746,
+  "final_loss": 0.023144360069387852,
+  "c3": {
+    "paper_loss_iteration_0": 10.168284050411053,
+    "lm_r_dot_r_iteration_0": 10.168284050411055,
+    "paper_dirichlet_terms": [
+      3.9967649085102366,
+      4.043246504643836
+    ],
+    "rel_diff": 1.7469583172476787e-16,
+    "passed": true
+  },
+  "n_theta": 3555,
+  "n_rows": 40160,
+  "differs_from_the_paper_nil": [
+    "Levenberg-Marquardt instead of Adam"
+  ],
+  "network": "3 x MLP(2, 32, 1, 2 hidden layers, SiLU), float64, torch.manual_seed(seed), the paper's order",
+  "loss": {
+    "interior": "Darcy-x, Darcy-y, continuity: each 50 x mean square (the paper's normalization)",
+    "lateral": "U / V_SCALE = 0 on each lateral face: 20 x mean square (the paper's rows)",
+    "dirichlet": "P = P_BOTTOM at y = 0 and P_TOP at y = L_y, (P - P_face) / P_BOTTOM: 20 x mean square per face (the paper's rows)"
+  },
+  "optimizer": {
+    "name": "Levenberg-Marquardt (F2)",
+    "mu0": 0.001,
+    "mu_up": 5.0,
+    "mu_down": 0.2,
+    "mu_max": 1e+16,
+    "diag_floor": 1e-12,
+    "stall_rule": "tolerances 0, one restart"
+  },
+  "caps": {
+    "iterations": 2000,
+    "wall_time_s": 300.0
+  },
+  "summary": {
+    "total_iterations": 146,
+    "total_line_searches": 290,
+    "n_jacobian_evals": 146,
+    "training_time": 300.27458839921746,
+    "final_loss": 0.023144360069387852,
+    "converged": false,
+    "stopping_reason": "wall_time_cap",
+    "mu_final": 0.00020000000000000028,
+    "lm_restarts": 0,
+    "stall": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "torch_threads": 24,
+  "commit": "ecf8d487acb86c064cf0d3645706d64f5f908c5f"
+}

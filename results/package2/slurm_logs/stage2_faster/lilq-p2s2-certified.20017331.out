@@ -1,0 +1,27 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017331 on c714: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+  bratu   P =  25 N/P =  5 (5.64): eps_ref rule 1.04e-01 / k=60 1.04e-01, delta_P 1.50e-03, rho_r final 1.0022
+  bratu   P =  25 N/P = 10 (10.60): eps_ref rule 1.07e-01 / k=60 1.07e-01, delta_P 1.50e-03, rho_r final 1.0000
+  bratu   P =  25 N/P = 20 (20.68): eps_ref rule 1.07e-01 / k=60 1.07e-01, delta_P 1.50e-03, rho_r final 1.0000
+  bratu   P = 100 N/P =  5 (5.17): eps_ref rule 6.55e-04 / k=60 6.55e-04, delta_P 4.05e-05, rho_r final 1.0000
+  bratu   P = 100 N/P = 10 (10.52): eps_ref rule 6.55e-04 / k=60 6.55e-04, delta_P 4.05e-05, rho_r final 1.0000
+  bratu   P = 100 N/P = 20 (20.64): eps_ref rule 6.55e-04 / k=60 6.55e-04, delta_P 4.05e-05, rho_r final 1.0000
+  bratu   P = 225 N/P =  5 (5.04): eps_ref rule 3.59e-05 / k=60 3.59e-05, delta_P 2.39e-06, rho_r final 1.0000
+  bratu   P = 225 N/P = 10 (10.12): eps_ref rule 3.59e-05 / k=60 3.59e-05, delta_P 2.39e-06, rho_r final 1.0000
+  bratu   P = 225 N/P = 20 (20.09): eps_ref rule 3.59e-05 / k=60 3.59e-05, delta_P 2.39e-06, rho_r final 1.0000
+  burgers P =  25 N/P =  5 (5.44): eps_ref rule 4.17e-01 / k=60 4.17e-01, delta_P 2.68e-01, rho_r final 1.0009
+  burgers P =  25 N/P = 10 (10.08): eps_ref rule 4.20e-01 / k=60 4.20e-01, delta_P 2.68e-01, rho_r final 1.0000
+  burgers P =  25 N/P = 20 (21.40): eps_ref rule 4.20e-01 / k=60 4.20e-01, delta_P 2.68e-01, rho_r final 1.0000
+  burgers P = 100 N/P =  5 (5.35): eps_ref rule 9.63e-02 / k=60 9.63e-02, delta_P 2.61e-02, rho_r final 1.0000
+  burgers P = 100 N/P = 10 (10.00): eps_ref rule 9.63e-02 / k=60 9.63e-02, delta_P 2.61e-02, rho_r final 1.0000
+  burgers P = 100 N/P = 20 (20.49): eps_ref rule 9.63e-02 / k=60 9.63e-02, delta_P 2.61e-02, rho_r final 1.0000
+  burgers P = 225 N/P =  5 (5.06): eps_ref rule 3.18e-02 / k=60 3.18e-02, delta_P 6.30e-03, rho_r final 1.0000
+  burgers P = 225 N/P = 10 (10.01): eps_ref rule 3.18e-02 / k=60 3.18e-02, delta_P 6.30e-03, rho_r final 1.0000
+  burgers P = 225 N/P = 20 (20.21): eps_ref rule 3.18e-02 / k=60 3.18e-02, delta_P 6.30e-03, rho_r final 1.0000
+  burgers P = 400 N/P =  5 (5.12): eps_ref rule 3.45e-03 / k=60 3.45e-03, delta_P 7.82e-04, rho_r final 1.0000
+  burgers P = 400 N/P = 10 (10.00): eps_ref rule 3.45e-03 / k=60 3.45e-03, delta_P 7.82e-04, rho_r final 1.0000
+  burgers P = 400 N/P = 20 (20.06): eps_ref rule 3.45e-03 / k=60 3.45e-03, delta_P 7.82e-04, rho_r final 1.0000
+  burgers P = 625 N/P =  5 (5.17): eps_ref rule 5.98e-04 / k=60 5.98e-04, delta_P 1.97e-04, rho_r final 1.0000
+  burgers P = 625 N/P = 10 (10.00): eps_ref rule 5.98e-04 / k=60 5.98e-04, delta_P 1.97e-04, rho_r final 1.0000
+  burgers P = 625 N/P = 20 (20.32): eps_ref rule 5.98e-04 / k=60 5.98e-04, delta_P 1.97e-04, rho_r final 1.0000

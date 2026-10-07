@@ -1,0 +1,18 @@
+      P    time_s  eps_u_median
+0    75  0.042530  3.768541e-01
+1   300  0.059485  2.896685e-02
+2   675  0.147151  1.230498e-05
+3  1200  0.387768  7.359311e-09
+4  1875  0.859337  6.990530e-13
+       P    time_s  eps_u_median
+7     75  0.055804  3.768541e-01
+8    300  0.294979  2.896685e-02
+9    675  0.639742  1.230498e-05
+10  1200  1.666235  7.359311e-09
+11  1875  4.255931  7.002775e-13
+'created' timestamp seems very low; regarding as unix timestamp
+'modified' timestamp seems very low; regarding as unix timestamp
+'created' timestamp seems very low; regarding as unix timestamp
+'modified' timestamp seems very low; regarding as unix timestamp
+'created' timestamp seems very low; regarding as unix timestamp
+'modified' timestamp seems very low; regarding as unix timestamp

@@ -1,0 +1,9 @@
+run,rows_rerun,rows_package1,same_iterations,max_rel_diff_norm_R_h,within_1e-10,eps_ref_logged,eps_ref_final
+bratu_P25_cpu_paper,3,3,True,0.0,True,True,0.1482705782956781
+bratu_P100_cpu_paper,4,4,True,0.0,True,True,0.00035434596167485834
+bratu_P225_cpu_paper,5,5,True,0.0,True,True,5.82675880736562e-05
+burgers_P25_cpu_paper,3,3,True,0.0,True,True,0.18214860387748505
+burgers_P100_cpu_paper,4,4,True,0.0,True,True,0.00568880369823628
+burgers_P225_cpu_paper,4,4,True,0.0,True,True,0.0021704877510995094
+burgers_P400_cpu_paper,5,5,True,0.0,True,True,0.00019327641145752835
+burgers_P625_cpu_paper,5,5,True,0.0,True,True,4.5595231797343364e-05

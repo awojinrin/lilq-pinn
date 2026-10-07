@@ -1,0 +1,19 @@
+{
+  "stage": "bratu",
+  "commit": "ab0484d7c55767c875aed312cd092b0e45287b32",
+  "device": "cpu",
+  "threads": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "slurm_job": null,
+  "timing": "one untimed warm-up, then the median of 3 clean runs (diagnostics off); assembly and solve timed separately",
+  "section": "4.1",
+  "K_max": 20,
+  "tol": 1e-09,
+  "reference": "SQ-CGL p = 48",
+  "error_grid": "201 x 201",
+  "lambda_bc_weakMS": 10.0,
+  "runs": 27
+}

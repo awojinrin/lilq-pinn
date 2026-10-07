@@ -1,0 +1,48 @@
+provenance lock OK: commit 5271d8bf5e7e, tree 7bf587042d0b
+job 20029254 on g021: 8 threads, 8 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+torch 2.10.0+cu126 OK
+threadpoolctl 3.5.0 OK
+numpy 1.26.4 scipy 1.13.1 torch 2.10.0+cu126 GPU NVIDIA A100-PCIE-40GB
+cuSOLVER QR probe OK: 11036x3675, 5564x1875
+.................................................s...................... [ 10%]
+........................................................................ [ 20%]
+................................................................s.....s. [ 30%]
+........................................................................ [ 41%]
+........................................................................ [ 51%]
+..................s..................................................... [ 61%]
+........................................sFss................s..s........ [ 71%]
+........................................................................ [ 82%]
+........................................................................ [ 92%]
+.....................................................                    [100%]
+=================================== FAILURES ===================================
+_________________ test_stage2_assembly_refuses_another_commit __________________
+
+tmp_path = PosixPath('/tmp/job.20029254/pytest-of-<user>/pytest-0/test_stage2_assembly_refuses_a0')
+
+    def test_stage2_assembly_refuses_another_commit(tmp_path):
+        import experiments.p2_assemble as pa
+        stage, out = _fake_stage(tmp_path, '0' * 40)
+>       with pytest.raises(SystemExit, match='locked to'):
+E       Failed: DID NOT RAISE <class 'SystemExit'>
+
+tests/test_p2s2_submission.py:163: Failed
+=============================== warnings summary ===============================
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[bratu]
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[burgers]
+  $SCRATCH/lilq-run/lilq-pinn/experiments/p2_8_lm_networks.py:643: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+    axes[0, 0].legend(fontsize=7)
+
+tests/test_saved_models.py::test_f1_and_f2_models_reload
+  $SCRATCH/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    value = float(loss)
+
+tests/test_saved_models.py: 18 warnings
+  $SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_p2s2_submission.py::test_stage2_assembly_refuses_another_commit
+1 failed, 691 passed, 9 skipped, 21 warnings in 542.72s (0:09:02)

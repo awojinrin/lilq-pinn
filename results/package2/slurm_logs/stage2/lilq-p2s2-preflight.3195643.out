@@ -1,0 +1,34 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 3195643 on fc031: 8 threads, 8 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+torch 2.10.0+cu126 OK
+threadpoolctl 3.5.0 OK
+numpy 1.26.4 scipy 1.13.1 torch 2.10.0+cu126 GPU NVIDIA A100-PCIE-40GB
+.................................................s...................... [ 10%]
+........................................................................ [ 20%]
+......................................................s.....s........... [ 31%]
+........................................................................ [ 41%]
+........................................................................ [ 52%]
+........s............................................................... [ 62%]
+..............................s.s................s..s................... [ 73%]
+........................................................................ [ 83%]
+........................................................................ [ 93%]
+..........................................                               [100%]
+=============================== warnings summary ===============================
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[bratu]
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[burgers]
+  $SCRATCH/lilq-run/lilq-pinn/experiments/p2_8_lm_networks.py:643: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+    axes[0, 0].legend(fontsize=7)
+
+tests/test_saved_models.py::test_f1_and_f2_models_reload
+  $SCRATCH/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    value = float(loss)
+
+tests/test_saved_models.py: 18 warnings
+  $SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+682 passed, 8 skipped, 21 warnings in 314.95s (0:05:14)
+PREFLIGHT OK

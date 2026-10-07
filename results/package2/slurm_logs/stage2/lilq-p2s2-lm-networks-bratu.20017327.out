@@ -1,0 +1,12 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017327 on c674: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  bratu   P =   25 seed 0: target at 22 its, 0.4 s, loss 1.621e-01, eps_ref 1.045e+00, C3 1.9e-16
+  bratu   P =   25 seed 1: iteration_cap at 2000 its, 29.5 s, loss 5.274e+00, eps_ref 1.498e+00, C3 0.0e+00
+  bratu   P =   25 seed 2: target at 28 its, 0.4 s, loss 2.058e-01, eps_ref 6.568e-02, C3 0.0e+00
+  bratu   P =  100 seed 0: iteration_cap at 2000 its, 46.9 s, loss 3.314e-04, eps_ref 1.986e-02, C3 0.0e+00
+  bratu   P =  100 seed 1: iteration_cap at 2000 its, 44.6 s, loss 2.342e-04, eps_ref 2.281e-03, C3 3.7e-16
+  bratu   P =  100 seed 2: iteration_cap at 2000 its, 43.3 s, loss 1.250e-04, eps_ref 1.034e-03, C3 0.0e+00
+  bratu   P =  225 seed 0: iteration_cap at 2000 its, 67.7 s, loss 4.062e-06, eps_ref 2.068e-04, C3 1.9e-16
+  bratu   P =  225 seed 1: iteration_cap at 2000 its, 71.6 s, loss 5.274e-06, eps_ref 2.350e-04, C3 1.9e-16
+  bratu   P =  225 seed 2: iteration_cap at 2000 its, 69.7 s, loss 4.871e-05, eps_ref 7.648e-04, C3 1.8e-16

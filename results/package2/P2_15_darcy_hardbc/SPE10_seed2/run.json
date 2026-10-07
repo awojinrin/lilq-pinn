@@ -1,0 +1,69 @@
+{
+  "field": "SPE10",
+  "seed": 2,
+  "method": "NiL-N hard-BC (LM)",
+  "item": "5",
+  "variant": "hard",
+  "device": "cuda",
+  "gpu": "NVIDIA A100-PCIE-40GB",
+  "k_stop": 2000,
+  "reason": "iteration_cap",
+  "delta_FV": 0.10869745759884618,
+  "max_diff_psi": 306.01571726644397,
+  "time_s": 303.05581237282604,
+  "final_loss": 0.1861744811226806,
+  "c3": {
+    "paper_loss_iteration_0": 481.3365169857838,
+    "lm_r_dot_r_iteration_0": 481.3365169857839,
+    "paper_dirichlet_terms": [
+      0.0,
+      0.0
+    ],
+    "rel_diff": 1.1809496444768365e-16,
+    "passed": true
+  },
+  "n_theta": 3555,
+  "n_rows": 40040,
+  "differs_from_the_paper_nil": [
+    "the pressure output is lifted (hard Dirichlet conditions), at the paper's output gain P_HALF",
+    "Levenberg-Marquardt instead of Adam"
+  ],
+  "network": "3 x MLP(2, 32, 1, 2 hidden layers, SiLU), float64, torch.manual_seed(seed), the paper's order",
+  "loss": {
+    "interior": "Darcy-x, Darcy-y, continuity: each 50 x mean square (the paper's normalization)",
+    "lateral": "U / V_SCALE = 0 on each lateral face: 20 x mean square (the paper's rows)",
+    "dirichlet": "none: identically satisfied by the lifting"
+  },
+  "optimizer": {
+    "name": "Levenberg-Marquardt (F2)",
+    "mu0": 0.001,
+    "mu_up": 5.0,
+    "mu_down": 0.2,
+    "mu_max": 1e+16,
+    "diag_floor": 1e-12,
+    "stall_rule": "tolerances 0, one restart"
+  },
+  "caps": {
+    "iterations": 2000,
+    "wall_time_s": 1800.0
+  },
+  "summary": {
+    "total_iterations": 2000,
+    "total_line_searches": 4001,
+    "n_jacobian_evals": 2000,
+    "training_time": 303.05581237282604,
+    "final_loss": 0.1861744811226806,
+    "converged": false,
+    "stopping_reason": "iteration_cap",
+    "mu_final": 0.0010000000000000013,
+    "lm_restarts": 0,
+    "stall": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "8",
+    "OPENBLAS_NUM_THREADS": "8",
+    "MKL_NUM_THREADS": "8"
+  },
+  "torch_threads": 8,
+  "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+}

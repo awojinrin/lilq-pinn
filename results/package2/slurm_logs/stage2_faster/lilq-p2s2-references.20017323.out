@@ -1,0 +1,16 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017323 on c714: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+Bratu reference p = 48; its distance to p = 64: 3.606e-09
+Basdevant: u_x = -152.0051616 against -152.00516 (agrees)
+series: max |difference| 3.8e-15; boundary 2.3e-16
+  viscous nu = 0.1  : 8000 intervals, last difference 1.47e-07 (C7 passed)
+  viscous nu = 0.05 : 8000 intervals, last difference 3.10e-07 (C7 passed)
+  viscous nu = 0.02 : 16000 intervals, last difference 2.66e-07 (C7 passed)
+  viscous nu = 0.01 : 16000 intervals, last difference 7.45e-07 (C7 passed)
+  gravity nu = 0.05 : 8000 intervals, last difference 7.32e-07 (C7 passed)
+  gravity nu = 0.02 : 16000 intervals, last difference 5.74e-07 (C7 passed)
+C7 passed
+  gravity nu = 0.1  : 8000 intervals, last difference 3.37e-07 (C7 passed)
+  BL viscous nu = 0.1: 8000 intervals
+  BL gravity nu = 0.1: 8000 intervals

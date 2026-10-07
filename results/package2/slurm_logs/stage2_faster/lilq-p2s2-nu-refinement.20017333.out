@@ -1,0 +1,30 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017333 on c522: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  viscous nu = 0.1  : 8000 intervals, last difference 1.47e-07 (C7 passed)
+/sw/eb/sw/SciPy-bundle/2024.05-gfbf-2024a/lib/python3.12/site-packages/scipy/integrate/_ivp/bdf.py:416: RuntimeWarning: invalid value encountered in subtract
+  D[order + 2] = d - D[order + 1]
+  viscous nu = 0.05 : 8000 intervals, last difference 3.10e-07 (C7 passed)
+  viscous nu = 0.02 : 16000 intervals, last difference 2.66e-07 (C7 passed)
+  viscous nu = 0.01 : 16000 intervals, last difference 7.45e-07 (C7 passed)
+  gravity nu = 0.05 : 8000 intervals, last difference 7.32e-07 (C7 passed)
+  gravity nu = 0.02 : 16000 intervals, last difference 5.74e-07 (C7 passed)
+C7 passed
+  viscous P =  576 nu = 0.1  : stop k = 4 (target), eps_ref 9.045e-04 / k=60 2.637e-03, rule 7 (A), kappa 1.3e+16, rank 561, min S -0.0001, max S-1 0.0001
+  viscous P = 1024 nu = 0.1  : stop k = 4 (target), eps_ref 1.957e-04 / k=60 2.063e-04, rule 6 (C), kappa 1.1e+17, rank 936, min S -0.0003, max S-1 0.0001
+  viscous P =  576 nu = 0.05 : stop k = 60 (K_max), eps_ref 3.616e-02 / k=60 3.616e-02, rule 17 (A), kappa 1.4e+16, rank 561, min S -0.0006, max S-1 0.0009
+  viscous P = 1024 nu = 0.05 : stop k = 60 (K_max), eps_ref 1.579e-02 / k=60 1.579e-02, rule 16 (A), kappa 7.6e+16, rank 938, min S -0.0044, max S-1 0.0005
+  viscous P =  576 nu = 0.02 : stop k = 60 (K_max), eps_ref 1.526e-01 / k=60 1.526e-01, rule 31 (A), kappa 1.7e+16, rank 560, min S -0.0055, max S-1 0.0015
+  viscous P = 1024 nu = 0.02 : stop k = 60 (K_max), eps_ref 1.269e-01 / k=60 1.269e-01, rule 42 (A), kappa 6.8e+16, rank 932, min S -0.0207, max S-1 0.0046
+  viscous P =  576 nu = 0.01 : stop k = 60 (K_max), eps_ref 2.217e-01 / k=60 2.217e-01, rule 26 (A), kappa 1.7e+16, rank 560, min S -0.0214, max S-1 0.0041
+  viscous P = 1024 nu = 0.01 : stop k = 60 (K_max), eps_ref 1.925e-01 / k=60 1.925e-01, rule 37 (A), kappa 6.1e+16, rank 930, min S -0.1220, max S-1 0.0151
+  viscous P = 1600 nu = 0.02 : stop k = 60 (K_max (no paper target at this P)), eps_ref 1.316e-01 / k=60 1.316e-01, rule 49 (A), kappa 1.2e+17, rank 1261, min S -0.5324, max S-1 0.8748
+  viscous P = 1600 nu = 0.01 : stop k = 60 (K_max (no paper target at this P)), eps_ref 6.650e-01 / k=60 6.650e-01, rule  (never), kappa 7.3e+16, rank 1248, min S -0.8028, max S-1 5.8760
+  gravity P =  576 nu = 0.05 : stop k = 60 (K_max), eps_ref 6.181e-02 / k=60 6.181e-02, rule 22 (A), kappa 6.5e+08, rank 576, min S -0.0061, max S-1 0.0338
+  gravity P = 1024 nu = 0.05 : stop k = 60 (K_max), eps_ref 3.276e-02 / k=60 3.276e-02, rule 13 (A), kappa 7.9e+11, rank 1020, min S -0.0059, max S-1 0.0420
+  gravity P =  576 nu = 0.02 : stop k = 60 (K_max), eps_ref 1.028e-01 / k=60 1.028e-01, rule 12 (A), kappa 5.3e+08, rank 576, min S -0.0909, max S-1 0.0461
+  gravity P = 1024 nu = 0.02 : stop k = 60 (K_max), eps_ref 8.773e-02 / k=60 8.773e-02, rule 31 (A), kappa 5.6e+11, rank 1022, min S -0.0050, max S-1 0.0364
+  C8 bl_P576_cpu_paper: passed (same iterations True; norm_R_h 0.0e+00, loss 0.0e+00, eps_u 0.0e+00 against the level 1.0e-10; at 1e-10 passed; gelsy keeps 576 columns, package1 576)
+  C8 bl_P576_cpu_kmax: passed (same iterations True; norm_R_h 0.0e+00, loss 0.0e+00, eps_u 0.0e+00 against the level 1.0e-10; at 1e-10 passed; gelsy keeps 576 columns, package1 576)
+  C8 bl_P1024_cpu_paper: passed (same iterations True; norm_R_h 0.0e+00, loss 0.0e+00, eps_u 0.0e+00 against the level 1.0e-10; at 1e-10 passed; gelsy keeps 1005 columns, package1 1005)
+  C8 bl_P1024_cpu_kmax: passed (same iterations True; norm_R_h 0.0e+00, loss 0.0e+00, eps_u 0.0e+00 against the level 1.0e-10; at 1e-10 passed; gelsy keeps 1006 columns, package1 1006)

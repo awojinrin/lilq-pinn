@@ -1,0 +1,15 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017329 on c678: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  bl      P =   64 seed 0: target at 17 its, 0.4 s, loss 7.381e-02, eps_ref 8.308e-02, C3 0.0e+00
+  bl      P =   64 seed 1: target at 19 its, 0.5 s, loss 8.028e-02, eps_ref 1.005e-01, C3 6.1e-16
+  bl      P =   64 seed 2: target at 19 its, 0.4 s, loss 6.442e-02, eps_ref 1.164e-01, C3 0.0e+00
+  bl      P =  256 seed 0: target at 19 its, 0.8 s, loss 1.318e-02, eps_ref 1.373e-02, C3 0.0e+00
+  bl      P =  256 seed 1: target at 26 its, 1.1 s, loss 1.045e-02, eps_ref 2.196e-02, C3 1.9e-16
+  bl      P =  256 seed 2: target at 35 its, 1.4 s, loss 1.168e-02, eps_ref 1.082e-02, C3 1.7e-16
+  bl      P =  576 seed 0: target at 55 its, 6.2 s, loss 6.929e-04, eps_ref 3.165e-03, C3 1.4e-16
+  bl      P =  576 seed 1: target at 42 its, 3.0 s, loss 7.047e-04, eps_ref 1.796e-03, C3 1.5e-16
+  bl      P =  576 seed 2: target at 44 its, 3.0 s, loss 7.290e-04, eps_ref 2.442e-03, C3 1.2e-16
+  bl      P = 1024 seed 0: target at 109 its, 14.7 s, loss 7.432e-05, eps_ref 7.424e-04, C3 3.1e-16
+  bl      P = 1024 seed 1: target at 75 its, 10.9 s, loss 7.424e-05, eps_ref 9.055e-04, C3 5.4e-16
+  bl      P = 1024 seed 2: target at 105 its, 14.1 s, loss 7.484e-05, eps_ref 1.098e-03, C3 3.2e-16

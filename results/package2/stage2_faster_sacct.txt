@@ -1,0 +1,15 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+3195643                   lilq-p2s2-preflight        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:07:07  COMPLETED      0:0 
+3195644_0              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:45  COMPLETED      0:0 
+3195644_1              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:45  COMPLETED      0:0 
+3195644_2              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:06:44  COMPLETED      0:0 
+3195644_3              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:06:53  COMPLETED      0:0 
+3195644_4              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:45  COMPLETED      0:0 
+3195644_5              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:45  COMPLETED      0:0 
+3195644_6              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:06:05  COMPLETED      0:0 
+3195644_7              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:06:06  COMPLETED      0:0 
+3195644_8              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:41  COMPLETED      0:0 
+3195644_9              lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:32  COMPLETED      0:0 
+3195644_10             lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:56  COMPLETED      0:0 
+3195644_11             lilq-p2s2-darcy-hardbc        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:05:59  COMPLETED      0:0 

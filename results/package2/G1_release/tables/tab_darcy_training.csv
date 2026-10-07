@@ -1,0 +1,10 @@
+nil_setting,nil_value,lil_setting,lil_value
+Hidden layers,2,,32
+Neurons per layer,32,,3169
+Activation,SiLU,,
+Output ($h^*$),,,
+Total parameters,3555,,
+Optimizer,,,
+Iterations,150000,,
+Loss weights,50.0 20.0,,
+Precision,\texttt{float64},,

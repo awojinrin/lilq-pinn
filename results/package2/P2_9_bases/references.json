@@ -1,0 +1,45 @@
+{
+  "references": [
+    {
+      "case": "viscous",
+      "nu": 0.1,
+      "problem": "Buckley-Leverett, viscous, nu = 0.1 (D = -0.1), N_g = 0, M = 0.5, T = 0.4",
+      "method": "finite differences (problems.buckley_leverett.reference_solution), refined by doubling from 4000 intervals until two successive solutions agree to 1e-06",
+      "grid": "201 x 201, u[i, j] at (x[i], t[j])",
+      "n_intervals": 8000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 1.470050128474941e-07
+        }
+      ],
+      "passed": true,
+      "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+    },
+    {
+      "case": "gravity",
+      "nu": 0.1,
+      "problem": "Buckley-Leverett, gravity, nu = 0.1 (D = -0.1), N_g = -5, M = 1, T = 0.175",
+      "method": "finite differences (problems.buckley_leverett.reference_solution), refined by doubling from 4000 intervals until two successive solutions agree to 1e-06",
+      "grid": "201 x 201, u[i, j] at (x[i], t[j])",
+      "n_intervals": 8000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 3.3670109407709566e-07
+        }
+      ],
+      "passed": true,
+      "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+    }
+  ],
+  "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+}

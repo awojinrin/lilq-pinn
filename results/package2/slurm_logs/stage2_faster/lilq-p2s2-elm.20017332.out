@@ -1,0 +1,83 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017332 on c268: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+  sigma  0.030 seed 0: ||R||^2 1.12e-01, eps_ref 1.40e-01, rank 26 (gelsy 43)
+  sigma  0.030 seed 1: ||R||^2 1.08e-01, eps_ref 1.43e-01, rank 26 (gelsy 42)
+  sigma  0.030 seed 2: ||R||^2 1.08e-01, eps_ref 1.45e-01, rank 26 (gelsy 43)
+  sigma  0.030 seed 3: ||R||^2 1.09e-01, eps_ref 1.45e-01, rank 26 (gelsy 43)
+  sigma  0.030 seed 4: ||R||^2 1.07e-01, eps_ref 1.52e-01, rank 26 (gelsy 43)
+  sigma  0.050 seed 0: ||R||^2 9.34e-02, eps_ref 1.35e-01, rank 34 (gelsy 54)
+  sigma  0.050 seed 1: ||R||^2 9.30e-02, eps_ref 1.35e-01, rank 34 (gelsy 53)
+  sigma  0.050 seed 2: ||R||^2 9.31e-02, eps_ref 1.36e-01, rank 34 (gelsy 53)
+  sigma  0.050 seed 3: ||R||^2 9.34e-02, eps_ref 1.37e-01, rank 34 (gelsy 53)
+  sigma  0.050 seed 4: ||R||^2 9.28e-02, eps_ref 1.35e-01, rank 34 (gelsy 53)
+  sigma  0.100 seed 0: ||R||^2 4.54e-02, eps_ref 8.19e-02, rank 44 (gelsy 71)
+  sigma  0.100 seed 1: ||R||^2 4.57e-02, eps_ref 8.34e-02, rank 44 (gelsy 72)
+  sigma  0.100 seed 2: ||R||^2 4.52e-02, eps_ref 8.06e-02, rank 43 (gelsy 72)
+  sigma  0.100 seed 3: ||R||^2 4.51e-02, eps_ref 7.85e-02, rank 45 (gelsy 72)
+  sigma  0.100 seed 4: ||R||^2 4.51e-02, eps_ref 8.12e-02, rank 45 (gelsy 72)
+  sigma  0.200 seed 0: ||R||^2 2.14e-02, eps_ref 4.53e-02, rank 65 (gelsy 105)
+  sigma  0.200 seed 1: ||R||^2 2.14e-02, eps_ref 4.57e-02, rank 65 (gelsy 105)
+  sigma  0.200 seed 2: ||R||^2 2.15e-02, eps_ref 4.53e-02, rank 64 (gelsy 106)
+  sigma  0.200 seed 3: ||R||^2 2.14e-02, eps_ref 4.58e-02, rank 66 (gelsy 107)
+  sigma  0.200 seed 4: ||R||^2 2.13e-02, eps_ref 4.58e-02, rank 65 (gelsy 106)
+  sigma  0.300 seed 0: ||R||^2 9.61e-03, eps_ref 2.43e-02, rank 83 (gelsy 142)
+  sigma  0.300 seed 1: ||R||^2 9.62e-03, eps_ref 2.43e-02, rank 83 (gelsy 139)
+  sigma  0.300 seed 2: ||R||^2 9.66e-03, eps_ref 2.39e-02, rank 83 (gelsy 140)
+  sigma  0.300 seed 3: ||R||^2 9.65e-03, eps_ref 2.31e-02, rank 83 (gelsy 140)
+  sigma  0.300 seed 4: ||R||^2 9.64e-03, eps_ref 2.48e-02, rank 84 (gelsy 140)
+  sigma  0.500 seed 0: ||R||^2 3.17e-03, eps_ref 1.01e-02, rank 129 (gelsy 213)
+  sigma  0.500 seed 1: ||R||^2 3.30e-03, eps_ref 9.97e-03, rank 128 (gelsy 209)
+  sigma  0.500 seed 2: ||R||^2 3.26e-03, eps_ref 9.96e-03, rank 128 (gelsy 211)
+  sigma  0.500 seed 3: ||R||^2 3.30e-03, eps_ref 1.00e-02, rank 129 (gelsy 213)
+  sigma  0.500 seed 4: ||R||^2 3.31e-03, eps_ref 1.08e-02, rank 129 (gelsy 213)
+  sigma  0.707 seed 0: ||R||^2 4.75e-04, eps_ref 2.24e-03, rank 180 (gelsy 284)
+  sigma  0.707 seed 1: ||R||^2 4.39e-04, eps_ref 2.45e-03, rank 178 (gelsy 288)
+  sigma  0.707 seed 2: ||R||^2 5.33e-04, eps_ref 2.33e-03, rank 179 (gelsy 288)
+  sigma  0.707 seed 3: ||R||^2 4.18e-04, eps_ref 2.20e-03, rank 180 (gelsy 288)
+  sigma  0.707 seed 4: ||R||^2 4.98e-04, eps_ref 2.32e-03, rank 180 (gelsy 286)
+  sigma  1.000 seed 0: ||R||^2 8.70e-05, eps_ref 5.08e-04, rank 254 (gelsy 385)
+  sigma  1.000 seed 1: ||R||^2 6.39e-05, eps_ref 5.32e-04, rank 256 (gelsy 391)
+  sigma  1.000 seed 2: ||R||^2 8.19e-05, eps_ref 5.30e-04, rank 255 (gelsy 392)
+  sigma  1.000 seed 3: ||R||^2 6.10e-05, eps_ref 5.02e-04, rank 258 (gelsy 388)
+  sigma  1.000 seed 4: ||R||^2 8.64e-05, eps_ref 5.17e-04, rank 254 (gelsy 385)
+  sigma  2.000 seed 0: ||R||^2 2.61e-06, eps_ref 4.56e-05, rank 477 (gelsy 581)
+  sigma  2.000 seed 1: ||R||^2 7.98e-07, eps_ref 2.40e-05, rank 486 (gelsy 594)
+  sigma  2.000 seed 2: ||R||^2 2.66e-06, eps_ref 8.34e-05, rank 484 (gelsy 592)
+  sigma  2.000 seed 3: ||R||^2 6.84e-07, eps_ref 2.92e-05, rank 476 (gelsy 579)
+  sigma  2.000 seed 4: ||R||^2 9.10e-07, eps_ref 4.59e-05, rank 476 (gelsy 584)
+  sigma  3.000 seed 0: ||R||^2 1.59e-06, eps_ref 3.74e-05, rank 572 (gelsy 617)
+  sigma  3.000 seed 1: ||R||^2 5.84e-07, eps_ref 1.84e-05, rank 586 (gelsy 623)
+  sigma  3.000 seed 2: ||R||^2 1.85e-06, eps_ref 3.68e-05, rank 581 (gelsy 622)
+  sigma  3.000 seed 3: ||R||^2 3.48e-07, eps_ref 1.84e-05, rank 567 (gelsy 619)
+  sigma  3.000 seed 4: ||R||^2 5.89e-07, eps_ref 1.90e-05, rank 572 (gelsy 617)
+  sigma  5.000 seed 0: ||R||^2 5.08e-07, eps_ref 1.80e-05, rank 606 (gelsy 625)
+  sigma  5.000 seed 1: ||R||^2 7.54e-07, eps_ref 2.29e-05, rank 615 (gelsy 625)
+  sigma  5.000 seed 2: ||R||^2 2.84e-06, eps_ref 5.07e-05, rank 617 (gelsy 625)
+  sigma  5.000 seed 3: ||R||^2 1.81e-06, eps_ref 3.50e-05, rank 609 (gelsy 625)
+  sigma  5.000 seed 4: ||R||^2 6.81e-07, eps_ref 2.00e-05, rank 610 (gelsy 625)
+  sigma 10.000 seed 0: ||R||^2 5.48e-05, eps_ref 2.68e-04, rank 613 (gelsy 625)
+  sigma 10.000 seed 1: ||R||^2 4.88e-05, eps_ref 1.99e-04, rank 621 (gelsy 625)
+  sigma 10.000 seed 2: ||R||^2 1.16e-04, eps_ref 5.12e-04, rank 621 (gelsy 625)
+  sigma 10.000 seed 3: ||R||^2 7.26e-05, eps_ref 3.27e-04, rank 615 (gelsy 625)
+  sigma 10.000 seed 4: ||R||^2 5.37e-05, eps_ref 2.60e-04, rank 616 (gelsy 625)
+  C5 (Chebyshev P = 300, k = 1, against QR): normal_shifted 3.6e-13 (1e-16), normal_eigh 5.6e-13 (300) -> passed
+  Chebyshev qr            : 9 iterations (tolerance), E_u 2.90e-02, kappa(A) 7.9e+02, shift or rank -
+  Chebyshev normal_shifted: 9 iterations (tolerance), E_u 2.90e-02, kappa(A) 7.9e+02, shift or rank 1e-16
+  Chebyshev normal_eigh   : 9 iterations (tolerance), E_u 2.90e-02, kappa(A) 7.9e+02, shift or rank 300
+  sigma sweep (seed 0, QR): 0.3: ||R||_h 1.08e-03, 1: ||R||_h 4.24e-09, 3: ||R||_h 7.98e-08; best 1
+  qr             seed 0: 60 iterations (k_max), E_u 2.46e-10, kappa(A) 7.1e+18, rank 726, shift or rank -
+  qr             seed 1: 60 iterations (k_max), E_u 2.02e-10, kappa(A) 2.4e+19, rank 723, shift or rank -
+  qr             seed 2: 60 iterations (k_max), E_u 1.75e-10, kappa(A) 4.5e+18, rank 734, shift or rank -
+  qr             seed 3: 60 iterations (k_max), E_u 2.44e-10, kappa(A) 3.6e+19, rank 729, shift or rank -
+  qr             seed 4: 60 iterations (k_max), E_u 2.15e-10, kappa(A) 3.3e+18, rank 730, shift or rank -
+  normal_shifted seed 0: 60 iterations (k_max), E_u 5.85e-04, kappa(A) 6.4e+18, rank 726, shift or rank 1e-12
+  normal_shifted seed 1: 60 iterations (k_max), E_u 5.96e-04, kappa(A) 4.6e+18, rank 723, shift or rank 1e-12
+  normal_shifted seed 2: 60 iterations (k_max), E_u 2.55e-04, kappa(A) 5.8e+19, rank 734, shift or rank 1e-12
+  normal_shifted seed 3: 60 iterations (k_max), E_u 3.82e-04, kappa(A) 7.6e+18, rank 729, shift or rank 1e-12
+  normal_shifted seed 4: 60 iterations (k_max), E_u 4.86e-04, kappa(A) 4.1e+18, rank 730, shift or rank 1e-12
+  normal_eigh    seed 0: 60 iterations (k_max), E_u 7.86e-03, kappa(A) 1.0e+19, rank 726, shift or rank 233
+  normal_eigh    seed 1: 60 iterations (k_max), E_u 9.30e-03, kappa(A) 4.6e+18, rank 723, shift or rank 230
+  normal_eigh    seed 2: 60 iterations (k_max), E_u 2.77e-03, kappa(A) 9.5e+19, rank 734, shift or rank 232
+  normal_eigh    seed 3: 60 iterations (k_max), E_u 5.02e-03, kappa(A) 3.0e+18, rank 729, shift or rank 228
+  normal_eigh    seed 4: 60 iterations (k_max), E_u 8.46e-03, kappa(A) 3.0e+18, rank 730, shift or rank 232

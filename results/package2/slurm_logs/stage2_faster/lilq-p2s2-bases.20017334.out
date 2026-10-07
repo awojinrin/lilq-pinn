@@ -1,0 +1,60 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017334 on c270: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+  bratu         sin_sin                P =   25 zero: stop 60 (K_max), eps_ref 3.09e-02 / k=60 3.09e-02, rule 4 (A), kappa 1.0e+02, rank 25, bc 1.3e-16, delta_P 5.5e-03
+  bratu         chebyshev_weak         P =   25 zero: stop  2 (target), eps_ref 8.46e-02 / k=60 1.02e-01, rule 5 (A), kappa 1.2e+02, rank 25, bc 5.6e-02, delta_P 1.5e-03
+  bratu         paper (fourier)        P =   25 zero: stop  2 (target), eps_ref 1.48e-01 / k=60 1.69e-01, rule 4 (A), kappa 1.7e+02, rank 25, bc 2.2e-01, delta_P 4.2e-03
+  bratu         sin_sin                P =  100 zero: stop 60 (K_max), eps_ref 9.47e-03 / k=60 9.47e-03, rule 3 (A), kappa 4.5e+02, rank 100, bc 1.3e-16, delta_P 1.6e-03
+  bratu         chebyshev_weak         P =  100 zero: stop  3 (target), eps_ref 6.72e-04 / k=60 6.53e-04, rule 5 (A), kappa 1.2e+03, rank 100, bc 4.5e-03, delta_P 4.1e-05
+  bratu         paper (fourier)        P =  100 zero: stop  3 (target), eps_ref 3.54e-04 / k=60 2.82e-04, rule 4 (A), kappa 2.0e+06, rank 100, bc 1.8e-03, delta_P 3.0e-05
+  bratu         sin_sin                P =  225 zero: stop 60 (K_max), eps_ref 3.04e-02 / k=60 3.04e-02, rule 3 (A), kappa 2.1e+03, rank 225, bc 1.3e-16, delta_P 5.2e-04
+  bratu         chebyshev_weak         P =  225 zero: stop  3 (target), eps_ref 1.18e-04 / k=60 3.88e-05, rule 5 (A), kappa 7.1e+03, rank 225, bc 8.5e-04, delta_P 2.4e-06
+  bratu         paper (fourier)        P =  225 zero: stop  4 (target), eps_ref 5.83e-05 / k=60 5.83e-05, rule 5 (A), kappa 1.4e+09, rank 225, bc 1.1e-03, delta_P 4.9e-06
+  bl    viscous lifted_sine_x(1-x)     P =   64 zero: stop 60 (K_max), eps_ref 1.47e-01 / k=60 1.47e-01, rule 5 (A), kappa 3.4e+02, rank 64, bc 0.0e+00, delta_P 2.4e-02
+  bl    viscous lifted_sine_plain      P =   64 zero: stop  2 (target), eps_ref 1.41e-01 / k=60 8.15e-02, rule 6 (A), kappa 2.8e+02, rank 64, bc 3.7e-17, delta_P 6.1e-03
+  bl    viscous paper (fourier)        P =   64 zero: stop  6 (target), eps_ref 9.92e-02 / k=60 1.36e-01, rule 10 (A), kappa 8.3e+03, rank 64, bc 1.9e-01, delta_P 1.3e-02
+  bl    viscous lifted_sine_x(1-x)     P =   64 ic  : stop 60 (K_max), eps_ref 1.47e-01 / k=60 1.47e-01, rule 28 (A), kappa 3.4e+02, rank 64, bc 0.0e+00, delta_P 2.4e-02
+  bl    viscous lifted_sine_plain      P =   64 ic  : stop  9 (target), eps_ref 4.19e-02 / k=60 8.14e-02, rule 14 (A), kappa 2.8e+02, rank 64, bc 3.7e-17, delta_P 6.1e-03
+  bl    viscous paper (fourier)        P =   64 ic  : stop 10 (target), eps_ref 9.85e-02 / k=60 1.36e-01, rule 14 (A), kappa 8.3e+03, rank 64, bc 1.9e-01, delta_P 1.3e-02
+  bl    viscous lifted_sine_x(1-x)     P =  256 zero: stop 60 (K_max), eps_ref 1.21e-01 / k=60 1.21e-01, rule 5 (A), kappa 9.9e+05, rank 256, bc 0.0e+00, delta_P 9.2e-03
+  bl    viscous lifted_sine_plain      P =  256 zero: stop  3 (target), eps_ref 1.96e-02 / k=60 4.79e-03, rule 6 (A), kappa 3.8e+05, rank 256, bc 4.5e-17, delta_P 4.1e-04
+  bl    viscous paper (fourier)        P =  256 zero: stop  5 (target), eps_ref 2.18e-02 / k=60 2.36e-02, rule 10 (A), kappa 3.8e+09, rank 256, bc 1.3e-02, delta_P 1.0e-03
+  bl    viscous lifted_sine_x(1-x)     P =  256 ic  : stop 60 (K_max), eps_ref 1.21e-01 / k=60 1.21e-01, rule 7 (A), kappa 9.9e+05, rank 256, bc 0.0e+00, delta_P 9.2e-03
+  bl    viscous lifted_sine_plain      P =  256 ic  : stop  4 (target), eps_ref 1.85e-03 / k=60 4.79e-03, rule 7 (A), kappa 3.8e+05, rank 256, bc 4.5e-17, delta_P 4.1e-04
+  bl    viscous paper (fourier)        P =  256 ic  : stop  4 (target), eps_ref 3.80e-02 / k=60 2.36e-02, rule 9 (A), kappa 3.8e+09, rank 256, bc 1.3e-02, delta_P 1.0e-03
+  bl    viscous lifted_sine_x(1-x)     P =  576 zero: stop 60 (K_max), eps_ref 1.10e-01 / k=60 1.10e-01, rule 5 (A), kappa 3.6e+09, rank 576, bc 0.0e+00, delta_P 5.2e-03
+  bl    viscous lifted_sine_plain      P =  576 zero: stop  4 (target), eps_ref 4.17e-04 / k=60 3.66e-04, rule 6 (A), kappa 2.2e+09, rank 576, bc 4.6e-17, delta_P 1.0e-04
+  bl    viscous paper (fourier)        P =  576 zero: stop  5 (target), eps_ref 1.97e-03 / k=60 2.64e-03, rule 7 (A), kappa 1.3e+16, rank 561, bc 6.0e-03, delta_P 1.2e-04
+  bl    viscous lifted_sine_x(1-x)     P =  576 ic  : stop 60 (K_max), eps_ref 1.10e-01 / k=60 1.10e-01, rule 5 (A), kappa 3.6e+09, rank 576, bc 0.0e+00, delta_P 5.2e-03
+  bl    viscous lifted_sine_plain      P =  576 ic  : stop  4 (target), eps_ref 3.63e-04 / k=60 3.66e-04, rule 6 (A), kappa 2.2e+09, rank 576, bc 4.6e-17, delta_P 1.0e-04
+  bl    viscous paper (fourier)        P =  576 ic  : stop  4 (target), eps_ref 9.03e-04 / k=60 2.63e-03, rule 7 (A), kappa 1.2e+16, rank 561, bc 5.9e-03, delta_P 1.2e-04
+  bl    viscous lifted_sine_x(1-x)     P = 1024 zero: stop 60 (K_max), eps_ref 1.21e-01 / k=60 1.21e-01, rule 5 (A), kappa 5.1e+12, rank 988, bc 0.0e+00, delta_P 3.4e-03
+  bl    viscous lifted_sine_plain      P = 1024 zero: stop  4 (target), eps_ref 6.94e-05 / k=60 6.62e-05, rule 6 (C), kappa 3.2e+12, rank 993, bc 4.6e-17, delta_P 4.9e-05
+  bl    viscous paper (fourier)        P = 1024 zero: stop  5 (target), eps_ref 2.00e-04 / k=60 2.07e-04, rule 7 (C), kappa 1.1e+17, rank 936, bc 3.6e-03, delta_P 2.4e-05
+  bl    viscous lifted_sine_x(1-x)     P = 1024 ic  : stop 60 (K_max), eps_ref 1.21e-01 / k=60 1.21e-01, rule 5 (A), kappa 5.1e+12, rank 988, bc 0.0e+00, delta_P 3.4e-03
+  bl    viscous lifted_sine_plain      P = 1024 ic  : stop  4 (target), eps_ref 9.93e-05 / k=60 6.62e-05, rule 6 (C), kappa 3.2e+12, rank 993, bc 4.6e-17, delta_P 4.9e-05
+  bl    viscous paper (fourier)        P = 1024 ic  : stop  4 (target), eps_ref 1.98e-04 / k=60 2.07e-04, rule 6 (C), kappa 1.1e+17, rank 936, bc 3.7e-03, delta_P 2.4e-05
+  bl    gravity lifted_sine_x(1-x)     P =   64 zero: stop 60 (K_max), eps_ref 9.06e-02 / k=60 9.06e-02, rule 6 (A), kappa 2.2e+01, rank 64, bc 0.0e+00, delta_P 1.9e-02
+  bl    gravity lifted_sine_plain      P =   64 zero: stop 60 (K_max), eps_ref 1.32e-01 / k=60 1.32e-01, rule 6 (A), kappa 2.9e+01, rank 64, bc 9.8e-17, delta_P 1.9e-02
+  bl    gravity paper (cos_fourier)    P =   64 zero: stop 43 (target), eps_ref 1.97e-01 / k=60 1.89e-01, rule 46 (A), kappa 1.0e+02, rank 64, bc 3.2e-01, delta_P 2.3e-02
+  bl    gravity lifted_sine_x(1-x)     P =   64 ic  : stop 60 (K_max), eps_ref 9.06e-02 / k=60 9.06e-02, rule 20 (A), kappa 2.2e+01, rank 64, bc 0.0e+00, delta_P 1.9e-02
+  bl    gravity lifted_sine_plain      P =   64 ic  : stop 60 (K_max), eps_ref 1.32e-01 / k=60 1.32e-01, rule 22 (A), kappa 2.9e+01, rank 64, bc 9.8e-17, delta_P 1.9e-02
+  bl    gravity paper (cos_fourier)    P =   64 ic  : stop 14 (target), eps_ref 1.61e-01 / k=60 1.89e-01, rule 16 (A), kappa 1.0e+02, rank 64, bc 3.2e-01, delta_P 2.3e-02
+  bl    gravity lifted_sine_x(1-x)     P =  256 zero: stop 60 (K_max), eps_ref 7.99e-02 / k=60 7.99e-02, rule 6 (A), kappa 8.6e+01, rank 256, bc 0.0e+00, delta_P 7.7e-03
+  bl    gravity lifted_sine_plain      P =  256 zero: stop 60 (K_max), eps_ref 6.15e-02 / k=60 6.15e-02, rule 5 (A), kappa 1.0e+02, rank 256, bc 1.5e-16, delta_P 6.8e-03
+  bl    gravity paper (cos_fourier)    P =  256 zero: stop 12 (target), eps_ref 3.16e-02 / k=60 4.39e-02, rule 15 (A), kappa 1.7e+05, rank 256, bc 7.8e-02, delta_P 5.6e-03
+  bl    gravity lifted_sine_x(1-x)     P =  256 ic  : stop 60 (K_max), eps_ref 7.99e-02 / k=60 7.99e-02, rule 14 (A), kappa 8.6e+01, rank 256, bc 0.0e+00, delta_P 7.7e-03
+  bl    gravity lifted_sine_plain      P =  256 ic  : stop 60 (K_max), eps_ref 6.15e-02 / k=60 6.15e-02, rule 16 (A), kappa 1.0e+02, rank 256, bc 1.5e-16, delta_P 6.8e-03
+  bl    gravity paper (cos_fourier)    P =  256 ic  : stop 23 (target), eps_ref 3.12e-02 / k=60 4.39e-02, rule 27 (A), kappa 1.7e+05, rank 256, bc 7.8e-02, delta_P 5.6e-03
+  bl    gravity lifted_sine_x(1-x)     P =  576 zero: stop 60 (K_max), eps_ref 8.00e-02 / k=60 8.00e-02, rule 5 (A), kappa 1.9e+02, rank 576, bc 0.0e+00, delta_P 4.7e-03
+  bl    gravity lifted_sine_plain      P =  576 zero: stop 60 (K_max), eps_ref 6.44e-02 / k=60 6.44e-02, rule 5 (A), kappa 3.0e+02, rank 576, bc 7.9e-17, delta_P 4.0e-03
+  bl    gravity paper (cos_fourier)    P =  576 zero: stop  5 (target), eps_ref 2.14e-02 / k=60 2.07e-02, rule 7 (A), kappa 1.0e+09, rank 576, bc 3.6e-02, delta_P 2.0e-03
+  bl    gravity lifted_sine_x(1-x)     P =  576 ic  : stop 60 (K_max), eps_ref 8.00e-02 / k=60 8.00e-02, rule 17 (A), kappa 1.9e+02, rank 576, bc 0.0e+00, delta_P 4.7e-03
+  bl    gravity lifted_sine_plain      P =  576 ic  : stop 60 (K_max), eps_ref 6.44e-02 / k=60 6.44e-02, rule 21 (A), kappa 3.0e+02, rank 576, bc 7.9e-17, delta_P 4.0e-03
+  bl    gravity paper (cos_fourier)    P =  576 ic  : stop 23 (target), eps_ref 1.98e-02 / k=60 2.07e-02, rule 24 (A), kappa 1.0e+09, rank 576, bc 3.6e-02, delta_P 2.0e-03
+  bl    gravity lifted_sine_x(1-x)     P = 1024 zero: stop 60 (K_max), eps_ref 6.86e-02 / k=60 6.86e-02, rule 5 (A), kappa 4.0e+02, rank 1024, bc 0.0e+00, delta_P 3.3e-03
+  bl    gravity lifted_sine_plain      P = 1024 zero: stop 60 (K_max), eps_ref 3.29e-02 / k=60 3.29e-02, rule 5 (A), kappa 5.6e+02, rank 1024, bc 7.4e-17, delta_P 2.9e-03
+  bl    gravity paper (cos_fourier)    P = 1024 zero: stop  5 (target), eps_ref 1.16e-02 / k=60 1.15e-02, rule 7 (A), kappa 1.4e+12, rank 1003, bc 4.3e-02, delta_P 9.0e-04
+  bl    gravity lifted_sine_x(1-x)     P = 1024 ic  : stop 60 (K_max), eps_ref 6.86e-02 / k=60 6.86e-02, rule 9 (A), kappa 4.0e+02, rank 1024, bc 0.0e+00, delta_P 3.3e-03
+  bl    gravity lifted_sine_plain      P = 1024 ic  : stop 60 (K_max), eps_ref 3.29e-02 / k=60 3.29e-02, rule 12 (A), kappa 5.6e+02, rank 1024, bc 7.4e-17, delta_P 2.9e-03
+  bl    gravity paper (cos_fourier)    P = 1024 ic  : stop 11 (target), eps_ref 1.22e-02 / k=60 1.15e-02, rule 14 (A), kappa 1.4e+12, rank 1003, bc 4.3e-02, delta_P 9.0e-04

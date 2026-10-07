@@ -1,0 +1,6 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20029254                 lilq-p2s2g-preflight        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:14:04     FAILED      1:0 
+20029256                    lilq-p2s2g-report     medium                             billing=24,cpu=24,mem=32G,node=1   00:03:09  COMPLETED      0:0 
+20030355                 lilq-p2s2g-preflight        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:14:52  COMPLETED      0:0 
+20030356               lilq-p2s2g-scaling-gpu        gpu billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1   00:23:18     FAILED      1:0 

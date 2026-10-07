@@ -1,0 +1,57 @@
+{
+  "bl_fd_ref_gravity_nu0.02.npz": {
+    "new_in_stage2": true
+  },
+  "bl_fd_ref_gravity_nu0.05.npz": {
+    "new_in_stage2": true
+  },
+  "bl_fd_ref_gravity_nu0.1.npz": {
+    "new_in_stage2": true
+  },
+  "bl_fd_ref_viscous_nu0.01.npz": {
+    "new_in_stage2": true
+  },
+  "bl_fd_ref_viscous_nu0.02.npz": {
+    "new_in_stage2": true
+  },
+  "bl_fd_ref_viscous_nu0.05.npz": {
+    "new_in_stage2": true
+  },
+  "bl_fd_ref_viscous_nu0.1.npz": {
+    "new_in_stage2": true
+  },
+  "bl_fd_refinement.json": {
+    "new_in_stage2": true
+  },
+  "bratu_ref_p48.npz": {
+    "max_abs_difference_to_stage1": {
+      "coefficients": 2.1043830763274738e-15,
+      "p": 0.0,
+      "x": 0.0,
+      "y": 0.0,
+      "u": 8.798517470154366e-15
+    }
+  },
+  "bratu_ref_p64.npz": {
+    "max_abs_difference_to_stage1": {
+      "coefficients": 4.857147678659928e-15,
+      "p": 0.0,
+      "x": 0.0,
+      "y": 0.0,
+      "u": 1.2712808296857111e-14
+    }
+  },
+  "bratu_reference_error.json": {
+    "differs_from_stage1": true
+  },
+  "burgers_cole_hopf.npz": {
+    "max_abs_difference_to_stage1": {
+      "x": 0.0,
+      "t": 0.0,
+      "u": 0.0
+    }
+  },
+  "burgers_cole_hopf_checks.json": {
+    "differs_from_stage1": true
+  }
+}

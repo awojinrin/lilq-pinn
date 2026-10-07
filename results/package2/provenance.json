@@ -1,0 +1,137 @@
+{
+  "stage2_commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59",
+  "stage2_lock": {
+    "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59",
+    "tree_hash": "ba7a4a34dfa37775dbfc18c4952edd3a6c951aac18cf5225b1df519d3d8326be",
+    "source": "bundle",
+    "locked_at_utc": "2026-10-06T10:23:43.469754+00:00",
+    "locked_on_host": "g003"
+  },
+  "stage1_commit": "750f0b66591715e006bc7f51cff410864c18115e",
+  "assembled_at_utc": "2026-10-07T04:09:18.842847+00:00",
+  "items": [
+    "P2_10_elasticity_manufactured",
+    "P2_14_elm_sweep",
+    "P2_15_darcy_hardbc",
+    "P2_15b_darcy_softbc_lm",
+    "P2_16_certified",
+    "P2_1_scaling",
+    "P2_2_nu_refinement",
+    "P2_3_classical",
+    "P2_4_elm_kovasznay",
+    "P2_8_lm_networks",
+    "P2_9_bases"
+  ],
+  "references": {
+    "bl_fd_ref_gravity_nu0.02.npz": {
+      "new_in_stage2": true
+    },
+    "bl_fd_ref_gravity_nu0.05.npz": {
+      "new_in_stage2": true
+    },
+    "bl_fd_ref_gravity_nu0.1.npz": {
+      "new_in_stage2": true
+    },
+    "bl_fd_ref_viscous_nu0.01.npz": {
+      "new_in_stage2": true
+    },
+    "bl_fd_ref_viscous_nu0.02.npz": {
+      "new_in_stage2": true
+    },
+    "bl_fd_ref_viscous_nu0.05.npz": {
+      "new_in_stage2": true
+    },
+    "bl_fd_ref_viscous_nu0.1.npz": {
+      "new_in_stage2": true
+    },
+    "bl_fd_refinement.json": {
+      "new_in_stage2": true
+    },
+    "bratu_ref_p48.npz": {
+      "max_abs_difference_to_stage1": {
+        "coefficients": 2.1043830763274738e-15,
+        "p": 0.0,
+        "x": 0.0,
+        "y": 0.0,
+        "u": 8.798517470154366e-15
+      }
+    },
+    "bratu_ref_p64.npz": {
+      "max_abs_difference_to_stage1": {
+        "coefficients": 4.857147678659928e-15,
+        "p": 0.0,
+        "x": 0.0,
+        "y": 0.0,
+        "u": 1.2712808296857111e-14
+      }
+    },
+    "bratu_reference_error.json": {
+      "differs_from_stage1": true
+    },
+    "burgers_cole_hopf.npz": {
+      "max_abs_difference_to_stage1": {
+        "x": 0.0,
+        "t": 0.0,
+        "u": 0.0
+      }
+    },
+    "burgers_cole_hopf_checks.json": {
+      "differs_from_stage1": true
+    }
+  },
+  "replaced": [],
+  "code_files": 64,
+  "hardware": "hardware.json and environment.txt are the CPU scaling job's (a whole Grace CPU node); every item folder holds its own job's",
+  "item_2_gpu_list": [],
+  "faster_commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59",
+  "gpu_addendum": {
+    "commit": "e5eb447d8d6ea99669abc24df93dea6de9a1aeb2",
+    "runs": [
+      "beltrami_6_cuda",
+      "beltrami_7_cuda",
+      "beltrami_8_cuda",
+      "kovasznay_N_10_cuda",
+      "kovasznay_N_20_cuda",
+      "kovasznay_N_3_cuda",
+      "kovasznay_N_5_cuda",
+      "kovasznay_P_25_cuda",
+      "kovasznay_P_30_cuda",
+      "kovasznay_P_35_cuda",
+      "kovasznay_P_40_cuda",
+      "kovasznay_P_50_cuda"
+    ],
+    "files_changed": [
+      "DECISIONS.md",
+      "experiments/p2_1_scaling.py",
+      "experiments/p2_assemble.py",
+      "lilq/cuda_libraries.py",
+      "scripts/cluster/README.md",
+      "scripts/cluster/env.sh",
+      "scripts/cluster/package2/p2s2_preflight.slurm",
+      "scripts/cluster/package2/p2s2_report.slurm",
+      "scripts/cluster/package2/stage_report.py",
+      "scripts/cluster/package2/submit_p2s2g.sh",
+      "scripts/cluster/sbatch.sh",
+      "scripts/cluster/submit_lib.sh",
+      "tests/test_cuda_libraries.py",
+      "tests/test_p2s2_submission.py",
+      "tests/test_package2_stage1_grace.py"
+    ],
+    "old_environment_runs": [
+      "kovasznay_P_25",
+      "kovasznay_P_30"
+    ],
+    "did_not_fit_from_logs": [
+      "beltrami_8_cuda"
+    ],
+    "summaries_at": "7af88554889d55b048fb2b2b736af67eb8c8f273"
+  },
+  "assembled_at": "7af88554889d55b048fb2b2b736af67eb8c8f273",
+  "files_changed_for_assembly": [
+    "DECISIONS.md",
+    "experiments/p2_1_scaling.py",
+    "experiments/p2_assemble.py",
+    "tests/test_p2s2_scaling.py",
+    "tests/test_p2s2_submission.py"
+  ]
+}

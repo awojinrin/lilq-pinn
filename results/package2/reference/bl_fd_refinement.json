@@ -1,0 +1,116 @@
+{
+  "check": "C7 (item 6)",
+  "agreement": 1e-06,
+  "passed": true,
+  "references": [
+    {
+      "case": "viscous",
+      "nu": 0.1,
+      "n_intervals": 8000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 1.470050128474941e-07
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "viscous",
+      "nu": 0.05,
+      "n_intervals": 8000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 3.1023620034961246e-07
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "viscous",
+      "nu": 0.02,
+      "n_intervals": 16000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 1.0644937080370107e-06
+        },
+        {
+          "n_intervals": 16000,
+          "rel_diff_to_previous": 2.6612261972559423e-07
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "viscous",
+      "nu": 0.01,
+      "n_intervals": 16000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 2.980315872105062e-06
+        },
+        {
+          "n_intervals": 16000,
+          "rel_diff_to_previous": 7.450492009481853e-07
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "gravity",
+      "nu": 0.05,
+      "n_intervals": 8000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 7.321315101927154e-07
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "gravity",
+      "nu": 0.02,
+      "n_intervals": 16000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 2.2966940677914466e-06
+        },
+        {
+          "n_intervals": 16000,
+          "rel_diff_to_previous": 5.741637114478393e-07
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+}

@@ -1,0 +1,79 @@
+{
+  "cpu": {
+    "model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+    "machine": "AMD64",
+    "logical_cores": 24,
+    "usable_cores": 24,
+    "hostname": "GBENGA",
+    "system": "Windows 11"
+  },
+  "gpu": {
+    "available": true,
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "driver_version": "596.36",
+        "memory_total": "16303 MiB"
+      }
+    ],
+    "cuda_available_to_torch": true,
+    "torch_cuda_build_version": "13.0",
+    "cudnn_version": 91200
+  },
+  "scheduler": {
+    "slurm": false
+  },
+  "blas_thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "threads": {
+    "torch_num_threads": 24,
+    "torch_num_interop_threads": 24,
+    "threadpools": [
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "version": "0.3.31.dev",
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\numpy.libs\\libscipy_openblas64_-74a408729250596b0973e69fdd954eea.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 24,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiomp5md.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 1,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiompstubs5md.dll"
+      },
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "version": "0.3.30",
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\scipy.libs\\libscipy_openblas-64eda39e79589aedb16f58e5547eb599.dll"
+      }
+    ]
+  },
+  "packages": {
+    "python": "3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)]",
+    "numpy": "2.4.2",
+    "scipy": "1.17.0",
+    "torch": "2.10.0+cu130"
+  },
+  "git": {
+    "available": true,
+    "source": "git",
+    "commit": "738b8797358e7c3d0505198fca80fa8b83ec5a7e",
+    "branch": "v3-dev",
+    "dirty": true,
+    "diff": "diff --git a/experiments/p2_10_elasticity_manufactured.py b/experiments/p2_10_elasticity_manufactured.py\nindex 7d95c17..2dcada6 100644\n--- a/experiments/p2_10_elasticity_manufactured.py\n+++ b/experiments/p2_10_elasticity_manufactured.py\n@@ -2,18 +2,31 @@\n Package 2, item 8 (P2-10): a manufactured elasticity solution outside the span of the basis\n ==========================================================================================\n \n-The advisor's instructions of 4 October 2026, Section 11. The paper's\n-elasticity case (Section 6.5) has its exact solution in the span of the\n-basis, so it only checks assembly and solve. This runs the same operator,\n-domain, bases, boundary-condition types and P (50 .. 1,250) with\n+The advisor's instructions of 4 October 2026, Section 11, and his reply of\n+5 October (Section 3.2). The paper's elasticity case (Section 6.5) has its\n+exact solution in the span of the basis, so it only checks assembly and\n+solve. This runs the same operator, domain, bases, boundary-condition types\n+and P (50 .. 1,250) with two manufactured solutions outside the span of both\n+bases (delta_P > 0), one solve per P each (``solve_elasticity`` with the\n+manufactured physics; the paper's case is unchanged, bit for bit):\n \n-    u_x = y (1 - y) e^{xy} / 10,    u_y = x (1 - x) y e^{x+y} / 20\n+- ``compatible`` (the reply's replacement; the result):\n \n-(``problems.elasticity.ManufacturedElasticityPhysics``), which lies outside\n-the span of both bases, so delta_P > 0. One solve per P (``solve_elasticity``\n-with the manufactured physics; the paper's case is unchanged, bit for bit).\n+      u_x = e^{cos(pi x)} e^{cos(2 pi y)} sin(pi y) / 10,\n+      u_y = sin(pi x) e^{cos(2 pi x)} y e^y / 20\n \n-Per P:\n+  (``CompatibleManufacturedElasticityPhysics``). It matches the bases'\n+  symmetries and meets every boundary condition with the paper's data types\n+  (the lateral faces traction-free), so delta_P falls geometrically with P\n+  and error / delta_P is the quantity of interest.\n+- ``specified`` (the instructions' solution, kept as a negative result):\n+\n+      u_x = y (1 - y) e^{xy} / 10,    u_y = x (1 - x) y e^{x+y} / 20\n+\n+  (``ManufacturedElasticityPhysics``). It breaks the symmetry built into the\n+  bases (below), and its errors stall while delta_P falls.\n+\n+Per solution and P:\n - the relative L2 errors of u_x and u_y against the exact solution on the\n   200 x 200 test grid, and the stresses';\n - delta_P, the relative discrete L2 distance of the exact solution to the\n@@ -24,16 +37,17 @@ Per P:\n \n Also per P, ``lateral_sxx_trial_max`` and ``lateral_sxx_required_max``: the\n largest |sigma_xx| any trial function can have on the lateral faces, and the\n-largest the manufactured data asks for. With the paper's bases (u_x: cosine\n+largest the manufactured data asks for (zero for ``compatible``). With the paper's bases (u_x: cosine\n in x; u_y: sine in x), every trial function has d(u_x)/dx = 0 and\n d(u_y)/dy = 0 on x = 0 and 1, so sigma_xx is zero there for every\n coefficient vector: the lateral traction rows are zero rows, and the\n-manufactured (non-zero) traction cannot be met. The same parity makes the\n+``specified`` (non-zero) traction cannot be met. The same parity makes the\n second derivatives the equations are collocated on unresolvable near the\n faces (DECISIONS.md, Package 2, Stage 2, batch 2a).\n \n-Writes ``P2_10_elasticity_manufactured/rows.csv`` and, per P, ``P<P>/``\n-with ``run.json`` and ``iterations.csv``.\n+Writes ``P2_10_elasticity_manufactured/rows.csv`` (column ``solution``) and,\n+per solution and P, ``<solution>/P<P>/`` with ``run.json`` and\n+``iterations.csv``.\n \n Usage::\n \n@@ -56,7 +70,10 @@ import numpy as np\n from experiments.run_elasticity import DEFAULT_N_VALUES, K_RATIO\n from lilq.iteration_log import IterationLogger\n from lilq.provenance import save_provenance\n-from problems.elasticity import TEST_GRID, ElasticityConfig, ManufacturedElasticityPhysics, solve_elasticity\n+from problems.elasticity import (TEST_GRID, CompatibleManufacturedElasticityPhysics, ElasticityConfig,\n+                                 ManufacturedElasticityPhysics, solve_elasticity)\n+\n+SOLUTIONS = {'compatible': CompatibleManufacturedElasticityPhysics, 'specified': ManufacturedElasticityPhysics}\n \n \n def best_approximation(basis, exact, xs, ys):\n@@ -83,10 +100,10 @@ def lateral_traction(basis_u, basis_v, physics, n=101):\n     return trial, required\n \n \n-def one(N, out_dir):\n+def one(N, out_dir, solution='compatible'):\n     config = ElasticityConfig(N_x=N, N_y=N, k_ratio=K_RATIO)\n-    physics = ManufacturedElasticityPhysics(config)\n-    run_dir = Path(out_dir) / f'P{2 * N * N}'\n+    physics = SOLUTIONS[solution](config)\n+    run_dir = Path(out_dir) / solution / f'P{2 * N * N}'\n     run_dir.mkdir(parents=True, exist_ok=True)\n     logger = IterationLogger()\n     r = solve_elasticity(config, verbose=False, iteration_logger=logger, run_json_path=run_dir / 'run.json',\n@@ -100,7 +117,7 @@ def one(N, out_dir):\n     d_both = float(np.hypot(du, dv) / np.hypot(nu, nv))\n     row = logger.rows[0]\n     trial_sxx, required_sxx = lateral_traction(r['basis_u'], r['basis_v'], physics)\n-    return {'N': N, 'P': r['n_params'], 'P_u': r['basis_u'].n_basis, 'P_v': r['basis_v'].n_basis,\n+    return {'solution': solution, 'N': N, 'P': r['n_params'], 'P_u': r['basis_u'].n_basis, 'P_v': r['basis_v'].n_basis,\n             'eps_ux': eu, 'eps_uy': ev, 'eps_both': e_both,\n             'delta_ux': du / nu, 'delta_uy': dv / nv, 'delta_both': d_both,\n             'ratio_ux': eu / (du / nu), 'ratio_uy': ev / (dv / nv), 'ratio_both': e_both / d_both,\n@@ -110,9 +127,9 @@ def one(N, out_dir):\n             'lateral_sxx_trial_max': trial_sxx, 'lateral_sxx_required_max': required_sxx}\n \n \n-def run(out_root, sizes=DEFAULT_N_VALUES):\n+def run(out_root, sizes=DEFAULT_N_VALUES, solutions=tuple(SOLUTIONS)):\n     out = Path(out_root) / 'P2_10_elasticity_manufactured'\n-    rows = [one(N, out) for N in sizes]\n+    rows = [one(N, out, solution) for solution in solutions for N in sizes]\n     with open(out / 'rows.csv', 'w', newline='') as f:\n         w = csv.DictWriter(f, fieldnames=list(rows[0]))\n         w.writeheader()\n@@ -124,9 +141,10 @@ def run(out_root, sizes=DEFAULT_N_VALUES):\n def main(argv=None):\n     ap = argparse.ArgumentParser(description=\"Package 2, item 8: the manufactured elasticity solution.\")\n     ap.add_argument('--out', required=True, help='the stage root')\n+    ap.add_argument('--solutions', nargs='+', choices=list(SOLUTIONS), default=list(SOLUTIONS))\n     args = ap.parse_args(argv)\n-    for r in run(args.out):\n-        print(f\"P = {r['P']:5d}: error u_x {r['eps_ux']:.2e} u_y {r['eps_uy']:.2e} | delta_P {r['delta_ux']:.2e} \"\n+    for r in run(args.out, solutions=args.solutions):\n+        print(f\"{r['solution']:10s} P = {r['P']:5d}: error u_x {r['eps_ux']:.2e} u_y {r['eps_uy']:.2e} | delta_P {r['delta_ux']:.2e} \"\n               f\"{r['delta_uy']:.2e} | ratio {r['ratio_ux']:.2f} {r['ratio_uy']:.2f} | kappa {r['kappa']:.1e} \"\n               f\"rank {r['rank_svd']} of {r['P']}\")\n \ndiff --git a/problems/elasticity.py b/problems/elasticity.py\nindex f330cd6..e8ec47a 100644\n--- a/problems/elasticity.py\n+++ b/problems/elasticity.py\n@@ -187,6 +187,50 @@ class ManufacturedElasticityPhysics(ElasticityPhysics):\n         return self.exact_sxx(x, y)\n \n \n+def _exp_cos(t, k):\n+    \"\"\"e^{cos(k pi t)} and its first two derivatives.\"\"\"\n+    e, s, c = np.exp(np.cos(k * pi * t)), np.sin(k * pi * t), np.cos(k * pi * t)\n+    return e, -k * pi * s * e, (k * pi) ** 2 * (s * s - c) * e\n+\n+\n+class CompatibleManufacturedElasticityPhysics(ManufacturedElasticityPhysics):\n+    \"\"\"Package 2, item 8 (P2-10), the advisor's replacement of 5 October 2026:\n+    a manufactured solution outside the span of both bases that matches their\n+    symmetries,\n+\n+        u_x = e^{cos(pi x)} e^{cos(2 pi y)} sin(pi y) / 10,\n+        u_y = sin(pi x) e^{cos(2 pi x)} y e^y / 20.\n+\n+    u_x is even about x = 0 and 1 and odd about y = 0 and 1 (the cosine-sine\n+    basis of u_x); u_y is odd about x = 0 and 1 (the sine-Chebyshev basis of\n+    u_y). Every boundary condition of Section 6.5 holds with the paper's data\n+    types: u_x = u_y = 0 at the bottom, u_x = 0 at the top, u_y = 0 and\n+    sigma_xx = 0 on the lateral faces (d(u_x)/dx and d(u_y)/dy both vanish\n+    there). So the lateral traction datum is the paper's zero, and only the\n+    body force and the top traction sigma_yy come from the solution.\"\"\"\n+\n+    @staticmethod\n+    def _u(x, y):\n+        a, a1, a2 = _exp_cos(x, 1)                         # e^{cos(pi x)}\n+        e, e1, e2 = _exp_cos(y, 2)                         # e^{cos(2 pi y)}\n+        s, s1, s2 = np.sin(pi * y), pi * np.cos(pi * y), -pi * pi * np.sin(pi * y)\n+        b, b1, b2 = e * s, e1 * s + e * s1, e2 * s + 2 * e1 * s1 + e * s2\n+        return {'': a * b, 'x': a1 * b, 'xx': a2 * b, 'y': a * b1, 'yy': a * b2, 'xy': a1 * b1}\n+\n+    @staticmethod\n+    def _v(x, y):\n+        f, f1, f2 = _exp_cos(x, 2)                         # e^{cos(2 pi x)}\n+        t, t1, t2 = np.sin(pi * x), pi * np.cos(pi * x), -pi * pi * np.sin(pi * x)\n+        g, g1, g2 = t * f, t1 * f + t * f1, t2 * f + 2 * t1 * f1 + t * f2\n+        ey = np.exp(y)\n+        h, h1, h2 = y * ey, (1 + y) * ey, (2 + y) * ey\n+        return {'': g * h, 'x': g1 * h, 'xx': g2 * h, 'y': g * h1, 'yy': g * h2, 'xy': g1 * h1}\n+\n+    def traction_lateral_sxx(self, x, y):\n+        \"\"\"Traction-free, as in the paper: the solution's sigma_xx is zero there.\"\"\"\n+        return np.zeros_like(y)\n+\n+\n # \u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\n # Collocation\n # \u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac"
+  }
+}

@@ -1,0 +1,16 @@
+sin_cheb 50 4.908480300797699e-09 4.90848030080142e-09
+sin_fourier 50 4.908537945925322e-09 4.908537945979259e-09
+augsin_cheb 50 3.141902127844204e-08 3.141902127844204e-08
+fourier_cheb 50 1.2743398056354364e-05 1.2743398056305814e-05
+fourier_fourier 50 1.2743509653472485e-05 1.2743705534709308e-05
+cheb_cheb 50 7.822267135818191e-05 7.822267135818191e-05
+elm_default 50 0.00044336796877658083 0.00046586923442821083
+elm 50 0.04943679004416466 0.04758881404918395
+cos_cheb 50 0.1714690944372576 0.1714690944372576
+sin_sin 50 4.984025559105433 4.984025559105433
+'created' timestamp seems very low; regarding as unix timestamp
+'modified' timestamp seems very low; regarding as unix timestamp
+'created' timestamp seems very low; regarding as unix timestamp
+'modified' timestamp seems very low; regarding as unix timestamp
+'created' timestamp seems very low; regarding as unix timestamp
+'modified' timestamp seems very low; regarding as unix timestamp

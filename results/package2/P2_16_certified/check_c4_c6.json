@@ -1,0 +1,226 @@
+{
+  "C4_cc_exactness": {
+    "passed": true,
+    "runs": [
+      {
+        "benchmark": "bratu",
+        "P": 25,
+        "NP": 5,
+        "M": 11,
+        "integral_degree_M_minus_1_err_over_L2_norm": 3.1109115973238627e-16,
+        "norm_degree_half_rel_err": 8.60184789421082e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 25,
+        "NP": 10,
+        "M": 15,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.5115817173627137e-16,
+        "norm_degree_half_rel_err": 3.931468345717044e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 25,
+        "NP": 20,
+        "M": 21,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.3129178353601287e-17,
+        "norm_degree_half_rel_err": 2.351560717312026e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 100,
+        "NP": 5,
+        "M": 21,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.3129178353601287e-17,
+        "norm_degree_half_rel_err": 2.351560717312026e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 100,
+        "NP": 10,
+        "M": 30,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.1814044143719498e-15,
+        "norm_degree_half_rel_err": 4.8980908007487455e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 100,
+        "NP": 20,
+        "M": 42,
+        "integral_degree_M_minus_1_err_over_L2_norm": 2.0431776002694566e-15,
+        "norm_degree_half_rel_err": 8.601493601480646e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 225,
+        "NP": 5,
+        "M": 31,
+        "integral_degree_M_minus_1_err_over_L2_norm": 8.893792575499465e-17,
+        "norm_degree_half_rel_err": 1.616120851531121e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 225,
+        "NP": 10,
+        "M": 44,
+        "integral_degree_M_minus_1_err_over_L2_norm": 2.8097976815792085e-15,
+        "norm_degree_half_rel_err": 8.736981542548031e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "bratu",
+        "P": 225,
+        "NP": 20,
+        "M": 62,
+        "integral_degree_M_minus_1_err_over_L2_norm": 2.1235598541108723e-15,
+        "norm_degree_half_rel_err": 2.5188569271660583e-13,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 25,
+        "NP": 5,
+        "M": 11,
+        "integral_degree_M_minus_1_err_over_L2_norm": 3.1109115973238627e-16,
+        "norm_degree_half_rel_err": 8.60184789421082e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 25,
+        "NP": 10,
+        "M": 15,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.5115817173627137e-16,
+        "norm_degree_half_rel_err": 3.931468345717044e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 25,
+        "NP": 20,
+        "M": 22,
+        "integral_degree_M_minus_1_err_over_L2_norm": 4.710812767608579e-16,
+        "norm_degree_half_rel_err": 2.1918015243069758e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 100,
+        "NP": 5,
+        "M": 22,
+        "integral_degree_M_minus_1_err_over_L2_norm": 4.710812767608579e-16,
+        "norm_degree_half_rel_err": 2.1918015243069758e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 100,
+        "NP": 10,
+        "M": 30,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.1814044143719498e-15,
+        "norm_degree_half_rel_err": 4.8980908007487455e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 100,
+        "NP": 20,
+        "M": 43,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.173882845714194e-15,
+        "norm_degree_half_rel_err": 7.68566767982465e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 225,
+        "NP": 5,
+        "M": 32,
+        "integral_degree_M_minus_1_err_over_L2_norm": 2.698950505767958e-15,
+        "norm_degree_half_rel_err": 4.5933892437427164e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 225,
+        "NP": 10,
+        "M": 45,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.4179723219135446e-16,
+        "norm_degree_half_rel_err": 3.5488004720047716e-15,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 225,
+        "NP": 20,
+        "M": 64,
+        "integral_degree_M_minus_1_err_over_L2_norm": 3.5261780300708054e-15,
+        "norm_degree_half_rel_err": 2.416570912167694e-13,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 400,
+        "NP": 5,
+        "M": 43,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.173882845714194e-15,
+        "norm_degree_half_rel_err": 7.68566767982465e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 400,
+        "NP": 10,
+        "M": 60,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.5186441921174671e-15,
+        "norm_degree_half_rel_err": 4.9056303387272194e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 400,
+        "NP": 20,
+        "M": 85,
+        "integral_degree_M_minus_1_err_over_L2_norm": 7.746860828714584e-16,
+        "norm_degree_half_rel_err": 2.216619586852948e-13,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 625,
+        "NP": 5,
+        "M": 54,
+        "integral_degree_M_minus_1_err_over_L2_norm": 6.89452786757123e-16,
+        "norm_degree_half_rel_err": 6.134706663587598e-14,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 625,
+        "NP": 10,
+        "M": 75,
+        "integral_degree_M_minus_1_err_over_L2_norm": 8.259654734267954e-16,
+        "norm_degree_half_rel_err": 2.0225406198327967e-13,
+        "passed": true
+      },
+      {
+        "benchmark": "burgers",
+        "P": 625,
+        "NP": 20,
+        "M": 107,
+        "integral_degree_M_minus_1_err_over_L2_norm": 1.840878127354362e-15,
+        "norm_degree_half_rel_err": 4.3870625967868244e-13,
+        "passed": true
+      }
+    ],
+    "note": "CC on M points integrates degree <= M - 1 exactly; squared norms are exact for degree <= floor((M - 1)/2) per direction (a norm of degree M - 1 needs degree 2M - 2)"
+  },
+  "C6_computable_only_when_dim_below_N_interior": true,
+  "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+}

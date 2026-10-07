@@ -1,0 +1,37 @@
+{
+  "references": [
+    {
+      "case": "viscous",
+      "nu": 0.1,
+      "n_intervals": 8000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 1.470050122785037e-07
+        }
+      ],
+      "passed": true
+    },
+    {
+      "case": "gravity",
+      "nu": 0.1,
+      "n_intervals": 8000,
+      "steps": [
+        {
+          "n_intervals": 4000,
+          "rel_diff_to_previous": null
+        },
+        {
+          "n_intervals": 8000,
+          "rel_diff_to_previous": 3.367010934607034e-07
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "commit": "6cc940f4e5a91e94319d175c8ba7118bdba0838d"
+}

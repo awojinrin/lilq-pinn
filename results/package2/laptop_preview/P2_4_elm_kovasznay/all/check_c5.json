@@ -1,0 +1,21 @@
+{
+  "check": "C5",
+  "basis": "Chebyshev, P = 300",
+  "tolerance": 1e-08,
+  "variants": {
+    "normal_shifted": {
+      "rel_difference_k1": 3.6696142340706183e-13,
+      "shift_or_rank": 1e-16,
+      "kappa_AtA": 107227.88498858766,
+      "passed": true
+    },
+    "normal_eigh": {
+      "rel_difference_k1": 5.185193594662877e-13,
+      "shift_or_rank": 300,
+      "kappa_AtA": 107227.88498858766,
+      "passed": true
+    }
+  },
+  "passed": true,
+  "commit": "2eaa5db657a1cdb72b1dd0bd04456c7f765d07aa"
+}

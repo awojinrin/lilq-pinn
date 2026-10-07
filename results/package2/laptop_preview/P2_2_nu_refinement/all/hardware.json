@@ -1,0 +1,79 @@
+{
+  "cpu": {
+    "model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+    "machine": "AMD64",
+    "logical_cores": 24,
+    "usable_cores": 24,
+    "hostname": "GBENGA",
+    "system": "Windows 11"
+  },
+  "gpu": {
+    "available": true,
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "driver_version": "596.36",
+        "memory_total": "16303 MiB"
+      }
+    ],
+    "cuda_available_to_torch": true,
+    "torch_cuda_build_version": "13.0",
+    "cudnn_version": 91200
+  },
+  "scheduler": {
+    "slurm": false
+  },
+  "blas_thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "threads": {
+    "torch_num_threads": 24,
+    "torch_num_interop_threads": 24,
+    "threadpools": [
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "version": "0.3.31.dev",
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\numpy.libs\\libscipy_openblas64_-74a408729250596b0973e69fdd954eea.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 24,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiomp5md.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 1,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiompstubs5md.dll"
+      },
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "version": "0.3.30",
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\scipy.libs\\libscipy_openblas-64eda39e79589aedb16f58e5547eb599.dll"
+      }
+    ]
+  },
+  "packages": {
+    "python": "3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)]",
+    "numpy": "2.4.2",
+    "scipy": "1.17.0",
+    "torch": "2.10.0+cu130"
+  },
+  "git": {
+    "available": true,
+    "source": "git",
+    "commit": "99f8881be041ffa3579d03d794a567ba529f0ac4",
+    "branch": "v3-dev",
+    "dirty": true,
+    "diff": "diff --git a/problems/buckley_leverett.py b/problems/buckley_leverett.py\nindex 688a9e9..f97f47a 100644\n--- a/problems/buckley_leverett.py\n+++ b/problems/buckley_leverett.py\n@@ -584,9 +584,20 @@ def make_test_error_fn(basis, config: BLConfig):\n     return test_errors\n \n \n+def _with_eps_ref(test_error_fn, basis, reference_npz):\n+    \"\"\"The log's test errors, plus ``eps_ref`` against the reference in\n+    ``reference_npz`` when one is given (as ``problems.bratu._with_eps_ref``).\"\"\"\n+    if reference_npz is None:\n+        return test_error_fn\n+    from lilq.references import make_eps_ref_fn\n+    eps_ref = make_eps_ref_fn(basis, reference_npz)\n+    return lambda beta: {**test_error_fn(beta), **eps_ref(beta)}\n+\n+\n def run_lil_q(config: BLConfig, opt: BLOptConfig,\n               verbose=True, diagnostics_callback=None,\n-              iteration_logger=None, run_json_path=None, diagnostics=True):\n+              iteration_logger=None, run_json_path=None, diagnostics=True,\n+              reference_npz=None):\n     \"\"\"Run LiL-Q for Buckley-Leverett (viscous or gravity, transparently --\n     ``physics.flux``/``flux_derivative`` handle both via ``config.N_g``).\n \n@@ -605,6 +616,12 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,\n         variants: gravity starts from zero, viscous (no gravity) from the\n         least-squares fit of ``exp(-10*x)`` -- the spec's own callout\n         (\"the fitted initial profile for viscous Buckley-Leverett\").\n+    reference_npz : str or Path, optional\n+        Package 2 (Section 9.1): a reference saturation (``x, t, u`` on the\n+        test grid, ``lilq.references`` format); the log then also carries\n+        ``eps_ref`` against it, beside ``eps_u`` against\n+        :func:`reference_solution`. Diagnostics only: the solve does not see\n+        it. Omitted, nothing changes.\n     \"\"\"\n     if run_json_path is not None and iteration_logger is None:\n         raise ValueError(\"run_json_path requires iteration_logger (for first_stall_iteration).\")\n@@ -664,7 +681,7 @@ def run_lil_q(config: BLConfig, opt: BLOptConfig,\n             compute_residual_vector_fn=residual_vector_fn,\n             n_interior_rows=n_pde,\n             interior_weight=np.sqrt(opt.lambda_pde / n_pde),\n-            test_error_fn=make_test_error_fn(basis, config),\n+            test_error_fn=_with_eps_ref(make_test_error_fn(basis, config), basis, reference_npz),\n         )\n \n     coefficients, metrics, summary = solve_lil_q("
+  }
+}

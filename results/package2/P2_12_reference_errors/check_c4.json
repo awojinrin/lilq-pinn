@@ -1,0 +1,87 @@
+{
+  "check": "C4 (reruns)",
+  "tolerance": 1e-10,
+  "rows": [
+    {
+      "run": "bratu_P25_cpu_paper",
+      "rows_rerun": 3,
+      "rows_package1": 3,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 0.1482705782956781
+    },
+    {
+      "run": "bratu_P100_cpu_paper",
+      "rows_rerun": 4,
+      "rows_package1": 4,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 0.00035434596167485834
+    },
+    {
+      "run": "bratu_P225_cpu_paper",
+      "rows_rerun": 5,
+      "rows_package1": 5,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 5.82675880736562e-05
+    },
+    {
+      "run": "burgers_P25_cpu_paper",
+      "rows_rerun": 3,
+      "rows_package1": 3,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 0.18214860387748505
+    },
+    {
+      "run": "burgers_P100_cpu_paper",
+      "rows_rerun": 4,
+      "rows_package1": 4,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 0.00568880369823628
+    },
+    {
+      "run": "burgers_P225_cpu_paper",
+      "rows_rerun": 4,
+      "rows_package1": 4,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 0.0021704877510995094
+    },
+    {
+      "run": "burgers_P400_cpu_paper",
+      "rows_rerun": 5,
+      "rows_package1": 5,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 0.00019327641145752835
+    },
+    {
+      "run": "burgers_P625_cpu_paper",
+      "rows_rerun": 5,
+      "rows_package1": 5,
+      "same_iterations": true,
+      "max_rel_diff_norm_R_h": 0.0,
+      "within_1e-10": true,
+      "eps_ref_logged": true,
+      "eps_ref_final": 4.5595231797343364e-05
+    }
+  ],
+  "passed": true
+}

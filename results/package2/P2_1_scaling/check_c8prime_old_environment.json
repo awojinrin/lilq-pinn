@@ -1,0 +1,23 @@
+{
+  "check": "C8' (item 7)",
+  "error_tolerance": 1e-10,
+  "time_tolerance": 0.15,
+  "points": [
+    {
+      "point": "kovasznay_P1875_cuda_paper",
+      "device": "cuda",
+      "errors_rel_diff": {
+        "eps_u": 0.0,
+        "eps_v": 0.0,
+        "eps_p": 0.0,
+        "eps_p_meanfree": 0.0
+      },
+      "errors_pass": true,
+      "iterations": 6,
+      "iterations_package1": 6,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "commit": "7af88554889d55b048fb2b2b736af67eb8c8f273"
+}

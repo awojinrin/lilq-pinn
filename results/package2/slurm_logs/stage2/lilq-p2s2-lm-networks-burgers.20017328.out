@@ -1,0 +1,18 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017328 on c675: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  burgers P =   25 seed 0: target at 51 its, 0.8 s, loss 5.369e-02, eps_ref 4.483e-01, C3 1.1e-16
+  burgers P =   25 seed 1: target at 22 its, 0.3 s, loss 5.659e-02, eps_ref 2.329e-01, C3 1.1e-16
+  burgers P =   25 seed 2: target at 162 its, 2.5 s, loss 5.979e-02, eps_ref 1.351e+00, C3 1.1e-16
+  burgers P =  100 seed 0: target at 41 its, 0.9 s, loss 9.708e-04, eps_ref 8.407e-03, C3 1.6e-16
+  burgers P =  100 seed 1: target at 26 its, 0.6 s, loss 8.809e-04, eps_ref 5.409e-03, C3 1.6e-16
+  burgers P =  100 seed 2: target at 34 its, 0.7 s, loss 9.337e-04, eps_ref 8.024e-03, C3 3.2e-16
+  burgers P =  225 seed 0: target at 52 its, 1.9 s, loss 1.966e-05, eps_ref 1.023e-03, C3 1.7e-16
+  burgers P =  225 seed 1: target at 65 its, 2.2 s, loss 1.968e-05, eps_ref 7.730e-04, C3 1.7e-16
+  burgers P =  225 seed 2: target at 71 its, 2.5 s, loss 1.640e-05, eps_ref 6.955e-04, C3 1.7e-16
+  burgers P =  400 seed 0: target at 180 its, 9.0 s, loss 9.904e-08, eps_ref 3.675e-05, C3 1.8e-16
+  burgers P =  400 seed 1: iteration_cap at 2000 its, 101.7 s, loss 1.570e-06, eps_ref 1.617e-04, C3 0.0e+00
+  burgers P =  400 seed 2: target at 413 its, 21.6 s, loss 9.971e-08, eps_ref 4.334e-05, C3 0.0e+00
+  burgers P =  625 seed 0: target at 846 its, 59.8 s, loss 4.998e-09, eps_ref 9.266e-06, C3 1.8e-16
+  burgers P =  625 seed 1: target at 1900 its, 135.8 s, loss 4.995e-09, eps_ref 1.638e-05, C3 3.8e-16
+  burgers P =  625 seed 2: target at 420 its, 29.6 s, loss 4.978e-09, eps_ref 1.915e-05, C3 3.6e-16

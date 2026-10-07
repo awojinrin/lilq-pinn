@@ -1,0 +1,3 @@
+series,device,against,points,exponent_total_time,exponent_solve_time,exponent_assembly_time
+beltrami,cpu,P,2,3.568524730591643,3.569265607377974,3.6196112548744135
+beltrami,cuda,P,2,3.5016036112795033,3.4342869674235494,3.780292340315907

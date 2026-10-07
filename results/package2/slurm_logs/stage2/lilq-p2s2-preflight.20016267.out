@@ -1,0 +1,53 @@
+provenance lock OK: commit 97ec18487a49, tree e5ff4d08b50f
+job 20016267 on g077: 8 threads, 8 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+torch 2.10.0+cu126 OK
+threadpoolctl 3.5.0 OK
+numpy 1.26.4 scipy 1.13.1 torch 2.10.0+cu126 GPU NVIDIA A100-PCIE-40GB
+.................................................s...................... [ 10%]
+........................................................................ [ 20%]
+......................................................s.....s........... [ 31%]
+........................................................................ [ 41%]
+........................................................................ [ 52%]
+........s...............................F............................... [ 62%]
+..............................s.s................s..s................... [ 73%]
+........................................................................ [ 83%]
+........................................................................ [ 93%]
+..........................................                               [100%]
+=================================== FAILURES ===================================
+_________________________ test_faster_submission_chain _________________________
+
+tmp_path = PosixPath('/tmp/job.20016267/pytest-of-<user>/pytest-0/test_faster_submission_chain0')
+
+    @pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+    def test_faster_submission_chain(tmp_path):
+        out = subprocess.run(['bash', str(P2 / 'submit_p2s2_faster.sh')], env=_fake_sbatch(tmp_path, False),
+                             capture_output=True, text=True)
+        assert out.returncode == 0, out.stdout + out.stderr
+        log = (tmp_path / 'log').read_text().splitlines()
+        assert len(log) == 3 and all('--partition=gpu' in l for l in log[:2])
+        assert 'p2s2_preflight' in log[0] and 'p2s2_darcy_hardbc' in log[1] and '--dependency=afterok:101' in log[1]
+        assert 'p2s2_report' in log[2] and '--dependency=afterany:102' in log[2]
+>       assert '--partition=cpu' in log[2]                            # FASTER's CPU partition (Grace's is medium)
+E       AssertionError: assert '--partition=cpu' in '--account=000000000000 --export=ALL --kill-on-invalid-dep=yes --partition=medium --ntasks=1 --cpus-per-task=24 --mem=32G --parsable --dependency=afterany:102 scripts/cluster/package2/p2s2_report.slurm'
+
+tests/test_p2s2_darcy_hardbc.py:141: AssertionError
+=============================== warnings summary ===============================
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[bratu]
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[burgers]
+  $SCRATCH/lilq-run/lilq-pinn/experiments/p2_8_lm_networks.py:643: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+    axes[0, 0].legend(fontsize=7)
+
+tests/test_saved_models.py::test_f1_and_f2_models_reload
+  $SCRATCH/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    value = float(loss)
+
+tests/test_saved_models.py: 18 warnings
+  $SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_p2s2_darcy_hardbc.py::test_faster_submission_chain - Assert...
+1 failed, 681 passed, 8 skipped, 21 warnings in 402.66s (0:06:42)

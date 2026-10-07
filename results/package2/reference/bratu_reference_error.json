@@ -1,0 +1,8 @@
+{
+  "reference": "SQ-CGL p = 48",
+  "check": "SQ-CGL p = 64",
+  "test_grid": "201 x 201 on [0,1]^2",
+  "reference_error": 3.606172759335028e-09,
+  "max_abs_difference": 2.219725272253198e-08,
+  "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+}

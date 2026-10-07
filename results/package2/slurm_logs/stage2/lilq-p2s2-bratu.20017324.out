@@ -1,0 +1,33 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017324 on c666: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  SQ-CGL           p =  6: 6 iterations, plateau 3, error 3.99e-03, 0.0004 s
+  SQ-CGL           p =  7: 6 iterations, plateau 3, error 4.58e-04, 0.0004 s
+  SQ-CGL           p =  8: 6 iterations, plateau 4, error 4.17e-04, 0.0005 s
+  SQ-CGL           p = 10: 6 iterations, plateau 4, error 9.87e-05, 0.0009 s
+  SQ-CGL           p = 12: 6 iterations, plateau 4, error 3.25e-05, 0.0045 s
+  SQ-CGL           p = 14: 6 iterations, plateau 4, error 1.28e-05, 0.0065 s
+  SQ-CGL           p = 16: 6 iterations, plateau 4, error 5.73e-06, 0.0101 s
+  SQ-CGL           p = 17: 6 iterations, plateau 4, error 2.39e-06, 0.0139 s
+  SQ-CGL           p = 18: 6 iterations, plateau 4, error 2.83e-06, 0.0175 s
+  SQ-CGL           p = 20: 6 iterations, plateau 4, error 1.51e-06, 0.0228 s
+  SQ-CGL           p = 22: 6 iterations, plateau 4, error 8.52e-07, 0.0311 s
+  SQ-CGL           p = 24: 6 iterations, plateau 4, error 5.05e-07, 0.0440 s
+  LS-hard-CGL-1.5  p =  5: 6 iterations, plateau 4, error 4.26e-04, 0.0005 s
+  LS-hard-CGL-1.5  p =  6: 6 iterations, plateau 4, error 4.42e-04, 0.0007 s
+  LS-hard-CGL-1.5  p =  8: 6 iterations, plateau 4, error 8.80e-05, 0.0014 s
+  LS-hard-CGL-1.5  p = 10: 6 iterations, plateau 4, error 2.84e-05, 0.0131 s
+  LS-hard-CGL-1.5  p = 12: 6 iterations, plateau 4, error 1.09e-05, 0.0423 s
+  LS-hard-CGL-1.5  p = 14: 6 iterations, plateau 4, error 4.81e-06, 0.0626 s
+  LS-hard-CGL-1.5  p = 15: 6 iterations, plateau 4, error 2.31e-06, 0.0721 s
+  LS-hard-CGL-1.5  p = 16: 6 iterations, plateau 4, error 2.33e-06, 0.0850 s
+  LS-hard-CGL-1.5  p = 18: 6 iterations, plateau 4, error 1.22e-06, 0.1283 s
+  LS-hard-CGL-1.5  p = 20: 6 iterations, plateau 4, error 6.80e-07, 0.1847 s
+  LS-hard-CGL-1.5  p = 22: 6 iterations, plateau 4, error 3.97e-07, 0.2658 s
+  LS-hard-CGL-1.5  p = 24: 6 iterations, plateau 4, error 2.43e-07, 0.3836 s
+  LS-weakMS-CGL-3  p =  5: 13 iterations, plateau 2, error 1.12e-01, 0.0012 s
+  LS-weakMS-CGL-3  p = 10: 6 iterations, plateau 3, error 9.59e-04, 0.0244 s
+  LS-weakMS-CGL-3  p = 15: 6 iterations, plateau 4, error 4.88e-05, 0.1108 s
+  LiL-Q bratu_P25_cpu_paper: 0.0008 s, package1 0.0007287915796041489, within 15%: True
+  LiL-Q bratu_P100_cpu_paper: 0.0316 s, package1 0.03190677799284458, within 15%: True
+  LiL-Q bratu_P225_cpu_paper: 0.1994 s, package1 0.19951855763792992, within 15%: True

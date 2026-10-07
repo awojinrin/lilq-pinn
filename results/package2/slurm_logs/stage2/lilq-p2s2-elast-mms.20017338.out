@@ -1,0 +1,13 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017338 on c277: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+compatible P =    50: error u_x 3.79e-02 u_y 1.13e-01 | delta_P 2.36e-02 2.36e-02 | ratio 1.60 4.79 | kappa 1.1e+02 rank 50 of 50
+compatible P =   200: error u_x 4.79e-04 u_y 2.12e-03 | delta_P 3.01e-04 3.01e-04 | ratio 1.59 7.04 | kappa 1.2e+03 rank 200 of 200
+compatible P =   450: error u_x 2.39e-07 u_y 1.23e-06 | delta_P 1.14e-07 1.14e-07 | ratio 2.11 10.80 | kappa 5.7e+03 rank 450 of 450
+compatible P =   800: error u_x 8.77e-10 u_y 4.46e-09 | delta_P 3.17e-10 3.17e-10 | ratio 2.77 14.06 | kappa 1.8e+04 rank 800 of 800
+compatible P =  1250: error u_x 8.08e-14 u_y 4.21e-13 | delta_P 2.33e-14 2.34e-14 | ratio 3.47 18.02 | kappa 4.4e+04 rank 1250 of 1250
+specified  P =    50: error u_x 2.08e-01 u_y 1.58e-01 | delta_P 1.09e-02 9.74e-03 | ratio 19.16 16.22 | kappa 1.1e+02 rank 50 of 50
+specified  P =   200: error u_x 2.17e-01 u_y 1.47e-01 | delta_P 2.85e-03 1.97e-03 | ratio 76.12 74.57 | kappa 1.2e+03 rank 200 of 200
+specified  P =   450: error u_x 2.18e-01 u_y 1.44e-01 | delta_P 1.58e-03 7.49e-04 | ratio 137.96 192.15 | kappa 5.7e+03 rank 450 of 450
+specified  P =   800: error u_x 2.19e-01 u_y 1.43e-01 | delta_P 9.64e-04 3.73e-04 | ratio 227.27 382.22 | kappa 1.8e+04 rank 800 of 800
+specified  P =  1250: error u_x 2.19e-01 u_y 1.42e-01 | delta_P 7.29e-04 2.16e-04 | ratio 300.56 656.24 | kappa 4.4e+04 rank 1250 of 1250

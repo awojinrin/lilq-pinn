@@ -1,0 +1,15 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017325 on c667: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  p_d = 10: 264 unknowns (200 + 64), rank 264, 10 iterations, E_u 2.32e-02, 0.018 s
+  p_d = 15: 619 unknowns (450 + 169), rank 619, 6 iterations, E_u 1.85e-05, 0.047 s
+  p_d = 20: 1124 unknowns (800 + 324), rank 1124, 6 iterations, E_u 4.78e-09, 0.138 s
+  p_d = 25: 1779 unknowns (1250 + 529), rank 1779, 6 iterations, E_u 1.94e-13, 0.334 s
+  LiL-Q kovasznay_P75_cpu_paper: 0.0537 s, package1 0.055804187431931496, within 15%: True
+  LiL-Q kovasznay_P300_cpu_paper: 0.3014 s, package1 0.29497927241027355, within 15%: True
+  LiL-Q kovasznay_P675_cpu_paper: 0.6657 s, package1 0.6397423036396503, within 15%: True
+  LiL-Q kovasznay_P1200_cpu_paper: 1.6958 s, package1 1.666234564036131, within 15%: True
+  LiL-Q kovasznay_P1875_cpu_paper: 4.3786 s, package1 4.25593089312315, within 15%: True
+  LiL-Q kovasznay_P300_r5_cgl_cc_paper: 0.4243 s, package1 , within 15%: 
+  LiL-Q kovasznay_P1200_r5_cgl_cc_paper: 2.6411 s, package1 , within 15%: 
+  LiL-Q kovasznay_P1875_r5_cgl_cc_paper: 8.4092 s, package1 , within 15%: 

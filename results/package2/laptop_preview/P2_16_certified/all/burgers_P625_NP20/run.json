@@ -1,0 +1,44 @@
+{
+  "N_total": 12700,
+  "N_composition": {
+    "interior": 11449,
+    "initial": 625,
+    "left": 313,
+    "right": 313
+  },
+  "P_total": 625,
+  "P_composition": {
+    "u": 625
+  },
+  "row_weights": "Clenshaw-Curtis: interior tensor weights (sum 1); each auxiliary line 10.0 x 1D weights x |e|/|dOmega| (collocation.npz)",
+  "collocation_construction": {
+    "method": "CGL tensor grid with Clenshaw-Curtis weights (Package 2, Section 6.3)",
+    "ratio_target": 20,
+    "ratio_actual": 20.32,
+    "M": 107,
+    "N_interior": 11449
+  },
+  "basis_description": {
+    "family": "tensor Chebyshev",
+    "modes_per_direction": 25
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the termination rule and the loss target are evaluated on the log"
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 3,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 1.441035678500036e-15,
+    "max_rel_err_over_run": 1.8712796510883407e-13
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "f9c8507bc7a74a34ab2dc7f8aaf4e7bd910d7f26"
+}

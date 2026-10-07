@@ -1,0 +1,24 @@
+{
+  "problem": "Burgers, u_t + u u_x = nu u_xx on (-1,1) x (0,1], u(x,0) = -sin(pi x), u(+-1,t) = 0",
+  "nu": 0.1,
+  "method": "Cole-Hopf, adaptive quadrature (scipy quad_vec), relative tolerance 1e-13",
+  "grid": "201 x 201 on [-1,1] x [0,1], u[i, j] at (x[i], t[j])",
+  "checks": {
+    "basdevant": {
+      "nu": 0.003183098861837907,
+      "x": 0.0,
+      "t": 0.5104735644729451,
+      "u_x": -152.005161576013,
+      "published": -152.00516,
+      "abs_difference": 1.5760130054331967e-06,
+      "agrees_to_published_digits": true
+    },
+    "series": {
+      "max_abs_difference": 3.774758283725532e-15,
+      "rel_l2_difference": 9.736999991240284e-16
+    },
+    "boundary_max_abs": 2.2665944481732626e-16,
+    "initial_condition_max_abs_difference": 0.0
+  },
+  "commit": "750f0b66591715e006bc7f51cff410864c18115e"
+}

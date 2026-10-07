@@ -1,0 +1,53 @@
+{
+  "N_total": 9984,
+  "N_composition": {
+    "pde": 9216,
+    "ic": 512,
+    "bc_left": 128,
+    "bc_right": 128
+  },
+  "P_total": 1024,
+  "P_composition": {
+    "u": 1024
+  },
+  "row_weights": {
+    "pde": 0.010416666666666666,
+    "ic": 0.13975424859373686,
+    "bc_left": 0.2795084971874737,
+    "bc_right": 0.2795084971874737
+  },
+  "collocation_construction": {
+    "method": "random-tensor",
+    "seed": 42,
+    "N_x": 32,
+    "N_t": 32,
+    "k_ratio": 10
+  },
+  "basis_description": {
+    "family": "lifted plain sine: S = (1 - x) + sum beta_ij sin(i pi x) phi_j(t)",
+    "phi_t": "mixed Fourier set",
+    "modes": [
+      32,
+      32
+    ]
+  },
+  "initial_coefficients": "zero (S = 1 - x)",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the paper target is read from the log"
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 4,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 1.1777006146397315e-08,
+    "max_rel_err_over_run": 6.472895955680518e-06
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59"
+}

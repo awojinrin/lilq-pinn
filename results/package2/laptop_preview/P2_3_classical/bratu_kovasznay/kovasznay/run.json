@@ -1,0 +1,18 @@
+{
+  "stage": "kovasznay",
+  "commit": "ab0484d7c55767c875aed312cd092b0e45287b32",
+  "device": "cpu",
+  "threads": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "slurm_job": null,
+  "timing": "one untimed warm-up, then the median of 3 clean runs (diagnostics off); assembly and solve timed separately",
+  "section": "4.2, step 2",
+  "K_max": 60,
+  "tol": 1e-09,
+  "pin": "corner",
+  "error_grid": "301 x 401",
+  "runs": 4
+}

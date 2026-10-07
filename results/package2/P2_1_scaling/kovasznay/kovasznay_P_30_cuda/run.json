@@ -1,0 +1,205 @@
+{
+  "series": "kovasznay_P",
+  "problem": "kovasznay",
+  "size": 30,
+  "device": "cuda",
+  "threads": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "slurm_job": "20030356",
+  "host": "g018",
+  "commit": "e5eb447d8d6ea99669abc24df93dea6de9a1aeb2",
+  "gpu_name": "NVIDIA A100-PCIE-40GB",
+  "gpu_total_bytes": 42404806656,
+  "status": "ok",
+  "P": 2700,
+  "N": 8068,
+  "N_over_P": 2.988148148148148,
+  "p_d": 30,
+  "k_ratio": 4,
+  "iterations": 6,
+  "stop": "tolerance",
+  "K_max": 60,
+  "tol": 1e-09,
+  "total_time_s": 2.0333781596273184,
+  "wall_time_s": 2.4483796562999487,
+  "warmup_time_s": 3.7971576172858477,
+  "t_assemble_total_s": 1.3024085406213999,
+  "t_solve_total_s": 0.6266605444252491,
+  "peak_host_bytes": 1856188416,
+  "peak_gpu_bytes": 598382592,
+  "A_bytes": 174268800,
+  "timing_protocol": "one untimed warm-up, then one timed run with the diagnostics off (Section 10: a single timing, not the median of three)",
+  "cuda_libraries": [
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cublas/lib/libcublas.so.12",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cublas/lib/libcublas.so.12"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cublas/lib/libcublasLt.so.12",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cublas/lib/libcublasLt.so.12"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_cupti/lib/libcupti.so.12",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_cupti/lib/libcupti.so.12"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_nvrtc/lib/libnvrtc-builtins.so.12.6",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_nvrtc/lib/libnvrtc-builtins.so.12.6"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_nvrtc/lib/libnvrtc.so.12",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_nvrtc/lib/libnvrtc.so.12"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_runtime/lib/libcudart.so.12",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_runtime/lib/libcudart.so.12"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cudnn/lib/libcudnn.so.9",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cudnn/lib/libcudnn.so.9"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cufft/lib/libcufft.so.11",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cufft/lib/libcufft.so.11"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cufile/lib/libcufile.so.0",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cufile/lib/libcufile.so.0"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/curand/lib/libcurand.so.10",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/curand/lib/libcurand.so.10"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusolver/lib/libcusolver.so.11",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusolver/lib/libcusolver.so.11"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusparse/lib/libcusparse.so.12",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusparse/lib/libcusparse.so.12"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusparselt/lib/libcusparseLt.so.0",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusparselt/lib/libcusparseLt.so.0"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nccl/lib/libnccl.so.2",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nccl/lib/libnccl.so.2"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvjitlink/lib/libnvJitLink.so.12",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvjitlink/lib/libnvJitLink.so.12"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvshmem/lib/libnvshmem_host.so.3",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvshmem/lib/libnvshmem_host.so.3"
+    },
+    {
+      "path": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvtx/lib/libnvToolsExt.so.1",
+      "resolved": "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvtx/lib/libnvToolsExt.so.1"
+    },
+    {
+      "path": "/usr/lib64/libcuda.so.580.126.20",
+      "resolved": "/usr/lib64/libcuda.so.580.126.20"
+    },
+    {
+      "path": "/usr/lib64/libnvidia-ml.so.580.126.20",
+      "resolved": "/usr/lib64/libnvidia-ml.so.580.126.20"
+    }
+  ],
+  "ld_library_path": [
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cublas/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_cupti/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_nvrtc/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cuda_runtime/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cudnn/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cufft/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cufile/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/curand/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusolver/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusparse/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/cusparselt/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nccl/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvjitlink/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvshmem/lib",
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/nvidia/nvtx/lib",
+    "/sw/eb/sw/PyTorch/2.9.1-foss-2024a-CUDA-12.6.0/lib/python3.12/site-packages/torch/lib",
+    "/sw/eb/sw/MPC/1.3.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libyaml/0.2.5-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/Cbc/2.10.12-foss-2024a/lib",
+    "/sw/eb/sw/Cgl/0.60.8-foss-2024a/lib",
+    "/sw/eb/sw/Clp/1.17.10-foss-2024a/lib",
+    "/sw/eb/sw/Osi/0.108.11-GCC-13.3.0/lib",
+    "/sw/eb/sw/CoinUtils/2.11.12-GCC-13.3.0/lib",
+    "/sw/eb/sw/MUMPS/5.7.2-foss-2024a-metis/lib",
+    "/sw/eb/sw/SCOTCH/7.0.6-gompi-2024a/lib",
+    "/sw/eb/sw/METIS/5.1.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/GLPK/5.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/protobuf/28.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/Abseil/20240722.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/LittleCMS/2.16-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/OpenJPEG/2.5.2-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libwebp/1.4.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/giflib/5.2.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/freetype/2.13.2-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/Brotli/1.1.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/LibTIFF/4.6.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libdeflate/1.20-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/jbigkit/2.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libpng/1.6.43-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libjpeg-turbo/3.0.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/MPFR/4.2.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/Z3/4.13.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/GMP/6.3.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/Boost/1.85.0-GCC-13.3.0/lib",
+    "/sw/eb/sw/ICU/75.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/zstd/1.5.6-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/lz4/1.9.4-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/SciPy-bundle/2024.05-gfbf-2024a/lib/python3.12/site-packages/numpy/core/lib",
+    "/sw/eb/sw/Python/3.12.3-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libffi/3.4.5-GCCcore-13.3.0/lib64",
+    "/sw/eb/sw/SQLite/3.45.3-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/Tcl/8.6.14-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libreadline/8.2-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/ncurses/6.5-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/bzip2/1.0.8-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/cuSPARSELt/0.6.3.2-CUDA-12.6.0/lib",
+    "/sw/eb/sw/magma/2.9.0-foss-2024a-CUDA-12.6.0/lib",
+    "/sw/eb/sw/cuDNN/9.10.2.21-CUDA-12.6.0/lib",
+    "/sw/eb/sw/NCCL/2.27.5-GCCcore-13.3.0-CUDA-12.6.0/lib",
+    "/sw/eb/sw/GDRCopy/2.4.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/CUDA/12.6.0/nvvm/lib64",
+    "/sw/eb/sw/CUDA/12.6.0/extras/CUPTI/lib64",
+    "/sw/eb/sw/CUDA/12.6.0/targets/x86_64-linux/lib",
+    "/sw/eb/sw/ScaLAPACK/2.2.0-gompi-2024a-fb/lib",
+    "/sw/eb/sw/FFTW.MPI/3.3.10-gompi-2024a/lib",
+    "/sw/eb/sw/FFTW/3.3.10-GCC-13.3.0/lib",
+    "/sw/eb/sw/FlexiBLAS/3.4.4-GCC-13.3.0/lib",
+    "/sw/eb/sw/OpenBLAS/0.3.27-GCC-13.3.0/lib",
+    "/sw/eb/sw/OpenMPI/5.0.3-GCC-13.3.0/lib",
+    "/sw/eb/sw/UCC/1.3.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/PRRTE/3.0.5-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/PMIx/5.0.2-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libfabric/1.21.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/UCX/1.16.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libevent/2.1.12-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/OpenSSL/3/lib",
+    "/sw/eb/sw/hwloc/2.10.0-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libpciaccess/0.18.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/libxml2/2.12.7-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/XZ/5.4.5-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/numactl/2.0.18-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/binutils/2.42-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/zlib/1.3.1-GCCcore-13.3.0/lib",
+    "/sw/eb/sw/GCCcore/13.3.0/lib64"
+  ],
+  "kappa": 3779796.7485279115,
+  "rank": 2700,
+  "eps_u": 1.9770570157608295e-15,
+  "eps_v": 6.038865935035812e-15,
+  "eps_p": 5.073346117046355e-13,
+  "eps_p_meanfree": 5.16262618696111e-15
+}

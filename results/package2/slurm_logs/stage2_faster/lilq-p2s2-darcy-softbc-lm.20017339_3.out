@@ -1,0 +1,7 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017339 on g044: 8 threads, 8 cores usable, OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+  SPE10 seed 0: 2000 iterations (iteration_cap), delta_FV 7.871e-02, max 268.0 psi, 305 s on NVIDIA A100-PCIE-40GB; C3 passed (1.7e-16)

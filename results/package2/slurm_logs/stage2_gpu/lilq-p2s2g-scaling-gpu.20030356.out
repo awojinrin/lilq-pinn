@@ -1,0 +1,45 @@
+provenance lock OK: commit e5eb447d8d6e, tree 7b105de1e215
+job 20030356 on g018: 48 threads, 48 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+  kovasznay_P_25_cuda: P = 1875, N = 5564 (N/P 2.97), 6 iterations, 1.02 s (assembly 0.49, solve 0.47), host peak 1.46 GB, GPU peak 0.29 GB, kappa 3.9e+05, rank 1875, E_u 6.99e-13
+  kovasznay_P_30_cuda: P = 2700, N = 8068 (N/P 2.99), 6 iterations, 2.03 s (assembly 1.30, solve 0.63), host peak 1.86 GB, GPU peak 0.60 GB, kappa 3.8e+06, rank 2700, E_u 1.98e-15
+  kovasznay_P_35_cuda: P = 3675, N = 11036 (N/P 3.00), 6 iterations, 3.74 s (assembly 2.45, solve 1.10), host peak 2.62 GB, GPU peak 1.10 GB, kappa 3.7e+07, rank 3675, E_u 4.18e-15
+  kovasznay_P_40_cuda: P = 4800, N = 14093 (N/P 2.94), 6 iterations, 6.63 s (assembly 4.46, solve 1.82), host peak 3.54 GB, GPU peak 1.83 GB, kappa 4.8e+08, rank 4800, E_u 1.28e-14
+  kovasznay_P_50_cuda: P = 7500, N = 22253 (N/P 2.97), 6 iterations, 16.84 s (assembly 11.27, solve 4.79), host peak 7.49 GB, GPU peak 4.49 GB, kappa 4.8e+10, rank 7500, E_u 2.63e-13
+  kovasznay_N_3_cuda: P = 1200, N = 3524 (N/P 2.94), 6 iterations, 0.41 s (assembly 0.20, solve 0.19), host peak 1.20 GB, GPU peak 0.13 GB, kappa 4.4e+04, rank 1200, E_u 7.36e-09
+  kovasznay_N_5_cuda: P = 1200, N = 6116 (N/P 5.10), 6 iterations, 0.70 s (assembly 0.37, solve 0.29), host peak 1.28 GB, GPU peak 0.20 GB, kappa 2.0e+04, rank 1200, E_u 4.94e-09
+  kovasznay_N_10_cuda: P = 1200, N = 11916 (N/P 9.93), 6 iterations, 1.32 s (assembly 0.70, solve 0.55), host peak 1.60 GB, GPU peak 0.38 GB, kappa 1.4e+04, rank 1200, E_u 5.70e-09
+  kovasznay_N_20_cuda: P = 1200, N = 23996 (N/P 20.00), 6 iterations, 2.62 s (assembly 1.79, solve 0.67), host peak 2.10 GB, GPU peak 0.74 GB, kappa 1.1e+04, rank 1200, E_u 6.09e-09
+  beltrami_6_cuda: P = 7984, N = 21816 (N/P 2.73), 4 iterations, 11.32 s (assembly 7.13, solve 3.30), host peak 7.25 GB, GPU peak 4.72 GB, kappa 3.1e+04, rank 7984, u(t=1) 3.43e-04, p(t=1) 7.51e-03
+  beltrami_7_cuda: P = 13764, N = 52225 (N/P 3.79), 4 iterations, 48.82 s (assembly 30.42, solve 14.64), host peak 27.47 GB, GPU peak 18.83 GB, kappa 1.0e+05, rank 13764, u(t=1) 1.52e-05, p(t=1) 8.86e-04
+Traceback (most recent call last):
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 488, in <module>
+    main()
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 471, in main
+    run_one(args.series[0], as_size(args.size), args.device, args.out)
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 222, in run_one
+    warm = _solve(problem, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 178, in _solve
+    return solve_beltrami(config, verbose=False, diagnostics=False, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$SCRATCH/lilq-run/lilq-pinn/problems/beltrami.py", line 649, in solve_beltrami
+    theta_new, rank, gpu_peak = _lstsq(A_sys, b_sys, use_gpu=config.use_gpu, timings=parts)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$SCRATCH/lilq-run/lilq-pinn/problems/beltrami.py", line 205, in _lstsq
+    x, _R_diag, peak = _lstsq_gpu_qr(A, b, timings=timings)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$SCRATCH/lilq-run/lilq-pinn/problems/kovasznay.py", line 404, in _lstsq_gpu_qr
+    qtb = torch.ormqr(reflectors, tau, bt.unsqueeze(1), left=True, transpose=True)   # Q^T b
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch._C._LinAlgError: cusolver error: CUSOLVER_STATUS_INVALID_VALUE, when calling `cusolverDnDormqr_bufferSize(handle, side, trans, m, n, k, A, lda, tau, C, ldc, lwork)`. This error may appear if the input matrix contains NaN. If you keep seeing this error, you may use `torch.backends.cuda.preferred_linalg_library()` to try linear algebra operators with other supported backends. See https://pytorch.org/docs/stable/backends.html#torch.backends.cuda.preferred_linalg_library
+Traceback (most recent call last):
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 488, in <module>
+    main()
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 474, in main
+    run_series(args.series, args.device, args.out, [as_size(v) for v in args.sizes] if args.sizes else None)
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 299, in run_series
+    subprocess.run([sys.executable, __file__, 'one', '--series', series, '--size', str(size),
+  File "/sw/eb/sw/Python/3.12.3-GCCcore-13.3.0/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['$SCRATCH/lilq-run/venv/bin/python', '$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py', 'one', '--series', 'beltrami', '--size', '8', '--device', 'cuda', '--out', '$SCRATCH/lilq-run/lilq-pinn/results/package2_stage2_gpu']' returned non-zero exit status 1.

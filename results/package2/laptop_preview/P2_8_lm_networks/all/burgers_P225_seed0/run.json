@@ -1,0 +1,58 @@
+{
+  "benchmark": "burgers",
+  "P": 225,
+  "method": "NiL-N (LM)",
+  "seed": 0,
+  "collocation_seed": 42,
+  "device": "cpu",
+  "wall_total_s": 1.3112227000528947,
+  "commit": "e0ba645f7ecb0ff911e6ce979623c219dca0f5c2",
+  "optimizer": {
+    "name": "Levenberg-Marquardt (F2)",
+    "mu0": 0.001,
+    "mu_up": 5.0,
+    "mu_down": 0.2,
+    "mu_max": 1e+16,
+    "diag_floor": 1e-12,
+    "stall_rule": "f1 (tolerances 0, one restart)"
+  },
+  "caps": {
+    "iterations": 2000,
+    "wall_time_s": 900.0
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "torch_threads": 24,
+  "pretrain_loss": 9.583844832537991e-05,
+  "total_iterations": 52,
+  "total_line_searches": 103,
+  "n_jacobian_evals": 52,
+  "training_time": 1.081383999553509,
+  "final_loss": 1.9658098612370772e-05,
+  "converged": true,
+  "stopping_reason": "target",
+  "mu_final": 4.000000000000003e-05,
+  "lm_restarts": 0,
+  "stall": null,
+  "c3": {
+    "lbfgs_objective_iteration_0": 5.196727124874326,
+    "lm_r_dot_r_iteration_0": 5.196727124874325,
+    "rel_diff": 1.7091111354468208e-16,
+    "passed": true
+  },
+  "eps_ref_final": 0.0010234326762222571,
+  "n_theta": 235,
+  "n_rows": 2163,
+  "R_tol": 2e-05,
+  "lambdas": [
+    1.0,
+    10.0,
+    10.0
+  ],
+  "package1_start": {
+    "cuda": 5.196727124874324
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "check": "C1",
+  "error_grid": "101 x 101 (the pilot's)",
+  "reference": "SQ-CGL p = 48",
+  "cases": [
+    {
+      "method": "LS-hard-CGL-1.5",
+      "p": 12,
+      "free_coeff": 144,
+      "N": 225,
+      "N_pilot": 225,
+      "err_final": 1.0826802944146108e-05,
+      "err_pilot": 1.0826802944101342e-05,
+      "rel_difference": 4.134710079560376e-12,
+      "three_digits": true,
+      "kappa": 239.98465353181362,
+      "kappa_pilot": 239.98465353181263,
+      "k_stop": 6,
+      "k_plateau": 4
+    },
+    {
+      "method": "LS-hard-CGL-1.5",
+      "p": 20,
+      "free_coeff": 400,
+      "N": 625,
+      "N_pilot": 625,
+      "err_final": 6.471873169280751e-07,
+      "err_pilot": 6.471873168808444e-07,
+      "rel_difference": 7.297851435774105e-11,
+      "three_digits": true,
+      "kappa": 1197.2566698556425,
+      "kappa_pilot": 1197.256669855665,
+      "k_stop": 6,
+      "k_plateau": 4
+    },
+    {
+      "method": "SQ-CGL",
+      "p": 14,
+      "free_coeff": 144,
+      "N": 196,
+      "N_pilot": 196,
+      "err_final": 1.2741999976287563e-05,
+      "err_pilot": 1.274199997624986e-05,
+      "rel_difference": 2.9589648892214135e-12,
+      "three_digits": true,
+      "kappa": 42788.57013929061,
+      "kappa_pilot": 42788.570139290016,
+      "k_stop": 6,
+      "k_plateau": 4
+    },
+    {
+      "method": "SQ-CGL",
+      "p": 22,
+      "free_coeff": 400,
+      "N": 484,
+      "N_pilot": 484,
+      "err_final": 8.034288250745342e-07,
+      "err_pilot": 8.034288250587458e-07,
+      "rel_difference": 1.9651244773686715e-11,
+      "three_digits": true,
+      "kappa": 324236.1468283879,
+      "kappa_pilot": 324236.14682840405,
+      "k_stop": 6,
+      "k_plateau": 4
+    }
+  ],
+  "sanity": {
+    "LS_hard_p": 10,
+    "grid_points_per_direction": 12,
+    "N": 100,
+    "P": 100,
+    "SQ_CGL_p": 12,
+    "max_abs_difference": 1.1932869078279982e-15,
+    "round_off": true
+  },
+  "passed": true,
+  "commit": "c1e7f4c968f405b3479fc2541f23c538bffc1e5d"
+}

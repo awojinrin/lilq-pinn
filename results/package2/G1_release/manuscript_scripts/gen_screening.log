@@ -1,0 +1,21 @@
+\begin{table}[!htb]
+\centering
+\caption{Kovasznay flow: the 24 screened configurations of the Fourier-feature PINN family F1 (Section~\ref{sec:kovasznay}), each trained with seed 0 for 10 minutes on the GPU. Net: width $\times$ number of hidden layers; trunk: one network shared by the three fields (sh.) or one per field (sep.); $m$, $\sigma$: number and scale of the random Fourier features; BC: Dirichlet conditions imposed exactly or by a penalty with weight $\lambda_{\mathrm{bc}}$; Bal.: gradient-norm balancing of the loss terms; $\eta$: Adam learning rate; $T_{\mathrm{A}}$: Adam iterations before L-BFGS; $N_{\mathrm{int}}$: interior collocation points; Res.: interior points redrawn during Adam; $n_{\theta}$: trainable parameters; Loss: final unweighted training loss; Val.: validation residual on $20{,}000$ fresh points; $E_{u}$: velocity error at the end of the screening run; ranks by the final training loss and by the validation residual. $^{\ast}$Finalists, selected by the final training loss; the representative, chosen among them by the median validation residual over five seeds of 60 minutes, is in bold.}
+\label{tab:screening}
+\scriptsize
+\setlength{\tabcolsep}{2.2pt}
+\begin{tabular}{@{}lllrrlclrrcrlllrr@{}}
+\toprule
+& & & & & & & & & & & & & & & \multicolumn{2}{c@{}}{Rank} \\
+\cmidrule(l){16-17}
+Config. & Net & Trunk & $m$ & $\sigma$ & BC & Bal. & $\eta$ & $T_{\mathrm{A}}$ & $N_{\mathrm{int}}$ & Res. & $n_{\theta}$ & Loss & Val. & $E_{u}$ & Loss & Val. \\
+\midrule
+F1\_00 & 256$\times$3 & sep. & 32 & 0.5 & pen.\ 10 & n & $10^{-4}$ & 20k & 32k & y & 445{,}443 & $1.6{\times}10^{-3}$ & $1.7{\times}10^{-3}$ & $6.8{\times}10^{-3}$ & 18 & 18 \\
+F1\_01 & 128$\times$4 & sh. & 32 & 0.5 & pen.\ 10 & n & $10^{-4}$ & 5k & 32k & n & 58{,}243 & $1.3{\times}10^{-6}$ & $1.4{\times}10^{-6}$ & $1.0{\times}10^{-4}$ & 6 & 2 \\
+F1\_02 & 256$\times$5 & sh. & 32 & 1 & exact & y & $10^{-4}$ & 20k & 32k & y & 280{,}579 & $2.5{\times}10^{-3}$ & $2.6{\times}10^{-3}$ & $5.8{\times}10^{-3}$ & 20 & 19 \\
+F1\_03 & 64$\times$3 & sep. & 128 & 0.5 & pen.\ 1 & y & $10^{-3}$ & 50k & 8k & y & 74{,}499 & $2.0{\times}10^{-5}$ & $2.2{\times}10^{-5}$ & $1.5{\times}10^{-3}$ & 9 & 7 \\
+F1\_04$^{\ast}$ & 128$\times$4 & sh. & 64 & 5 & exact & y & $10^{-3}$ & 5k & 2k & y & 66{,}435 & $2.0{\times}10^{-7}$ & $3.5$ & $6.1{\times}10^{-2}$ & 1 & 23 \\
+F1\_05 & 64$\times$4 & sep. & 128 & 2 & pen.\ 1 & n & $3{\times}10^{-4}$ & 50k & 32k & n & 86{,}979 & $3.6{\times}10^{-4}$ & $4.3{\times}10^{-4}$ & $1.4{\times}10^{-3}$ & 15 & 14 \\
+F1\_06 & 256$\times$5 & sep. & 64 & 1 & pen.\ 10 & y & $10^{-3}$ & 5k & 8k & y & 889{,}347 & $8.4{\times}10^{-5}$ & $1.0{\times}10^{-4}$ & $1.3{\times}10^{-3}$ & 12 & 10 \\
+F1\_07 & 128$\times$4 & sep. & 32 & 2 & pen.\ 10 & y & $10^{-3}$ & 20k & 8k & y & 173{,}955 & $1.4{\times}10^{-1}$ & $2.0{\times}10^{-1}$ & $2.0{\times}10^{-2}$ & 24 & 22 \\
+F1\_08 & 256$\times$4 & sh. & 32 & 0.5 & pen.\ 10 & y & $3{\times}10^{-4}$ & 5k & 8k & n & 214{,}787 & $1.3{\times}10^{-6}

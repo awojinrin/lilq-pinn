@@ -1,0 +1,1546 @@
+{
+ "bratu": {
+  "25": {
+   "target": 0.25,
+   "NiL-N": {
+    "n_iter": 261,
+    "final_loss": 0.2497785076239738,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 38.22343830492914,
+    "min_loss": 0.2497785076239738,
+    "final_over_target": 0.9991140304958952,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 261,
+      "final_loss": 0.2497785076239738,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 78,
+      "final_loss": 0.248396281253116,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 232,
+      "final_loss": 0.2488252206743763,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 308,
+    "final_loss": 0.2113302135781525,
+    "reason": "target",
+    "cap": 7500,
+    "loss0": 38.22343830492914,
+    "min_loss": 0.2113302135781525,
+    "final_over_target": 0.84532085431261,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 308,
+      "final_loss": 0.2113302135781525,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 314,
+      "final_loss": 0.2443610470520588,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 311,
+      "final_loss": 0.2494944639107065,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 33,
+    "final_loss": 0.2459906204338655,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 38.440000000000005,
+    "min_loss": 0.2459906204338655,
+    "final_over_target": 0.983962481735462,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 33,
+      "final_loss": 0.2459906204338655,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 2,
+    "final_loss": 0.20780022287306976,
+    "loss": [
+     38.440000000000005,
+     0.7200218446891837,
+     0.20780022287306976
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bratu_P25_cpu_paper",
+    "paper_iters": 2,
+    "paper_final": 0.20780022287306976,
+    "final_over_target": 0.831200891492279
+   }
+  },
+  "100": {
+   "target": 0.0001,
+   "NiL-N": {
+    "n_iter": 8269,
+    "final_loss": 0.0009657626364249,
+    "reason": "optimizer_stall",
+    "cap": 10000,
+    "loss0": 37.85934753219328,
+    "min_loss": 0.0009657626364249,
+    "final_over_target": 9.657626364249,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 8269,
+      "final_loss": 0.0009657626364249,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 3197,
+      "final_loss": 0.0060728598641994,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 7422,
+      "final_loss": 0.0026315439395902,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 7916,
+    "final_loss": 0.0008210432626609,
+    "reason": "optimizer_stall",
+    "cap": 10000,
+    "loss0": 37.85934753219328,
+    "min_loss": 0.0008210432626609,
+    "final_over_target": 8.210432626609,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 7916,
+      "final_loss": 0.0008210432626609,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 6542,
+      "final_loss": 0.0007536196619205,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 6400,
+      "final_loss": 0.0011920719533254,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 1724,
+    "final_loss": 9.99786114462254e-05,
+    "reason": "target",
+    "cap": 10000,
+    "loss0": 38.440000000000005,
+    "min_loss": 9.99786114462254e-05,
+    "final_over_target": 0.9997861144622538,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 1724,
+      "final_loss": 9.99786114462254e-05,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 3,
+    "final_loss": 2.1610912818991352e-05,
+    "loss": [
+     38.440000000000005,
+     0.4343196034396987,
+     0.0026125109063036456,
+     2.1610912818991352e-05
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bratu_P100_cpu_paper",
+    "paper_iters": 3,
+    "paper_final": 2.161091281899161e-05,
+    "final_over_target": 0.2161091281899135
+   }
+  },
+  "225": {
+   "target": 2.5e-07,
+   "NiL-N": {
+    "n_iter": 10000,
+    "final_loss": 0.0001955074557959,
+    "reason": "iteration_cap",
+    "cap": 10000,
+    "loss0": 38.04428694548284,
+    "min_loss": 0.0001955074557959,
+    "final_over_target": 782.0298231836,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 10000,
+      "final_loss": 0.0001955074557959,
+      "stopping_reason": "iteration_cap"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5484,
+      "final_loss": 0.0011292531154724,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 4781,
+      "final_loss": 0.0007575754955361,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 9995,
+    "final_loss": 0.0004650146406804,
+    "reason": "iteration_cap",
+    "cap": 10000,
+    "loss0": 38.04428694548284,
+    "min_loss": 0.0004650146406804,
+    "final_over_target": 1860.0585627216,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 9995,
+      "final_loss": 0.0004650146406804,
+      "stopping_reason": "iteration_cap"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 10000,
+      "final_loss": 0.0001382136562316,
+      "stopping_reason": "iteration_cap"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 7636,
+      "final_loss": 0.0003105907061475,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 10000,
+    "final_loss": 0.0002532883755084,
+    "reason": "iteration_cap",
+    "cap": 10000,
+    "loss0": 38.44000000000001,
+    "min_loss": 0.0002532883755084,
+    "final_over_target": 1013.1535020336,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 10000,
+      "final_loss": 0.0002532883755084,
+      "stopping_reason": "iteration_cap"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 4,
+    "final_loss": 1.0658274766993251e-07,
+    "loss": [
+     38.440000000000005,
+     0.42434813807612964,
+     0.00232412106703907,
+     2.669061321979679e-07,
+     1.0658274766993251e-07
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bratu_P225_cpu_paper",
+    "paper_iters": 4,
+    "paper_final": 1.0658274766997529e-07,
+    "final_over_target": 0.42633099067973007
+   }
+  }
+ },
+ "burgers": {
+  "25": {
+   "target": 0.06,
+   "NiL-N": {
+    "n_iter": 141,
+    "final_loss": 0.058433822877545,
+    "reason": "target",
+    "cap": 1000,
+    "loss0": 3.911719412248382,
+    "min_loss": 0.058433822877545,
+    "final_over_target": 0.9738970479590834,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 141,
+      "final_loss": 0.058433822877545,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 306,
+      "final_loss": 0.0599328300241594,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 256,
+      "final_loss": 0.0598043462234677,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 397,
+    "final_loss": 0.0598204643954571,
+    "reason": "target",
+    "cap": 2000,
+    "loss0": 3.911719412248382,
+    "min_loss": 0.0598204643954571,
+    "final_over_target": 0.997007739924285,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 397,
+      "final_loss": 0.0598204643954571,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 434,
+      "final_loss": 0.0599386313962451,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 481,
+      "final_loss": 0.0597700493611999,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 18,
+    "final_loss": 0.0581001479854309,
+    "reason": "target",
+    "cap": 1000,
+    "loss0": 3.890034222541853,
+    "min_loss": 0.0581001479854309,
+    "final_over_target": 0.9683357997571818,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 18,
+      "final_loss": 0.0581001479854309,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 2,
+    "final_loss": 0.05309496203459728,
+    "loss": [
+     3.8900342225418534,
+     0.4017167779873391,
+     0.05309496203459728
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/burgers_P25_cpu_paper",
+    "paper_iters": 2,
+    "paper_final": 0.05309496203459731,
+    "final_over_target": 0.8849160339099547
+   }
+  },
+  "100": {
+   "target": 0.001,
+   "NiL-N": {
+    "n_iter": 1050,
+    "final_loss": 0.0009999922872626,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 5.515363190375323,
+    "min_loss": 0.0009999922872626,
+    "final_over_target": 0.9999922872626,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 1050,
+      "final_loss": 0.0009999922872626,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 405,
+      "final_loss": 0.0009962862179622,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 1164,
+      "final_loss": 0.0009979108193711,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 1122,
+    "final_loss": 0.0009993181237339,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 5.515363190375323,
+    "min_loss": 0.0009993181237339,
+    "final_over_target": 0.9993181237338999,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 1122,
+      "final_loss": 0.0009993181237339,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 2061,
+      "final_loss": 0.0009959525025502,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 1148,
+      "final_loss": 0.0009903072914225,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 94,
+    "final_loss": 0.0009913850847342,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 5.488278119859468,
+    "min_loss": 0.0009913850847342,
+    "final_over_target": 0.9913850847342,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 94,
+      "final_loss": 0.0009913850847342,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 3,
+    "final_loss": 0.0009058905638485534,
+    "loss": [
+     5.488278119859467,
+     0.3502768664758413,
+     0.00207634599012744,
+     0.0009058905638485534
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/burgers_P100_cpu_paper",
+    "paper_iters": 3,
+    "paper_final": 0.0009058905638485572,
+    "final_over_target": 0.9058905638485534
+   }
+  },
+  "225": {
+   "target": 2e-05,
+   "NiL-N": {
+    "n_iter": 4329,
+    "final_loss": 2.9956934547207866e-05,
+    "reason": "optimizer_stall",
+    "cap": 7500,
+    "loss0": 5.196727124874324,
+    "min_loss": 2.9956934547207866e-05,
+    "final_over_target": 1.4978467273603933,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 4329,
+      "final_loss": 2.9956934547207866e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5212,
+      "final_loss": 4.657604424972362e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 3738,
+      "final_loss": 3.138583315095235e-05,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 5216,
+    "final_loss": 2.743669193259472e-05,
+    "reason": "optimizer_stall",
+    "cap": 7500,
+    "loss0": 5.196727124874324,
+    "min_loss": 2.743669193259472e-05,
+    "final_over_target": 1.3718345966297358,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 5216,
+      "final_loss": 2.743669193259472e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 3942,
+      "final_loss": 2.309097352559184e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 5145,
+      "final_loss": 1.9996964823948853e-05,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 1883,
+    "final_loss": 2.278607156227381e-05,
+    "reason": "optimizer_stall",
+    "cap": 7500,
+    "loss0": 5.192341638148779,
+    "min_loss": 2.278607156227381e-05,
+    "final_over_target": 1.1393035781136904,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 1883,
+      "final_loss": 2.278607156227381e-05,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 3,
+    "final_loss": 1.8842137902096985e-05,
+    "loss": [
+     5.192341638148777,
+     0.3437961182119001,
+     0.0018878194398905005,
+     1.8842137902096985e-05
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/burgers_P225_cpu_paper",
+    "paper_iters": 3,
+    "paper_final": 1.8842137902097046e-05,
+    "final_over_target": 0.9421068951048492
+   }
+  },
+  "400": {
+   "target": 1e-07,
+   "NiL-N": {
+    "n_iter": 5562,
+    "final_loss": 2.4449880526839385e-05,
+    "reason": "optimizer_stall",
+    "cap": 10000,
+    "loss0": 4.946691555372557,
+    "min_loss": 2.4449880526839385e-05,
+    "final_over_target": 244.49880526839385,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 5562,
+      "final_loss": 2.4449880526839385e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 4531,
+      "final_loss": 2.435680815809176e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 3549,
+      "final_loss": 3.583529948263406e-05,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 8667,
+    "final_loss": 3.947847279163056e-05,
+    "reason": "optimizer_stall",
+    "cap": 10000,
+    "loss0": 4.946691555372557,
+    "min_loss": 3.947847279163056e-05,
+    "final_over_target": 394.7847279163056,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 8667,
+      "final_loss": 3.947847279163056e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5560,
+      "final_loss": 1.587196833198988e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 5814,
+      "final_loss": 2.3913084807174656e-05,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 1320,
+    "final_loss": 4.207342304504876e-06,
+    "reason": "optimizer_stall",
+    "cap": 10000,
+    "loss0": 5.003524967250257,
+    "min_loss": 4.207342304504876e-06,
+    "final_over_target": 42.07342304504876,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 1320,
+      "final_loss": 4.207342304504876e-06,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 4,
+    "final_loss": 9.725196537114612e-08,
+    "loss": [
+     5.003524967250256,
+     0.33598420424690706,
+     0.002079015699137319,
+     1.1027080172376484e-07,
+     9.725196537114612e-08
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/burgers_P400_cpu_paper",
+    "paper_iters": 4,
+    "paper_final": 9.725196537120332e-08,
+    "final_over_target": 0.9725196537114612
+   }
+  },
+  "625": {
+   "target": 5e-09,
+   "NiL-N": {
+    "n_iter": 5079,
+    "final_loss": 2.6129605120944214e-05,
+    "reason": "optimizer_stall",
+    "cap": 15000,
+    "loss0": 4.804900872012191,
+    "min_loss": 2.6129605120944214e-05,
+    "final_over_target": 5225.921024188843,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 5079,
+      "final_loss": 2.6129605120944214e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 4032,
+      "final_loss": 2.162632422580377e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 3892,
+      "final_loss": 1.669537667182195e-05,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 5241,
+    "final_loss": 1.7345419940455803e-05,
+    "reason": "optimizer_stall",
+    "cap": 15000,
+    "loss0": 4.804900872012191,
+    "min_loss": 1.7345419940455803e-05,
+    "final_over_target": 3469.0839880911603,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 5241,
+      "final_loss": 1.7345419940455803e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5605,
+      "final_loss": 1.2541298560185832e-05,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 6363,
+      "final_loss": 2.763445450720194e-05,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 3349,
+    "final_loss": 8.48289639011151e-06,
+    "reason": "optimizer_stall",
+    "cap": 15000,
+    "loss0": 4.841291013868034,
+    "min_loss": 8.48289639011151e-06,
+    "final_over_target": 1696.579278022302,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 3349,
+      "final_loss": 8.48289639011151e-06,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 4,
+    "final_loss": 3.4953135157521773e-09,
+    "loss": [
+     4.841291013868034,
+     0.3113557808875314,
+     0.002220042908948455,
+     1.7142522633275957e-08,
+     3.4953135157521773e-09
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/burgers_P625_cpu_paper",
+    "paper_iters": 4,
+    "paper_final": 3.495313515752177e-09,
+    "final_over_target": 0.6990627031504354
+   }
+  }
+ },
+ "bl": {
+  "64": {
+   "target": 0.085,
+   "NiL-N": {
+    "n_iter": 185,
+    "final_loss": 0.080103157142026,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 18.81120131340548,
+    "min_loss": 0.080103157142026,
+    "final_over_target": 0.9423900840238352,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 185,
+      "final_loss": 0.080103157142026,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 281,
+      "final_loss": 0.0849471237467263,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 124,
+      "final_loss": 0.0829979697345858,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 801,
+    "final_loss": 0.0778739181355973,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 18.81120131340548,
+    "min_loss": 0.0778739181355973,
+    "final_over_target": 0.9161637427717328,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 801,
+      "final_loss": 0.0778739181355973,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 286,
+      "final_loss": 0.0834492551369131,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 408,
+      "final_loss": 0.0785216506256074,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 138,
+    "final_loss": 0.0848691384099379,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 14.927842646451843,
+    "min_loss": 0.0848691384099379,
+    "final_over_target": 0.9984604518816222,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 138,
+      "final_loss": 0.0848691384099379,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 10,
+    "final_loss": 0.07678466141787929,
+    "loss": [
+     14.927842646451843,
+     6.947356866170419,
+     1.4593811725901369,
+     1.1499513983216592,
+     0.8289933453154154,
+     0.5636299580029304,
+     0.35857519227637813,
+     0.2238843347029979,
+     0.17729468863255457,
+     0.09340702382831607,
+     0.07678466141787929
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bl_P64_cpu_paper",
+    "paper_iters": 10,
+    "paper_final": 0.0767846614178793,
+    "final_over_target": 0.9033489578574033
+   }
+  },
+  "256": {
+   "target": 0.015,
+   "NiL-N": {
+    "n_iter": 320,
+    "final_loss": 0.0149010569960175,
+    "reason": "target",
+    "cap": 10000,
+    "loss0": 18.339667041441302,
+    "min_loss": 0.0149010569960175,
+    "final_over_target": 0.9934037997345001,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 320,
+      "final_loss": 0.0149010569960175,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 350,
+      "final_loss": 0.0148960024834464,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 1069,
+      "final_loss": 0.0149691836672794,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 670,
+    "final_loss": 0.0149039895495776,
+    "reason": "target",
+    "cap": 10000,
+    "loss0": 18.339667041441302,
+    "min_loss": 0.0149039895495776,
+    "final_over_target": 0.9935993033051733,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 670,
+      "final_loss": 0.0149039895495776,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 812,
+      "final_loss": 0.0148780756705482,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 765,
+      "final_loss": 0.0149738188713239,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 1100,
+    "final_loss": 0.0149971133533322,
+    "reason": "target",
+    "cap": 10000,
+    "loss0": 24.105382949692924,
+    "min_loss": 0.0149971133533322,
+    "final_over_target": 0.9998075568888134,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 1100,
+      "final_loss": 0.0149971133533322,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 4,
+    "final_loss": 0.013209743504850312,
+    "loss": [
+     24.105382949692906,
+     22.601496952317383,
+     0.7012863078996704,
+     0.025848375884168124,
+     0.013209743504850312
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bl_P256_cpu_paper",
+    "paper_iters": 4,
+    "paper_final": 0.013209743504850317,
+    "final_over_target": 0.8806495669900208
+   }
+  },
+  "576": {
+   "target": 0.00075,
+   "NiL-N": {
+    "n_iter": 6098,
+    "final_loss": 0.0008416851059019,
+    "reason": "optimizer_stall",
+    "cap": 15000,
+    "loss0": 24.995875757999038,
+    "min_loss": 0.0008416851059019,
+    "final_over_target": 1.1222468078692,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 6098,
+      "final_loss": 0.0008416851059019,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 1789,
+      "final_loss": 0.0007499732422514,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 2339,
+      "final_loss": 0.0007498279324297,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 3756,
+    "final_loss": 0.0007499258068236,
+    "reason": "target",
+    "cap": 15000,
+    "loss0": 24.995875757999038,
+    "min_loss": 0.0007499258068236,
+    "final_over_target": 0.9999010757648,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 3756,
+      "final_loss": 0.0007499258068236,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5238,
+      "final_loss": 0.0007497932219984,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 6058,
+      "final_loss": 0.0007499898927176,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 15000,
+    "final_loss": 0.0015218729262504,
+    "reason": "iteration_cap",
+    "cap": 15000,
+    "loss0": 24.10669503493046,
+    "min_loss": 0.0015218729262504,
+    "final_over_target": 2.0291639016672,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 15000,
+      "final_loss": 0.0015218729262504,
+      "stopping_reason": "iteration_cap"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 4,
+    "final_loss": 0.000410783862677057,
+    "loss": [
+     24.106695035059378,
+     28.833221284337387,
+     1.4716409273970428,
+     0.0338393050729433,
+     0.000410783862677057
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bl_P576_cpu_paper",
+    "paper_iters": 4,
+    "paper_final": 0.000410783862677061,
+    "final_over_target": 0.5477118169027426
+   }
+  },
+  "1024": {
+   "target": 7.5e-05,
+   "NiL-N": {
+    "n_iter": 9772,
+    "final_loss": 7.499874507263854e-05,
+    "reason": "target",
+    "cap": 20000,
+    "loss0": 22.05931680034931,
+    "min_loss": 7.499874507263854e-05,
+    "final_over_target": 0.9999832676351806,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 9772,
+      "final_loss": 7.499874507263854e-05,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5307,
+      "final_loss": 0.0001396691863522,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 7436,
+      "final_loss": 7.499982608907757e-05,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 5358,
+    "final_loss": 0.0001678307988578,
+    "reason": "optimizer_stall",
+    "cap": 20000,
+    "loss0": 22.05931680034931,
+    "min_loss": 0.0001678307988578,
+    "final_over_target": 2.237743984770667,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 5358,
+      "final_loss": 0.0001678307988578,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5995,
+      "final_loss": 0.0002789310166456,
+      "stopping_reason": "optimizer_stall"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 8153,
+      "final_loss": 0.0002174021494544,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 20000,
+    "final_loss": 0.0002015843123418,
+    "reason": "iteration_cap",
+    "cap": 20000,
+    "loss0": 24.800241324167303,
+    "min_loss": 0.0002015843123418,
+    "final_over_target": 2.6877908312240004,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 20000,
+      "final_loss": 0.0002015843123418,
+      "stopping_reason": "iteration_cap"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 4,
+    "final_loss": 2.5698129573821606e-05,
+    "loss": [
+     24.800241324166894,
+     23.645377886231575,
+     1.5354982599908171,
+     0.049228606146655314,
+     2.5698129573821606e-05
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bl_P1024_cpu_paper",
+    "paper_iters": 4,
+    "paper_final": 2.5698129573821606e-05,
+    "final_over_target": 0.3426417276509548
+   }
+  }
+ },
+ "bl_gravity": {
+  "64": {
+   "target": 0.24,
+   "NiL-N": {
+    "n_iter": 136,
+    "final_loss": 0.2380301774437601,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 14.51687141836155,
+    "min_loss": 0.2380301774437601,
+    "final_over_target": 0.9917924060156671,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 136,
+      "final_loss": 0.2380301774437601,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 234,
+      "final_loss": 0.2399943605112475,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 344,
+      "final_loss": 0.2364612737838758,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 200,
+    "final_loss": 0.2391730560813492,
+    "reason": "target",
+    "cap": 600,
+    "loss0": 14.51687141836155,
+    "min_loss": 0.2391730560813492,
+    "final_over_target": 0.996554400338955,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 200,
+      "final_loss": 0.2391730560813492,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 211,
+      "final_loss": 0.2386521423495898,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 182,
+      "final_loss": 0.2371490865421593,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 81,
+    "final_loss": 0.2396250757456035,
+    "reason": "target",
+    "cap": 5000,
+    "loss0": 14.848159304456136,
+    "min_loss": 0.2396250757456035,
+    "final_over_target": 0.9984378156066812,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 81,
+      "final_loss": 0.2396250757456035,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 43,
+    "final_loss": 0.2367491602701036,
+    "loss": [
+     14.848159304456138,
+     4.190542320548339,
+     2.26657830340817,
+     0.6446807927180465,
+     0.5292850009405261,
+     0.5091577483317119,
+     0.5144160292007817,
+     0.5351180697396105,
+     0.5910788946475272,
+     0.6313006128916071,
+     0.7224737811389805,
+     0.6936280015478262,
+     0.8241796123567495,
+     0.7180571503966418,
+     0.8824817451898157,
+     0.7291625357239891,
+     0.9133719411582956,
+     0.7363944610365455,
+     0.93433437428298,
+     0.7417106726193612,
+     0.9507298035790828,
+     0.7457930701979856,
+     0.9639918552846649,
+     0.7489755637828294,
+     0.9750197092187947,
+     0.7513775289241827,
+     0.9842340204673058,
+     0.7529642170618455,
+     0.9916232995977935,
+     0.7534613729994943,
+     0.996486438479995,
+     0.7520894879423601,
+     0.9965528579183544,
+     0.7467387023630657,
+     0.9850730905837152,
+     0.7310449127728633,
+     0.9402496209078388,
+     0.6822478084635704,
+     0.7885336493523115,
+     0.5214020970185813,
+     0.43432646524476226,
+     0.2879068005840821,
+     0.2513991511867392,
+     0.2367491602701036
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave1/B_instrumentation/bl_gravity_P64_cpu_kmax",
+    "paper_iters": 20,
+    "paper_final": 0.9507298035790827,
+    "final_over_target": 0.986454834458765
+   }
+  },
+  "256": {
+   "target": 0.075,
+   "NiL-N": {
+    "n_iter": 1348,
+    "final_loss": 0.074934638730086,
+    "reason": "target",
+    "cap": 10000,
+    "loss0": 14.288720809717509,
+    "min_loss": 0.074934638730086,
+    "final_over_target": 0.9991285164011467,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 1348,
+      "final_loss": 0.074934638730086,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 1893,
+      "final_loss": 0.0748605827231378,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 2529,
+      "final_loss": 0.0749919873713978,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 2057,
+    "final_loss": 0.0749792108495605,
+    "reason": "target",
+    "cap": 4000,
+    "loss0": 14.288720809717509,
+    "min_loss": 0.0749792108495605,
+    "final_over_target": 0.9997228113274733,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 2057,
+      "final_loss": 0.0749792108495605,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 4000,
+      "final_loss": 0.1591304178446386,
+      "stopping_reason": "iteration_cap"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 2679,
+      "final_loss": 0.0749912316203288,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 867,
+    "final_loss": 0.0749939910805701,
+    "reason": "target",
+    "cap": 10000,
+    "loss0": 14.413424246950742,
+    "min_loss": 0.0749939910805701,
+    "final_over_target": 0.9999198810742681,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 867,
+      "final_loss": 0.0749939910805701,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 12,
+    "final_loss": 0.07426290746366455,
+    "loss": [
+     14.413424246950742,
+     8.550449109563912,
+     13.173150898866892,
+     1.7076061146854453,
+     0.15122972031970466,
+     0.12530330472667056,
+     0.11697588588313443,
+     0.11101929773515155,
+     0.10487105171669864,
+     0.09704639145875195,
+     0.08746303533563708,
+     0.07899517341011678,
+     0.07426290746366455
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bl_gravity_P256_cpu_paper",
+    "paper_iters": 12,
+    "paper_final": 0.07426290746366458,
+    "final_over_target": 0.9901720995155274
+   }
+  },
+  "576": {
+   "target": 0.045,
+   "NiL-N": {
+    "n_iter": 1088,
+    "final_loss": 0.0449913826721102,
+    "reason": "target",
+    "cap": 15000,
+    "loss0": 13.95595776961328,
+    "min_loss": 0.0449913826721102,
+    "final_over_target": 0.9998085038246711,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 1088,
+      "final_loss": 0.0449913826721102,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 1832,
+      "final_loss": 0.0449967477289659,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 5880,
+      "final_loss": 0.0449915083504525,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 5413,
+    "final_loss": 0.0449658783563671,
+    "reason": "target",
+    "cap": 8000,
+    "loss0": 13.95595776961328,
+    "min_loss": 0.0449658783563671,
+    "final_over_target": 0.9992417412526023,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 5413,
+      "final_loss": 0.0449658783563671,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 5944,
+      "final_loss": 0.0449981767379434,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 4958,
+      "final_loss": 0.0449910546843326,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 1233,
+    "final_loss": 0.0449996247177115,
+    "reason": "target",
+    "cap": 15000,
+    "loss0": 13.894608881973722,
+    "min_loss": 0.0449996247177115,
+    "final_over_target": 0.999991660393589,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 1233,
+      "final_loss": 0.0449996247177115,
+      "stopping_reason": "target"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 5,
+    "final_loss": 0.0428032901270633,
+    "loss": [
+     13.894608881973719,
+     6.731352856649729,
+     13.382266672223585,
+     1.4462622253309827,
+     0.07390072787386587,
+     0.0428032901270633
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bl_gravity_P576_cpu_paper",
+    "paper_iters": 5,
+    "paper_final": 0.042803290127063326,
+    "final_over_target": 0.9511842250458511
+   }
+  },
+  "1024": {
+   "target": 0.011,
+   "NiL-N": {
+    "n_iter": 15114,
+    "final_loss": 0.0109994427817379,
+    "reason": "target",
+    "cap": 20000,
+    "loss0": 14.230733079065246,
+    "min_loss": 0.0109994427817379,
+    "final_over_target": 0.9999493437943546,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 15114,
+      "final_loss": 0.0109994427817379,
+      "stopping_reason": "target"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 20000,
+      "final_loss": 0.0208065512658171,
+      "stopping_reason": "iteration_cap"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 20000,
+      "final_loss": 0.0245404502722108,
+      "stopping_reason": "iteration_cap"
+     }
+    ]
+   },
+   "NiL-Q": {
+    "n_iter": 10000,
+    "final_loss": 0.0362656813740958,
+    "reason": "iteration_cap",
+    "cap": 10000,
+    "loss0": 14.230733079065246,
+    "min_loss": 0.0362656813740958,
+    "final_over_target": 3.2968801249178,
+    "seeds": [
+     {
+      "seed": 0.0,
+      "total_iterations": 10000,
+      "final_loss": 0.0362656813740958,
+      "stopping_reason": "iteration_cap"
+     },
+     {
+      "seed": 1.0,
+      "total_iterations": 10000,
+      "final_loss": 0.0430301006188264,
+      "stopping_reason": "iteration_cap"
+     },
+     {
+      "seed": 2.0,
+      "total_iterations": 10000,
+      "final_loss": 0.0356470780334741,
+      "stopping_reason": "iteration_cap"
+     }
+    ]
+   },
+   "LiL-N": {
+    "n_iter": 14206,
+    "final_loss": 0.0129279218853479,
+    "reason": "optimizer_stall",
+    "cap": 20000,
+    "loss0": 13.975026243237094,
+    "min_loss": 0.0129279218853479,
+    "final_over_target": 1.1752656259407182,
+    "seeds": [
+     {
+      "seed": NaN,
+      "total_iterations": 14206,
+      "final_loss": 0.0129279218853479,
+      "stopping_reason": "optimizer_stall"
+     }
+    ]
+   },
+   "LiL-Q": {
+    "n_iter": 5,
+    "final_loss": 0.010297356716942903,
+    "loss": [
+     13.975026243237089,
+     6.274688723312706,
+     13.453747734690154,
+     2.108471439060517,
+     0.05317008776112722,
+     0.010297356716942903
+    ],
+    "source": "<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/waves/results/wave2/B_instrumentation/bl_gravity_P1024_cpu_paper",
+    "paper_iters": 5,
+    "paper_final": 0.010297356716942903,
+    "final_over_target": 0.9361233379039003
+   }
+  }
+ }
+}

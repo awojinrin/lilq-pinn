@@ -1,0 +1,19 @@
+{
+  "stage": "burgers",
+  "commit": "4f327f730d9cc5a363afb7a23b37adb91579fe59",
+  "device": "cpu",
+  "threads": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "slurm_job": "20017326",
+  "timing": "one untimed warm-up, then the median of 3 clean runs (diagnostics off); assembly and solve timed separately",
+  "section": "4.3",
+  "K_max": 20,
+  "tol": 1e-09,
+  "nu": 0.1,
+  "reference": "Cole-Hopf (Section 6.2)",
+  "error_grid": "201 x 201",
+  "runs": 5
+}

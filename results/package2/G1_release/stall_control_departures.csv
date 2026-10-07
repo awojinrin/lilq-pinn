@@ -1,0 +1,7 @@
+benchmark,P,method,seed,device,departs_at_iteration,original_stall_iteration,original_total_iterations,gap,at_last_logged_row_before_stall,original_run,control_run
+bratu,100,NiL-Q,2,cuda,6400,6400,6400,0,True,bratu_P100_NiL-Q_s2_cuda,bratu_P100_NiL-Q_s2_cuda_f1_stall_rule
+burgers,400,NiL-Q,1,cuda,5560,5560,5560,0,True,burgers_P400_NiL-Q_s1_cuda,burgers_P400_NiL-Q_s1_cuda_f1_stall_rule
+burgers,400,LiL-N,,cuda,1320,1320,1320,0,True,burgers_P400_LiL-N_sna_cuda,burgers_P400_LiL-N_sna_cuda_f1_stall_rule
+burgers,625,NiL-Q,0,cuda,5240,5241,5241,1,True,burgers_P625_NiL-Q_s0_cuda,burgers_P625_NiL-Q_s0_cuda_f1_stall_rule
+bl,1024,NiL-Q,2,cuda,8140,8153,8153,13,False,bl_P1024_NiL-Q_s2_cuda,bl_P1024_NiL-Q_s2_cuda_f1_stall_rule
+burgers,400,NiL-Q,2,cuda,5800,5814,5814,14,False,burgers_P400_NiL-Q_s2_cuda,burgers_P400_NiL-Q_s2_cuda_f1_stall_rule

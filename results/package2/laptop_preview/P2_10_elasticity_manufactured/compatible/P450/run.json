@@ -1,0 +1,59 @@
+{
+  "N_total": 4552,
+  "N_composition": {
+    "pde_x": 1936,
+    "pde_y": 1936,
+    "bc": 680
+  },
+  "P_total": 450,
+  "P_composition": {
+    "u_x": 225,
+    "u_y": 225
+  },
+  "row_weights": {
+    "pde": 0.022727272727272728,
+    "bc": 0.3429971702850177
+  },
+  "collocation_construction": {
+    "method": "equispaced tensor grid",
+    "n_pde": 1936,
+    "n_bc_per_edge": 85,
+    "k_ratio": 10,
+    "collocation_ratios": [
+      0.85,
+      0.15
+    ],
+    "bc_mode": "paper"
+  },
+  "basis_description": {
+    "u_x": {
+      "family": "cos_sin",
+      "modes_x": 15,
+      "modes_y": 15
+    },
+    "u_y": {
+      "family": "sin_cheb",
+      "modes_x": 15,
+      "modes_y": 15
+    }
+  },
+  "initial_coefficients": "n/a (single direct linear solve, no iterative initial guess)",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "single_direct_solve"
+  },
+  "K_max": 1,
+  "stopping_reason": "direct_solve",
+  "first_stall_iteration": null,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 0,
+    "rel_err": 0.0,
+    "max_rel_err_over_run": 0.0
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "738b8797358e7c3d0505198fca80fa8b83ec5a7e"
+}

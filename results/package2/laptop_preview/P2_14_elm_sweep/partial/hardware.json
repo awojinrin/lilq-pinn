@@ -1,0 +1,79 @@
+{
+  "cpu": {
+    "model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+    "machine": "AMD64",
+    "logical_cores": 24,
+    "usable_cores": 24,
+    "hostname": "GBENGA",
+    "system": "Windows 11"
+  },
+  "gpu": {
+    "available": true,
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "driver_version": "596.36",
+        "memory_total": "16303 MiB"
+      }
+    ],
+    "cuda_available_to_torch": true,
+    "torch_cuda_build_version": "13.0",
+    "cudnn_version": 91200
+  },
+  "scheduler": {
+    "slurm": false
+  },
+  "blas_thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "threads": {
+    "torch_num_threads": 24,
+    "torch_num_interop_threads": 24,
+    "threadpools": [
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "version": "0.3.31.dev",
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\numpy.libs\\libscipy_openblas64_-74a408729250596b0973e69fdd954eea.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 24,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiomp5md.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 1,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiompstubs5md.dll"
+      },
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "version": "0.3.30",
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\scipy.libs\\libscipy_openblas-64eda39e79589aedb16f58e5547eb599.dll"
+      }
+    ]
+  },
+  "packages": {
+    "python": "3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)]",
+    "numpy": "2.4.2",
+    "scipy": "1.17.0",
+    "torch": "2.10.0+cu130"
+  },
+  "git": {
+    "available": true,
+    "source": "git",
+    "commit": "bf0b0e411e76b887659271b23cfea79e4758a6c0",
+    "branch": "v3-dev",
+    "dirty": true,
+    "diff": "diff --git a/lilq/basis.py b/lilq/basis.py\nindex 07e7454..3376513 100644\n--- a/lilq/basis.py\n+++ b/lilq/basis.py\n@@ -648,6 +648,41 @@ class ELMBasis2D_TorchDefault(ELMBasis2D_Xavier):\n         self.gamma = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-bound, bound)\n \n \n+class ELMBasis2D_Uniform(ELMBasis2D_Xavier):\n+    \"\"\"ELM basis with weights and biases uniform on (-sigma, sigma), drawn in\n+    the order of the other ELM classes (alpha, beta, gamma), so that sigma =\n+    sqrt(6 / (2 + n_hidden)) reproduces ``ELMBasis2D_Xavier`` and sigma =\n+    1/sqrt(2) ``ELMBasis2D_TorchDefault`` for the same seed. Package 2,\n+    item 4 (the hidden-weight scale sweep and the ELM basis on Kovasznay).\"\"\"\n+\n+    def __init__(self, n_hidden: int,\n+                 domain_x: Tuple[float, float],\n+                 domain_y: Tuple[float, float],\n+                 sigma: float,\n+                 activation: str = 'tanh',\n+                 seed: Optional[int] = 42,\n+                 dtype=None,\n+                 device: str = 'cpu'):\n+        if dtype is None:\n+            dtype = torch.float64\n+        self._n_hidden = n_hidden\n+        self._domain_x = (float(domain_x[0]), float(domain_x[1]))\n+        self._domain_y = (float(domain_y[0]), float(domain_y[1]))\n+        self._activation = activation\n+        self._dtype = dtype\n+        self._device = device\n+        self._ax, self._bx = self._domain_x\n+        self._ay, self._by = self._domain_y\n+        self._Lx = self._bx - self._ax\n+        self._Ly = self._by - self._ay\n+        self.sigma = float(sigma)\n+        if seed is not None:\n+            torch.manual_seed(seed)\n+        self.alpha = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-self.sigma, self.sigma)\n+        self.beta = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-self.sigma, self.sigma)\n+        self.gamma = torch.empty(n_hidden, dtype=dtype, device=device).uniform_(-self.sigma, self.sigma)\n+\n+\n # ==============================================================================\n #                      AUGMENTED BASIS (with polynomial lift)\n # ==============================================================================\ndiff --git a/problems/kovasznay.py b/problems/kovasznay.py\nindex d050dc1..b2adbb1 100644\n--- a/problems/kovasznay.py\n+++ b/problems/kovasznay.py\n@@ -82,6 +82,19 @@ class KovasznayConfig:\n     # edge sqrt(lambda_bc / n_edge)), or 'clenshaw_curtis' (CGL grids only):\n     # tensor Clenshaw-Curtis quadrature weights, see _row_weights.\n     weights: str = 'equal'\n+    # Package 2, item 4 (P2-4): the ELM basis and the normal-equation control.\n+    # basis_type='elm_uniform': one tanh random-feature basis of elm_neurons,\n+    # weights and biases U(-elm_sigma, elm_sigma) drawn with elm_seed, shared by\n+    # u, v and p (each field its own coefficients). layout_P > 0 sizes the\n+    # collocation set as for that P (the paper's P = 1,875 layout for the\n+    # 1,800-coefficient ELM). linear_solver='normal' solves each subproblem\n+    # from A^T A beta = A^T f by Cholesky, with a shift 1e-16 tr(A^T A) / P only\n+    # if Cholesky fails. The defaults change nothing.\n+    elm_neurons: int = 600\n+    elm_sigma: float = 1.0\n+    elm_seed: int = 0\n+    layout_P: int = 0\n+    linear_solver: str = 'gelsy'\n \n \n # \u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\u00e2\u201d\u20ac\n@@ -401,6 +414,22 @@ def _lstsq_gpu_qr(A: np.ndarray, b: np.ndarray, timings: Optional[dict] = None):\n     return x_host, R_diag, peak_mem_bytes\n \n \n+def _solve_normal_equations(A: np.ndarray, b: np.ndarray):\n+    \"\"\"Package 2, item 4 (the normal-equation control): A^T A beta = A^T b by\n+    Cholesky, in double precision, no penalty. Only if the factorization fails,\n+    the diagonal is shifted by 1e-16 tr(A^T A) / P and it is retried.\n+    Returns ``(beta, shifted, A^T A)``.\"\"\"\n+    AtA, Atb = A.T @ A, A.T @ b\n+    try:\n+        return scipy.linalg.cho_solve(scipy.linalg.cho_factor(AtA, lower=False, check_finite=False), Atb,\n+                                      check_finite=False), False, AtA\n+    except np.linalg.LinAlgError:\n+        shift = 1e-16 * np.trace(AtA) / AtA.shape[0]\n+        M = AtA + shift * np.eye(AtA.shape[0])\n+        return scipy.linalg.cho_solve(scipy.linalg.cho_factor(M, lower=False, check_finite=False), Atb,\n+                                      check_finite=False), True, AtA\n+\n+\n def _qr_degeneracy_ratio(R_diag: np.ndarray) -> float:\n     \"\"\"$\\\\min_p|R_{pp}|/\\\\max_p|R_{pp}|$ -- Section 3.2's rank-degeneracy\n     flag threshold check is ``< 1e-13`` on this ratio.\"\"\"\n@@ -618,12 +647,19 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,\n     nu = physics.nu\n \n     # Create bases (same for u, v, p)\n-    basis_u = create_basis_2d(config.basis_type, config.N_x, config.N_y,\n-                              config.x_domain, config.y_domain)\n-    basis_v = create_basis_2d(config.basis_type, config.N_x, config.N_y,\n-                              config.x_domain, config.y_domain)\n-    basis_p = create_basis_2d(config.basis_type, config.N_x, config.N_y,\n-                              config.x_domain, config.y_domain)\n+    if config.basis_type == 'elm_uniform':\n+        from lilq.basis import ELMBasis2D_Uniform\n+        basis_u = basis_v = basis_p = ELMBasis2D_Uniform(config.elm_neurons, config.x_domain, config.y_domain,\n+                                                         sigma=config.elm_sigma, seed=config.elm_seed)\n+    else:\n+        basis_u = create_basis_2d(config.basis_type, config.N_x, config.N_y,\n+                                  config.x_domain, config.y_domain)\n+        basis_v = create_basis_2d(config.basis_type, config.N_x, config.N_y,\n+                                  config.x_domain, config.y_domain)\n+        basis_p = create_basis_2d(config.basis_type, config.N_x, config.N_y,\n+                                  config.x_domain, config.y_domain)\n+    if config.linear_solver not in ('gelsy', 'normal') or (config.linear_solver == 'normal' and config.use_gpu):\n+        raise ValueError(f\"linear_solver {config.linear_solver!r} (normal equations on the CPU only)\")\n \n     Pu, Pv, Pp = basis_u.n_basis, basis_v.n_basis, basis_p.n_basis\n     P_total = Pu + Pv + Pp\n@@ -639,7 +675,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,\n     t_diag = 0.0  # time in the passive diagnostics, excluded from total_time\n \n     # Collocation\n-    pts = _generate_collocation(config, P_total)\n+    pts = _generate_collocation(config, config.layout_P or P_total)\n     xp, yp = pts['x_pde'], pts['y_pde']\n     n_pde = pts['n_pde']\n \n@@ -706,6 +742,7 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,\n         'iteration': [], 'coeff_change': [],\n         'pde_residual': [], 'continuity_residual': [],\n         'solve_time': [], 'cond_number': [],\n+        'cholesky_shift': [], 'kappa_AtA': [],      # linear_solver='normal' only\n     }\n \n     tracker = None\n@@ -843,6 +880,13 @@ def solve_kovasznay(config: KovasznayConfig, verbose=True,\n                 # Section 3.2 -- the GPU iterate itself still drives the\n                 # quasilinearization forward; substituting the CPU result\n                 # here would silently change what \"the GPU run\" measures.\n+        elif config.linear_solver == 'normal':\n+            t0 = time.perf_counter()\n+            theta_new, shifted, AtA = _solve_normal_equations(A_sys, b_sys)\n+            t_solve_s = time.perf_counter() - t0\n+            solver_path, rank_gelsy = 'cpu_normal_cholesky', None\n+            history['cholesky_shift'].append(shifted)\n+            history['kappa_AtA'].append(float(np.linalg.cond(AtA)) if diagnostics else float('nan'))\n         else:\n             t0 = time.perf_counter()\n             theta_new, _residues, rank_gelsy, _s = scipy.linalg.lstsq("
+  }
+}

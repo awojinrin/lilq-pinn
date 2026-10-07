@@ -1,0 +1,17 @@
+{
+  "series": "beltrami",
+  "problem": "beltrami",
+  "size": 8,
+  "device": "cuda",
+  "slurm_job": "20030356",
+  "commit": "e5eb447d8d6ea99669abc24df93dea6de9a1aeb2",
+  "gpu_name": "NVIDIA A100-PCIE-40GB",
+  "gpu_total_bytes": 42404806656,
+  "recorded_from": "slurm_logs/stage2_gpu/lilq-p2s2g-scaling-gpu.20030356.out",
+  "recorded_by": "p2_assemble.gpu_did_not_fit_from_logs: run_one at this commit raised on this limit instead of recording it",
+  "status": "did_not_fit",
+  "P": 22288,
+  "N": 75689,
+  "A_bytes": 13495651456,
+  "error": "torch._C._LinAlgError: cusolver error: CUSOLVER_STATUS_INVALID_VALUE, when calling `cusolverDnDormqr_bufferSize(handle, side, trans, m, n, k, A, lda, tau, C, ldc, lwork)`. This error may appear if the input matrix contains NaN. If you keep seeing this error, you may use `torch.backends.cuda.preferred_linalg_library()` to try linear algebra operators with other supported backends. See https://pytorch.org/docs/stable/backends.html#torch.backends.cuda.preferred_linalg_library"
+}

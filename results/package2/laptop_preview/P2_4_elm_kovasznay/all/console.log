@@ -1,0 +1,20 @@
+  C5 (Chebyshev P = 300, k = 1, against QR): normal_shifted 3.7e-13 (1e-16), normal_eigh 5.2e-13 (300) -> passed
+  Chebyshev qr            : 9 iterations (tolerance), E_u 2.90e-02, kappa(A) 7.9e+02, shift or rank -
+  Chebyshev normal_shifted: 9 iterations (tolerance), E_u 2.90e-02, kappa(A) 7.9e+02, shift or rank 1e-16
+  Chebyshev normal_eigh   : 9 iterations (tolerance), E_u 2.90e-02, kappa(A) 7.9e+02, shift or rank 300
+  sigma sweep (seed 0, QR): 0.3: ||R||_h 9.10e-04, 1: ||R||_h 3.90e-09, 3: ||R||_h 7.98e-08; best 1
+  qr             seed 0: 60 iterations (k_max), E_u 2.24e-10, kappa(A) 3.8e+19, rank 726, shift or rank -
+  qr             seed 1: 60 iterations (k_max), E_u 3.34e-10, kappa(A) 5.1e+18, rank 723, shift or rank -
+  qr             seed 2: 60 iterations (k_max), E_u 1.79e-10, kappa(A) 6.6e+19, rank 734, shift or rank -
+  qr             seed 3: 60 iterations (k_max), E_u 2.32e-10, kappa(A) 3.5e+18, rank 729, shift or rank -
+  qr             seed 4: 60 iterations (k_max), E_u 2.60e-10, kappa(A) 3.5e+18, rank 730, shift or rank -
+  normal_shifted seed 0: 60 iterations (k_max), E_u 5.85e-04, kappa(A) 4.1e+18, rank 726, shift or rank 1e-12
+  normal_shifted seed 1: 60 iterations (k_max), E_u 5.95e-04, kappa(A) 1.0e+19, rank 723, shift or rank 1e-12
+  normal_shifted seed 2: 60 iterations (k_max), E_u 2.55e-04, kappa(A) 1.0e+20, rank 734, shift or rank 1e-12
+  normal_shifted seed 3: 60 iterations (k_max), E_u 3.82e-04, kappa(A) 3.4e+18, rank 729, shift or rank 1e-12
+  normal_shifted seed 4: 60 iterations (k_max), E_u 4.85e-04, kappa(A) 3.6e+18, rank 730, shift or rank 1e-12
+  normal_eigh    seed 0: 60 iterations (k_max), E_u 7.86e-03, kappa(A) 4.0e+18, rank 726, shift or rank 233
+  normal_eigh    seed 1: 60 iterations (k_max), E_u 9.30e-03, kappa(A) 5.1e+18, rank 723, shift or rank 230
+  normal_eigh    seed 2: 60 iterations (k_max), E_u 2.77e-03, kappa(A) 5.5e+20, rank 734, shift or rank 232
+  normal_eigh    seed 3: 60 iterations (k_max), E_u 5.02e-03, kappa(A) 3.3e+18, rank 729, shift or rank 228
+  normal_eigh    seed 4: 60 iterations (k_max), E_u 8.46e-03, kappa(A) 3.6e+18, rank 730, shift or rank 232

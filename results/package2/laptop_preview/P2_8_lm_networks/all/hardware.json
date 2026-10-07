@@ -1,0 +1,72 @@
+{
+  "cpu": {
+    "model": "Intel64 Family 6 Model 198 Stepping 2, GenuineIntel",
+    "machine": "AMD64",
+    "logical_cores": 24,
+    "usable_cores": 24,
+    "hostname": "GBENGA",
+    "system": "Windows 11"
+  },
+  "gpu": {
+    "available": true,
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 5080 Laptop GPU",
+        "driver_version": "596.36",
+        "memory_total": "16303 MiB"
+      }
+    ],
+    "cuda_available_to_torch": true,
+    "torch_cuda_build_version": "13.0",
+    "cudnn_version": 91200
+  },
+  "scheduler": {
+    "slurm": false
+  },
+  "blas_thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "threads": {
+    "torch_num_threads": 24,
+    "torch_num_interop_threads": 24,
+    "threadpools": [
+      {
+        "user_api": "blas",
+        "internal_api": "openblas",
+        "num_threads": 24,
+        "version": "0.3.31.dev",
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\numpy.libs\\libscipy_openblas64_-74a408729250596b0973e69fdd954eea.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 24,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiomp5md.dll"
+      },
+      {
+        "user_api": "openmp",
+        "internal_api": "openmp",
+        "num_threads": 1,
+        "version": null,
+        "filepath": "<laptop-home>\\AppData\\Roaming\\Python\\Python314\\site-packages\\torch\\lib\\libiompstubs5md.dll"
+      }
+    ]
+  },
+  "packages": {
+    "python": "3.14.2 (tags/v3.14.2:df79316, Dec  5 2025, 17:18:21) [MSC v.1944 64 bit (AMD64)]",
+    "numpy": "2.4.2",
+    "scipy": "1.17.0",
+    "torch": "2.10.0+cu130"
+  },
+  "git": {
+    "available": true,
+    "source": "git",
+    "commit": "e0ba645f7ecb0ff911e6ce979623c219dca0f5c2",
+    "branch": "v3-dev",
+    "dirty": false,
+    "diff": null
+  }
+}

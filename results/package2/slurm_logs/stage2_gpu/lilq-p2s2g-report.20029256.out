@@ -1,0 +1,4 @@
+provenance lock OK: commit 5271d8bf5e7e, tree 7bf587042d0b
+job 20029256 on c172: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2_gpu.tar.gz (0.0 MB; 1 job logs)

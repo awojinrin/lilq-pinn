@@ -1,0 +1,27 @@
+script,old,new
+conv_data.py,replaced by,..\Computational_Package2\response_stage1\figure_scripts\figure_scripts\conv_data.py
+conv_data.py,/home/claude/wave1/results/wave1,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+conv_data.py,/home/claude/w2/results/wave2,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+fig_basis.py,/home/claude/w4/results/wave4,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+fig_basis.py,/home/claude/figs3,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+fig_basis.py,/home/claude/figs,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+fig_compA.py,'fixes/option_b/section46/results/kovasznay_comparison.csv','A_calibration/results/kovasznay_comparison.csv'
+fig_compA.py,/home/claude/w4/results/wave4,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+fig_compA.py,/home/claude/figs,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+fig_conv.py,/home/claude/figs2,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+fig_conv.py,/home/claude/figs,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+fig_fields.py,/home/claude/figdata/results/figure_data,<laptop-home>/AppData/Local/Temp/claude/C--Users-<user>-Documents-LiL-Q/b870b5bf-bc15-4f34-8be6-4c7449cc20a2/scratchpad/figdata/results/figure_data
+fig_fields.py,/home/claude/figs,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+fig_np.py,/home/claude/wave1/results/wave1,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+fig_np.py,/home/claude/c1c2,<laptop-home>/Documents/LiL-Q/Post-JCP/Computational_Package2/Package2v2/attachments/S85_sampling_constants
+fig_np.py,/home/claude/figs,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+fig_resid.py,/home/claude/wave1/results/wave1,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+fig_resid.py,/home/claude/w2/results/wave2,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+fig_resid.py,/home/claude/figs,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+style.py,/home/claude/figs,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+gen_screening.py,/home/claude/w4/results/wave4,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+gen_screening.py,/home/claude/ms/edits,<laptop-home>/Documents/LiL-Q/Post-JCP/package2_results/G1_release/manuscript_scripts_package1
+heldout.py,/home/claude/wave1/results/wave1,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+heldout.py,/home/claude/w3/results/wave3,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+ns_eval.py,/home/claude/wave1/results/wave1,<laptop-home>/Documents/LiL-Q/Post-JCP/package1_local/package1
+ns_eval.py,/home/claude/pilot,<laptop-home>/Documents/LiL-Q/Post-JCP/Computational_Package2/Package2v2/attachments/bratu_pilot

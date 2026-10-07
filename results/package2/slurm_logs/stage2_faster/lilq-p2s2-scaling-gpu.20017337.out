@@ -1,0 +1,33 @@
+provenance lock OK: commit 4f327f730d9c, tree ba7a4a34dfa3
+job 20017337 on g003: 48 threads, 48 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+  kovasznay_P_25_cuda: P = 1875, N = 5564 (N/P 2.97), 6 iterations, 1.01 s (assembly 0.48, solve 0.47), host peak 1.48 GB, GPU peak 0.29 GB, kappa 3.9e+05, rank 1875, E_u 6.99e-13
+  kovasznay_P_30_cuda: P = 2700, N = 8068 (N/P 2.99), 6 iterations, 2.02 s (assembly 1.29, solve 0.63), host peak 1.85 GB, GPU peak 0.60 GB, kappa 3.8e+06, rank 2700, E_u 1.98e-15
+Traceback (most recent call last):
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 484, in <module>
+    main()
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 467, in main
+    run_one(args.series[0], as_size(args.size), args.device, args.out)
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 222, in run_one
+    warm = _solve(problem, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 180, in _solve
+    return solve_kovasznay(config, verbose=False, diagnostics=False, **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$SCRATCH/lilq-run/lilq-pinn/problems/kovasznay.py", line 890, in solve_kovasznay
+    theta_new, R_diag, gpu_mem_peak_bytes = _lstsq_gpu_qr(A_sys, b_sys, timings=parts)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$SCRATCH/lilq-run/lilq-pinn/problems/kovasznay.py", line 403, in _lstsq_gpu_qr
+    reflectors, tau = torch.geqrf(At)            # R in the upper triangle, Householder vectors below
+                      ^^^^^^^^^^^^^^^
+RuntimeError: cusolver error: CUSOLVER_STATUS_INTERNAL_ERROR, when calling `cusolverDnXgeqrf( handle, params, m, n, CUDA_R_64F, reinterpret_cast<void*>(A), lda, CUDA_R_64F, reinterpret_cast<void*>(tau), CUDA_R_64F, reinterpret_cast<void*>(bufferOnDevice), workspaceInBytesOnDevice, reinterpret_cast<void*>(bufferOnHost), workspaceInBytesOnHost, info)`. If you keep seeing this error, you may use `torch.backends.cuda.preferred_linalg_library()` to try linear algebra operators with other supported backends. See https://pytorch.org/docs/stable/backends.html#torch.backends.cuda.preferred_linalg_library
+Traceback (most recent call last):
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 484, in <module>
+    main()
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 470, in main
+    run_series(args.series, args.device, args.out, [as_size(v) for v in args.sizes] if args.sizes else None)
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 295, in run_series
+    subprocess.run([sys.executable, __file__, 'one', '--series', series, '--size', str(size),
+  File "/sw/eb/sw/Python/3.12.3-GCCcore-13.3.0/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['$SCRATCH/lilq-run/venv/bin/python', '$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py', 'one', '--series', 'kovasznay_P', '--size', '35', '--device', 'cuda', '--out', '$SCRATCH/lilq-run/lilq-pinn/results/package2_stage2']' returned non-zero exit status 1.
