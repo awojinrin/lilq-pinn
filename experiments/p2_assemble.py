@@ -237,7 +237,8 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
     commit = lock['commit']
     gpu_commit = json.loads((Path(gpu) / 'COMMIT').read_text())['commit'] if gpu is not None else None
     head = _git('rev-parse', 'HEAD')
-    if check_commit and head not in (commit, gpu_commit):
+    allowed = {commit} | ({gpu_commit} if gpu_commit else set())   # never None: the cluster copy has no git
+    if check_commit and head not in allowed:
         raise SystemExit(f'the local checkout is at {head}, the stage is locked to {commit}'
                          + (f' and the GPU addendum to {gpu_commit}' if gpu_commit else '')
                          + f': check out {commit} (git checkout {commit[:7]}) and run again')

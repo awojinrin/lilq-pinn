@@ -164,6 +164,22 @@ def test_stage2_assembly_refuses_another_commit(tmp_path):
         pa.stage2(stage, out, summaries=False)
 
 
+def test_stage2_assembly_refuses_without_git(tmp_path, monkeypatch):
+    """No git (as in the cluster bundle): the checkout's commit is unknown, and the
+    assembly refuses, with or without the GPU addendum (batch 8's check once let it pass)."""
+    import json
+    import experiments.p2_assemble as pa
+    monkeypatch.setattr(pa, '_git', lambda *args: None)
+    stage, out = _fake_stage(tmp_path, '0' * 40)
+    with pytest.raises(SystemExit, match='locked to'):
+        pa.stage2(stage, out, summaries=False)
+    gpu = tmp_path / 'gpu'
+    gpu.mkdir()
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': '1' * 40}))
+    with pytest.raises(SystemExit, match='GPU addendum'):
+        pa.stage2(stage, tmp_path / 'out2', summaries=False, gpu=gpu)
+
+
 def test_stage2_assembly_merges_fasters_part(tmp_path):
     import json
     import subprocess
