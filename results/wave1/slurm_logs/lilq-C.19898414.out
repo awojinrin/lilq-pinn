@@ -197,4 +197,4 @@ no GPU visible
   bratu_P225_r20_random_s2                 N/P=20.02 iters=25 Rlin=5.05e-04 kappa=7.87e+08 [K_max] (3.4s)
   bratu_P225_r20_random_s3                 N/P=20.02 iters=4 Rlin=4.33e-04 kappa=8.21e+08 [target] (0.7s)
   bratu_P225_r20_random_s4                 N/P=20.02 iters=4 Rlin=4.98e-04 kappa=8.11e+08 [target] (0.7s)
-Wrote /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/C_oversampling/results/oversampling.csv
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/wave1/C_oversampling/results/oversampling.csv

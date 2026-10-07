@@ -1,7 +1,7 @@
 provenance lock OK: commit 8a3f5f7cc4c2, tree ead9b37f635f
 job 19898412 on c620: 48 threads, 48 cores usable, OverSubscribe=NO
 no GPU visible
-53 runs -> /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation
+53 runs -> $SCRATCH/lilq-run/lilq-pinn/results/wave1/B_instrumentation
   bratu_P25_cpu_paper: 2 iterations, t_cum=0.000s, wall=0.3s
   bratu_P25_cpu_kmax: 60 iterations, t_cum=0.013s, wall=0.1s
   bratu_P100_cpu_paper: 3 iterations, t_cum=0.031s, wall=0.4s
@@ -56,7 +56,7 @@ no GPU visible
   darcy_S3_cpu_paper: 1 iterations, t_cum=24.039s, wall=31.0s
   darcy_SPE10_cpu_paper: 1 iterations, t_cum=27.671s, wall=36.9s
 
-ok=53 skipped=0 failed=0 in 2545.4s; index: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/runs_index.csv
+ok=53 skipped=0 failed=0 in 2545.4s; index: $SCRATCH/lilq-run/lilq-pinn/results/wave1/B_instrumentation/runs_index.csv
 ======================================================================
 BELTRAMI, PRESSURE PINNED AT 8 TEMPORAL LEVELS (Section 3.7)
   N_vel=6, N_p=8, basis=chebyshev
@@ -91,7 +91,7 @@ LiL-Q SOLVE: 3D Beltrami Flow
 
   t=1 pressure error: 0.7515% (paper baseline: 0.752%, improved: True)
 
-  Report written to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/beltrami_pinned/report.json
+  Report written to $SCRATCH/lilq-run/lilq-pinn/results/wave1/B_instrumentation/beltrami_pinned/report.json
 ======================================================================
 BELTRAMI, PRESSURE PINNED AT 8 TEMPORAL LEVELS (Section 3.7)
   N_vel=6, N_p=8, basis=chebyshev
@@ -129,4 +129,4 @@ LiL-Q SOLVE: 3D Beltrami Flow
 
   t=1 pressure error: 0.7515% (paper baseline: 0.752%, improved: True)
 
-  Report written to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/beltrami_pinned_kmax/report.json
+  Report written to $SCRATCH/lilq-run/lilq-pinn/results/wave1/B_instrumentation/beltrami_pinned_kmax/report.json

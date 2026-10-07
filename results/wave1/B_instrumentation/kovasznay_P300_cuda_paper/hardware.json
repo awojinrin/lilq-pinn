@@ -40,7 +40,7 @@
     "SLURM_GPUS_ON_NODE": "2",
     "CUDA_VISIBLE_DEVICES": "0,1",
     "SLURMD_NODENAME": "g015",
-    "SLURM_JOB_ACCOUNT": "132698954494",
+    "SLURM_JOB_ACCOUNT": "<account>",
     "node": {
       "NodeName": "g015",
       "CPUTot": "48",
@@ -51,7 +51,7 @@
       "Partitions": "vnc,gpu,special"
     },
     "job": {
-      "Account": "132698954494",
+      "Account": "<account>",
       "Partition": "gpu",
       "NumCPUs": "48",
       "OverSubscribe": "NO"

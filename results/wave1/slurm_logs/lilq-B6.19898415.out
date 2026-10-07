@@ -33,7 +33,7 @@ SECTION 3.6: TABLE 3 (BURGERS BASIS STUDY) COMPLETION
   Running: sin(1..25)(x) x cos+sin(25)(t)  (625 coefficients)
     final ||R||_h^2=4.908538e-09  kappa=963021567.9978925  rank_svd=625
 
-Table 3 CSV written: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/basis_study/table3_basis_study.csv
+Table 3 CSV written: $SCRATCH/lilq-run/lilq-pinn/results/wave1/B_instrumentation/basis_study/table3_basis_study.csv
 
-All outputs: /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/basis_study
+All outputs: $SCRATCH/lilq-run/lilq-pinn/results/wave1/B_instrumentation/basis_study
 DONE.

@@ -35,5 +35,5 @@ bratu
     NiL-Q  seed=2     device=cuda   iters=  7636 loss=3.106e-04 [optimizer_stall] (156.8s)
     LiL-N  seed=n/a   device=cuda   iters= 10000 loss=2.533e-04 [iteration_cap] (121.6s)
 
-Wrote 21 rows to /scratch/user/gbenga-awojinrin/lilq-run/lilq-pinn/results/wave1/B_instrumentation/four_method_jobs/bratu_gpu/four_method_tables.csv (0 failures)
+Wrote 21 rows to $SCRATCH/lilq-run/lilq-pinn/results/wave1/B_instrumentation/four_method_jobs/bratu_gpu/four_method_tables.csv (0 failures)
 Total elapsed: 2006.2s
