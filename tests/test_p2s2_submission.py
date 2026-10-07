@@ -178,6 +178,37 @@ def test_stage2_assembly_refuses_without_git(tmp_path, monkeypatch):
     (gpu / 'COMMIT').write_text(json.dumps({'commit': '1' * 40}))
     with pytest.raises(SystemExit, match='GPU addendum'):
         pa.stage2(stage, tmp_path / 'out2', summaries=False, gpu=gpu)
+    with pytest.raises(SystemExit, match='does not descend'):           # nor with --later-commit
+        pa.stage2(stage, tmp_path / 'out3', summaries=False, gpu=gpu, later_commit=True)
+
+
+def test_stage2_assembly_at_a_later_commit(tmp_path):
+    """--later-commit: a descendant of the locked commits is accepted, and the
+    files changed since are listed; a commit off that line is still refused."""
+    import json
+    import subprocess
+    import experiments.p2_assemble as pa
+    git = lambda *a: subprocess.run(['git', *a], cwd=REPO, capture_output=True, text=True).stdout.strip()  # noqa: E731
+    head, parent = git('rev-parse', 'HEAD'), git('rev-parse', 'HEAD~1')
+    if not (head and parent):
+        pytest.skip('no git checkout')
+    stage, out = _fake_stage(tmp_path, parent)
+    gpu = tmp_path / 'gpu' / 'package2_stage2_gpu'
+    gpu.mkdir(parents=True)
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': parent}))
+    with pytest.raises(SystemExit, match='locked to'):
+        pa.stage2(stage, out, summaries=False, gpu=gpu)
+    r = pa.stage2(stage, out, summaries=False, gpu=gpu, later_commit=True)
+    assert r['assembled_at'] == head
+    assert r['files_changed_for_assembly'] == git('diff', '--name-only', f'{parent}..{head}').splitlines()
+    assert (out / 'code' / 'FILES_CHANGED_FOR_ASSEMBLY.txt').read_text().split() == r['files_changed_for_assembly']
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': 'a' * 40}))       # not an ancestor
+    with pytest.raises(SystemExit, match='does not descend'):
+        pa.stage2(stage, tmp_path / 'out2', summaries=False, gpu=gpu, later_commit=True)
+    # at a locked commit nothing is listed
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': head}))
+    r = pa.stage2(stage, tmp_path / 'out3', summaries=False, gpu=gpu, later_commit=True)
+    assert r['files_changed_for_assembly'] is None and not (tmp_path / 'out3' / 'code' / 'FILES_CHANGED_FOR_ASSEMBLY.txt').exists()
 
 
 def test_stage2_assembly_merges_fasters_part(tmp_path):
@@ -247,8 +278,56 @@ def test_stage2_assembly_merges_the_gpu_addendum(tmp_path):
     assert (out / 'code' / 'COMMIT_stage2_gpu').exists() and (out / 'code' / 'FILES_CHANGED_IN_GPU_ADDENDUM.txt').exists()
     assert r['gpu_addendum']['runs'] == ['kovasznay_P_25_cuda', 'kovasznay_P_35_cuda']
     assert r['gpu_addendum']['old_environment_runs'] == ['kovasznay_P_25']
+    assert r['gpu_addendum']['did_not_fit_from_logs'] == []
     # a checkout at neither commit is refused
     (gpu / 'COMMIT').write_text(json.dumps({'commit': '2' * 40}))
     (stage / 'COMMIT').write_text(json.dumps({'commit': '3' * 40}))
     with pytest.raises(SystemExit, match='GPU addendum'):
         pa.stage2(stage, tmp_path / 'out3', summaries=False, gpu=gpu)
+
+
+# the end of the GPU addendum's scaling log (job 20030356, 6 October), shortened
+ADDENDUM_LOG = """\
+  beltrami_7_cuda: P = 13764, N = 52225 (N/P 3.79), 4 iterations, 48.82 s (assembly 30.42, solve 14.64), host peak 27.47 GB, GPU peak 18.83 GB, kappa 1.0e+05, rank 13764, u(t=1) 1.52e-05, p(t=1) 8.86e-04
+Traceback (most recent call last):
+  File "$SCRATCH/lilq-run/lilq-pinn/problems/kovasznay.py", line 404, in _lstsq_gpu_qr
+    qtb = torch.ormqr(reflectors, tau, bt.unsqueeze(1), left=True, transpose=True)   # Q^T b
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch._C._LinAlgError: cusolver error: CUSOLVER_STATUS_INVALID_VALUE, when calling `cusolverDnDormqr_bufferSize(handle, side, trans, m, n, k, A, lda, tau, C, ldc, lwork)`. This error may appear if the input matrix contains NaN.
+Traceback (most recent call last):
+  File "$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py", line 299, in run_series
+    subprocess.run([sys.executable, __file__, 'one', '--series', series, '--size', str(size),
+  File "/sw/eb/sw/Python/3.12.3-GCCcore-13.3.0/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['$SCRATCH/lilq-run/venv/bin/python', '$SCRATCH/lilq-run/lilq-pinn/experiments/p2_1_scaling.py', 'one', '--series', 'beltrami', '--size', '8', '--device', 'cuda', '--out', '$SCRATCH/lilq-run/lilq-pinn/results/package2_stage2_gpu']' returned non-zero exit status 1.
+"""
+
+
+def test_gpu_did_not_fit_from_logs(tmp_path):
+    """The addendum's Beltrami 22,288 raised on cuSOLVER's ormqr workspace: the
+    assembly writes its did_not_fit record from the log; any other failure, and
+    a run that has its run.json, are left alone."""
+    import json
+    import experiments.p2_assemble as pa
+    gpu, out = tmp_path / 'package2_stage2_gpu', tmp_path / 'out'
+    (gpu / 'slurm_logs').mkdir(parents=True)
+    (gpu / 'P2_1_scaling' / 'beltrami' / 'beltrami_7_cuda').mkdir(parents=True)
+    (gpu / 'P2_1_scaling' / 'beltrami' / 'beltrami_7_cuda' / 'run.json').write_text(
+        json.dumps({'gpu_name': 'NVIDIA A100-PCIE-40GB', 'gpu_total_bytes': 42404806656}))
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': 'e' * 40}))
+    log = gpu / 'slurm_logs' / 'lilq-p2s2g-scaling-gpu.20030356.out'
+    log.write_text(ADDENDUM_LOG)
+    assert pa.gpu_did_not_fit_from_logs(gpu, out) == ['beltrami_8_cuda']
+    rec = json.loads((out / 'P2_1_scaling' / 'beltrami' / 'beltrami_8_cuda' / 'run.json').read_text())
+    assert (rec['status'], rec['P'], rec['N'], rec['A_bytes']) == ('did_not_fit', 22288, 75689, 13495651456)
+    assert (rec['slurm_job'], rec['commit'], rec['gpu_name']) == ('20030356', 'e' * 40, 'NVIDIA A100-PCIE-40GB')
+    assert rec['error'].startswith('torch._C._LinAlgError: cusolver error: CUSOLVER_STATUS_INVALID_VALUE')
+    assert rec['recorded_from'] == 'slurm_logs/stage2_gpu/lilq-p2s2g-scaling-gpu.20030356.out'
+    # written once: a second assembly leaves it alone
+    assert pa.gpu_did_not_fit_from_logs(gpu, out) == []
+    # a failure that is not an A100 limit is not turned into did_not_fit
+    log.write_text(ADDENDUM_LOG.replace('Dormqr_bufferSize', 'Dgeqrf'))
+    assert pa.gpu_did_not_fit_from_logs(gpu, tmp_path / 'out2') == []
+    other = [ln if not ln.startswith('torch._C') else 'ValueError: something else' for ln in ADDENDUM_LOG.splitlines()]
+    log.write_text('\n'.join(other))
+    assert pa.gpu_did_not_fit_from_logs(gpu, tmp_path / 'out3') == []

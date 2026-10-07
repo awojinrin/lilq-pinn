@@ -197,3 +197,40 @@ def test_check_c8prime_beltrami(tmp_path):
     assert c8['passed'] and c8['points'][0]['point'] == 'beltrami_pinned' and len(c8['points'][0]['errors_rel_diff']) == 16
     run['t1_p'] *= 1 + 1e-8
     assert not m.check_c8prime([run], p1)['passed']
+
+
+# the error of the GPU addendum's Beltrami 22,288 run (job 20030356, 6 October)
+ORMQR_ERROR = ("torch._C._LinAlgError: cusolver error: CUSOLVER_STATUS_INVALID_VALUE, when calling "
+               "`cusolverDnDormqr_bufferSize(handle, side, trans, m, n, k, A, lda, tau, C, ldc, lwork)`. This error may "
+               "appear if the input matrix contains NaN.")
+
+
+def test_does_not_fit_takes_out_of_memory_and_the_ormqr_workspace_only():
+    assert m.does_not_fit(RuntimeError('CUDA out of memory. Tried to allocate 13.50 GiB'))
+    assert m.does_not_fit(ORMQR_ERROR)
+    # the same status from another call (a NaN in A, say) is not a size limit
+    assert not m.does_not_fit(ORMQR_ERROR.replace('Dormqr_bufferSize', 'Dgeqrf'))
+    assert not m.does_not_fit('cusolver error: CUSOLVER_STATUS_EXECUTION_FAILED, when calling `cusolverDnDormqr_bufferSize(')
+    assert not m.does_not_fit(ValueError('something else'))
+
+
+def test_did_not_fit_record_beltrami_22288():
+    rec = m.did_not_fit_record('beltrami', 8, 'cuda', ORMQR_ERROR, {'slurm_job': '20030356'})
+    # the CPU run of the same system (job 20017336) had 75,689 rows
+    assert (rec['status'], rec['P'], rec['N'], rec['slurm_job']) == ('did_not_fit', 22288, 75689, '20030356')
+    assert rec['A_bytes'] == 8 * 75689 * 22288 == 13495651456
+    assert (rec['series'], rec['problem'], rec['size'], rec['device']) == ('beltrami', 'beltrami', 8, 'cuda')
+    assert rec['error'] == ORMQR_ERROR
+    k = m.did_not_fit_record('kovasznay_P', 50, 'cuda', 'CUDA out of memory.')
+    assert (k['P'], k['N'], k['A_bytes']) == (7500, None, None)
+
+
+def test_run_one_records_the_ormqr_workspace_limit(tmp_path, monkeypatch):
+    torch = pytest.importorskip('torch')
+    if not torch.cuda.is_available():
+        pytest.skip('no CUDA device')
+    monkeypatch.setattr(m, '_solve', lambda *a, **k: (_ for _ in ()).throw(RuntimeError(ORMQR_ERROR)))
+    rec = m.run_one('beltrami', 8, 'cuda', tmp_path)
+    assert rec['status'] == 'did_not_fit' and rec['P'] == 22288 and 'Dormqr_bufferSize' in rec['error']
+    on_disk = json.loads((tmp_path / 'P2_1_scaling' / 'beltrami' / 'beltrami_8_cuda' / 'run.json').read_text())
+    assert on_disk == rec

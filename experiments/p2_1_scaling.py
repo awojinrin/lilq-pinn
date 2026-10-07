@@ -29,7 +29,12 @@ and C9 (Section 12.3).
     other snapshot times, and the time-averaged relative L2 errors.
   - A size that does not fit in the A100's 40 GB is recorded as
     ``did_not_fit``, with the error, the system's size and the bytes of A
-    (Section 10: report the size at which it does not fit).
+    (Section 10: report the size at which it does not fit). Two limits count:
+    out of GPU memory, and cuSOLVER's ormqr refusing its workspace (the
+    Beltrami system at 22,288, 75,689 x 22,288, in the GPU addendum of
+    6 October: ormqr_bufferSize returns CUSOLVER_STATUS_INVALID_VALUE once the
+    workspace, about the size of A, passes its 32-bit size; see
+    :func:`does_not_fit`).
 
 **Protocol per (series, size, device)**, in a fresh process of its own, since
 peak host memory is a per-process maximum:
@@ -194,6 +199,28 @@ def _errors(problem, config, r):
     return {k: float(e[k]) for k in ERROR_KEYS}
 
 
+def does_not_fit(exc):
+    """Whether a GPU solve stopped on an A100 limit, recorded as ``did_not_fit``:
+    out of memory, or cuSOLVER's ormqr refusing a workspace beyond its 32-bit
+    size. The second came first at Beltrami 22,288 (6 October): the QR of the
+    75,689 x 22,288 system finished, then ``cusolverDnDormqr_bufferSize``
+    returned CUSOLVER_STATUS_INVALID_VALUE. The same query on another GPU and
+    cuSOLVER build accepts every smaller system of the series and rejects this
+    one. Any other error is raised."""
+    msg = str(exc)
+    return 'out of memory' in msg.lower() or ('ormqr_bufferSize' in msg and 'CUSOLVER_STATUS_INVALID_VALUE' in msg)
+
+
+def did_not_fit_record(series, size, device, error, base=None):
+    """The ``did_not_fit`` record: the system's size, the bytes of A and the error."""
+    problem = SERIES[series]['problem']
+    config = config_for(series, size, device)
+    P = config.N_vel ** 4 * 3 + config.N_p ** 4 if problem == 'beltrami' else 3 * config.N_x ** 2
+    N = beltrami_rows(config) if problem == 'beltrami' else None
+    return {'series': series, 'problem': problem, 'size': size, 'device': device, **(base or {}),
+            'status': 'did_not_fit', 'P': P, 'N': N, 'A_bytes': 8 * N * P if N else None, 'error': error[:500]}
+
+
 def run_one(series, size, device, out_root):
     """Warm-up, the timed run, the memory readings, then the errors and the
     conditioning off the clock. Writes the run folder; returns run.json. On
@@ -228,13 +255,10 @@ def run_one(series, size, device, out_root):
         t0 = time.perf_counter()
         r = _solve(problem, config, return_final_system=True)
         wall_s = time.perf_counter() - t0
-    except Exception as exc:                       # out of GPU memory: Section 10 asks for the size
-        if not (cuda and 'out of memory' in str(exc).lower()):
+    except Exception as exc:                       # an A100 limit: Section 10 asks for the size
+        if not (cuda and does_not_fit(exc)):
             raise
-        P = config.N_vel ** 4 * 3 + config.N_p ** 4 if problem == 'beltrami' else 3 * config.N_x ** 2
-        N = beltrami_rows(config) if problem == 'beltrami' else None
-        record = {**base, 'status': 'did_not_fit', 'P': P, 'N': N, 'A_bytes': 8 * N * P if N else None,
-                  'error': f'{type(exc).__name__}: {str(exc)[:500]}'}
+        record = did_not_fit_record(series, size, device, f'{type(exc).__name__}: {exc}', base)
         (run_dir / 'run.json').write_text(json.dumps(record, indent=2))
         return record
     host_peak = peak_host_bytes()
@@ -474,6 +498,11 @@ def main(argv=None):
         run_series(args.series, args.device, args.out, [as_size(v) for v in args.sizes] if args.sizes else None)
         return
     _, fits, c8 = summarize(args.out, args.package1)
+    for r in _runs(args.out, ok_only=False):
+        if r.get('status') == 'did_not_fit':
+            print(f"  {r['series']} {r['size']} {r['device']}: does not fit (P = {r['P']}, N = {r['N']}, "
+                  f"A alone {r['A_bytes'] / 1e9:.1f} GB)" if r['A_bytes'] else
+                  f"  {r['series']} {r['size']} {r['device']}: does not fit (P = {r['P']})")
     for f in fits:
         print(f"  {f['series']:12s} {f['device']:4s}: time ~ {f['against']}^{f['exponent_total_time']:.2f} "
               f"(solve {f['exponent_solve_time']:.2f}, assembly {f['exponent_assembly_time']:.2f}; {f['points']} points)")

@@ -17,6 +17,55 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-06 -- Package 2, Stage 2, batch 9a: Beltrami 22,288 does not fit on the A100
+
+**What happened.** The GPU addendum (e5eb447) passed its preflight (20030355), including the
+cuSOLVER QR probe. Its scaling job (20030356) ran every GPU size except the last: Kovasznay
+P = 1,875-7,500, the N series, and Beltrami at 7,984 and 13,764. Kovasznay 3,675 now runs.
+Beltrami at 22,288 (75,689 x 22,288) failed after its QR. The failing call was
+`cusolverDnDormqr_bufferSize` (the Q^T b step), which returned
+`CUSOLVER_STATUS_INVALID_VALUE`.
+
+**Cause: a size limit, not a defect.** The same query on the laptop (RTX 5080, the CUDA 13
+build of cuSOLVER) accepts every smaller system of the series and rejects exactly this one.
+- ormqr's workspace is about m*k + k^2 + 256*m doubles. At 52,225 x 13,764 the query returns
+  921,708,544. At this system it would be about 2.2e9, past cuSOLVER's 32-bit workspace
+  size (2,147,483,647).
+- **The workspace explains the measured memory.** At 13,764, two copies of A (the
+  row-major input and geqrf's column-major copy) plus that workspace come to 18.87 GB. The
+  addendum measured a peak of 18.83 GB.
+- **At 22,288 the same sum is about 44.6 GB:** 13.5 GB for each copy of A and 17.6 GB of
+  workspace. The A100 has 42.4 GB. The system would not fit even if cuSOLVER accepted it.
+
+This is the "size at which it does not fit" that Section 10 asks to be reported. **No rerun.**
+A rerun would end in the same place, the error is in the job's log, and the remaining sizes
+had all run.
+
+**Recorded as `did_not_fit`.**
+- **`p2_1_scaling.does_not_fit`:** an ormqr workspace rejection now counts as `did_not_fit`,
+  like out-of-memory. Only that call with that status does; anything else (a NaN in A, say)
+  still raises.
+- **`p2_assemble.gpu_did_not_fit_from_logs`:** writes the missing run.json from the Slurm
+  log. It takes the run's series and size from the failed command line, and the error from
+  the child's last line. It sets `recorded_from` and `recorded_by`, and writes nothing over
+  an existing run.json.
+
+**`p2_assemble.py stage2 --later-commit`.** The assembly runs the summaries, so it requires
+the checkout to be at a locked commit (4f327f7 or e5eb447). The fix above came after the
+runs. `--later-commit` accepts a descendant of both. It lists the files changed since the
+addendum in `code/FILES_CHANGED_FOR_ASSEMBLY.txt` and records the commit in
+`provenance.json`. Without git it still refuses.
+
+**Not changed: the GPU solver.** QR of [A | b] would avoid ormqr altogether. It would bring
+the peak to about 27 GB, so 22,288 would fit. But it would be a different GPU path from the
+paper's and Package 1's, so it goes to the report as an observation, not into the code.
+
+**Checks.** `tests/test_p2s2_scaling.py` (classification, the record, `run_one` on a CUDA
+device) and `tests/test_p2s2_submission.py` (rebuilt from the job's real log lines, plus
+`--later-commit`). No cluster bundle: nothing new runs on the clusters.
+
+---
+
 ## 2026-10-06 -- Package 2, Stage 2, batch 8: the NVIDIA libraries, and item 7's GPU addendum
 
 **What failed.** Item 7's GPU scaling job (20017337, retried as 20018277) failed at

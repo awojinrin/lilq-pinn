@@ -230,18 +230,78 @@ def stage2_gpu(gpu, out, replaced):
     return old_runs, new
 
 
-def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=None, gpu=None):
-    """Assemble Stage 2 into ``out``; returns the assembly record."""
+_FAILED_GPU_RUN = re.compile(r"'one', '--series', '(\w+)', '--size', '([\d.]+)', '--device', 'cuda'")
+
+
+def gpu_did_not_fit_from_logs(gpu, out):
+    """The ``did_not_fit`` record of a GPU scaling run that stopped on an A100
+    limit without writing it, from the job's Slurm log. In the GPU addendum
+    (6 October, at e5eb447) ``run_one`` recorded only out-of-memory, so the
+    Beltrami system at 22,288 raised on cuSOLVER's ormqr workspace instead
+    (``p2_1_scaling.does_not_fit``). Only an error that ``does_not_fit``
+    accepts is recorded; a run that already has its run.json is left alone.
+    Returns the run names written."""
+    from experiments.p2_1_scaling import SERIES, did_not_fit_record, does_not_fit, run_name
+    gpu, scaling = Path(gpu), Path(out) / 'P2_1_scaling'
+    commit = json.loads((gpu / 'COMMIT').read_text())['commit']
+    device = {}                                   # the GPU, from a run of the same addendum
+    for f in sorted((gpu / 'P2_1_scaling').glob('*/*_cuda/run.json')):
+        r = json.loads(f.read_text())
+        if 'gpu_name' in r:
+            device = {'gpu_name': r['gpu_name'], 'gpu_total_bytes': r.get('gpu_total_bytes')}
+            break
+    written = []
+    for log in sorted((gpu / 'slurm_logs').glob('*scaling-gpu*.out')):
+        lines = log.read_text(errors='replace').splitlines()
+        for i, line in enumerate(lines):
+            m = _FAILED_GPU_RUN.search(line)
+            if not (m and line.startswith('subprocess.CalledProcessError')):
+                continue
+            # the child's last line comes just before the parent's traceback
+            parent = max((j for j in range(i) if lines[j].startswith('Traceback (most recent call last)')), default=None)
+            error = next((lines[j] for j in range(parent - 1, -1, -1) if lines[j].strip()), '') if parent else ''
+            if not does_not_fit(error):
+                continue
+            series, size = m[1], float(m[2])
+            size = int(size) if size.is_integer() else size
+            name = run_name(series, size, 'cuda')
+            target = scaling / SERIES[series]['problem'] / name / 'run.json'
+            if target.exists():
+                continue
+            job = re.search(r'\.(\d+)\.out$', log.name)
+            record = did_not_fit_record(series, size, 'cuda', error, {
+                'slurm_job': job[1] if job else None, 'commit': commit, **device,
+                'recorded_from': f'slurm_logs/stage2_gpu/{log.name}',
+                'recorded_by': 'p2_assemble.gpu_did_not_fit_from_logs: run_one at this commit raised on this '
+                               'limit instead of recording it'})
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(record, indent=2))
+            written.append(name)
+    return written
+
+
+def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=None, gpu=None, later_commit=False):
+    """Assemble Stage 2 into ``out``; returns the assembly record.
+
+    The checkout must be at a locked commit (the stage's or the GPU addendum's),
+    since the summaries run here. ``later_commit`` accepts a descendant of both
+    instead, for fixes to the assembly itself after the runs (batch 9: the
+    record of Beltrami 22,288 on the A100); the files changed since the last
+    locked commit go to ``code/FILES_CHANGED_FOR_ASSEMBLY.txt``. Without git
+    nothing is accepted."""
     stage, out = Path(stage), Path(out)
     lock = json.loads((stage / 'COMMIT').read_text())
     commit = lock['commit']
     gpu_commit = json.loads((Path(gpu) / 'COMMIT').read_text())['commit'] if gpu is not None else None
     head = _git('rev-parse', 'HEAD')
     allowed = {commit} | ({gpu_commit} if gpu_commit else set())   # never None: the cluster copy has no git
-    if check_commit and head not in allowed:
+    descends = bool(later_commit and head and all(
+        _git('merge-base', '--is-ancestor', c, head) is not None for c in allowed))
+    if check_commit and head not in allowed and not descends:
         raise SystemExit(f'the local checkout is at {head}, the stage is locked to {commit}'
                          + (f' and the GPU addendum to {gpu_commit}' if gpu_commit else '')
-                         + f': check out {commit} (git checkout {commit[:7]}) and run again')
+                         + f': check out {commit} (git checkout {commit[:7]}) and run again'
+                         + (' (--later-commit: the checkout does not descend from them)' if later_commit else ''))
     out.mkdir(parents=True, exist_ok=True)
     replaced, items = [], []
     for item in sorted(p for p in stage.iterdir() if p.is_dir() and p.name.startswith('P2_')):
@@ -273,10 +333,11 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
                 _copy(faster / name, out / target, replaced)
         if (faster / 'slurm_logs').is_dir():
             _copy_tree(faster / 'slurm_logs', out / 'slurm_logs' / 'stage2_faster', replaced)
-    old_gpu_runs, gpu_runs, gpu_files = [], [], None
+    old_gpu_runs, gpu_runs, gpu_files, gpu_from_logs = [], [], None, []
     if gpu is not None:
         gpu = Path(gpu)
         old_gpu_runs, gpu_runs = stage2_gpu(gpu, out, replaced)
+        gpu_from_logs = gpu_did_not_fit_from_logs(gpu, out)
         for name, target in (('sacct.txt', 'stage2_gpu_sacct.txt'), ('report_log.txt', 'stage2_gpu_report_log.txt'),
                              ('COMMIT', 'code/COMMIT_stage2_gpu')):
             if (gpu / name).exists():
@@ -286,6 +347,11 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
         gpu_files = (_git('diff', '--name-only', f'{commit}..{gpu_commit}') or '').splitlines()
         (out / 'code').mkdir(parents=True, exist_ok=True)
         (out / 'code' / 'FILES_CHANGED_IN_GPU_ADDENDUM.txt').write_text('\n'.join(gpu_files) + '\n')
+    assembly_files = None
+    if descends and head not in allowed:          # --later-commit: what changed since the runs
+        assembly_files = (_git('diff', '--name-only', f'{gpu_commit or commit}..{head}') or '').splitlines()
+        (out / 'code').mkdir(parents=True, exist_ok=True)
+        (out / 'code' / 'FILES_CHANGED_FOR_ASSEMBLY.txt').write_text('\n'.join(assembly_files) + '\n')
     stage1_commit = out / 'reference' / 'stage1' / 'COMMIT'
     stage1_commit = stage1_commit if stage1_commit.exists() else out / 'P2_12_reference_errors' / 'COMMIT'
     if stage1_commit.exists():
@@ -336,7 +402,9 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
               'gpu_addendum': ({'commit': gpu_commit, 'runs': gpu_runs, 'files_changed': gpu_files,
                                 'old_environment_runs': [r.get('series', '') + '_' + str(r.get('size', ''))
                                                          for r in old_gpu_runs],
-                                'summaries_at': head} if gpu_commit else None)}
+                                'did_not_fit_from_logs': gpu_from_logs,
+                                'summaries_at': head} if gpu_commit else None),
+              'assembled_at': head, 'files_changed_for_assembly': assembly_files}
     (out / 'provenance.json').write_text(json.dumps(record, indent=2))
     return record
 
@@ -349,9 +417,15 @@ def main(argv=None):
     ap.add_argument('--package1', help="stage2: package1 (item 7's check C8', the figures)")
     ap.add_argument('--faster', help="stage2: FASTER's package2_stage2 (item 5), from package2_stage2_faster.tar.gz")
     ap.add_argument('--gpu', help="stage2: the GPU addendum's package2_stage2_gpu (item 7's GPU series, batch 8)")
+    ap.add_argument('--later-commit', action='store_true',
+                    help='stage2: run at a descendant of the locked commits; the files changed since are listed '
+                         'in code/FILES_CHANGED_FOR_ASSEMBLY.txt')
     args = ap.parse_args(argv)
     if args.stage_name == 'stage2':
-        r = stage2(args.stage, args.out, args.package1, faster=args.faster, gpu=args.gpu)
+        r = stage2(args.stage, args.out, args.package1, faster=args.faster, gpu=args.gpu, later_commit=args.later_commit)
+        if r['files_changed_for_assembly'] is not None:
+            print(f"  assembled at {r['assembled_at'][:7]}, later than the runs: "
+                  f"{', '.join(r['files_changed_for_assembly']) or 'no files changed'}")
         print(f"Stage 2 at {r['stage2_commit'][:7]}: {len(r['items'])} item folders, {r['code_files']} code files")
         for name, rec in r['references'].items():
             print(f"  reference/{name}: {rec}")
