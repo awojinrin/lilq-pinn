@@ -155,6 +155,10 @@ def test_stage2_assembly(tmp_path):
     assert (out / 'code' / 'experiments' / 'p2_16_certified.py').exists()                # added after v2.0.0
     assert 'experiments/p2_16_certified.py' in (out / 'code' / 'FILES_CHANGED_SINCE_v2.0.0.txt').read_text()
     assert json.loads((out / 'provenance.json').read_text())['items'] == ['P2_16_certified']
+    # assembling again gives the same record and replaces nothing (batch 9a)
+    r2 = pa.stage2(stage, out, summaries=False)
+    assert r2['references'] == r['references'] and r2['replaced'] == []
+    assert (out / 'reference' / 'stage1' / 'bratu_ref_p48.npz').read_bytes() != (stage / 'reference' / 'bratu_ref_p48.npz').read_bytes()
 
 
 def test_stage2_assembly_refuses_another_commit(tmp_path):
@@ -279,6 +283,13 @@ def test_stage2_assembly_merges_the_gpu_addendum(tmp_path):
     assert r['gpu_addendum']['runs'] == ['kovasznay_P_25_cuda', 'kovasznay_P_35_cuda']
     assert r['gpu_addendum']['old_environment_runs'] == ['kovasznay_P_25']
     assert r['gpu_addendum']['did_not_fit_from_logs'] == []
+    assert (s / 'old_environment' / 'kovasznay' / 'kovasznay_P_35_cuda').is_dir()       # the failed run, kept empty
+    assert not any('cuda' in str(f) for f in r['replaced'])
+    # assembling again changes nothing (batch 9a: the first version filed the addendum as the old environment)
+    r2 = pa.stage2(stage, out, summaries=False, gpu=gpu)
+    assert r2['replaced'] == [] and r2['gpu_addendum']['old_environment_runs'] == ['kovasznay_P_25']
+    assert json.loads((s / 'old_environment' / 'kovasznay' / 'kovasznay_P_25_cuda' / 'run.json').read_text())['env'] == 'old'
+    assert json.loads((s / 'kovasznay' / 'kovasznay_P_25_cuda' / 'run.json').read_text())['env'] == 'new'
     # a checkout at neither commit is refused
     (gpu / 'COMMIT').write_text(json.dumps({'commit': '2' * 40}))
     (stage / 'COMMIT').write_text(json.dumps({'commit': '3' * 40}))
@@ -331,3 +342,30 @@ def test_gpu_did_not_fit_from_logs(tmp_path):
     other = [ln if not ln.startswith('torch._C') else 'ValueError: something else' for ln in ADDENDUM_LOG.splitlines()]
     log.write_text('\n'.join(other))
     assert pa.gpu_did_not_fit_from_logs(gpu, tmp_path / 'out3') == []
+
+
+def test_stage2_assembly_runs_as_a_script(tmp_path):
+    """The command line as the user runs it: ``python experiments/p2_assemble.py``
+    from another folder, with no PYTHONPATH. Its imports of experiments.* must
+    resolve (batch 9a's first real assembly stopped on them)."""
+    import json
+    import sys
+    git = lambda *a: subprocess.run(['git', *a], cwd=REPO, capture_output=True, text=True).stdout.strip()  # noqa: E731
+    head, parent = git('rev-parse', 'HEAD'), git('rev-parse', 'HEAD~1')
+    if not (head and parent):
+        pytest.skip('no git checkout')
+    stage, out = _fake_stage(tmp_path, parent)
+    gpu = tmp_path / 'gpu' / 'package2_stage2_gpu'
+    (gpu / 'slurm_logs').mkdir(parents=True)
+    (gpu / 'slurm_logs' / 'lilq-p2s2g-scaling-gpu.20030356.out').write_text(ADDENDUM_LOG)
+    (gpu / 'COMMIT').write_text(json.dumps({'commit': parent}))
+    env = {k: v for k, v in os.environ.items() if k != 'PYTHONPATH'}
+    rel = lambda p: str(p.relative_to(tmp_path))  # noqa: E731  (relative paths: the steps run from the repository)
+    r = subprocess.run([sys.executable, str(REPO / 'experiments' / 'p2_assemble.py'), 'stage2', '--stage', rel(stage),
+                        '--out', rel(out), '--gpu', rel(gpu), '--later-commit'],
+                       cwd=tmp_path, env=env, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert (out / 'P2_1_scaling' / 'scaling.csv').exists(), (out / 'assembly_log.txt').read_text()[-3000:]
+    rec = json.loads((out / 'P2_1_scaling' / 'beltrami' / 'beltrami_8_cuda' / 'run.json').read_text())
+    assert rec['status'] == 'did_not_fit' and rec['P'] == 22288
+    assert 'assembled at' in r.stdout

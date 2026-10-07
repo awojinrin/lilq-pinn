@@ -94,6 +94,8 @@ from pathlib import Path
 import numpy as np
 
 REPO = Path(__file__).resolve().parents[1]
+if str(REPO) not in sys.path:                     # run as a script: experiments.p2_1_scaling is imported below
+    sys.path.insert(0, str(REPO))
 
 RERUN_RE = re.compile(r'^(?P<bench>[a-z_]+)_P(?P<P>\d+)_cpu_paper$')
 STAGE1_FILES = ('check_c4.csv', 'check_c4.json', 'hardware.json', 'environment.txt')
@@ -106,9 +108,15 @@ def _copy(src, dst, replaced):
     shutil.copy2(src, dst)
 
 
-def _copy_tree(src, dst, replaced):
+def _copy_tree(src, dst, replaced, skip=None):
     for f in sorted(p for p in src.rglob('*') if p.is_file()):
-        _copy(f, dst / f.relative_to(src), replaced)
+        if skip is None or not skip(f.relative_to(src)):
+            _copy(f, dst / f.relative_to(src), replaced)
+
+
+def _gpu_scaling_file(rel):
+    """A file of a GPU scaling run (``<problem>/<run>_cuda/...``) or of its provenance."""
+    return (len(rel.parts) > 1 and rel.parts[1].endswith('_cuda')) or rel.parts[0].startswith('provenance_cuda_')
 
 
 def stage1(stage, out):
@@ -149,14 +157,27 @@ def _npz_difference(a, b):
 
 def stage2_references(stage, out):
     """Stage 2's references into ``reference/``; Stage 1's copies that differ go
-    to ``reference/stage1/``. Returns the comparison record."""
+    to ``reference/stage1/``. Returns the comparison record.
+
+    Assembling again gives the same record: Stage 1's version of a file is its
+    copy in ``stage1/`` when there is one, and an earlier record says which
+    files were new in Stage 2. (The first version compared with ``reference/``
+    itself, which by then holds Stage 2's files, so a second assembly would
+    have recorded every file as identical; batch 9a.)"""
     src, dst = Path(stage) / 'reference', Path(out) / 'reference'
     dst.mkdir(parents=True, exist_ok=True)
+    path = dst / 'stage2_vs_stage1.json'
+    earlier = json.loads(path.read_text()) if path.exists() else {}
     record = {}
     for f in sorted(p for p in src.iterdir() if p.is_file()):
-        target = dst / f.name
-        if target.exists() and not filecmp.cmp(f, target, shallow=False):
-            keep = dst / 'stage1' / f.name
+        target, keep = dst / f.name, dst / 'stage1' / f.name
+        if keep.exists():
+            stage1 = keep
+        elif earlier.get(f.name, {}).get('new_in_stage2'):
+            stage1 = None
+        else:
+            stage1 = target if target.exists() else None
+        if stage1 is not None and not filecmp.cmp(f, stage1, shallow=False):
             if not keep.exists():
                 keep.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(target, keep)
@@ -164,12 +185,12 @@ def stage2_references(stage, out):
                 record[f.name] = {'max_abs_difference_to_stage1': _npz_difference(f, keep)}
             else:
                 record[f.name] = {'differs_from_stage1': True}
-        elif target.exists():
+        elif stage1 is not None:
             record[f.name] = {'identical_to_stage1': True}
         else:
             record[f.name] = {'new_in_stage2': True}
         shutil.copy2(f, target)
-    (dst / 'stage2_vs_stage1.json').write_text(json.dumps(record, indent=2))
+    path.write_text(json.dumps(record, indent=2))
     return record
 
 
@@ -197,27 +218,26 @@ def _step(cmd, log):
     return out
 
 
-def stage2_gpu(gpu, out, replaced):
+def stage2_gpu(gpu, stage, out, replaced):
     """Merge the GPU addendum into ``out``'s ``P2_1_scaling``: the main run's GPU
-    runs move to ``old_environment/``, the addendum's take their place.
+    runs go to ``old_environment/``, the addendum's take their place.
+
+    The main run's GPU runs are copied from ``stage`` itself, and ``stage2`` does
+    not copy them into the live folder, so assembling again gives the same
+    result. (The first version moved whatever ``out`` held; on a second
+    assembly it would have filed the addendum's runs as the old environment's.)
     Returns ``(the old runs' run.json records, the addendum's GPU run names)``."""
-    gpu, scaling = Path(gpu), Path(out) / 'P2_1_scaling'
+    gpu, main, scaling = Path(gpu), Path(stage) / 'P2_1_scaling', Path(out) / 'P2_1_scaling'
     old = scaling / 'old_environment'
     old_runs = []
-    if scaling.is_dir():
-        for d in sorted(p for p in scaling.glob('*/*') if p.is_dir() and (p.name.endswith('_cuda')
-                                                                         and p.parent.name != 'old_environment')):
-            target = old / d.parent.name / d.name
-            if target.exists():
-                shutil.rmtree(target)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(d), str(target))
-            if (target / 'run.json').exists():
-                old_runs.append(json.loads((target / 'run.json').read_text()))
-        for d in sorted(scaling.glob('provenance_cuda_*')):
-            target = old / d.name
-            if not target.exists():
-                shutil.move(str(d), str(target))
+    for d in sorted(p for p in main.glob('*/*') if p.is_dir() and p.name.endswith('_cuda')):
+        target = old / d.parent.name / d.name
+        target.mkdir(parents=True, exist_ok=True)        # kept even when empty: a run that failed
+        _copy_tree(d, target, replaced)
+        if (d / 'run.json').exists():
+            old_runs.append(json.loads((d / 'run.json').read_text()))
+    for d in sorted(main.glob('provenance_cuda_*')):
+        _copy_tree(d, old / d.name, replaced)
     new = []
     src = gpu / 'P2_1_scaling'
     for d in sorted(p for p in src.glob('*/*') if p.is_dir() and p.name.endswith('_cuda')):
@@ -289,7 +309,9 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
     record of Beltrami 22,288 on the A100); the files changed since the last
     locked commit go to ``code/FILES_CHANGED_FOR_ASSEMBLY.txt``. Without git
     nothing is accepted."""
-    stage, out = Path(stage), Path(out)
+    # absolute: the summary steps run from the repository (_step), not from the caller's folder
+    stage, out = Path(stage).resolve(), Path(out).resolve()
+    package1, faster, gpu = (Path(p).resolve() if p is not None else None for p in (package1, faster, gpu))
     lock = json.loads((stage / 'COMMIT').read_text())
     commit = lock['commit']
     gpu_commit = json.loads((Path(gpu) / 'COMMIT').read_text())['commit'] if gpu is not None else None
@@ -305,7 +327,9 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
     out.mkdir(parents=True, exist_ok=True)
     replaced, items = [], []
     for item in sorted(p for p in stage.iterdir() if p.is_dir() and p.name.startswith('P2_')):
-        _copy_tree(item, out / item.name, replaced)
+        # with the GPU addendum, the main run's GPU scaling runs go to old_environment/ (stage2_gpu)
+        _copy_tree(item, out / item.name, replaced,
+                   skip=_gpu_scaling_file if gpu is not None and item.name == 'P2_1_scaling' else None)
         items.append(item.name)
     refs = stage2_references(stage, out)
     for name, target in (('su_per_job.csv', 'su_per_job.csv'), ('sacct.txt', 'stage2_sacct.txt'),
@@ -336,7 +360,7 @@ def stage2(stage, out, package1=None, summaries=True, check_commit=True, faster=
     old_gpu_runs, gpu_runs, gpu_files, gpu_from_logs = [], [], None, []
     if gpu is not None:
         gpu = Path(gpu)
-        old_gpu_runs, gpu_runs = stage2_gpu(gpu, out, replaced)
+        old_gpu_runs, gpu_runs = stage2_gpu(gpu, stage, out, replaced)
         gpu_from_logs = gpu_did_not_fit_from_logs(gpu, out)
         for name, target in (('sacct.txt', 'stage2_gpu_sacct.txt'), ('report_log.txt', 'stage2_gpu_report_log.txt'),
                              ('COMMIT', 'code/COMMIT_stage2_gpu')):

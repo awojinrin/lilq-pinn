@@ -17,6 +17,43 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-06 -- Package 2, Stage 2, batch 9b: the assembly as a script, run twice
+
+**What happened.** The first real assembly (`python experiments/p2_assemble.py stage2 ...
+--later-commit`, at d697ba3) stopped with `No module named 'experiments'`. Every test, and
+both trial assemblies, had imported the module from the repository root. Run as a script,
+the root is not on the path. The run stopped after the copies and the GPU merge, before the
+summaries. No results were lost: it only copies from the tarballs.
+
+Three faults came to light, all in `p2_assemble.py`, none in a result:
+- **Imports.** It now puts the repository on `sys.path`, as `p2_1_scaling.py` does. The
+  same gap had been hiding since batch 8: check C8' on the old-environment GPU runs imports
+  `experiments.p2_1_scaling` inside a try/except. As a script it would have been logged as
+  "failed to run", without stopping the assembly.
+- **Assembling twice was not safe.**
+  - `stage2_gpu` moved whatever GPU runs `out` held into `old_environment/`. On a second
+    assembly those would have been the addendum's. It now copies the old runs from the main
+    stage's folder, and the main copy skips the GPU runs when the addendum is given.
+  - `stage2_references` compared Stage 2's references with `reference/` itself, which by
+    then held Stage 2's files. A second assembly would have recorded every file as
+    identical. It now compares with the copy in `reference/stage1/`, and takes "new in
+    Stage 2" from the earlier record.
+- **Relative paths.** The summary steps run from the repository, so a relative `--out`
+  pointed nowhere. `stage2` now makes every path absolute.
+
+**Checks.**
+- `tests/test_p2s2_submission.py`:
+  - the command line run as a script, from another folder, with relative paths and no
+    `PYTHONPATH`;
+  - assembling twice, for both the references and the GPU merge.
+- Each new check was confirmed to fail on the code before the fix.
+- A copy of the real `package2_results`, left as the stopped run left it, was reassembled
+  with the command line. It matches a one-pass assembly file by file. The only differences
+  are timestamps, the PDFs' creation dates, the commit the C8' checks ran at, and the new
+  `FILES_CHANGED_FOR_ASSEMBLY.txt`.
+
+---
+
 ## 2026-10-06 -- Package 2, Stage 2, batch 9a: Beltrami 22,288 does not fit on the A100
 
 **What happened.** The GPU addendum (e5eb447) passed its preflight (20030355), including the
