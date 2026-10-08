@@ -17,6 +17,78 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-08 -- Package 3, batch 0: the CC-CGL grids, the constants, checks K1 and K2, the SU plan
+
+Package 3 is the advisor's instructions of 8 October 2026: runs inside the hypotheses of
+Section 5.6. Beltrami (item 1) and Buckley-Leverett (items 2a, 2b) run on tensor CGL
+grids with Clenshaw-Curtis (CC) weights; elasticity and Darcy (item 3) get a posteriori
+constants on the paper's own sets. Cap: 800 Grace SU. There is one report at the end;
+anything that is not a stop condition of its Section 8.1 follows the rules of 8.2 and is
+recorded here.
+
+**`lilq/certified.py` (new; nothing existing changed):**
+- **The grids of items 1 and 2a** (Section 2.2):
+  - `beltrami_grid(M)`: the M^4 interior, six faces with M^3 in their free coordinates,
+    and the initial slab with M^3. The shares are 4/40 and 8/40; |dOmega| = 40 counts both
+    slabs.
+  - `bl_grid(P, r, T)`: the P2-16 Burgers rule on [0, 1] x [0, T], with |dOmega| =
+    2 (1 + T).
+  - A block carries its CC weights (sum 1) and its share. The squared row weight is
+    lambda x share x w.
+- **The interior constants:**
+  - `interior_constants_kronecker`: the advisor's Kronecker shortcut on the repository's
+    own nodes and weights (B10's `points_1d(..., 'cgl')` and `clenshaw_curtis_weights`);
+  - `interior_constants_direct`: the SVD of the weighted evaluation matrix.
+- **`block_constants`:** the advisor's routine (Section 2.3(b)), extended from lines to 3D
+  faces and slabs. It uses tensor Gauss-Legendre with max(4M, 32) points per direction on
+  faces, and max(4n, 400) on lines.
+- **`cc_exactness`:** C4 of P2-16 at any dimension. The test polynomials are sums of
+  products of random Legendre series, so the exact values come from the coefficients, and
+  the check runs on each rule's own flattened points and weights.
+
+**Check K1 passed** (`experiments/p3_checks.py k1`, run on the laptop with the script):
+- **Printed digits.** All 30 printed values of Sections 3.3 and 4.2 match. So do the
+  script's P2-16 check and its four Burgers lines.
+- **Against the script's own functions:** the largest difference is 9e-14.
+- **Direct against Kronecker:** they agree to 1.6e-15 at Beltrami B1 level 1
+  (28,561 x 6,561), and to 1.3e-15 for BL P = 64, N/P = 10, in both cases. The tolerance
+  is 1e-10.
+- **The Burgers initial line:** the datum -sin(pi x) is dropped as numerically in the trace
+  space (|R_ii| < 1e-10 |R_11|), as the advisor anticipated.
+
+**Check K2 passed** (`p3_checks.py k2`): 144 rules, worst error 3.8e-14 against the
+tolerance of 1e-12. They are:
+- Beltrami: 6 grids x (interior, 6 faces, slab);
+- BL: 2 cases x 12 grids x (interior, initial, two lateral lines).
+
+**Decisions:**
+- **The lateral lines of BL keep P2-16's weights.** A lateral line is the (n + 1)-point rule
+  on [0, T] without t = 0. As in P2-16, its weights are kept as they are, summing to
+  1 - w_0, not renormalized. Section 2.2 says to follow P2-16, and the difference is
+  dropped endpoint weight w_0: 0.79% at P = 64, N/P = 5, and 0.2% or less on every other
+  grid. The block constants normalize them
+  anyway (Section 2.3(b)). K2 checks the rule the line is cut from, and records the line's
+  own sum.
+- **The interior lambda of BL is 1,** as P2-16's Burgers. Section 4.1 gives only the
+  auxiliary lambda = 10.
+- **The budget: by construction, never over 800 SU** (`package3_results/su_plan.csv`). The
+  advisor's per-run caps for item 1 alone add up to 816 SU, and the expected total is 583.
+  - Wave 1 has every job except B3 level 2. Its walltimes sum to 780 SU: K0 is capped at
+    2 h (it needs about 1.25 h) and item 3 at 1.5 h (about 1 h).
+  - B3 level 2 (7 h, 336 SU) is launched only if both the advisor's launch rule (Section
+    3.4) and a budget guard hold. The guard: the SU charged so far plus 336 is at most 800.
+  - So the charged total cannot pass 800, which would be a stop condition (Section 8.1).
+  - In a job holding several runs, each run gets its own timeout at the advisor's cap.
+
+Tests: `tests/test_p3_certified.py`:
+- the printed values, P2-16's constants, and direct against Kronecker;
+- the Burgers lines, and a face with and without a datum;
+- the grids' rows and shares (B1 level 1: 160,386 rows; B3: 348,168 and 665,331, as
+  Section 3.4);
+- K2 failing on wrong weights and beyond its degree, and K2 on every grid.
+
+---
+
 ## 2026-10-06 -- Package 2, Stage 2, batch 9b: the assembly as a script, run twice
 
 **What happened.** The first real assembly (`python experiments/p2_assemble.py stage2 ...
