@@ -57,6 +57,7 @@ import argparse
 import csv
 import dataclasses
 import json
+import math
 import os
 import statistics
 import sys
@@ -223,12 +224,16 @@ def check_l1(control_dir, p2_12_run):
         with open(Path(d) / 'iterations.csv') as fh:
             return {int(r['k']): r for r in csv.DictReader(fh)}
     a, b = load(control_dir), load(p2_12_run)
+    _, losses = read_log(control_dir)
     diffs = []
     for k in range(CONTROL_KMAX + 1):
+        terminal = b[k].get('norm_Rlin_h', '') in ('', None)        # P2-12 stopped here: no solve at k
         for col in ('norm_R_h', 'norm_Rlin_h', 'eps_ref'):
             va, vb = a[k].get(col, ''), b[k].get(col, '')
             if vb in ('', None):
                 continue                                  # P2-12's terminal row has no linear residual
+            if terminal and col == 'norm_R_h':            # a terminal row's ||R|| is sqrt(the solver's loss),
+                va = repr(math.sqrt(losses[k]))           # a solve row's ||A beta - f||: compare like with like
             if float(va) != float(vb):
                 diffs.append({'k': k, 'column': col, 'here': va, 'p2_12': vb})
     return {'compared': f'k = 0..{CONTROL_KMAX}: norm_R_h, norm_Rlin_h, eps_ref', 'differences': diffs,

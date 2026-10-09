@@ -74,13 +74,20 @@ def test_l1_compares_k_up_to_4(tmp_path):
             w.writerows(rows)
     rows = [{'k': k, 'norm_R_h': 1.0 / (k + 1), 'norm_Rlin_h': 0.5 / (k + 1), 'eps_ref': 0.1 / (k + 1)} for k in range(6)]
     p2 = [dict(r) for r in rows[:5]]
-    p2[4]['norm_Rlin_h'] = ''                                                # P2-12's terminal row
+    p2[4]['norm_Rlin_h'] = ''                                                # P2-12's terminal row:
+    p2[4]['norm_R_h'] = 0.25                                                 # sqrt(its loss), not ||A beta - f||
     write(tmp_path / 'here', rows)
+    (tmp_path / 'here' / 'losses.csv').write_text('iterate,loss\n' + ''.join(f'{k},{0.0625 if k == 4 else 1.0}\n'
+                                                                          for k in range(6)))
     write(tmp_path / 'p2_12', p2)
-    assert m.check_l1(tmp_path / 'here', tmp_path / 'p2_12')['passed']
+    assert m.check_l1(tmp_path / 'here', tmp_path / 'p2_12')['passed']        # 0.25 = sqrt(0.0625), not 0.2
     p2[2]['eps_ref'] = 0.1 / 3 * (1 + 1e-15)
     write(tmp_path / 'p2_12b', p2)
     assert not m.check_l1(tmp_path / 'here', tmp_path / 'p2_12b')['passed']
+    p2[2]['eps_ref'], p2[4]['norm_R_h'] = 0.1 / 3, 0.25 * (1 + 1e-15)
+    write(tmp_path / 'p2_12c', p2)
+    assert m.check_l1(tmp_path / 'here', tmp_path / 'p2_12c')['differences'] == [
+        {'k': 4, 'column': 'norm_R_h', 'here': '0.25', 'p2_12': str(0.25 * (1 + 1e-15))}]
 
 
 def test_40_runs_only_if_no_size_reaches_the_target(tmp_path, monkeypatch):

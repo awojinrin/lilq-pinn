@@ -17,6 +17,29 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-09 -- Package 3, after wave 1: check L1 compares a terminal row like with like
+
+Wave 1 (bundle 97e463d) reported L1 failed, on one value. P2-12's k = 4 `norm_R_h` was
+5.91211765423539e-05 against the control's 5.9121176541457504e-05: 9e-16 absolute, round-off
+for a residual whose entries are O(1).
+- **Every other value at k <= 4 was identical.** That covers norm_R_h and norm_Rlin_h at
+  k = 0-3, and eps_ref at k = 0-4.
+- **Why k = 4 differed.** P2-12's pass stopped there at the paper's target, so its k = 4 row is
+  `LilQDiagnosticsTracker.finish`'s, and its norm_R_h is sqrt(the solver's loss). The control
+  goes on to K_max = 60, so its k = 4 row is a solve row, and its norm_R_h is
+  ||A^(4) beta^(4) - f^(4)||. The two are algebraically equal, but computed differently.
+- **The control's sqrt(loss at iterate 4)** (`losses.csv`) is 5.91211765423539e-05: P2-12's,
+  bit for bit.
+
+**The correction (one line):** on a P2-12 terminal row, L1 compares norm_R_h with
+sqrt(the control's loss at that iterate). It reads only the logged CSVs. So L1 is re-evaluated
+at the assembly on Grace's files, and passes; no rerun is needed.
+
+Also: `submit_p3.sh`'s closing hint now says to run wave 2 when every wave-1 job but the report
+has finished, which is what the gate requires. It used to name only B3 level 1 and K0.
+
+---
+
 ## 2026-10-09 -- Package 3, batch 4: the Grace submission, checks K0 and K8, B3 level 2's gate
 
 `scripts/cluster/package3/`, `experiments/p3_k0_k8.py`; the p3 stage in `env.sh`, `sbatch.sh`,

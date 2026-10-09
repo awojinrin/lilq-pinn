@@ -30,5 +30,5 @@ submit bl   $P/p3_bl.slurm                $after
 submit aff  $P/p3_affine.slurm            $after
 submit bur  $P/p3_burgers_large_P.slurm   $after
 submit rep  $P/p3_report.slurm            --dependency=afterany:$k0:$b1:$b2:$b3:$bl:$aff:$bur
-[[ "$DRY_RUN" == 1 ]] || echo "Package 3, wave 1 submitted. When $b3 (B3 level 1) and $k0 (K0) have finished:"
+[[ "$DRY_RUN" == 1 ]] || echo "Package 3, wave 1 submitted. When every wave-1 job but the report has finished (squeue -u \$USER):"
 [[ "$DRY_RUN" == 1 ]] || echo "  bash scripts/cluster/package3/submit_p3_b3l2.sh   (checks the launch rule and the budget first)"
