@@ -1,0 +1,2104 @@
+{
+  "check": "K2",
+  "passed": true,
+  "n_rules": 144,
+  "worst_error": 3.7565474665293997e-14,
+  "tolerance": 1e-12,
+  "rules": [
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "interior",
+      "Ms": [
+        13,
+        13,
+        13,
+        13
+      ],
+      "dim": 4,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.363418102524052e-17,
+      "norm_degree_half_rel_err": 1.0508219914632985e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "x-",
+      "Ms": [
+        13,
+        13,
+        13
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.539522408148648e-17,
+      "norm_degree_half_rel_err": 1.4790920765850582e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "x+",
+      "Ms": [
+        13,
+        13,
+        13
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.539522408148648e-17,
+      "norm_degree_half_rel_err": 1.4790920765850582e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "y-",
+      "Ms": [
+        13,
+        13,
+        13
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.539522408148648e-17,
+      "norm_degree_half_rel_err": 1.4790920765850582e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "y+",
+      "Ms": [
+        13,
+        13,
+        13
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.539522408148648e-17,
+      "norm_degree_half_rel_err": 1.4790920765850582e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "z-",
+      "Ms": [
+        13,
+        13,
+        13
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.539522408148648e-17,
+      "norm_degree_half_rel_err": 1.4790920765850582e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "z+",
+      "Ms": [
+        13,
+        13,
+        13
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.539522408148648e-17,
+      "norm_degree_half_rel_err": 1.4790920765850582e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 1 (M = 13)",
+      "block": "initial",
+      "Ms": [
+        13,
+        13,
+        13
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.539522408148648e-17,
+      "norm_degree_half_rel_err": 1.4790920765850582e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "interior",
+      "Ms": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "dim": 4,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.197214072389052e-17,
+      "norm_degree_half_rel_err": 1.2276418204005124e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "x-",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "x+",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "y-",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "y+",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "z-",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "z+",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B1 level 2 (M = 16)",
+      "block": "initial",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "interior",
+      "Ms": [
+        15,
+        15,
+        15,
+        15
+      ],
+      "dim": 4,
+      "weight_sum_minus_1": -1.1102230246251565e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.848158172198996e-18,
+      "norm_degree_half_rel_err": 1.3403217974519455e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "x-",
+      "Ms": [
+        15,
+        15,
+        15
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2032352480563215e-17,
+      "norm_degree_half_rel_err": 4.1920663273318697e-16,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "x+",
+      "Ms": [
+        15,
+        15,
+        15
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2032352480563215e-17,
+      "norm_degree_half_rel_err": 4.1920663273318697e-16,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "y-",
+      "Ms": [
+        15,
+        15,
+        15
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2032352480563215e-17,
+      "norm_degree_half_rel_err": 4.1920663273318697e-16,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "y+",
+      "Ms": [
+        15,
+        15,
+        15
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2032352480563215e-17,
+      "norm_degree_half_rel_err": 4.1920663273318697e-16,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "z-",
+      "Ms": [
+        15,
+        15,
+        15
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2032352480563215e-17,
+      "norm_degree_half_rel_err": 4.1920663273318697e-16,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "z+",
+      "Ms": [
+        15,
+        15,
+        15
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2032352480563215e-17,
+      "norm_degree_half_rel_err": 4.1920663273318697e-16,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 1 (M = 15)",
+      "block": "initial",
+      "Ms": [
+        15,
+        15,
+        15
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2032352480563215e-17,
+      "norm_degree_half_rel_err": 4.1920663273318697e-16,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "interior",
+      "Ms": [
+        18,
+        18,
+        18,
+        18
+      ],
+      "dim": 4,
+      "weight_sum_minus_1": 4.440892098500626e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.1383891074938803e-17,
+      "norm_degree_half_rel_err": 2.6412688213014093e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "x-",
+      "Ms": [
+        18,
+        18,
+        18
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.83506143432041e-18,
+      "norm_degree_half_rel_err": 1.920096541948962e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "x+",
+      "Ms": [
+        18,
+        18,
+        18
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.83506143432041e-18,
+      "norm_degree_half_rel_err": 1.920096541948962e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "y-",
+      "Ms": [
+        18,
+        18,
+        18
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.83506143432041e-18,
+      "norm_degree_half_rel_err": 1.920096541948962e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "y+",
+      "Ms": [
+        18,
+        18,
+        18
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.83506143432041e-18,
+      "norm_degree_half_rel_err": 1.920096541948962e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "z-",
+      "Ms": [
+        18,
+        18,
+        18
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.83506143432041e-18,
+      "norm_degree_half_rel_err": 1.920096541948962e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "z+",
+      "Ms": [
+        18,
+        18,
+        18
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.83506143432041e-18,
+      "norm_degree_half_rel_err": 1.920096541948962e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B2 level 2 (M = 18)",
+      "block": "initial",
+      "Ms": [
+        18,
+        18,
+        18
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.83506143432041e-18,
+      "norm_degree_half_rel_err": 1.920096541948962e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "interior",
+      "Ms": [
+        16,
+        16,
+        16,
+        16
+      ],
+      "dim": 4,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.197214072389052e-17,
+      "norm_degree_half_rel_err": 1.2276418204005124e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "x-",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "x+",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "y-",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "y+",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "z-",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "z+",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 1 (M = 16)",
+      "block": "initial",
+      "Ms": [
+        16,
+        16,
+        16
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.48947543587963e-17,
+      "norm_degree_half_rel_err": 1.5910839777248856e-15,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "interior",
+      "Ms": [
+        19,
+        19,
+        19,
+        19
+      ],
+      "dim": 4,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.416250878060571e-18,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "x-",
+      "Ms": [
+        19,
+        19,
+        19
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.5375073948737057e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "x+",
+      "Ms": [
+        19,
+        19,
+        19
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.5375073948737057e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "y-",
+      "Ms": [
+        19,
+        19,
+        19
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.5375073948737057e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "y+",
+      "Ms": [
+        19,
+        19,
+        19
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.5375073948737057e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "z-",
+      "Ms": [
+        19,
+        19,
+        19
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.5375073948737057e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "z+",
+      "Ms": [
+        19,
+        19,
+        19
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.5375073948737057e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": 1,
+      "grid": "B3 level 2 (M = 19)",
+      "block": "initial",
+      "Ms": [
+        19,
+        19,
+        19
+      ],
+      "dim": 3,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.5375073948737057e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 5 (M = 17)",
+      "block": "interior",
+      "Ms": [
+        17,
+        17
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.607645926264801e-17,
+      "norm_degree_half_rel_err": 1.8625861206840734e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 5 (M = 17)",
+      "block": "initial",
+      "Ms": [
+        16
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.980289693252908e-16,
+      "norm_degree_half_rel_err": 5.42903974885711e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 5 (M = 17)",
+      "block": "left",
+      "Ms": [
+        9
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": -1.1102230246251565e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.639586066845905e-16,
+      "norm_degree_half_rel_err": 3.4008681767193376e-16,
+      "passed": true,
+      "block_weight_sum": 0.9920634920634922,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 5 (M = 17)",
+      "block": "right",
+      "Ms": [
+        9
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": -1.1102230246251565e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.639586066845905e-16,
+      "norm_degree_half_rel_err": 3.4008681767193376e-16,
+      "passed": true,
+      "block_weight_sum": 0.9920634920634922,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 10 (M = 24)",
+      "block": "interior",
+      "Ms": [
+        24,
+        24
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.835432942834437e-16,
+      "norm_degree_half_rel_err": 1.9140463302648824e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 10 (M = 24)",
+      "block": "initial",
+      "Ms": [
+        32
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.580313721599342e-16,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 10 (M = 24)",
+      "block": "left",
+      "Ms": [
+        17
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.3000174310626186e-16,
+      "norm_degree_half_rel_err": 3.5362789788105884e-16,
+      "passed": true,
+      "block_weight_sum": 0.9980392156862745,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 10 (M = 24)",
+      "block": "right",
+      "Ms": [
+        17
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.3000174310626186e-16,
+      "norm_degree_half_rel_err": 3.5362789788105884e-16,
+      "passed": true,
+      "block_weight_sum": 0.9980392156862745,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 20 (M = 34)",
+      "block": "interior",
+      "Ms": [
+        34,
+        34
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.5440124849459916e-16,
+      "norm_degree_half_rel_err": 3.535808680455714e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 20 (M = 34)",
+      "block": "initial",
+      "Ms": [
+        64
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.7727737610756985e-16,
+      "norm_degree_half_rel_err": 2.5741934081763574e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 20 (M = 34)",
+      "block": "left",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 7.636575213285671e-16,
+      "norm_degree_half_rel_err": 1.1223232849940766e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 64, N/P = 20 (M = 34)",
+      "block": "right",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 7.636575213285671e-16,
+      "norm_degree_half_rel_err": 1.1223232849940766e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 5 (M = 34)",
+      "block": "interior",
+      "Ms": [
+        34,
+        34
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.5440124849459916e-16,
+      "norm_degree_half_rel_err": 3.535808680455714e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 5 (M = 34)",
+      "block": "initial",
+      "Ms": [
+        64
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.7727737610756985e-16,
+      "norm_degree_half_rel_err": 2.5741934081763574e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 5 (M = 34)",
+      "block": "left",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 7.636575213285671e-16,
+      "norm_degree_half_rel_err": 1.1223232849940766e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 5 (M = 34)",
+      "block": "right",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 7.636575213285671e-16,
+      "norm_degree_half_rel_err": 1.1223232849940766e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 10 (M = 48)",
+      "block": "interior",
+      "Ms": [
+        48,
+        48
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.851163305017086e-16,
+      "norm_degree_half_rel_err": 1.54553023034904e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 10 (M = 48)",
+      "block": "initial",
+      "Ms": [
+        128
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.923373236018251e-16,
+      "norm_degree_half_rel_err": 4.671620660373414e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 10 (M = 48)",
+      "block": "left",
+      "Ms": [
+        65
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 8.95881888820031e-16,
+      "norm_degree_half_rel_err": 2.766832933790377e-15,
+      "passed": true,
+      "block_weight_sum": 0.9998778998778998,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 10 (M = 48)",
+      "block": "right",
+      "Ms": [
+        65
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 8.95881888820031e-16,
+      "norm_degree_half_rel_err": 2.766832933790377e-15,
+      "passed": true,
+      "block_weight_sum": 0.9998778998778998,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 20 (M = 68)",
+      "block": "interior",
+      "Ms": [
+        68,
+        68
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.8886529492954035e-17,
+      "norm_degree_half_rel_err": 3.0939755022932288e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 20 (M = 68)",
+      "block": "initial",
+      "Ms": [
+        256
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.4458534105488878e-15,
+      "norm_degree_half_rel_err": 2.2061846247397763e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 20 (M = 68)",
+      "block": "left",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.088654921038307e-16,
+      "norm_degree_half_rel_err": 1.5388431709641346e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 256, N/P = 20 (M = 68)",
+      "block": "right",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.088654921038307e-16,
+      "norm_degree_half_rel_err": 1.5388431709641346e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 5 (M = 51)",
+      "block": "interior",
+      "Ms": [
+        51,
+        51
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.0808153260759768e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 5 (M = 51)",
+      "block": "initial",
+      "Ms": [
+        144
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 6.571534187830058e-16,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 5 (M = 51)",
+      "block": "left",
+      "Ms": [
+        73
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.443550136683279e-16,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true,
+      "block_weight_sum": 0.9999035307736832,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 5 (M = 51)",
+      "block": "right",
+      "Ms": [
+        73
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.443550136683279e-16,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true,
+      "block_weight_sum": 0.9999035307736832,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 10 (M = 72)",
+      "block": "interior",
+      "Ms": [
+        72,
+        72
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": -1.1102230246251565e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.418656564529289e-17,
+      "norm_degree_half_rel_err": 8.856826028801139e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 10 (M = 72)",
+      "block": "initial",
+      "Ms": [
+        288
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.1424341469305948e-15,
+      "norm_degree_half_rel_err": 1.9137597946305877e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 10 (M = 72)",
+      "block": "left",
+      "Ms": [
+        145
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.229335089823004e-16,
+      "norm_degree_half_rel_err": 3.5458541280903305e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999758861827828,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 10 (M = 72)",
+      "block": "right",
+      "Ms": [
+        145
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.229335089823004e-16,
+      "norm_degree_half_rel_err": 3.5458541280903305e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999758861827828,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 20 (M = 102)",
+      "block": "interior",
+      "Ms": [
+        102,
+        102
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 8.390782727454627e-17,
+      "norm_degree_half_rel_err": 2.315074681106228e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 20 (M = 102)",
+      "block": "initial",
+      "Ms": [
+        576
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.533938893172873e-16,
+      "norm_degree_half_rel_err": 7.946701943796022e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 20 (M = 102)",
+      "block": "left",
+      "Ms": [
+        289
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.288420585193493e-16,
+      "norm_degree_half_rel_err": 3.0053907772468896e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999939717637416,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 576, N/P = 20 (M = 102)",
+      "block": "right",
+      "Ms": [
+        289
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.288420585193493e-16,
+      "norm_degree_half_rel_err": 3.0053907772468896e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999939717637416,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 5 (M = 68)",
+      "block": "interior",
+      "Ms": [
+        68,
+        68
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.8886529492954035e-17,
+      "norm_degree_half_rel_err": 3.0939755022932288e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 5 (M = 68)",
+      "block": "initial",
+      "Ms": [
+        256
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.4458534105488878e-15,
+      "norm_degree_half_rel_err": 2.2061846247397763e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 5 (M = 68)",
+      "block": "left",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.088654921038307e-16,
+      "norm_degree_half_rel_err": 1.5388431709641346e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 5 (M = 68)",
+      "block": "right",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.088654921038307e-16,
+      "norm_degree_half_rel_err": 1.5388431709641346e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 10 (M = 96)",
+      "block": "interior",
+      "Ms": [
+        96,
+        96
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 6.3612158104740956e-18,
+      "norm_degree_half_rel_err": 7.026363456640294e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 10 (M = 96)",
+      "block": "initial",
+      "Ms": [
+        512
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.4930216921885705e-15,
+      "norm_degree_half_rel_err": 3.7565474665293997e-14,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 10 (M = 96)",
+      "block": "left",
+      "Ms": [
+        257
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.6764167172536845e-15,
+      "norm_degree_half_rel_err": 4.028715610152786e-16,
+      "passed": true,
+      "block_weight_sum": 0.9999923704890517,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 10 (M = 96)",
+      "block": "right",
+      "Ms": [
+        257
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.6764167172536845e-15,
+      "norm_degree_half_rel_err": 4.028715610152786e-16,
+      "passed": true,
+      "block_weight_sum": 0.9999923704890517,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 20 (M = 136)",
+      "block": "interior",
+      "Ms": [
+        136,
+        136
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.546931878442412e-16,
+      "norm_degree_half_rel_err": 3.917469972242666e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 20 (M = 136)",
+      "block": "initial",
+      "Ms": [
+        1024
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.679211399171858e-16,
+      "norm_degree_half_rel_err": 2.6480295428497476e-14,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 20 (M = 136)",
+      "block": "left",
+      "Ms": [
+        513
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.276394664063944e-15,
+      "norm_degree_half_rel_err": 6.144843793028697e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999980926440912,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "viscous P = 1024, N/P = 20 (M = 136)",
+      "block": "right",
+      "Ms": [
+        513
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 4.276394664063944e-15,
+      "norm_degree_half_rel_err": 6.144843793028697e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999980926440912,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 5 (M = 17)",
+      "block": "interior",
+      "Ms": [
+        17,
+        17
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.4019114815662004e-17,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 5 (M = 17)",
+      "block": "initial",
+      "Ms": [
+        16
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.980289693252908e-16,
+      "norm_degree_half_rel_err": 5.42903974885711e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 5 (M = 17)",
+      "block": "left",
+      "Ms": [
+        9
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": -1.1102230246251565e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.639586066845905e-16,
+      "norm_degree_half_rel_err": 3.4008681767193376e-16,
+      "passed": true,
+      "block_weight_sum": 0.9920634920634922,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 5 (M = 17)",
+      "block": "right",
+      "Ms": [
+        9
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": -1.1102230246251565e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.639586066845905e-16,
+      "norm_degree_half_rel_err": 3.4008681767193376e-16,
+      "passed": true,
+      "block_weight_sum": 0.9920634920634922,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 10 (M = 24)",
+      "block": "interior",
+      "Ms": [
+        24,
+        24
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.113891601967833e-17,
+      "norm_degree_half_rel_err": 1.5551626433402169e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 10 (M = 24)",
+      "block": "initial",
+      "Ms": [
+        32
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.580313721599342e-16,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 10 (M = 24)",
+      "block": "left",
+      "Ms": [
+        17
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 7.166695718437697e-16,
+      "norm_degree_half_rel_err": 5.893798298017647e-16,
+      "passed": true,
+      "block_weight_sum": 0.9980392156862745,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 10 (M = 24)",
+      "block": "right",
+      "Ms": [
+        17
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 7.166695718437697e-16,
+      "norm_degree_half_rel_err": 5.893798298017647e-16,
+      "passed": true,
+      "block_weight_sum": 0.9980392156862745,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 20 (M = 34)",
+      "block": "interior",
+      "Ms": [
+        34,
+        34
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.165886978428606e-16,
+      "norm_degree_half_rel_err": 1.1786028934852379e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 20 (M = 34)",
+      "block": "initial",
+      "Ms": [
+        64
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.7727737610756985e-16,
+      "norm_degree_half_rel_err": 2.5741934081763574e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 20 (M = 34)",
+      "block": "left",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.7694503542978994e-16,
+      "norm_degree_half_rel_err": 3.36696985498223e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 64, N/P = 20 (M = 34)",
+      "block": "right",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.7694503542978994e-16,
+      "norm_degree_half_rel_err": 3.36696985498223e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 5 (M = 34)",
+      "block": "interior",
+      "Ms": [
+        34,
+        34
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.165886978428606e-16,
+      "norm_degree_half_rel_err": 1.1786028934852379e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 5 (M = 34)",
+      "block": "initial",
+      "Ms": [
+        64
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.7727737610756985e-16,
+      "norm_degree_half_rel_err": 2.5741934081763574e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 5 (M = 34)",
+      "block": "left",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.7694503542978994e-16,
+      "norm_degree_half_rel_err": 3.36696985498223e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 5 (M = 34)",
+      "block": "right",
+      "Ms": [
+        33
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.7694503542978994e-16,
+      "norm_degree_half_rel_err": 3.36696985498223e-16,
+      "passed": true,
+      "block_weight_sum": 0.9995112414467253,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 10 (M = 48)",
+      "block": "interior",
+      "Ms": [
+        48,
+        48
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.2416356328300214e-16,
+      "norm_degree_half_rel_err": 1.73872150914267e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 10 (M = 48)",
+      "block": "initial",
+      "Ms": [
+        128
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.923373236018251e-16,
+      "norm_degree_half_rel_err": 4.671620660373414e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 10 (M = 48)",
+      "block": "left",
+      "Ms": [
+        65
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.1801838904381957e-15,
+      "norm_degree_half_rel_err": 1.4756442313548679e-15,
+      "passed": true,
+      "block_weight_sum": 0.9998778998778998,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 10 (M = 48)",
+      "block": "right",
+      "Ms": [
+        65
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.1801838904381957e-15,
+      "norm_degree_half_rel_err": 1.4756442313548679e-15,
+      "passed": true,
+      "block_weight_sum": 0.9998778998778998,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 20 (M = 68)",
+      "block": "interior",
+      "Ms": [
+        68,
+        68
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 8.971101509153166e-17,
+      "norm_degree_half_rel_err": 1.9889842514742184e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 20 (M = 68)",
+      "block": "initial",
+      "Ms": [
+        256
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.4458534105488878e-15,
+      "norm_degree_half_rel_err": 2.2061846247397763e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 20 (M = 68)",
+      "block": "left",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.0269220028438343e-15,
+      "norm_degree_half_rel_err": 4.853274616117655e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 256, N/P = 20 (M = 68)",
+      "block": "right",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.0269220028438343e-15,
+      "norm_degree_half_rel_err": 4.853274616117655e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 5 (M = 51)",
+      "block": "interior",
+      "Ms": [
+        51,
+        51
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.026282913012735e-17,
+      "norm_degree_half_rel_err": 3.7735747494292014e-16,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 5 (M = 51)",
+      "block": "initial",
+      "Ms": [
+        144
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 6.571534187830058e-16,
+      "norm_degree_half_rel_err": 0.0,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 5 (M = 51)",
+      "block": "left",
+      "Ms": [
+        73
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.1929296098439684e-16,
+      "norm_degree_half_rel_err": 6.474447546123747e-16,
+      "passed": true,
+      "block_weight_sum": 0.9999035307736832,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 5 (M = 51)",
+      "block": "right",
+      "Ms": [
+        73
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.1929296098439684e-16,
+      "norm_degree_half_rel_err": 6.474447546123747e-16,
+      "passed": true,
+      "block_weight_sum": 0.9999035307736832,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 10 (M = 72)",
+      "block": "interior",
+      "Ms": [
+        72,
+        72
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": -1.1102230246251565e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 7.809240342998092e-17,
+      "norm_degree_half_rel_err": 1.3285239043201707e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 10 (M = 72)",
+      "block": "initial",
+      "Ms": [
+        288
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.1424341469305948e-15,
+      "norm_degree_half_rel_err": 1.9137597946305877e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 10 (M = 72)",
+      "block": "left",
+      "Ms": [
+        145
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.21244577860873e-16,
+      "norm_degree_half_rel_err": 6.818950246327559e-16,
+      "passed": true,
+      "block_weight_sum": 0.9999758861827828,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 10 (M = 72)",
+      "block": "right",
+      "Ms": [
+        145
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.21244577860873e-16,
+      "norm_degree_half_rel_err": 6.818950246327559e-16,
+      "passed": true,
+      "block_weight_sum": 0.9999758861827828,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 20 (M = 102)",
+      "block": "interior",
+      "Ms": [
+        102,
+        102
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 9.234663574124224e-17,
+      "norm_degree_half_rel_err": 6.59796284115275e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 20 (M = 102)",
+      "block": "initial",
+      "Ms": [
+        576
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.533938893172873e-16,
+      "norm_degree_half_rel_err": 7.946701943796022e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 20 (M = 102)",
+      "block": "left",
+      "Ms": [
+        289
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.1744359232833905e-15,
+      "norm_degree_half_rel_err": 3.5357538555845763e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999939717637416,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 576, N/P = 20 (M = 102)",
+      "block": "right",
+      "Ms": [
+        289
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.1744359232833905e-15,
+      "norm_degree_half_rel_err": 3.5357538555845763e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999939717637416,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 5 (M = 68)",
+      "block": "interior",
+      "Ms": [
+        68,
+        68
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 8.971101509153166e-17,
+      "norm_degree_half_rel_err": 1.9889842514742184e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 5 (M = 68)",
+      "block": "initial",
+      "Ms": [
+        256
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.4458534105488878e-15,
+      "norm_degree_half_rel_err": 2.2061846247397763e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 5 (M = 68)",
+      "block": "left",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.0269220028438343e-15,
+      "norm_degree_half_rel_err": 4.853274616117655e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 5 (M = 68)",
+      "block": "right",
+      "Ms": [
+        129
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.0269220028438343e-15,
+      "norm_degree_half_rel_err": 4.853274616117655e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999694805591162,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 10 (M = 96)",
+      "block": "interior",
+      "Ms": [
+        96,
+        96
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 2.220446049250313e-16,
+      "integral_degree_M_minus_1_err_over_L2_norm": 5.1468018830199495e-17,
+      "norm_degree_half_rel_err": 3.1078146058216683e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 10 (M = 96)",
+      "block": "initial",
+      "Ms": [
+        512
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 3.4930216921885705e-15,
+      "norm_degree_half_rel_err": 3.7565474665293997e-14,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 10 (M = 96)",
+      "block": "left",
+      "Ms": [
+        257
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 6.171012638227407e-16,
+      "norm_degree_half_rel_err": 1.4100504635534752e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999923704890517,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 10 (M = 96)",
+      "block": "right",
+      "Ms": [
+        257
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 6.171012638227407e-16,
+      "norm_degree_half_rel_err": 1.4100504635534752e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999923704890517,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 20 (M = 136)",
+      "block": "interior",
+      "Ms": [
+        136,
+        136
+      ],
+      "dim": 2,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.3707739677995708e-16,
+      "norm_degree_half_rel_err": 3.544377593933841e-15,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 20 (M = 136)",
+      "block": "initial",
+      "Ms": [
+        1024
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 2.679211399171858e-16,
+      "norm_degree_half_rel_err": 2.6480295428497476e-14,
+      "passed": true
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 20 (M = 136)",
+      "block": "left",
+      "Ms": [
+        513
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.3373267498796874e-15,
+      "norm_degree_half_rel_err": 7.108740858601826e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999980926440912,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    },
+    {
+      "item": "2a",
+      "grid": "gravity P = 1024, N/P = 20 (M = 136)",
+      "block": "right",
+      "Ms": [
+        513
+      ],
+      "dim": 1,
+      "weight_sum_minus_1": 0.0,
+      "integral_degree_M_minus_1_err_over_L2_norm": 1.3373267498796874e-15,
+      "norm_degree_half_rel_err": 7.108740858601826e-15,
+      "passed": true,
+      "block_weight_sum": 0.9999980926440912,
+      "note": "the (n + 1)-point rule; the block omits its t = 0 node"
+    }
+  ],
+  "commit": "7af88554889d55b048fb2b2b736af67eb8c8f273"
+}

@@ -1,0 +1,72 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20067146 on c698: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+torch 2.10.0+cu126 OK
+numpy 1.26.4 scipy 1.13.1
+inputs OK (25 files)
+.................................................s...................... [  8%]
+.......................................s.............................ss. [ 17%]
+...........................................s....................s.....s. [ 26%]
+........................................................................ [ 35%]
+....sssss.ssss.......................................................... [ 44%]
+..................s..................................................... [ 53%]
+...............................s.s...s.....s..sss.s..................... [ 62%]
+........................................................................ [ 71%]
+..................s..s.................................................. [ 80%]
+........................................................................ [ 89%]
+........................................................................ [ 98%]
+...........                                                              [100%]
+=============================== warnings summary ===============================
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[bratu]
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[burgers]
+  $SCRATCH/lilq-run/lilq-pinn/experiments/p2_8_lm_networks.py:643: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+    axes[0, 0].legend(fontsize=7)
+
+tests/test_saved_models.py::test_f1_and_f2_models_reload
+  $SCRATCH/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    value = float(loss)
+
+tests/test_saved_models.py: 18 warnings
+  $SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+776 passed, 27 skipped, 21 warnings in 366.87s (0:06:06)
+  P2-16 interior                                   bratu p_d=5 M=15             ok
+  P2-16 interior                                   bratu p_d=10 M=30            ok
+  P2-16 interior                                   bratu p_d=15 M=44            ok
+  P2-16 interior                                   burgers p_d=10 M=22          ok
+  item 1 interior                                  B1 level 1 M=13              ok
+  item 1 interior                                  B1 level 2 M=16              ok
+  item 1 interior                                  B2 level 1 M=15              ok
+  item 1 interior                                  B2 level 2 M=18              ok
+  item 1 interior                                  B3 level 1 M=16              ok
+  item 1 interior                                  B3 level 2 M=19              ok
+  item 2a interior                                 P=64 N/P=5 m=2 M=17          ok
+  item 2a interior                                 P=64 N/P=10 m=2 M=24         ok
+  item 2a interior                                 P=64 N/P=20 m=2 M=34         ok
+  item 2a interior                                 P=64 N/P=20 m=3 M=34         ok
+  item 2a interior                                 P=256 N/P=5 m=2 M=34         ok
+  item 2a interior                                 P=256 N/P=10 m=2 M=48        ok
+  item 2a interior                                 P=256 N/P=20 m=2 M=68        ok
+  item 2a interior                                 P=256 N/P=20 m=3 M=68        ok
+  item 2a interior                                 P=576 N/P=5 m=2 M=51         ok
+  item 2a interior                                 P=576 N/P=10 m=2 M=72        ok
+  item 2a interior                                 P=576 N/P=20 m=2 M=102       ok
+  item 2a interior                                 P=576 N/P=20 m=3 M=102       ok
+  item 2a interior                                 P=1024 N/P=5 m=2 M=68        ok
+  item 2a interior                                 P=1024 N/P=10 m=2 M=96       ok
+  item 2a interior                                 P=1024 N/P=20 m=2 M=136      ok
+  item 2a interior                                 P=1024 N/P=20 m=3 M=136      ok
+  block (P2-16 Burgers lateral line)               P=25                         ok
+  block (P2-16 Burgers lateral line)               P=100                        ok
+  block (P2-16 Burgers lateral line)               P=225                        ok
+  block (P2-16 Burgers initial line, datum -sin(pi x)) P=625 N/P=10                 ok
+  direct vs Kronecker, Beltrami B1 level 1 (M = 13, q = 9, 28,561 x 6,561): 1.3e-15
+  direct vs Kronecker, BL viscous P = 64, N/P = 10 (M = 24, q = 17): 1.1e-15
+  direct vs Kronecker, BL gravity P = 64, N/P = 10 (M = 24, q = 17): 1.8e-15
+K1 passed
+  144 rules, worst error 3.8e-14
+K2 passed
+PREFLIGHT OK

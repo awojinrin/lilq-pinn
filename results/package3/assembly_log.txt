@@ -1,0 +1,18 @@
+Package 3 assembly, 2026-10-09T19:59:00.663501+00:00
+from package3 (runs at 97e463d), assembled at 3e13572
+copied P3_1_beltrami_certified/
+copied P3_2a_bl_chebyshev_certified/
+copied P3_2b_bl_lifted_sine_cheb/
+copied P3_3_affine_certificates/
+copied P3_4_burgers_large_P/
+copied P3_checks/
+copied slurm_logs/
+copied COMMIT
+copied checks_item2.json
+copied sacct.txt
+copied su_per_job.csv
+copied report_log.txt
+L1 re-evaluated: passed (Grace's run: failed)
+checks.json: K0 passed, K1 passed, K2 passed, K3 passed, K4 passed, K5 passed, K6 passed, K7 passed, K8 passed, item 3 re-solves (Section 5) passed, L1 (Addendum 1) passed, L2 (Addendum 1) passed, L3 (Addendum 1) passed, L4 (Addendum 1) passed
+su.csv: 11 jobs, 627.2 SU charged at Grace's rates
+provenance.json: 2 commit(s) between the runs and the assembly

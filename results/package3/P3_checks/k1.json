@@ -1,0 +1,370 @@
+{
+  "check": "K1",
+  "passed": true,
+  "rows": [
+    {
+      "what": "P2-16 interior",
+      "case": "bratu p_d=5 M=15",
+      "value": 1.0413950587060328,
+      "expected": "1.041395",
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "P2-16 interior",
+      "case": "bratu p_d=10 M=30",
+      "value": 1.0165462154694318,
+      "expected": "1.016546",
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "P2-16 interior",
+      "case": "bratu p_d=15 M=44",
+      "value": 1.014894469314219,
+      "expected": "1.014894",
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "P2-16 interior",
+      "case": "burgers p_d=10 M=22",
+      "value": 3.209607247995688,
+      "expected": "3.209607",
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 1 interior",
+      "case": "B1 level 1 M=13",
+      "c1_squared": 0.9059683899932762,
+      "c2_squared": 1.007055881010448,
+      "value": 1.0543147016505845,
+      "expected": [
+        "0.905968",
+        "1.007056",
+        "1.0543"
+      ],
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "item 1 interior",
+      "case": "B1 level 2 M=16",
+      "c1_squared": 0.9936863315276409,
+      "c2_squared": 1.0000000000000124,
+      "value": 1.0031718617261438,
+      "expected": [
+        "0.993686",
+        "1.000000",
+        "1.0032"
+      ],
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "item 1 interior",
+      "case": "B2 level 1 M=15",
+      "c1_squared": 0.8588025558978052,
+      "c2_squared": 1.0100790859000945,
+      "value": 1.0845036682973415,
+      "expected": [
+        "0.858803",
+        "1.010079",
+        "1.0845"
+      ],
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "item 1 interior",
+      "case": "B2 level 2 M=18",
+      "c1_squared": 0.9809576875075006,
+      "c2_squared": 1.0009724983537414,
+      "value": 1.0101501559551718,
+      "expected": [
+        "0.980958",
+        "1.000972",
+        "1.0102"
+      ],
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "item 1 interior",
+      "case": "B3 level 1 M=16",
+      "c1_squared": 0.6744593955058624,
+      "c2_squared": 1.0165451257559595,
+      "value": 1.227680694878242,
+      "expected": [
+        "0.674459",
+        "1.016545",
+        "1.2277"
+      ],
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "item 1 interior",
+      "case": "B3 level 2 M=19",
+      "c1_squared": 0.9386149840978567,
+      "c2_squared": 1.004885264461208,
+      "value": 1.0347001150917503,
+      "expected": [
+        "0.938615",
+        "1.004885",
+        "1.0347"
+      ],
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=64 N/P=5 m=2 M=17",
+      "value": null,
+      "expected": null,
+      "M_expected": 17,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=64 N/P=10 m=2 M=24",
+      "value": 1.0212051489542886,
+      "expected": "1.0212",
+      "M_expected": 24,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=64 N/P=20 m=2 M=34",
+      "value": 1.0000000000000087,
+      "expected": "1.0000",
+      "M_expected": 34,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=64 N/P=20 m=3 M=34",
+      "value": 1.0254591649974971,
+      "expected": "1.0255",
+      "M_expected": 34,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=256 N/P=5 m=2 M=34",
+      "value": 3.6636915319964896,
+      "expected": "3.6637",
+      "M_expected": 34,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=256 N/P=10 m=2 M=48",
+      "value": 1.011115065065329,
+      "expected": "1.0111",
+      "M_expected": 48,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=256 N/P=20 m=2 M=68",
+      "value": 1.0000000000000464,
+      "expected": "1.0000",
+      "M_expected": 68,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=256 N/P=20 m=3 M=68",
+      "value": 1.0164495575990888,
+      "expected": "1.0164",
+      "M_expected": 68,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=576 N/P=5 m=2 M=51",
+      "value": 1.5539687931242239,
+      "expected": "1.5540",
+      "M_expected": 51,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=576 N/P=10 m=2 M=72",
+      "value": 1.008758562022003,
+      "expected": "1.0088",
+      "M_expected": 72,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=576 N/P=20 m=2 M=102",
+      "value": 1.0000000000000462,
+      "expected": "1.0000",
+      "M_expected": 102,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=576 N/P=20 m=3 M=102",
+      "value": 1.0140927531823054,
+      "expected": "1.0141",
+      "M_expected": 102,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=1024 N/P=5 m=2 M=68",
+      "value": 1.3976909859673456,
+      "expected": "1.3977",
+      "M_expected": 68,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=1024 N/P=10 m=2 M=96",
+      "value": 1.0077304952152224,
+      "expected": "1.0077",
+      "M_expected": 96,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=1024 N/P=20 m=2 M=136",
+      "value": 1.000000000000212,
+      "expected": "1.0000",
+      "M_expected": 136,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "item 2a interior",
+      "case": "P=1024 N/P=20 m=3 M=136",
+      "value": 1.0130169183053812,
+      "expected": "1.0130",
+      "M_expected": 136,
+      "printed_match": true,
+      "script_diff": null
+    },
+    {
+      "what": "block (P2-16 Burgers lateral line)",
+      "case": "P=25",
+      "c1": 0.8637651561545303,
+      "c2": 1.005141422064895,
+      "expected": [
+        "0.8638",
+        "1.0051"
+      ],
+      "dropped": 0,
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "block (P2-16 Burgers lateral line)",
+      "case": "P=100",
+      "c1": 0.9595502015383272,
+      "c2": 1.0004002401605547,
+      "expected": [
+        "0.9596",
+        "1.0004"
+      ],
+      "dropped": 0,
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "block (P2-16 Burgers lateral line)",
+      "case": "P=225",
+      "c1": 0.9826100695955989,
+      "c2": 1.0000769556361924,
+      "expected": [
+        "0.9826",
+        "1.0001"
+      ],
+      "dropped": 0,
+      "script_diff": null,
+      "printed_match": true
+    },
+    {
+      "what": "block (P2-16 Burgers initial line, datum -sin(pi x))",
+      "case": "P=625 N/P=10",
+      "c1": 0.9999999999999727,
+      "c2": 1.0000000000031333,
+      "expected": [
+        "1.0000",
+        "1.0000"
+      ],
+      "dropped": 1,
+      "script_diff": null,
+      "printed_match": true
+    }
+  ],
+  "direct_vs_kronecker": [
+    {
+      "case": "Beltrami B1 level 1 (M = 13, q = 9, 28,561 x 6,561)",
+      "direct": {
+        "c1": 0.9518237179190668,
+        "c2": 1.003521739181793,
+        "c2_over_c1": 1.0543147016505865
+      },
+      "kronecker": {
+        "c1": 0.9518237179190673,
+        "c2": 1.0035217391817917,
+        "c2_over_c1": 1.0543147016505845
+      },
+      "seconds": 28.454577134922147,
+      "rel_diff": 1.3275921960957565e-15,
+      "passed": true
+    },
+    {
+      "case": "BL viscous P = 64, N/P = 10 (M = 24, q = 17)",
+      "direct": {
+        "c1": 0.9806148273667028,
+        "c2": 1.0014089108477968,
+        "c2_over_c1": 1.0212051489542877
+      },
+      "kronecker": {
+        "c1": 0.980614827366703,
+        "c2": 1.001408910847798,
+        "c2_over_c1": 1.0212051489542886
+      },
+      "rel_diff": 1.1086610200874247e-15,
+      "passed": true
+    },
+    {
+      "case": "BL gravity P = 64, N/P = 10 (M = 24, q = 17)",
+      "direct": {
+        "c1": 0.9806148273667012,
+        "c2": 1.0014089108477984,
+        "c2_over_c1": 1.0212051489542908
+      },
+      "kronecker": {
+        "c1": 0.980614827366703,
+        "c2": 1.001408910847798,
+        "c2_over_c1": 1.0212051489542886
+      },
+      "rel_diff": 1.811472547453107e-15,
+      "passed": true
+    }
+  ],
+  "direct_tolerance": 1e-10,
+  "script": null,
+  "max_abs_diff_to_script": null,
+  "commit": "97e463dc7011a25142dfe87d3991d7c3885daf52"
+}

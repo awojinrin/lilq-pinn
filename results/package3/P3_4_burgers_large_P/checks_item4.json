@@ -1,0 +1,180 @@
+{
+  "L1": {
+    "compared": "k = 0..4: norm_R_h, norm_Rlin_h, eps_ref",
+    "differences": [],
+    "passed": true,
+    "reevaluated_at": "3e135728ea8044fd19a66eea27fd21fc8d645f98",
+    "note": "re-evaluated at the assembly on Grace's files: on P2-12's terminal row (k = 4), norm_R_h is compared with sqrt(the control's loss), as that row computes it (DECISIONS.md, 2026-10-09)",
+    "grace": {
+      "compared": "k = 0..4: norm_R_h, norm_Rlin_h, eps_ref",
+      "differences": [
+        {
+          "k": 4,
+          "column": "norm_R_h",
+          "here": "5.9121176541457504e-05",
+          "p2_12": "5.91211765423539e-05"
+        }
+      ],
+      "passed": false
+    }
+  },
+  "L2": {
+    "median_s": 1.127476029098034,
+    "paper_s": 1.18,
+    "ratio": 0.9554881602525711,
+    "times_s": [
+      1.3515017367899418,
+      1.127476029098034,
+      1.1254124343395233
+    ],
+    "passed": true
+  },
+  "L3": {
+    "max_rel_err_at_k1": 4.031584180379299e-15,
+    "tolerance": 1e-10,
+    "max_rel_err_over_runs": 2.689861405530428e-06,
+    "passed": true,
+    "rule": "as in Package 1: judged at k = 1, the run maximum reported (cancellation near convergence)"
+  },
+  "L4": {
+    "runs": {
+      "burgers_P625": [
+        {
+          "which": "k_r",
+          "max_iter": 6,
+          "logged_loss": "3.4953135155407243e-09",
+          "clean_losses": [
+            "3.4953135155407243e-09",
+            "3.4953135155407243e-09",
+            "3.4953135155407243e-09"
+          ],
+          "iterations": [
+            6,
+            6,
+            6
+          ],
+          "identical": true
+        },
+        {
+          "which": "paper_pass",
+          "max_iter": 4,
+          "logged_loss": "3.495313515752177e-09",
+          "clean_losses": [
+            "3.495313515752177e-09",
+            "3.495313515752177e-09",
+            "3.495313515752177e-09"
+          ],
+          "iterations": [
+            4,
+            4,
+            4
+          ],
+          "identical": true
+        }
+      ],
+      "burgers_P900": [
+        {
+          "which": "k_e",
+          "max_iter": 3,
+          "logged_loss": "1.3432021296496014e-08",
+          "clean_losses": [
+            "1.3432021296496014e-08",
+            "1.3432021296496014e-08",
+            "1.3432021296496014e-08"
+          ],
+          "iterations": [
+            3,
+            3,
+            3
+          ],
+          "identical": true
+        },
+        {
+          "which": "k_r",
+          "max_iter": 6,
+          "logged_loss": "1.1177423834570086e-11",
+          "clean_losses": [
+            "1.1177423834570086e-11",
+            "1.1177423834570086e-11",
+            "1.1177423834570086e-11"
+          ],
+          "iterations": [
+            6,
+            6,
+            6
+          ],
+          "identical": true
+        }
+      ],
+      "burgers_P1024": [
+        {
+          "which": "k_e",
+          "max_iter": 3,
+          "logged_loss": "1.3284023660528884e-08",
+          "clean_losses": [
+            "1.3284023660528884e-08",
+            "1.3284023660528884e-08",
+            "1.3284023660528884e-08"
+          ],
+          "iterations": [
+            3,
+            3,
+            3
+          ],
+          "identical": true
+        },
+        {
+          "which": "k_r",
+          "max_iter": 6,
+          "logged_loss": "1.8150115383632834e-12",
+          "clean_losses": [
+            "1.8150115383632834e-12",
+            "1.8150115383632834e-12",
+            "1.8150115383632834e-12"
+          ],
+          "iterations": [
+            6,
+            6,
+            6
+          ],
+          "identical": true
+        }
+      ],
+      "burgers_P1225": [
+        {
+          "which": "k_e",
+          "max_iter": 3,
+          "logged_loss": "1.2540594668492582e-08",
+          "clean_losses": [
+            "1.2540594668492582e-08",
+            "1.2540594668492582e-08",
+            "1.2540594668492582e-08"
+          ],
+          "iterations": [
+            3,
+            3,
+            3
+          ],
+          "identical": true
+        },
+        {
+          "which": "k_r",
+          "max_iter": 6,
+          "logged_loss": "1.9834200785914118e-13",
+          "clean_losses": [
+            "1.9834200785914118e-13",
+            "1.9834200785914118e-13",
+            "1.9834200785914118e-13"
+          ],
+          "iterations": [
+            6,
+            6,
+            6
+          ],
+          "identical": true
+        }
+      ]
+    },
+    "passed": true
+  }
+}

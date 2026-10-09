@@ -1,0 +1,24 @@
+{
+  "check": "K8",
+  "runs": {
+    "beltrami_pinned": {
+      "rows_here": 5,
+      "rows_package1": 5,
+      "differences": [],
+      "passed": true,
+      "seconds": 536.632925124839,
+      "package1": "$SCRATCH/lilq-run/lilq-pinn/results/package1_v2.0.0/package1/B_instrumentation/beltrami_pinned/iterations.csv"
+    },
+    "bl_P576_cpu_paper": {
+      "rows_here": 5,
+      "rows_package1": 5,
+      "differences": [],
+      "passed": true,
+      "seconds": 31.042063023895025,
+      "package1": "$SCRATCH/lilq-run/lilq-pinn/results/package1_v2.0.0/package1/B_instrumentation/bl_P576_cpu_paper/iterations.csv"
+    }
+  },
+  "passed": true,
+  "threads": "48",
+  "commit": "97e463dc7011a25142dfe87d3991d7c3885daf52"
+}

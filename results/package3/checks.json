@@ -1,0 +1,87 @@
+{
+  "K0": {
+    "passed": true,
+    "source": "P3_checks/k0.json",
+    "shape": [
+      600000,
+      7984
+    ],
+    "gelsy": {
+      "rel_residual": 1.3876651494153156e-15,
+      "rel_error": 1.1714658283029954e-15
+    },
+    "pivoted_qr": {
+      "rel_residual": 1.3757490639713874e-15,
+      "rel_error": 1.157389265246702e-15
+    }
+  },
+  "K1": {
+    "passed": true,
+    "source": "P3_checks/k1.json"
+  },
+  "K2": {
+    "passed": true,
+    "source": "P3_checks/k2.json",
+    "rules": 144,
+    "worst_error": 3.7565474665293984e-14
+  },
+  "K3": {
+    "passed": true,
+    "source": "P3_1_beltrami_certified/checks_item1.json"
+  },
+  "K4": {
+    "passed": true,
+    "source": "checks_item1.json (item 1), checks_item2.json (item 2)",
+    "max_rel_err_at_k1": 2.738882713939026e-14,
+    "rule": "Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested"
+  },
+  "K5": {
+    "passed": true,
+    "source": "checks_item2.json (BL), P3_3_affine_certificates/checks_item3.json (elasticity, Darcy)"
+  },
+  "K6": {
+    "passed": true,
+    "source": "checks_item1.json (B1 level 1), checks_item2.json (BL viscous P = 256)"
+  },
+  "K7": {
+    "passed": true,
+    "source": "checks_item1.json, checks_item2.json"
+  },
+  "K8": {
+    "passed": true,
+    "source": "P3_checks/k8.json",
+    "runs": {
+      "beltrami_pinned": {
+        "passed": true,
+        "rows": 5
+      },
+      "bl_P576_cpu_paper": {
+        "passed": true,
+        "rows": 5
+      }
+    }
+  },
+  "item 3 re-solves (Section 5)": {
+    "passed": true,
+    "identical": 19,
+    "of": 19,
+    "assembly_bitwise": true,
+    "source": "P3_3_affine_certificates/checks_item3.json"
+  },
+  "L1 (Addendum 1)": {
+    "passed": true,
+    "source": "P3_4_burgers_large_P/checks_item4.json"
+  },
+  "L2 (Addendum 1)": {
+    "passed": true,
+    "source": "P3_4_burgers_large_P/checks_item4.json"
+  },
+  "L3 (Addendum 1)": {
+    "passed": true,
+    "source": "P3_4_burgers_large_P/checks_item4.json"
+  },
+  "L4 (Addendum 1)": {
+    "passed": true,
+    "source": "P3_4_burgers_large_P/checks_item4.json"
+  }
+}

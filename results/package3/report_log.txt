@@ -1,0 +1,15 @@
+p3 report, 2026-10-09T19:10:40.998528+00:00
+
+jobs: 20067155 20067150 20067151 20070402 20067148 20067152 20067157 20067147 20067146 20067158
+
+SUs by job (Grace's rates; su_per_job.csv): 625 in all
+  20067146 lilq-p3-preflight: 3.6 (0.15 h at 24/h), COMPLETED
+  20067147 lilq-p3-k0: 51.1 (1.06 h at 48/h), COMPLETED
+  20067148 lilq-p3-beltrami-small: 45.8 (0.95 h at 48/h), COMPLETED
+  20067150 lilq-p3-beltrami-b2: 55.7 (1.16 h at 48/h), COMPLETED
+  20067151 lilq-p3-beltrami-b3-l1: 139.4 (2.90 h at 48/h), COMPLETED
+  20067152 lilq-p3-bl: 23.6 (0.98 h at 24/h), COMPLETED
+  20067155 lilq-p3-affine: 17.5 (0.36 h at 48/h), COMPLETED
+  20067157 lilq-p3-burgers-large-p: 7.3 (0.15 h at 48/h), COMPLETED
+  20067158 lilq-p3-report: 2.5 (0.10 h at 24/h), COMPLETED
+  20070402 lilq-p3-beltrami-b3-l2: 278.6 (5.80 h at 48/h), COMPLETED

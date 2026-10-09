@@ -1,0 +1,53 @@
+{
+  "N_total": 5956,
+  "N_composition": {
+    "pde": 5329,
+    "ic": 313,
+    "bc_left": 157,
+    "bc_right": 157
+  },
+  "P_total": 625,
+  "P_composition": {
+    "u": 625
+  },
+  "row_weights": {
+    "pde": 0.013698630136986302,
+    "ic": 0.1787425013507906,
+    "bc_left": 0.25237723256253436,
+    "bc_right": 0.25237723256253436
+  },
+  "collocation_construction": {
+    "method": "random-tensor",
+    "seed": 42,
+    "N_x": 25,
+    "N_t": 25,
+    "k_ratio": 10
+  },
+  "basis_description": {
+    "family": "sin_fourier",
+    "u": {
+      "modes_x": 25,
+      "modes_t": 25
+    }
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "loss_target",
+    "value": 0.0
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 4,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 3.015049043267905e-15,
+    "max_rel_err_over_run": 1.1434643242190462e-09
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "commit": "c9943bb7ea61a9b2e11b25d18adb5f8eb76ac5d1"
+}

@@ -1,0 +1,32 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20067147 on c684: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+{
+ "check": "K0",
+ "shape": [
+  600000,
+  7984
+ ],
+ "entries": 4790400000,
+ "above_2_32": true,
+ "GB": 38.3232,
+ "generate_s": 58.388633301481605,
+ "gelsy": {
+  "seconds": 1652.8807003777474,
+  "rank": 7984,
+  "rel_residual": 1.3876651494153156e-15,
+  "rel_error": 1.1714658283029954e-15
+ },
+ "pivoted_qr": {
+  "seconds": 1987.050353711471,
+  "via": "scipy.linalg.qr_multiply(pivoting=True)",
+  "rel_residual": 1.3757490639713874e-15,
+  "rel_error": 1.157389265246702e-15
+ },
+ "tolerance": 1e-12,
+ "passed": true,
+ "threads": "48",
+ "scipy": "1.13.1",
+ "commit": "97e463dc7011a25142dfe87d3991d7c3885daf52"
+}
+K0 passed

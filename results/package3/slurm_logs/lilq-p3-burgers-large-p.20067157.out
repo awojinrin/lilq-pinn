@@ -1,0 +1,11 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20067157 on c529: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  P=  625: eps_min 3.672e-05 at k=3, k_e none, k_r 6 (A), median to k_e , to k_r 1.6773779448121786
+  P=  900: eps_min 1.113e-06 at k=4, k_e 3, k_r 6 (C), median to k_e 1.6670217234641314, to k_r 3.326986812055111
+  P= 1024: eps_min 4.358e-07 at k=37, k_e 3, k_r 6 (C), median to k_e 2.437468361109495, to k_r 4.778036365285516
+  P= 1225: eps_min 3.524e-07 at k=23, k_e 3, k_r 6 (C), median to k_e 3.4701353646814823, to k_r 6.965285362675786
+  L1: FAILED
+  L2: passed
+  L3: passed
+  L4: passed

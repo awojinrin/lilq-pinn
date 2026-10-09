@@ -1,0 +1,23 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20067148 on c698: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+B1 L1: overall c1 0.9518, c2 1.0035, ratio 1.0543
+B1 L2: overall c1 0.9968, c2 1.0000, ratio 1.0032
+B2 L1: overall c1 0.9267, c2 1.0050, ratio 1.0845
+B2 L2: overall c1 0.9904, c2 1.0005, ratio 1.0102
+B3 L1: overall c1 0.8213, c2 1.0082, ratio 1.2277
+B3 L2: overall c1 0.9688, c2 1.0024, ratio 1.0347
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package3/P3_1_beltrami_certified/B1_L1
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package3/P3_1_beltrami_certified/B1_L1_rerun
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package3/P3_1_beltrami_certified/B1_L1_pin1e-3
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package3/P3_1_beltrami_certified/B1_L1_pin1e3
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package3/P3_1_beltrami_certified/B1_L2
+{
+ "check": "K8",
+ "passed": true,
+ "threads": "48",
+ "commit": "97e463dc7011a25142dfe87d3991d7c3885daf52"
+}
+  beltrami_pinned: identical (5 rows; package1 5)
+  bl_P576_cpu_paper: identical (5 rows; package1 5)
+K8 passed

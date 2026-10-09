@@ -1,0 +1,99 @@
+{
+  "N_total": 542382,
+  "N_composition": {
+    "momentum (each of 3)": 104976,
+    "continuity": 104976,
+    "x- (each of u, v, w)": 5832,
+    "x+ (each of u, v, w)": 5832,
+    "y- (each of u, v, w)": 5832,
+    "y+ (each of u, v, w)": 5832,
+    "z- (each of u, v, w)": 5832,
+    "z+ (each of u, v, w)": 5832,
+    "initial (each of u, v, w)": 5832,
+    "pressure_pin": 6
+  },
+  "P_total": 3171,
+  "P_composition": {
+    "u": 625,
+    "v": 625,
+    "w": 625,
+    "p": 1296
+  },
+  "row_weights": "Clenshaw-Curtis (Package 3, Section 2.2); pins sqrt(pin_scale x lambda_bc / N_p)",
+  "collocation_construction": {
+    "method": "tensor CGL with Clenshaw-Curtis weights (Package 3, Section 3.2)",
+    "M": 18,
+    "blocks": {
+      "interior": 104976,
+      "x-": 5832,
+      "x+": 5832,
+      "y-": 5832,
+      "y+": 5832,
+      "z-": 5832,
+      "z+": 5832,
+      "initial": 5832
+    },
+    "boundary_measure": 40.0
+  },
+  "basis_description": {
+    "family": "tensor Chebyshev",
+    "N_vel": 5,
+    "N_p": 6
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: 8 iterates (tol = 0); the 1e-9 criterion and the termination rule are read from the log"
+  },
+  "K_max": 8,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 2,
+  "device": "cpu",
+  "thread_count": 48,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 1.887771846761601e-15,
+    "max_rel_err_over_run": 5.550156205721051e-13
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package3": {
+    "item": 1,
+    "size": "B2",
+    "level": 2,
+    "M": 18,
+    "N_vel": 5,
+    "N_p": 6,
+    "pin_scale": 1.0,
+    "status": "complete",
+    "N": 542382,
+    "P": 3171,
+    "weights_note": "Clenshaw-Curtis squared row weights (Section 2.2): interior lambda x tensor CC weight; each face and the initial slab lambda x CC weight x |block|/|dOmega| (4/40, 8/40). The paper's runs put lambda on each face instead; accuracy differences from its tables are partly due to this.",
+    "wall_time_s": 2713.2607126887888,
+    "kappa_time_s": 86.12672253139317,
+    "seconds_per_iteration": 326.84073306713253,
+    "peak_host_bytes": 34271657984,
+    "ranks": [
+      3171,
+      3171,
+      3171,
+      3171,
+      3171,
+      3171,
+      3171,
+      3171
+    ],
+    "b2_rel_err_by_k": {
+      "0": 0.0,
+      "1": 1.887771846761601e-15,
+      "2": 4.790542544502786e-13,
+      "3": 5.29703750960358e-13,
+      "4": 4.871344541990608e-13,
+      "5": 4.750397161646904e-13,
+      "6": 5.550156205721051e-13,
+      "7": 4.857657354711375e-13
+    }
+  },
+  "commit": "97e463dc7011a25142dfe87d3991d7c3885daf52"
+}

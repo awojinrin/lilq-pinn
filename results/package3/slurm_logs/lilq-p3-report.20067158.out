@@ -1,0 +1,16 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20067158 on c687: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+  B1 L1 pin x1.0 (complete, 8 iterates): N/P 115.1, 1e-9 at 7, rule 4 (A), combined error 1.02e-01, error/delta_P 21.08
+  B1 L1 pin x0.001 (complete, 8 iterates): N/P 115.1, 1e-9 at 7, rule 4 (A), combined error 1.02e-01, error/delta_P 21.08
+  B1 L1 pin x1000.0 (complete, 8 iterates): N/P 115.1, 1e-9 at 7, rule 4 (A), combined error 1.02e-01, error/delta_P 21.08
+  B1 L1 pin x1.0 (complete, 8 iterates): N/P 115.1, 1e-9 at 7, rule 4 (A), combined error 1.02e-01, error/delta_P 21.08
+  B1 L2 pin x1.0 (complete, 8 iterates): N/P 249.9, 1e-9 at 7, rule 4 (A), combined error 1.02e-01, error/delta_P 21.08
+  B2 L1 pin x1.0 (complete, 8 iterates): N/P 86.2, 1e-9 at 6, rule 4 (A), combined error 1.93e-02, error/delta_P 36.98
+  B2 L2 pin x1.0 (complete, 8 iterates): N/P 171.0, 1e-9 at 6, rule 4 (A), combined error 1.93e-02, error/delta_P 36.98
+  B3 L1 pin x1.0 (complete, 8 iterates): N/P 43.6, 1e-9 at 4, rule 4 (A), combined error 1.84e-03, error/delta_P 58.65
+  K3: passed
+  K4: passed
+  K7: passed
+  K6: passed
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/package3.tar.gz (2.0 MB; 8 job logs)

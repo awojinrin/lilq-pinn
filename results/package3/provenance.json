@@ -1,0 +1,17 @@
+{
+  "runs": {
+    "commit": "97e463dc7011a25142dfe87d3991d7c3885daf52",
+    "tree_hash": "860d3aa19086c24d4768bbae4561e0e00ae784608a45dc22dc75d5d3a0bee53c",
+    "source": "bundle",
+    "locked_at_utc": "2026-10-09T05:43:41.191424+00:00"
+  },
+  "assembly": {
+    "commit": "3e135728ea8044fd19a66eea27fd21fc8d645f98",
+    "branch": "v3-dev"
+  },
+  "commits_between": [
+    "3e13572 Package 3: the results assembly from Grace's tarball",
+    "86cc344 Package 3 after wave 1: L1 compares P2-12's terminal row like with like"
+  ],
+  "note": "Every run and every summary but L1's is Grace's, at the runs' commit; L1 is re-evaluated at the assembly (checks_item4.json)."
+}

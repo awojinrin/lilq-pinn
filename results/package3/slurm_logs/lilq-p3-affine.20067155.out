@@ -1,0 +1,23 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20067155 on c527: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+  darcy      S1         P= 3169: c2/c1 4.6698, dropped 0, rho_r 1.00096, re-solve identical (0.0e+00)
+  darcy      S2         P= 3169: c2/c1 5.4812, dropped 0, rho_r 1.00406, re-solve identical (0.0e+00)
+  darcy      S3         P= 3169: c2/c1 3.0840, dropped 0, rho_r 1.02403, re-solve identical (0.0e+00)
+  darcy      SPE10      P= 3169: c2/c1 1.8185, dropped 0, rho_r 1.00059, re-solve identical (0.0e+00)
+  elasticity compatible P= 1250: c2/c1 4.1379, dropped 1, rho_r 1.00026 (round-off), re-solve identical (0.0e+00)
+  elasticity compatible P=  200: c2/c1 1.7524, dropped 0, rho_r 1.0007, re-solve identical (0.0e+00)
+  elasticity compatible P=  450: c2/c1 2.3165, dropped 0, rho_r 1.00032, re-solve identical (0.0e+00)
+  elasticity compatible P=   50: c2/c1 1.5891, dropped 0, rho_r 1.00194, re-solve identical (0.0e+00)
+  elasticity compatible P=  800: c2/c1 2.9956, dropped 0, rho_r 1.00031, re-solve identical (0.0e+00)
+  elasticity paper      P= 1250: c2/c1 4.1379, dropped 1, rho_r 1.5808 (round-off), re-solve identical (0.0e+00)
+  elasticity paper      P=  200: c2/c1 1.7524, dropped 1, rho_r 1.14042 (round-off), re-solve identical (0.0e+00)
+  elasticity paper      P=  450: c2/c1 2.3165, dropped 1, rho_r 0.527628 (round-off), re-solve identical (0.0e+00)
+  elasticity paper      P=   50: c2/c1 1.5891, dropped 1, rho_r 2.40478 (round-off), re-solve identical (0.0e+00)
+  elasticity paper      P=  800: c2/c1 2.9956, dropped 1, rho_r 0.94747 (round-off), re-solve identical (0.0e+00)
+  elasticity specified  P= 1250: c2/c1 4.1379, dropped 0, rho_r 1.00033, re-solve identical (0.0e+00)
+  elasticity specified  P=  200: c2/c1 1.7524, dropped 0, rho_r 1.00137, re-solve identical (0.0e+00)
+  elasticity specified  P=  450: c2/c1 2.3165, dropped 0, rho_r 1.00073, re-solve identical (0.0e+00)
+  elasticity specified  P=   50: c2/c1 1.5894, dropped 0, rho_r 1.00472, re-solve identical (0.0e+00)
+  elasticity specified  P=  800: c2/c1 2.9956, dropped 0, rho_r 1.00045, re-solve identical (0.0e+00)
+  assembly bitwise: True; K5: passed

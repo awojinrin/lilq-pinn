@@ -1,0 +1,4 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20070402 on c630: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package3/P3_1_beltrami_certified/B3_L2

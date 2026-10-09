@@ -1,0 +1,145 @@
+{
+  "assembly": {
+    "all_bitwise": true
+  },
+  "resolves": {
+    "darcy S1 P=3169": {
+      "resolve": 0.9531948132125084,
+      "logged": 0.9531948132125084,
+      "identical": true
+    },
+    "darcy S2 P=3169": {
+      "resolve": 1.3526639778415894,
+      "logged": 1.3526639778415894,
+      "identical": true
+    },
+    "darcy S3 P=3169": {
+      "resolve": 5.024980284545164,
+      "logged": 5.024980284545164,
+      "identical": true
+    },
+    "darcy SPE10 P=3169": {
+      "resolve": 41.24057714199747,
+      "logged": 41.24057714199747,
+      "identical": true
+    },
+    "elasticity compatible P=1250": {
+      "resolve": 8.027295721382564e-12,
+      "logged": 8.027295721382564e-12,
+      "identical": true
+    },
+    "elasticity compatible P=200": {
+      "resolve": 0.017550073623472728,
+      "logged": 0.017550073623472728,
+      "identical": true
+    },
+    "elasticity compatible P=450": {
+      "resolve": 1.5643152008696133e-05,
+      "logged": 1.5643152008696133e-05,
+      "identical": true
+    },
+    "elasticity compatible P=50": {
+      "resolve": 0.581865939081631,
+      "logged": 0.581865939081631,
+      "identical": true
+    },
+    "elasticity compatible P=800": {
+      "resolve": 6.643794723982777e-08,
+      "logged": 6.643794723982777e-08,
+      "identical": true
+    },
+    "elasticity paper P=1250": {
+      "resolve": 5.626933746990679e-14,
+      "logged": 5.626933746990679e-14,
+      "identical": true
+    },
+    "elasticity paper P=200": {
+      "resolve": 2.2177245570757084e-14,
+      "logged": 2.2177245570757084e-14,
+      "identical": true
+    },
+    "elasticity paper P=450": {
+      "resolve": 2.969214942145851e-14,
+      "logged": 2.969214942145851e-14,
+      "identical": true
+    },
+    "elasticity paper P=50": {
+      "resolve": 1.5031913593415277e-14,
+      "logged": 1.5031913593415277e-14,
+      "identical": true
+    },
+    "elasticity paper P=800": {
+      "resolve": 2.381031532790954e-14,
+      "logged": 2.381031532790954e-14,
+      "identical": true
+    },
+    "elasticity specified P=1250": {
+      "resolve": 0.1490294511962467,
+      "logged": 0.1490294511962467,
+      "identical": true
+    },
+    "elasticity specified P=200": {
+      "resolve": 0.16962094856866042,
+      "logged": 0.16962094856866042,
+      "identical": true
+    },
+    "elasticity specified P=450": {
+      "resolve": 0.1585547874591756,
+      "logged": 0.1585547874591756,
+      "identical": true
+    },
+    "elasticity specified P=50": {
+      "resolve": 0.20086416883862243,
+      "logged": 0.20086416883862243,
+      "identical": true
+    },
+    "elasticity specified P=800": {
+      "resolve": 0.15264298766858153,
+      "logged": 0.15264298766858153,
+      "identical": true
+    }
+  },
+  "K5": {
+    "runs": {
+      "darcy SPE10 P=3169": {
+        "max_rel_change": {
+          "c1": 1.694131554153006e-07,
+          "c2": 9.720520994465382e-08,
+          "rho_r": 7.118039669789736e-11
+        },
+        "quadrature": "Gauss-Legendre 6 x 6 per cell, the cell's K*",
+        "rho_r_round_off": false,
+        "passed": true
+      },
+      "elasticity compatible P=1250": {
+        "max_rel_change": {
+          "c1": 3.3423552888957486e-14,
+          "c2": 6.568087965485129e-13
+        },
+        "quadrature": "Gauss-Legendre 144 x 144 inside, 144 per edge",
+        "rho_r_round_off": true,
+        "passed": true
+      },
+      "elasticity paper P=1250": {
+        "max_rel_change": {
+          "c1": 3.3587393834491575e-14,
+          "c2": 6.5696717822118e-13
+        },
+        "quadrature": "Gauss-Legendre 144 x 144 inside, 144 per edge",
+        "rho_r_round_off": true,
+        "passed": true
+      },
+      "elasticity specified P=1250": {
+        "max_rel_change": {
+          "c1": 3.309587099856789e-14,
+          "c2": 6.563336324609745e-13,
+          "rho_r": 2.2197037358016295e-16
+        },
+        "quadrature": "Gauss-Legendre 144 x 144 inside, 144 per edge",
+        "rho_r_round_off": false,
+        "passed": true
+      }
+    },
+    "passed": true
+  }
+}

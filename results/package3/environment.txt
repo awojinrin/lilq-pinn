@@ -1,0 +1,18 @@
+Package 3's software environment, from its jobs' own logs (the preflight's).
+Code: commit 97e463dc7011a25142dfe87d3991d7c3885daf52 (the bundle, under the source lock of every job).
+Modules (scripts/cluster/env.sh): GCC/13.3.0 OpenMPI/5.0.3 PyTorch/2.9.1-CUDA-12.6.0; the venv $SCRATCH/lilq-run/venv first on PYTHONPATH.
+BLAS and LAPACK: FlexiBLAS 3.4.4 (GCC 13.3.0), through the modules' numpy and scipy.
+Threads: OMP, OpenBLAS and MKL set to the cores the job holds (48 on a whole node, 24 for the cpu class);
+  the runs that set their own count (item 2: 4 per run, six side by side; item 3: as the original run)
+  record it in their run.json.
+
+The preflight log (slurm_logs/lilq-p3-preflight.*.out):
+  provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+  job 20067146 on c698: 24 threads, 24 cores usable, OverSubscribe=OK
+  torch 2.10.0+cu126 OK
+  numpy 1.26.4 scipy 1.13.1
+  inputs OK (25 files)
+  776 passed, 27 skipped, 21 warnings in 366.87s (0:06:06)
+  K1 passed
+  K2 passed
+  PREFLIGHT OK

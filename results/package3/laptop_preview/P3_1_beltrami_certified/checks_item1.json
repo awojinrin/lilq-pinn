@@ -1,0 +1,27 @@
+{
+  "K3": {
+    "runs": [],
+    "passed": null,
+    "note": "velocity and gauge-corrected pressure errors at the returned iterate, against pin_scale 1"
+  },
+  "K4": {
+    "max_rel_err_at_k1": 1.5791465772173066e-15,
+    "tolerance": 1e-10,
+    "max_rel_err_over_runs": 1.3052208929647902e-13,
+    "passed": true,
+    "rule": "Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested"
+  },
+  "K7": {
+    "runs": {
+      "B1_L1": {
+        "rank_min": 1393,
+        "P": 1393
+      },
+      "B1_L2": {
+        "rank_min": 1393,
+        "P": 1393
+      }
+    },
+    "passed": true
+  }
+}

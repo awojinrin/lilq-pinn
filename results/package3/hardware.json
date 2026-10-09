@@ -1,0 +1,118 @@
+{
+  "cluster": "Grace (TAMU HPRC)",
+  "jobs": {
+    "20067155": {
+      "log": "lilq-p3-affine.20067155.out",
+      "node": "c527",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-affine",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "00:21:54"
+    },
+    "20067150": {
+      "log": "lilq-p3-beltrami-b2.20067150.out",
+      "node": "c724",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-beltrami-b2",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "01:09:40"
+    },
+    "20067151": {
+      "log": "lilq-p3-beltrami-b3-l1.20067151.out",
+      "node": "c734",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-beltrami-b3-l1",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "02:54:16"
+    },
+    "20070402": {
+      "log": "lilq-p3-beltrami-b3-l2.20070402.out",
+      "node": "c630",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-beltrami-b3-l2",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "05:48:15"
+    },
+    "20067148": {
+      "log": "lilq-p3-beltrami-small.20067148.out",
+      "node": "c698",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-beltrami-small",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "00:57:16"
+    },
+    "20067152": {
+      "log": "lilq-p3-bl.20067152.out",
+      "node": "c681",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p3-bl",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
+      "elapsed": "00:58:58"
+    },
+    "20067157": {
+      "log": "lilq-p3-burgers-large-p.20067157.out",
+      "node": "c529",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-burgers-large-p",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "00:09:06"
+    },
+    "20067147": {
+      "log": "lilq-p3-k0.20067147.out",
+      "node": "c684",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-k0",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "01:03:50"
+    },
+    "20067146": {
+      "log": "lilq-p3-preflight.20067146.out",
+      "node": "c698",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p3-preflight",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
+      "elapsed": "00:08:58"
+    },
+    "20067158": {
+      "log": "lilq-p3-report.20067158.out",
+      "node": "c687",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p3-report",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
+      "elapsed": "00:06:15"
+    }
+  },
+  "cpu_model": null,
+  "cpu_model_note": "not recorded by the Package 3 jobs (they did not call save_provenance). Every job ran in partition medium, on a whole node for the timed-cpu class; Package 2's record of a node of the same partition: Package 2, Stage 2, job 20017335 (lilq-p2s2-scaling-cpu-a) on c528, partition medium: Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz, 48 cores, RealMemory 368640 MB (package2_results/hardware.json)",
+  "gpu": null
+}

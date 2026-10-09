@@ -1,0 +1,43 @@
+{
+  "K4 (cheb)": {
+    "max_rel_err_at_k1": 3.4873702999901014e-15,
+    "tolerance": 1e-10,
+    "max_rel_err_over_runs": 4.972236424166065e-13,
+    "passed": true,
+    "rule": "Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested"
+  },
+  "K7 (cheb)": {
+    "not_full_rank": [],
+    "passed": true
+  },
+  "K4 (sine)": {
+    "max_rel_err_at_k1": 3.2476587838280117e-15,
+    "tolerance": 1e-10,
+    "max_rel_err_over_runs": 1.2468424450323743e-12,
+    "passed": true,
+    "rule": "Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested"
+  },
+  "K7 (sine)": {
+    "not_full_rank": [],
+    "passed": true
+  },
+  "K5 (BL viscous P = 1,024, N/P = 10, n_GL x 1.5)": {
+    "max_rel_change": {
+      "c1": 4.612706405318627e-13,
+      "c2": 5.595502698486108e-13,
+      "rho_r": 2.2648549698814647e-14
+    },
+    "passed": true
+  },
+  "K6 (BL viscous P = 256, N/P = 10)": {
+    "identical_except_timings": true,
+    "differing": [],
+    "beta_identical": true,
+    "passed": true,
+    "excluded_columns": [
+      "t_assemble_s",
+      "t_solve_s",
+      "t_cum_s"
+    ]
+  }
+}

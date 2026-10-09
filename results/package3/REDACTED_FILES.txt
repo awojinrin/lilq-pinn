@@ -1,0 +1,8 @@
+laptop_preview/P3_checks/k1.json
+P3_checks/k8.json
+slurm_logs/lilq-p3-beltrami-b2.20067150.out
+slurm_logs/lilq-p3-beltrami-b3-l1.20067151.out
+slurm_logs/lilq-p3-beltrami-b3-l2.20070402.out
+slurm_logs/lilq-p3-beltrami-small.20067148.out
+slurm_logs/lilq-p3-preflight.20067146.out
+slurm_logs/lilq-p3-report.20067158.out

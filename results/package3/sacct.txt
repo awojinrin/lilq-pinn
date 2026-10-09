@@ -1,0 +1,12 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20067146                    lilq-p3-preflight     medium                             billing=24,cpu=24,mem=32G,node=1   00:08:58  COMPLETED      0:0 
+20067147                           lilq-p3-k0     medium                            billing=48,cpu=48,mem=360G,node=1   01:03:50  COMPLETED      0:0 
+20067148               lilq-p3-beltrami-small     medium                            billing=48,cpu=48,mem=360G,node=1   00:57:16  COMPLETED      0:0 
+20067150                  lilq-p3-beltrami-b2     medium                            billing=48,cpu=48,mem=360G,node=1   01:09:40  COMPLETED      0:0 
+20067151               lilq-p3-beltrami-b3-l1     medium                            billing=48,cpu=48,mem=360G,node=1   02:54:16  COMPLETED      0:0 
+20067152                           lilq-p3-bl     medium                             billing=24,cpu=24,mem=32G,node=1   00:58:58  COMPLETED      0:0 
+20067155                       lilq-p3-affine     medium                            billing=48,cpu=48,mem=360G,node=1   00:21:54  COMPLETED      0:0 
+20067157              lilq-p3-burgers-large-p     medium                            billing=48,cpu=48,mem=360G,node=1   00:09:06  COMPLETED      0:0 
+20067158                       lilq-p3-report     medium                             billing=24,cpu=24,mem=32G,node=1   00:06:15  COMPLETED      0:0 
+20070402               lilq-p3-beltrami-b3-l2     medium                            billing=48,cpu=48,mem=360G,node=1   05:48:15  COMPLETED      0:0 

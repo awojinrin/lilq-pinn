@@ -1,0 +1,10 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20067152 on c681: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+50 runs
+  K4 (cheb): passed
+  K7 (cheb): passed
+  K4 (sine): passed
+  K7 (sine): passed
+  K5 (BL viscous P = 1,024, N/P = 10, n_GL x 1.5): passed
+  K6 (BL viscous P = 256, N/P = 10): passed
