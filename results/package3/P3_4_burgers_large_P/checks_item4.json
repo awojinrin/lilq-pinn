@@ -3,7 +3,7 @@
     "compared": "k = 0..4: norm_R_h, norm_Rlin_h, eps_ref",
     "differences": [],
     "passed": true,
-    "reevaluated_at": "3e135728ea8044fd19a66eea27fd21fc8d645f98",
+    "reevaluated_at": "086461c1c2976014a2b27c3254aa087bf27d7323",
     "note": "re-evaluated at the assembly on Grace's files: on P2-12's terminal row (k = 4), norm_R_h is compared with sqrt(the control's loss), as that row computes it (DECISIONS.md, 2026-10-09)",
     "grace": {
       "compared": "k = 0..4: norm_R_h, norm_Rlin_h, eps_ref",

@@ -16,3 +16,7 @@ The preflight log (slurm_logs/lilq-p3-preflight.*.out):
   K1 passed
   K2 passed
   PREFLIGHT OK
+
+The full record (numpy's and scipy's build configuration, the BLAS thread pools, the packages),
+written by save_provenance in a whole-node job after the runs, in their environment and under
+their source lock: provenance_cpu/environment.txt.

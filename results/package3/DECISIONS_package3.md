@@ -1,6 +1,6 @@
 # DECISIONS.md: the Package 3 entries
 
-Copied from the repository's `DECISIONS.md` at the assembly's commit (3e13572), newest first.
+Copied from the repository's `DECISIONS.md` at the assembly's commit (086461c), newest first.
 
 ---
 
@@ -16,10 +16,17 @@ tarball is wave 1 and B3 level 2: 11 jobs, all COMPLETED.
   source file.
 - **`su.csv`** is the report's `su_per_job.csv` plus the last report job's own row. That row
   comes from `sacct`, since a job's tarball cannot hold its own charge.
-- **`hardware.json` and `environment.txt`** come from the jobs' own logs (the node, the
-  threads, the versions, the preflight) and `sacct.txt`. The Package 3 jobs did not call
-  `save_provenance`, so the CPU model is not in their logs. `hardware.json` says so, and cites
-  Package 2's record of a node in the same partition (Xeon Gold 6248R, 48 cores).
+- **`hardware.json` and `environment.txt`** give each job's node, threads and allocation, from
+  its log and `sacct.txt`, and the preflight's versions. The run jobs did not call
+  `save_provenance`, so a short job did it after the runs.
+  - **The job:** `p3_provenance.slurm`, job 20075205, 187 s on c205, 2.5 SU.
+  - **Its setting:** the runs' class (timed-cpu, a whole node, partition medium), their
+    environment and their source lock (97e463d).
+  - **What it wrote:** `provenance_cpu/`, with its script; the CPU in `hardware.json` comes
+    from it (Xeon Gold 6248R, 48 cores).
+
+  The first draft of the report asked the advisor whether to run this. It is ours to
+  decide, at 2.5 SU, so it was run instead.
 - **The laptop's batch 0 K1 and K2** move to `laptop_preview/P3_checks/`. `P3_checks/` is now
   Grace's.
 

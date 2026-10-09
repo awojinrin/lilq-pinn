@@ -3,7 +3,7 @@
 **To:** R. Younis. **From:** G. Awojinrin. **Date:** 9 October 2026.
 **Refers to:** the Package 3 instructions and Addendum 1 (both 8 October).
 
-**Code:** `awojinrin/lilq-pinn`, branch `v3-dev` at 3e13572. These are the 8 commits after
+**Code:** `awojinrin/lilq-pinn`, branch `v3-dev` at 086461c. These are the 9 commits after
 7af8855, the commit of the Stage 2 report:
 
 | commit | what | DECISIONS.md entry |
@@ -16,29 +16,25 @@
 | 97e463d | the Grace submission, K0, K8, B3 level 2's gate (the runs' commit) | batch 4 |
 | 86cc344 | L1 compares P2-12's terminal row like with like | after wave 1 |
 | 3e13572 | the results assembly | the assembly |
+| 086461c | the assembly takes the hardware record captured after the runs | the assembly |
 
-Every run ran at 97e463d, under the source lock. The two later commits change only L1's
+Every run ran at 97e463d, under the source lock. The three later commits change only L1's
 comparison and the assembly (Section 4).
 
 **Results:** `package3_results/`, in the layout of Section 9. They are on the branch
 `package3-results` of `awojinrin/lilq-pinn`, under `results/package3/`. The branch starts at
-3e13572; its README says what it holds.
+086461c; its README says what it holds.
 
 ## Summary
 
 Package 3 is done, and every check passes: K0–K8, item 3's all-digit re-solves, and L1–L4.
-It cost 627 SU on Grace, of the 850 cap. B3 level 2 passed the launch rule and the budget
+It cost 630 SU on Grace, of the 850 cap. B3 level 2 passed the launch rule and the budget
 guard, and completed. No Section 8.2 rule had to be applied, and no Section 8.1 condition
 arose.
 
-**For your reply:**
-1. **L1** compares a value that P2-12 and the control compute in two different ways
-   (Section 4.1). With like compared with like, every value at k ≤ 4 is identical. Is that
-   reading of L1 acceptable?
-2. **`hardware.json`.** The Package 3 jobs did not record the CPU model. The file is built from
-   the jobs' own logs and cites Package 2's record of a node in the same partition
-   (Section 4.4). If you want Package 3's own record, one short job captures it, at about
-   2 SU.
+**For your reply:** L1 compares a value that P2-12 and the control compute in two different
+ways (Section 4.1). With like compared with like, every value at k ≤ 4 is identical. Is that
+reading of L1 acceptable?
 
 ## 1. What ran
 
@@ -46,6 +42,7 @@ All on Grace, partition `medium`, at 97e463d, in two waves:
 - **Wave 1** (9 jobs, 9 October): the preflight (the test suite, K1, K2), K0, items 1–4, and
   the report.
 - **Wave 2:** B3 level 2 and the report again.
+- **After the runs:** a short job, which recorded the hardware and software (Section 4.4).
 
 | item | runs |
 |---|---|
@@ -264,17 +261,20 @@ the new one in `checks_item4.json`.
 
 ### 4.4 Records
 
-- `hardware.json` and `environment.txt` are built from the jobs' own logs and `sacct`: the
-  node, the threads and cores, the versions, and the preflight.
-- The jobs did not call `save_provenance`, so the CPU model is not in them. `hardware.json`
-  cites Package 2's record of a node in the same partition (Xeon Gold 6248R, 48 cores).
-- The stack, from the preflight: torch 2.10.0+cu126, numpy 1.26.4, scipy 1.13.1, FlexiBLAS
-  3.4.4.
+- **The run jobs** did not write the full hardware and software record (`save_provenance`).
+  Their logs give each job's node, threads and cores, and the preflight's versions.
+  `hardware.json` and `environment.txt` list these per job.
+- **A short job after the runs** wrote the full record: `p3_provenance.slurm`, job 20075205,
+  187 s, 2.5 SU. It ran in the runs' class (a whole node, partition `medium`), their
+  environment and their source lock (97e463d).
+  - **Its record:** `provenance_cpu/`, with its script.
+  - **The CPU:** Intel Xeon Gold 6248R, 3.00 GHz, 48 cores.
+- **The stack:** torch 2.10.0+cu126, numpy 1.26.4, scipy 1.13.1, FlexiBLAS 3.4.4.
 
 ## 5. SU
 
-Charged at Grace's rates (`su.csv`). The last report's own row is from `sacct`, since its
-tarball cannot hold its own charge.
+Charged at Grace's rates (`su.csv`). Two rows are from `sacct` after the job ended: the last
+report's (its tarball cannot hold its own charge) and the provenance job's.
 
 | job | name | hours | SU/h | SU |
 |---|---|---|---|---|
@@ -289,7 +289,8 @@ tarball cannot hold its own charge.
 | 20067158 | lilq-p3-report | 0.10 | 24 | 2.5 |
 | 20070402 | lilq-p3-beltrami-b3-l2 | 5.80 | 48 | 278.6 |
 | 20070403 | lilq-p3-report | 0.09 | 24 | 2.1 |
-|  | **total** |  |  | **627.2** |
+| 20075205 | lilq-p3-provenance | 0.05 | 48 | 2.5 |
+|  | **total** |  |  | **629.7** |
 
 The plan was 1,164 SU requested, about 617 expected (`su_plan.csv`).
 
@@ -300,8 +301,8 @@ In `package3_results/` (`results/package3/` on the branch):
 - `checks.json`: K0–K8, item 3's re-solves and L1–L4.
 - `su.csv`; `su_plan.csv`; `sacct.txt`; `su_per_job.csv`.
 - `DECISIONS_package3.md`: the Package 3 entries of `DECISIONS.md`.
-- `environment.txt`, `hardware.json`, `provenance.json`: the runs' commit, this commit, and
-  the commits between.
+- `environment.txt`, `hardware.json`; `provenance_cpu/` (the full record, Section 4.4).
+- `provenance.json`: the runs' commit, this commit, and the commits between.
 - `P3_1_beltrami_certified/`: a folder per run; `constants.csv`; `terminal.csv`.
 - `P3_2a_bl_chebyshev_certified/`, `P3_2b_bl_lifted_sine_cheb/`: a folder per run;
   `terminal.csv`; 2a's `constants.csv`.

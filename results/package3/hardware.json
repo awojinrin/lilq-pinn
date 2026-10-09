@@ -1,5 +1,14 @@
 {
   "cluster": "Grace (TAMU HPRC)",
+  "cpu": {
+    "model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+    "machine": "x86_64",
+    "logical_cores": 48,
+    "usable_cores": 48,
+    "hostname": "c205",
+    "system": "Linux 4.18.0-553.125.1.el8_10.x86_64"
+  },
+  "cpu_source": "save_provenance in job 20075205 (lilq-p3-provenance) on c205, after the runs: the runs' class (timed-cpu, a whole node, partition medium), their environment and their source lock (commit 97e463d). Its full record: provenance_cpu/hardware.json",
   "jobs": {
     "20067155": {
       "log": "lilq-p3-affine.20067155.out",
@@ -100,6 +109,16 @@
       "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
       "elapsed": "00:08:58"
     },
+    "20075205": {
+      "log": "lilq-p3-provenance.20075205.out",
+      "node": "c205",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p3-provenance",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed_h": 0.0519
+    },
     "20067158": {
       "log": "lilq-p3-report.20067158.out",
       "node": "c687",
@@ -112,7 +131,5 @@
       "elapsed": "00:06:15"
     }
   },
-  "cpu_model": null,
-  "cpu_model_note": "not recorded by the Package 3 jobs (they did not call save_provenance). Every job ran in partition medium, on a whole node for the timed-cpu class; Package 2's record of a node of the same partition: Package 2, Stage 2, job 20017335 (lilq-p2s2-scaling-cpu-a) on c528, partition medium: Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz, 48 cores, RealMemory 368640 MB (package2_results/hardware.json)",
   "gpu": null
 }

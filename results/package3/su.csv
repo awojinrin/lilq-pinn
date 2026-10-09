@@ -9,4 +9,5 @@ job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
 20067157,lilq-p3-burgers-large-p,"billing=48,cpu=48,mem=360G,node=1",0.1517,COMPLETED,48,7.3,
 20067158,lilq-p3-report,"billing=24,cpu=24,mem=32G,node=1",0.1042,COMPLETED,24,2.5,
 20070402,lilq-p3-beltrami-b3-l2,"billing=48,cpu=48,mem=360G,node=1",5.8042,COMPLETED,48,278.6,
-20070403,lilq-p3-report,"billing=24,cpu=24,mem=32G,node=1",0.0875,COMPLETED,24,2.1,its own charge: from sacct after it ended (its tarball cannot hold it)
+20070403,lilq-p3-report,"billing=24,cpu=24,mem=32G,node=1",0.0875,COMPLETED,24,2.1,not in the last tarball: from sacct after it ended
+20075205,lilq-p3-provenance,"billing=48,cpu=48,mem=360G,node=1",0.0519,COMPLETED,48,2.5,not in the last tarball: from sacct after it ended

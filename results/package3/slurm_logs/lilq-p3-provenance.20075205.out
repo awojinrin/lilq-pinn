@@ -1,0 +1,8 @@
+provenance lock OK: commit 97e463dc7011, tree 860d3aa19086
+job 20075205 on c205: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+total 1
+-rw-rw-r-- 1 <user> <user>  8050 Oct  9 15:19 environment.txt
+-rw-rw-r-- 1 <user> <user> 14338 Oct  9 15:19 hardware.json
+{'model': 'Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz', 'machine': 'x86_64', 'logical_cores': 48, 'usable_cores': 48, 'hostname': 'c205', 'system': 'Linux 4.18.0-553.125.1.el8_10.x86_64'}
+PROVENANCE OK

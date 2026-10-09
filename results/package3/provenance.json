@@ -6,10 +6,11 @@
     "locked_at_utc": "2026-10-09T05:43:41.191424+00:00"
   },
   "assembly": {
-    "commit": "3e135728ea8044fd19a66eea27fd21fc8d645f98",
+    "commit": "086461c1c2976014a2b27c3254aa087bf27d7323",
     "branch": "v3-dev"
   },
   "commits_between": [
+    "086461c Package 3 assembly: the provenance record captured after the runs",
     "3e13572 Package 3: the results assembly from Grace's tarball",
     "86cc344 Package 3 after wave 1: L1 compares P2-12's terminal row like with like"
   ],
