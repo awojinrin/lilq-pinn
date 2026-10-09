@@ -17,6 +17,79 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-08 -- Package 3, Addendum 1: item 4, Burgers LiL-Q at larger sizes; the B2 convention
+
+The advisor's addendum of 8 October adds item 4, and leaves the rest of Package 3 as
+written.
+- **Why.** LM networks reach a Burgers error of 1.6e-5 at P = 625, below LiL-Q's 3.7e-5 at
+  the paper's sizes. Methods are compared at matched error, so LiL-Q's cost to reach 1.6e-5
+  is needed.
+- **The cap** rises from 800 to 850 SU, with 50 for item 4.
+
+`experiments/p3_4_burgers_large_P.py`.
+
+**The logged pass** is `problems.burgers.run_lil_q` (P2-12's driver) with
+`run_burgers.paper_setup(N)`, unchanged but for the size. It has R_tol = 0 (for N > 25
+`paper_setup` would default it to 1e-4) and K_max = 60, with the Cole-Hopf reference. The
+sizes are N = 30, 32 and 35, with the P = 625 control; 40 runs only if no iterate at the
+three reaches 1.6e-5.
+- **kappa** comes from the tracker's own rule for P <= 3,200: SVD at every iterate, the last
+  included. That is more than the addendum's "at the last iterate", and it changes nothing
+  in the solve.
+- **`iterations.csv`** is written by the unchanged driver at the end of the pass, not after
+  every iterate. A pass takes minutes against a 1 h cap.
+- **`losses.csv`** is the solver's own record (`QuasilinearMetrics.total_loss`): entry k is
+  the loss at iterate k.
+
+**Clean timing** (the paper's protocol, Package 1 wave 4, option B). For each size and
+stopping iterate there is one untimed warm-up, then three clean runs (`diagnostics=False`),
+reported as their median.
+- **k_e:** the first iterate with error <= 1.6e-5.
+- **k_r:** the iterate the termination rule returns.
+- **The P = 625 control** is timed as the paper pass itself: its target, and max_iter 4.
+
+**Checks:**
+- **L1:** compares norm_R_h, norm_Rlin_h and eps_ref for k <= 4 with P2-12's
+  `iterations.csv`, as floats. P2-12's terminal row k = 4 has no norm_Rlin_h; its pass stopped
+  there at the paper's target.
+- **L2:** the control's median against the paper's 1.18 s, within 15%.
+- **L4:** every clean run's final loss equals the logged pass's at the same iterate, bit for
+  bit, and every clean run takes exactly max_iter iterations.
+
+**The B2 identity: Package 1's convention** (K4 of items 1 and 2, L3 of item 4). The
+identity is judged at k = 1, below 1e-10, and the run maximum is reported, not tested.
+- **The rule** is Package 1's (the entry "B2 in real runs" below). Near convergence R is a
+  small difference of O(1) quantities, so cancellation dominates the relative difference.
+  Package 1's K_max runs reached maxima of 5.6e-2 (BL P = 1,024) and 1.4e-2 (Kovasznay
+  P = 1,875).
+- **Why it matters here.** Item 4's passes run 60 iterates with no target, far past
+  convergence: the maximum reaches 2.7e-6 at P = 1,225, while k = 1 is 4.0e-15.
+- **The change to items 1 and 2.** Batches 1 and 2 had tested the run maximum. It passed on
+  the laptop, but on Grace a converged iterate could have tripped a false K4 failure, which is
+  a stop condition.
+
+**Budget** (`package3_results/su_plan.csv`):
+- item 4 is one exclusive-node job, 1 h (48 SU requested, about 12 expected);
+- wave 1 is 828 SU if every job ran to its cap, under 850;
+- B3 level 2's budget guard becomes: SU charged so far + 336 <= 850.
+
+**Laptop rehearsal** (24 threads, 522 s with the timings):
+
+| P | smallest error (k) | k_e | k_r (class) | to k_e (s) | to k_r (s) |
+|---|---|---|---|---|---|
+| 625 | 3.67e-5 (3), as the paper | none | 6 (A) | -- | 1.48 |
+| 900 | 1.11e-6 (4) | 3 | 6 (C) | 1.68 | 3.41 |
+| 1,024 | 4.36e-7 (47) | 3 | 6 (C) | 2.42 | 4.84 |
+| 1,225 | 3.52e-7 (28) | 3 | 6 (C) | 3.72 | 7.27 |
+
+- **Every size from 900 up reaches 1.6e-5 by iterate 3,** so 40 x 40 does not run.
+- **L3 and L4 passed.**
+- **L1 differs off Grace:** about 1e-14 relative in the norms, 1e-8 in the 7e-10 linear
+  residual. L1 is Grace's.
+- **L2:** the laptop's 0.97 s; it is Grace's too.
+
+---
+
 ## 2026-10-08 -- Package 3, batch 3: item 3, a posteriori certificates for elasticity and Darcy
 
 `experiments/p3_3_affine_certificates.py`.

@@ -95,6 +95,7 @@ K_MAX = 60
 LAM_INT, LAM_AUX = 1.0, 10.0
 B2_TOL = 1e-10
 TIMING_COLUMNS = ('t_assemble_s', 't_solve_s', 't_cum_s')
+NOTE_B2 = ("Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested")
 
 
 def physics_for(case):
@@ -475,6 +476,7 @@ def terminal_row(run_dir, delta):
             'c2_over_c1_max': float(np.nanmax(ratio)), 'rho_r_at_rule': c6[k6]['rho_r'],
             'rho_r_max': float(np.nanmax(_floats(c6, 'rho_r'))),
             'round_off_any': any(x['round_off'] == 'True' for x in c6),
+            'b2_rel_err_k1': (meta.get('b2_check') or {}).get('rel_err'),
             'b2_max_rel_err': (meta.get('b2_check') or {}).get('max_rel_err_over_run'),
             'wall_time_s': p3.get('wall_time_s'), 'status': p3['status']}
 
@@ -516,9 +518,11 @@ def summarize(out_root, reference_dir):
         terminal = [terminal_row(x, delta) for x in runs]
         if terminal:
             _write_csv(d / 'terminal.csv', terminal)
-        b2 = [float(t['b2_max_rel_err']) for t in terminal if t['b2_max_rel_err'] is not None]
-        checks[f'K4 ({variant})'] = {'max_rel_err': max(b2) if b2 else None, 'tolerance': B2_TOL,
-                                     'passed': bool(b2) and max(b2) < B2_TOL}
+        b2 = [float(t['b2_rel_err_k1']) for t in terminal if t['b2_rel_err_k1'] is not None]
+        checks[f'K4 ({variant})'] = {'max_rel_err_at_k1': max(b2) if b2 else None, 'tolerance': B2_TOL,
+                                     'max_rel_err_over_runs': max((float(t['b2_max_rel_err']) for t in terminal
+                                                                   if t['b2_max_rel_err'] is not None), default=None),
+                                     'passed': bool(b2) and max(b2) < B2_TOL, 'rule': NOTE_B2}
         checks[f'K7 ({variant})'] = {'not_full_rank': [t for t in terminal if int(t['rank_min']) < int(t['P'])],
                                      'passed': all(int(t['rank_min']) == int(t['P']) for t in terminal)}
     k5 = Path(out_root) / ITEMS['cheb'] / (run_name('viscous', 1024, 10, 'ic') + '_k5')

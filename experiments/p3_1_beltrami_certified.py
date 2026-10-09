@@ -102,6 +102,7 @@ GL_RHO = 12
 EVAL = (21, 11)                                           # the paper's 21^3 x 11 error grid
 B2_TOL = 1e-10
 TIMING_COLUMNS = ('t_assemble_s', 't_solve_s', 't_cum_s')
+NOTE_B2 = ("Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested")
 
 
 def config_for(size):
@@ -483,6 +484,7 @@ def terminal_row(run_dir, exact_cache={}):
            'rel_l2_combined_at_last': errs[K]['rel_l2_combined'] if K in errs else '', **dp,
            **{f'error_over_delta_P_{f}': e_ret[f'rel_l2_{f}'] / dp[f'delta_P_{f}'] for f in 'uvwp'},
            'error_over_delta_P_combined': e_ret['rel_l2_combined'] / dp['delta_P_combined'],
+           'b2_rel_err_k1': (meta.get('b2_check') or {}).get('rel_err'),
            'b2_max_rel_err': (meta.get('b2_check') or {}).get('max_rel_err_over_run'),
            'peak_host_GB': (p3.get('peak_host_bytes') or 0) / 1e9, 'wall_time_s': p3.get('wall_time_s'),
            'seconds_per_iteration': p3.get('seconds_per_iteration'), 'kappa_time_s': p3.get('kappa_time_s'),
@@ -512,9 +514,11 @@ def summarize(out_root):
             k3.append({'run': d.name, 'pin_scale': r['pin_scale'], 'max_rel_diff_errors': diff, 'passed': diff < 1e-6})
     checks['K3'] = {'runs': k3, 'passed': all(x['passed'] for x in k3) if k3 else None,      # None: not run
                     'note': 'velocity and gauge-corrected pressure errors at the returned iterate, against pin_scale 1'}
-    checks['K4'] = {'max_rel_err': max(float(r['b2_max_rel_err']) for r in terminal if r['b2_max_rel_err'] is not None),
-                    'tolerance': B2_TOL}
-    checks['K4']['passed'] = checks['K4']['max_rel_err'] < B2_TOL
+    k1 = [float(r['b2_rel_err_k1']) for r in terminal if r['b2_rel_err_k1'] is not None]
+    checks['K4'] = {'max_rel_err_at_k1': max(k1) if k1 else None, 'tolerance': B2_TOL,
+                    'max_rel_err_over_runs': max((float(r['b2_max_rel_err']) for r in terminal
+                                                  if r['b2_max_rel_err'] is not None), default=None),
+                    'passed': bool(k1) and max(k1) < B2_TOL, 'rule': NOTE_B2}
     checks['K7'] = {'runs': {d.name: {'rank_min': r['rank_min'], 'P': r['P']} for d, r in zip(runs, terminal)}}
     checks['K7']['passed'] = all(int(v['rank_min']) == int(v['P']) for v in checks['K7']['runs'].values())
     rerun = out / 'B1_L1_rerun'
