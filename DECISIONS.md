@@ -17,6 +17,87 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-08 -- Package 3, batch 2: item 2, Buckley-Leverett on CC-CGL grids (2a and 2b)
+
+`experiments/p3_2_bl_certified.py`. It uses the paper's two cases and its flux
+derivatives (`BLPhysics`, autograd) and quasilinearization, on `lilq.certified.bl_grid`,
+with a weight per row.
+- **2a's trial space** is T_i(2x - 1) T_j(2t/T - 1).
+- **2b's** is (1 - x) + sin(i pi x) T_j(2t/T - 1). The lifting's terms go to the
+  right-hand side.
+
+**The assembly is the paper's.** At the paper's random grid and per-block weights,
+`Rows.assemble` reproduces `buckley_leverett._make_lil_q_system_fn`, for both cases and both
+spaces:
+- A bit for bit;
+- b to 1e-15 for 2b, which carries P2-9's lifting column with coefficient 1;
+- the Newton identity to 4e-16.
+
+**Decisions within the instructions:**
+- **2b's lateral rows.** They are evaluated numerically, sin(i pi) about 1e-16, as P2-9,
+  and kept in the solve. They are the zero rows that Section 6 leaves out of both systems.
+- **The Y-norm.** Each block of the Gauss-Legendre quadrature carries that block's total
+  squared weight in the collocation set, the lateral lines' 1 - w_0 included.
+- **The Section 6 constants:**
+  - B_Y's columns are scaled to unit norm, and the same scaling is applied to B_h, with a
+    guard for a zero column.
+  - rho_r's denominator is a `gelsy` least squares.
+  - The round-off flag's kappa(A_Y) is sigma_1 / sigma_r over the numerical rank
+    (max(m, n) eps sigma_1).
+- **kappa of the collocation system** is computed at the last iterate only, by SVD
+  (P < 3,200), and the A/C class uses it, as in item 1.
+- **"Does not stall by k = 60, or oscillates" (Section 8.2)** is read as: the termination
+  rule never fires within the 60 iterates. An oscillating run never meets the stall
+  conditions, so the one test covers both. Such a run is run once more from the other guess
+  (viscous: zero; gravity: the extended profile; for 2b the lifting is subtracted), and both
+  are reported.
+- **"At the rule's iterate"** in `terminal.csv` means the Section 6 row linearized at the
+  returned iterate beta^(k_rule); it is the last row when the rule never fires. The loss
+  target compares the CC-weighted ||R(beta^(k))||_h^2 at each k.
+- **`lilq.certified.block_constants`:** a datum that is zero on its block (S = 0 on the right
+  line) adds nothing to the span, so it is not a column. Otherwise its zero norm would
+  divide.
+- **The runs go side by side,** each in its own process with its BLAS thread count fixed
+  before numpy loads. A run's numbers then depend on its thread count only, not on what runs
+  beside it. K5 and K6 run at the sweep's thread count, so they compare like with like.
+
+**Laptop, single runs:**
+- P = 64: 11 s each.
+- P = 1,024 at N/P = 20 (viscous, 2a): 755 s, of which 619 s are the Section 6 constants,
+  computed at every iterate. It converges by k = 10, with eps_ref 1.1e-3, constants
+  1.0000, and rho_r = 1.
+
+**Laptop, the whole sweep** (`all --workers 6 --threads 4`, 8 October): the 48 runs took
+67 min; then K5 and K6 took 49 min, K5 being most of it. Results:
+- **No Section 8.2 rerun:** the rule fired in every run, all class A.
+- **K4:** 1.3e-12 at most. K7 passed.
+- **K5:** c1, c2 and rho_r change by 2.4e-13 at most, against 1e-3.
+- **K6:** bit for bit.
+- **eps_ref / delta_P at the rule's iterate:**
+  - 2a viscous: 11-66;
+  - 2a gravity: 5-22;
+  - 2b viscous: 1.9 at P = 1,024, with eps_ref 9.4e-5 (P2-9's plain sine on the paper's
+    grid: 6.9e-5);
+  - 2b gravity: 6-28.
+- **The Section 6 constants:** c2/c1 is near 1 from N/P = 10 up. The worst are 2b gravity at
+  N/P = 5: up to 7.9 at the rule's iterate and 10.8 over a run, with rho_r up to 2.3. They
+  are reported as they are (Section 8.2). The smallest c1 over every iterate is 0.163, far
+  above Section 8.2's 1e-3.
+- **On Grace,** K5 and K6 run alongside the sweep, not after it (batch 4).
+
+**Tests** (`tests/test_p3_bl_certified.py`):
+- the assembly against the paper's builder in all four combinations;
+- the Newton identity;
+- the Y-norm's block totals;
+- the Section 6 constants on known cases (equal norms, a dependent column, a halved norm);
+- 2b's zero rows;
+- 2a's a priori constants (1.0212 at P = 64, N/P = 10; the S = 1 datum dropped; C6 at
+  N/P = 5);
+- tiny runs end to end (K4, K7, a K6 rerun kept out of the results);
+- the other-guess scheduling.
+
+---
+
 ## 2026-10-08 -- Package 3, batch 1: item 1, Beltrami on CC-CGL grids
 
 **A separate solver path, not a branch in `solve_beltrami`.**

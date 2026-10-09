@@ -224,6 +224,8 @@ def block_constants(nodes, w, intervals, p, data=None, n_gl=None, tol=COLUMN_DRO
     if n_gl is None:
         n_gl = max(4 * len(nodes), 400) if dim == 1 else max(4 * len(np.unique(nodes[:, 0])), 32)
     zq, wq = gauss_rule(intervals, n_gl)
+    if data is not None and not np.any(np.asarray(data(zq), float)) and not np.any(np.asarray(data(nodes), float)):
+        data = None                                       # a zero datum adds nothing to the span (S = 0 on a line)
 
     def basis(z):
         V = _chebyshev_tensor(z, intervals, p)
