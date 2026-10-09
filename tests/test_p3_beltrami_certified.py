@@ -105,3 +105,30 @@ def test_a_stopped_run_keeps_what_it_did(tmp_path, monkeypatch):
     d = tmp_path / m.ITEM / 'B1_L1'
     assert json.loads((d / 'run.json').read_text())['package3']['status'] == 'running'
     assert (d / 'coefficients' / 'beta_1.npy').exists() and len((d / 'iterations.csv').read_text().splitlines()) == 2
+
+
+def test_the_summary_reads_a_run_stopped_by_its_cap(tmp_path, monkeypatch):
+    """Section 8.2: a stopped run is reported as logged. Its ranks come from its log (its
+    run.json has none, so K7 must not read 0), and an iterate whose errors were not yet
+    written when the cap struck is not counted."""
+    monkeypatch.setitem(m.SIZES, 'B1', TINY)
+    calls = {'n': 0}
+    real = m._lstsq
+
+    def stop_on_third(A, b):
+        calls['n'] += 1
+        if calls['n'] == 3:
+            raise KeyboardInterrupt('wall cap')
+        return real(A, b)
+    monkeypatch.setattr(m, '_lstsq', stop_on_third)
+    with pytest.raises(KeyboardInterrupt):
+        m.run('B1', 1, tmp_path, k_iters=3, with_rho=False)
+    d = tmp_path / m.ITEM / 'B1_L1'
+    errs = (d / 'errors.csv').read_bytes().decode().splitlines()
+    assert len(errs) == 3                                            # the header and iterates 1 and 2
+    (d / 'errors.csv').write_bytes(('\n'.join(errs[:2]) + '\n').encode())   # struck before iterate 2's errors
+    terminal, _, checks = m.summarize(tmp_path)
+    (row,) = terminal
+    assert row['status'] == 'running' and row['iterates'] == 1 and row['returned_iterate'] == 1
+    assert row['rank_min'] == row['P'] and checks['K7']['passed']
+    assert row['b2_rel_err_k1'] is None and checks['K4']['max_rel_err_at_k1'] is None

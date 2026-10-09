@@ -51,6 +51,7 @@ case "$LILQ_WAVE" in
     p2s1) export PKG="$RESULTS/package2_stage1" ;;
     p2s2) export PKG="$RESULTS/package2_stage2" ;;
     p2s2g) export PKG="$RESULTS/package2_stage2_gpu" ;;   # item 7's GPU series in the corrected environment (batch 8)
+    p3)   export PKG="$RESULTS/package3" ;;               # Package 3 (8 October 2026) and its Addendum 1
     *)    export PKG="$RESULTS/wave$LILQ_WAVE" ;;
 esac
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"

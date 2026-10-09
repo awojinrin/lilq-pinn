@@ -455,6 +455,7 @@ def terminal_row(run_dir, exact_cache={}):
     with open(run_dir / 'errors.csv') as fh:
         errs = {int(r['iterate']): {k: float(v) for k, v in r.items()} for r in csv.DictReader(fh)}
     K = sum(1 for r in log if r.get('rel_dbeta') not in ('', None))           # solves done
+    K = min(K, max(errs, default=0))       # a run stopped by its cap (Section 8.2) may lack its last iterate's errors
     rel = _floats(log, 'rel_dbeta')[:K]
     k_paper = next((k + 1 for k in range(K) if rel[k] < PAPER_TOL), None)
     i = stall_rule_index(_floats(log, 'chi')[:K], _floats(log, 'norm_Rlin_h')[:K])
@@ -472,11 +473,13 @@ def terminal_row(run_dir, exact_cache={}):
         exact_cache[key] = (sys_, ex, delta_P(sys_, ex))
     sys_, ex, (dp, dp_res) = exact_cache[key]
     e_ret = errs[returned]
+    ranks = p3.get('ranks') or [int(float(r['num_rank_gelsy'])) for r in log[:K]   # complete runs record them;
+                                if r.get('num_rank_gelsy') not in ('', None)]     # a capped one, its log
     row = {'size': size, 'level': level, 'M': p3['M'], 'pin_scale': p3['pin_scale'], 'N': p3['N'], 'P': p3['P'],
            'N_over_P': p3['N'] / p3['P'], 'iterates': K,
            'k_paper_1e9': k_paper if k_paper is not None else 'never',
            'k_rule': i + 1 if i is not None else 'never', 'rule_class': cls,
-           'rank_last': last['num_rank_gelsy'], 'rank_min': min(p3.get('ranks') or [0]),
+           'rank_last': last['num_rank_gelsy'], 'rank_min': min(ranks),
            'kappa_last': last['kappa'], 'kappa_retained_last': last['kappa_retained'],
            'kappa_method': last['kappa_method'],
            **{f'{k}_at_returned': v for k, v in e_ret.items() if k != 'iterate'}, 'returned_iterate': returned,
@@ -494,7 +497,8 @@ def terminal_row(run_dir, exact_cache={}):
 
 def summarize(out_root):
     out = Path(out_root) / ITEM
-    runs = sorted(d for d in out.iterdir() if d.is_dir() and (d / 'iterations.csv').exists())
+    runs = sorted(d for d in out.iterdir() if d.is_dir() and (d / 'iterations.csv').exists()
+                  and (d / 'errors.csv').exists())        # written after an iterate's log row: one iterate at least
     terminal = [terminal_row(d) for d in runs]
     _write_csv(out / 'terminal.csv', terminal)
     consts = []
@@ -568,7 +572,8 @@ def main(argv=None):
     else:
         terminal, _, checks = summarize(args.out)
         for r in terminal:
-            print(f"  {r['size']} L{r['level']} pin x{r['pin_scale']}: N/P {r['N_over_P']:.1f}, 1e-9 at "
+            print(f"  {r['size']} L{r['level']} pin x{r['pin_scale']} ({r['status']}, {r['iterates']} iterates): "
+                  f"N/P {r['N_over_P']:.1f}, 1e-9 at "
                   f"{r['k_paper_1e9']}, rule {r['k_rule']} ({r['rule_class']}), combined error "
                   f"{r['rel_l2_combined_at_returned']:.2e}, error/delta_P {r['error_over_delta_P_combined']:.2f}")
         for name, c in checks.items():

@@ -273,6 +273,67 @@ runs the summaries that need Stage 1's laptop-side CSVs. `--faster` refuses a FA
 locked to another commit, and adds item 5's rows. Back up both tarballs to `$HOME/lilq-results`
 (on each cluster) before deleting anything on `$SCRATCH`.
 
+## 5. Package 3 (Grace)
+
+Package 3 (the advisor's instructions of 8 October 2026, and Addendum 1) writes
+`results/package3`, locked to one commit. It reads Package 1's and Package 2's results where
+they already are on `$SCRATCH`:
+- `results/package1_v2.0.0/package1`;
+- `results/package2_stage1`;
+- `results/package2_stage2`.
+
+The preflight checks all 25 input files before any compute job starts. The job scripts are
+written by `scripts/cluster/package3/_generate_jobs.py`; edit it, not the `.slurm` files.
+
+**Wave 1** (9 jobs, 828 SU requested, about 376 expected):
+
+```bash
+cd $SCRATCH/lilq-run/lilq-pinn
+DRY_RUN=1 bash scripts/cluster/package3/submit_p3.sh    # all 9 jobs through sbatch --test-only
+bash scripts/cluster/package3/submit_p3.sh
+```
+
+The chain:
+1. `p3_preflight` checks versions and the inputs, then runs the test suite, K1 and K2.
+2. Seven jobs wait for it (afterok):
+   - K0;
+   - B1 with K3, K6 and K8;
+   - B2;
+   - B3 level 1;
+   - item 2 with K5 and K6;
+   - item 3;
+   - item 4.
+
+   Each Beltrami run runs under the advisor's own cap (`timeout`), so a run stopped by its cap
+   keeps what it logged (Section 8.2).
+3. `p3_report` runs after all of them (afterany).
+   - It writes item 1's summary over every Beltrami run so far (items 2-4 summarize in their
+     own jobs).
+   - It writes `sacct.txt` and `su_per_job.csv`.
+   - It packs `results/package3.tar.gz`.
+
+**Wave 2: B3 level 2** (336 SU requested, about 240 expected). Run this when wave 1 is over,
+with the project's Python loaded (the modules and the venv):
+
+```bash
+DRY_RUN=1 bash scripts/cluster/package3/submit_p3_b3l2.sh    # the gate's verdict, then --test-only
+bash scripts/cluster/package3/submit_p3_b3l2.sh
+```
+
+`b3l2_gate.py` decides; it writes nothing. It launches only if all of these hold:
+- no Package 3 job is still queued;
+- K0 passed;
+- B3 level 1 completed, and 1.91 x (8 x its seconds per iteration + its kappa time) < 6.5 h
+  (Section 3.4);
+- the SU charged so far plus 336 is at most 850 (Addendum 1).
+
+Its exit code says what it decided:
+- 0: it submitted B3 level 2, then the report again (afterany), which repacks the tarball;
+- 1: no, and nothing was submitted (Section 8.2: level 1 stands);
+- 2: not yet (wait, and run it again).
+
+Back up `results/package3.tar.gz` to `$HOME/lilq-results` after each report.
+
 ## Resource use
 
 Timed jobs hold the whole node and start one thread per core for BLAS,

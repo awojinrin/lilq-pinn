@@ -506,6 +506,15 @@ def compare_logs(a, b):
             'excluded_columns': list(TIMING_COLUMNS)}
 
 
+def _complete(run_dir):
+    """Whether the run finished (``run.json`` says so): ``constants_by_iterate.csv`` is
+    written at every iterate, so a run that failed part way has one too."""
+    try:
+        return json.loads((Path(run_dir) / 'run.json').read_text())['package3']['status'] == 'complete'
+    except (OSError, ValueError, KeyError):
+        return False
+
+
 def summarize(out_root, reference_dir):
     delta = delta_table(reference_dir)
     checks = {}
@@ -513,8 +522,10 @@ def summarize(out_root, reference_dir):
         d = Path(out_root) / item
         if not d.is_dir():
             continue
-        runs = sorted(x for x in d.iterdir() if x.is_dir() and (x / 'constants_by_iterate.csv').exists()
-                      and not x.name.endswith(('_k5', '_k6')))
+        incomplete = sorted(x.name for x in d.iterdir() if x.is_dir() and not _complete(x))
+        if incomplete:
+            checks[f'incomplete runs ({variant})'] = {'runs': incomplete, 'passed': False}
+        runs = sorted(x for x in d.iterdir() if x.is_dir() and _complete(x) and not x.name.endswith(('_k5', '_k6')))
         terminal = [terminal_row(x, delta) for x in runs]
         if terminal:
             _write_csv(d / 'terminal.csv', terminal)
@@ -527,7 +538,7 @@ def summarize(out_root, reference_dir):
                                      'passed': all(int(t['rank_min']) == int(t['P']) for t in terminal)}
     k5 = Path(out_root) / ITEMS['cheb'] / (run_name('viscous', 1024, 10, 'ic') + '_k5')
     base = Path(out_root) / ITEMS['cheb'] / run_name('viscous', 1024, 10, 'ic')
-    if k5.exists() and base.exists():
+    if _complete(k5) and _complete(base):
         def load(x):
             with open(x / 'constants_by_iterate.csv') as fh:
                 return list(csv.DictReader(fh))
@@ -537,7 +548,7 @@ def summarize(out_root, reference_dir):
         checks['K5 (BL viscous P = 1,024, N/P = 10, n_GL x 1.5)'] = {'max_rel_change': worst,
                                                                     'passed': max(worst.values()) < 1e-3}
     k6 = Path(out_root) / ITEMS['cheb'] / (run_name('viscous', 256, 10, 'ic') + '_k6')
-    if k6.exists():
+    if _complete(k6) and _complete(Path(out_root) / ITEMS['cheb'] / run_name('viscous', 256, 10, 'ic')):
         checks['K6 (BL viscous P = 256, N/P = 10)'] = compare_logs(
             Path(out_root) / ITEMS['cheb'] / run_name('viscous', 256, 10, 'ic'), k6)
     (Path(out_root) / 'checks_item2.json').write_text(json.dumps(checks, indent=2, default=str))
@@ -553,29 +564,51 @@ def _run_process(variant, case, P, r, out_root, reference_dir, guess, threads, t
     cmd = [sys.executable, os.path.abspath(__file__), 'run', '--variant', variant, '--case', case,
            '--p', str(int(round(math.sqrt(P)))), '--ratio', str(r), '--guess', guess, '--out', str(out_root),
            '--reference-dir', str(reference_dir), '--quad-scale', repr(quad_scale)] + (['--tag', tag] if tag else [])
-    subprocess.run(cmd, env=env, check=True, capture_output=True, text=True)
+    out = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    if out.returncode != 0:                              # the run's own error, into the job's log
+        raise RuntimeError(f"{variant} {run_name(case, P, r, guess, tag)} exited {out.returncode}\n{out.stderr[-4000:]}")
     return Path(out_root) / ITEMS[variant] / run_name(case, P, r, guess, tag)
 
 
+class RunsFailed(RuntimeError):
+    """Some of ``run_all``'s runs failed; the others completed (``done``)."""
+
+    def __init__(self, done, failed):
+        super().__init__(f"{len(failed)} run(s) failed: {'; '.join(failed)}")
+        self.done, self.failed = done, failed
+
+
 def run_all(out_root, reference_dir, variants=('cheb', 'sine'), cases=tuple(CASES), sizes=SIZES, ratios=RATIOS,
-            workers=1, threads=None):
+            workers=1, threads=None, with_checks=False):
     """Every run, then the other guess where the rule never fires (Section
     8.2); then 2a's a priori constants. ``workers`` runs side by side, each in
-    its own process with ``threads`` BLAS threads, the largest first. Returns
-    the run folders' names."""
+    its own process with ``threads`` BLAS threads, the largest first.
+    ``with_checks``: K5 (n_GL x 1.5) and K6 (a rerun) go in the same pool, at
+    the same thread count: K5, as long as the largest runs, starts first; K6
+    (P = 256) last. A run that fails does not stop the others; ``RunsFailed``
+    at the end names it. Returns the run folders' names."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
     out_root, reference_dir = Path(out_root).resolve(), Path(reference_dir).resolve()
     threads = threads or max(1, (os.cpu_count() or 1) // workers)
     tasks = sorted(((v, c, p * p, r) for v in variants for c in cases for p in sizes for r in ratios),
                    key=lambda t: -t[2] * t[3])
-    done = []
+    jobs = [((v, c, P, r, CASES[c]['guess']), {}, False) for v, c, P, r in tasks]
+    if with_checks:
+        jobs.insert(0, (('cheb', 'viscous', 1024, 10, 'ic'), {'tag': '_k5', 'quad_scale': 1.5}, True))
+        jobs.append((('cheb', 'viscous', 256, 10, 'ic'), {'tag': '_k6'}, True))
+    done, failed = [], []
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        pending = {pool.submit(_run_process, v, c, P, r, out_root, reference_dir, CASES[c]['guess'], threads):
-                   (v, c, P, r, False) for v, c, P, r in tasks}
+        pending = {pool.submit(_run_process, v, c, P, r, out_root, reference_dir, g, threads, **kw): (v, c, P, r, is_other)
+                   for (v, c, P, r, g), kw, is_other in jobs}
         while pending:
             fut = next(as_completed(pending))
             v, c, P, r, is_other = pending.pop(fut)
-            d = fut.result()
+            try:
+                d = fut.result()
+            except Exception as e:                          # noqa: BLE001  (recorded; the others go on)
+                failed.append(str(e).splitlines()[0])
+                print(f'RUN FAILED: {e}', flush=True)
+                continue
             done.append(d.name)
             if not is_other and not rule_fires(d):           # Section 8.2: once more from the other guess
                 other = OTHER_GUESS[CASES[c]['guess']]
@@ -584,6 +617,8 @@ def run_all(out_root, reference_dir, variants=('cheb', 'sine'), cases=tuple(CASE
     if 'cheb' in variants:
         consts = [row for case in cases for p in sizes for r in ratios for row in apriori_constants(case, p * p, r)]
         _write_csv(out_root / ITEMS['cheb'] / 'constants.csv', consts)
+    if failed:
+        raise RunsFailed(done, failed)
     return done
 
 
@@ -601,13 +636,19 @@ def main(argv=None):
     ap.add_argument('--quad-scale', type=float, default=1.0, help='K5: n_GL times this')
     ap.add_argument('--workers', type=int, default=1, help='all: runs side by side')
     ap.add_argument('--threads', type=int, default=None, help='all, checks: BLAS threads per run')
+    ap.add_argument('--with-checks', action='store_true', help='all: K5 and K6 in the same pool')
     args = ap.parse_args(argv)
     if args.stage == 'run':
         print(run(args.variant, args.case, args.p ** 2, args.ratio, args.out, args.reference_dir, guess=args.guess,
                   tag=args.tag, quad_scale=args.quad_scale))
         return
+    failed = []
     if args.stage == 'all':
-        names = run_all(args.out, args.reference_dir, workers=args.workers, threads=args.threads)
+        try:
+            names = run_all(args.out, args.reference_dir, workers=args.workers, threads=args.threads,
+                            with_checks=args.with_checks)
+        except RunsFailed as e:                          # summarize what completed, then fail the job
+            names, failed = e.done, e.failed
         print(f'{len(names)} runs')
     if args.stage == 'checks':                           # K5 and K6 (Section 7), at the sweep's thread count
         th = args.threads or os.cpu_count() or 1
@@ -617,6 +658,8 @@ def main(argv=None):
     checks = summarize(args.out, args.reference_dir)
     for name, c in checks.items():
         print(f"  {name}: {'passed' if c.get('passed') else 'FAILED'}")
+    if failed:
+        sys.exit(f"{len(failed)} run(s) failed: " + '; '.join(failed))
 
 
 if __name__ == '__main__':

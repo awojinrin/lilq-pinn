@@ -70,7 +70,6 @@ import argparse
 import contextlib
 import csv
 import json
-import math
 import os
 import sys
 import time
@@ -365,23 +364,32 @@ def _run_process(problem, case, N, out_root, threads, n_quad=None, tag=''):
     cmd = [sys.executable, os.path.abspath(__file__), 'run', '--problem', problem, '--case', case, '--out',
            str(Path(out_root).resolve())] + (['--N', str(N)] if N else []) + \
         (['--n-quad', str(n_quad)] if n_quad else []) + (['--tag', tag] if tag else [])
-    subprocess.run(cmd, env=env, check=True, capture_output=True, text=True, cwd=_proj)
+    out = subprocess.run(cmd, env=env, capture_output=True, text=True, cwd=_proj)
+    if out.returncode != 0:                              # the run's own error, into the job's log
+        raise RuntimeError(f"{problem} {case} N={N}{tag} exited {out.returncode}\n{out.stderr[-4000:]}")
 
 
 def run_all(out_root, threads=None, with_k5=True):
     """Every configuration in its own process at its original thread count
-    (``THREADS``; ``threads`` overrides, e.g. on a laptop), then K5."""
-    for solution in SOLUTIONS:
-        for N in ELAST_N:
-            _run_process('elasticity', solution, N, out_root, threads or THREADS[('elasticity', solution)])
-    for field in FIELDS:
-        _run_process('darcy', field, None, out_root, threads or THREADS[('darcy', None)])
+    (``THREADS``; ``threads`` overrides, e.g. on a laptop), then K5. A
+    configuration that fails does not stop the others; the names of those
+    that failed are returned."""
+    jobs = [(('elasticity', s, N, out_root, threads or THREADS[('elasticity', s)]), {})
+            for s in SOLUTIONS for N in ELAST_N]
+    jobs += [(('darcy', f, None, out_root, threads or THREADS[('darcy', None)]), {}) for f in FIELDS]
     if with_k5:
-        for solution in SOLUTIONS:
-            _run_process('elasticity', solution, 25, out_root, threads or THREADS[('elasticity', solution)],
-                         n_quad=K5_QUAD['elasticity'], tag='_k5')
-        _run_process('darcy', 'SPE10', None, out_root, threads or THREADS[('darcy', None)],
-                     n_quad=K5_QUAD['darcy'], tag='_k5')
+        jobs += [(('elasticity', s, 25, out_root, threads or THREADS[('elasticity', s)]),
+                  {'n_quad': K5_QUAD['elasticity'], 'tag': '_k5'}) for s in SOLUTIONS]
+        jobs.append((('darcy', 'SPE10', None, out_root, threads or THREADS[('darcy', None)]),
+                     {'n_quad': K5_QUAD['darcy'], 'tag': '_k5'}))
+    failed = []
+    for a, kw in jobs:
+        try:
+            _run_process(*a, **kw)
+        except RuntimeError as e:
+            failed.append(str(e).splitlines()[0])
+            print(f'RUN FAILED: {e}', flush=True)
+    return failed
 
 
 def _write_csv(path, rows):
@@ -445,8 +453,7 @@ def main(argv=None):
     if args.stage == 'run':
         print(run_one(args.problem, args.case, args.N, args.out, args.n_quad, args.tag))
         return
-    if args.stage == 'all':
-        run_all(args.out, args.threads)
+    failed = run_all(args.out, args.threads) if args.stage == 'all' else []
     main_, checks = summarize(args.out, args.package1, args.p2_10)
     for r in main_:
         print(f"  {r['problem']:10s} {r['case']:10s} P={r['P']:5d}: c2/c1 {r['c2_over_c1']:.4f}, dropped {r['dropped']}, "
@@ -455,6 +462,8 @@ def main(argv=None):
               + (f" ({r['resolve_rel_diff']:.1e})" if r['resolve_rel_diff'] is not None else ''))
     print(f"  assembly bitwise: {checks['assembly']['all_bitwise']}; K5: "
           f"{'passed' if checks['K5']['passed'] else 'FAILED or not run'}")
+    if failed:
+        sys.exit(f"{len(failed)} run(s) failed: " + '; '.join(failed))
 
 
 if __name__ == '__main__':

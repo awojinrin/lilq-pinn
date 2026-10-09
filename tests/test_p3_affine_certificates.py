@@ -94,3 +94,17 @@ def test_logged_residuals_and_summary(tmp_path):
     main, checks = m.summarize(tmp_path / 'out', None, tmp_path / 'p2_10')
     assert main[0]['resolve_identical'] is True and checks['assembly']['all_bitwise']
     assert checks['K5']['passed'] and len(checks['K5']['runs']) == 1
+
+
+def test_a_failed_configuration_does_not_stop_the_others(tmp_path, monkeypatch):
+    calls = []
+
+    def fake(problem, case, N, out_root, threads, n_quad=None, tag=''):
+        calls.append((problem, case, N, threads, n_quad, tag))
+        if (problem, case) == ('darcy', 'S2'):
+            raise RuntimeError('darcy S2 N=None exited 1\nMemoryError')
+    monkeypatch.setattr(m, '_run_process', fake)
+    failed = m.run_all(tmp_path)
+    assert len(calls) == 15 + 4 + 3 + 1 and failed == ['darcy S2 N=None exited 1']
+    assert calls[-1] == ('darcy', 'SPE10', None, m.THREADS[('darcy', None)], m.K5_QUAD['darcy'], '_k5')
+    assert {c[3] for c in calls if c[1] in ('compatible', 'specified')} == {m.THREADS[('elasticity', 'specified')]}

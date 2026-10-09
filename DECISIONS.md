@@ -17,6 +17,126 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-09 -- Package 3, batch 4: the Grace submission, checks K0 and K8, B3 level 2's gate
+
+`scripts/cluster/package3/`, `experiments/p3_k0_k8.py`; the p3 stage in `env.sh`, `sbatch.sh`,
+`submit_lib.sh` and `package2/stage_report.py` (`results/package3`, one commit, one lock).
+
+**K0** (Section 7). A random 600,000 x 7,984 matrix (4.79e9 entries, above 2^32; 38 GB), with
+a consistent right-hand side.
+- **The two solvers:** gelsy, and scipy's column-pivoted QR (`qr_multiply`, then the
+  triangular solve).
+- **Pass:** relative residual and relative error both at most 1e-12.
+- **The laptop smoke run,** at a small size, passed at 1.9e-15.
+
+**K8.** It reruns two of the paper's runs:
+- the pinned Beltrami run, `solve_beltrami(pinned_config())`;
+- the viscous BL run at P = 576, `run_bl.paper_setup(24, False)`.
+
+It compares their iteration counts, and `norm_R_h` and `norm_Rlin_h` as printed strings, with
+`package1`'s, at package1's 48 threads. K8 is Grace's: off Grace the digits differ, since the
+BL system is rank-deficient.
+
+**The jobs** (`_generate_jobs.py` writes all ten; `su_plan.csv` is unchanged).
+- **Each Beltrami run runs under the advisor's own cap** (`timeout`):
+  - B1 1 h; B2 2 h;
+  - B3 level 1 235 min (inside its 4 h walltime); level 2 415 min (inside 7 h).
+
+  A run stopped by its cap keeps its logged iterates, and its `run.json` status stays
+  `running` (Section 8.2). The job goes on to its next run.
+- **K5 and K6 of item 2 share item 2's pool** (`--with-checks`). The memory is small: the
+  largest B_h is 20,480 x 1,025 (168 MB) and K5's B_Y 36,864 x 1,025 (302 MB). Six workers
+  use a few GB of the `cpu` class's 32 GB.
+- **The preflight checks all 25 input files** the jobs read before any compute job starts:
+  - package1: K8's two runs, the four Darcy fields, the five elasticity sizes;
+  - P2-10: compatible and specified, five sizes each;
+  - the BL and Burgers references;
+  - P2-12's P = 625 run.
+
+  Item 3 would otherwise skip a missing logged residual silently. Run against the downloaded
+  Grace trees (symlinked into Grace's layout), all 25 were found, and a missing one stopped it.
+- **Job names** are `lilq-p3-<name>`, in lower case. The report and the gate find the logs by
+  them.
+- **Item 1's summary runs in the report job,** before the tarball. No Beltrami job summarized,
+  since B1, B2 and B3 run in separate jobs.
+  - It covers every Beltrami run so far, and runs again after B3 level 2.
+  - It takes about 3 min and 6.7 GB on the laptop, mostly B3's delta_P.
+  - Each report is now about 2 SU (`su_plan.csv`: wave 1 about 376 expected, all about 617).
+  - If it fails, the tarball is still packed.
+
+**Runs that stop or fail.** Grace runs everything once, so one run's failure must not cost
+the others, and every run stopped by its cap must still be reported.
+- **Item 1's summary of a run stopped by its cap** (Section 8.2). It reads the run's ranks from
+  its log, since `run.json` records them only at the end. Before this fix it read rank 0, a
+  false K7 failure, and K7 is a stop condition.
+  - It counts only the iterates whose errors were written. The cap can strike between an
+    iterate's log row and its errors.
+  - A run with no `errors.csv` yet is not summarized.
+- **Item 2.** K5, as long as the largest runs, now starts first. It had been queued after all
+  48 runs, which could have ended the job near 112 min of its 120 at the laptop's pace. K6
+  (P = 256) goes last.
+  - **A run that fails** puts its own error (its stderr) into the job's log, and the other runs
+    go on.
+  - **The summary is still written,** and the job then exits non-zero naming the failures.
+  - **A run that did not finish** is listed in `checks_item2.json` (its
+    `constants_by_iterate.csv` is written at every iterate). It is never summarized or
+    compared.
+- **Item 3,** likewise: a configuration that fails shows its error, the others go on, and the
+  summary is written.
+
+**B3 level 2's gate** (`b3l2_gate.py`, run by `submit_p3_b3l2.sh`). It writes nothing. The
+order:
+1. **Already done (exit 1):** level 2 has a log, or is queued.
+2. **Not yet (exit 2):**
+   - `squeue` cannot be read;
+   - any Package 3 job other than the report is still queued;
+   - no Package 3 job has a log yet.
+3. **K0 (exit 1 if missing or failed).** A failed K0 is a stop condition (Section 8.1).
+4. **B3 level 1 (exit 1 if missing, or if its status is not `complete`;** Section 8.2).
+5. **The launch rule** (Section 3.4).
+6. **The budget.**
+   - **The charge** is from `sacct` over every Package 3 job with a log, at Grace's rates
+     (`wave_report.su_rows`). A job cancelled before it started has no log and no charge.
+   - **Exit 2** if `sacct` cannot be read, lacks a job, or still shows one running.
+   - **The guard:** the charge plus 336 is at most 850. B3 level 2's run stops at 6 h 55 min,
+     so with a minute or two to start, its job charges at most about 334 SU. That leaves room
+     for the report after it (about 1 SU).
+
+A first draft took the charge from `wave_report.su_per_job`. That function writes
+`su_per_job.csv`, and returns no rows when `sacct` fails, which reads as 0 SU charged and
+passes the guard. The draft also found pending jobs only by their logs, which a pending job
+does not have yet. Both are fixed here.
+
+**Line endings.** Python's `write_text` on Windows writes CRLF. Seven files committed in
+batches 0-3 had CRLF blobs:
+- `DECISIONS.md`;
+- the four `experiments/p3_*.py`;
+- `lilq/certified.py`;
+- `tests/test_p3_affine_certificates.py`.
+
+They are LF from this commit. Nothing that ran changes, for two reasons:
+- **The bundle** writes every text file with LF (`source_lock.normalized_bytes`).
+- **The source lock's tree hash** is over the same normalized bytes.
+
+Many older files are CRLF in this working tree only (checked out under the global
+`core.autocrlf=true`; their blobs are LF). So the bash tests run on the extracted bundle,
+never on a copy of the working tree.
+
+Tests: `tests/test_p3_submission.py`, 29 in all:
+- the scripts as generated, LF, their classes, caps and inputs, and the SU plan's 828 and
+  1,164;
+- the stage registered, and the report's tarball;
+- the gate in 17 situations, and how it reads `squeue` and `sacct`;
+- six bash tests: wave 1's dry run and chain, and wave 2 submitting, refusing, waiting, and
+  its dry run.
+
+Five more tests for the stopped and failed runs:
+- item 1's summary of a run stopped by its cap;
+- item 2's order, a failure, a failing run's real error, and its unfinished runs;
+- item 3's failure.
+
+---
+
 ## 2026-10-08 -- Package 3, Addendum 1: item 4, Burgers LiL-Q at larger sizes; the B2 convention
 
 The advisor's addendum of 8 October adds item 4, and leaves the rest of Package 3 as

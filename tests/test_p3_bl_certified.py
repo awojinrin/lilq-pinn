@@ -151,3 +151,44 @@ def test_the_other_guess_runs_where_the_rule_never_fires(tmp_path, monkeypatch):
     reruns = [c for c in calls if c[2] == 256 and c[4] == m.OTHER_GUESS[m.CASES[c[1]]['guess']]]
     assert len(reruns) == 4                                          # every P = 256 run, from the other guess
     assert calls[0][2] == 256                                        # the largest first
+
+
+def test_k5_starts_first_k6_last_and_a_failed_run_does_not_stop_the_others(tmp_path, monkeypatch):
+    calls = []
+
+    def fake(variant, case, P, r, out_root, reference_dir, guess, threads, tag='', quad_scale=1.0):
+        calls.append((variant, case, P, r, guess, tag, quad_scale))
+        if (variant, case, P) == ('sine', 'gravity', 64):
+            raise RuntimeError('sine gravity_P64 exited 1\nTraceback (most recent call last): ...')
+        d = Path(out_root) / m.ITEMS[variant] / m.run_name(case, P, r, guess, tag)
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+    monkeypatch.setattr(m, '_run_process', fake)
+    monkeypatch.setattr(m, 'rule_fires', lambda d: True)
+    monkeypatch.setattr(m, 'apriori_constants', lambda *a: [{'x': 1}])
+    with pytest.raises(m.RunsFailed) as e:
+        m.run_all(tmp_path, tmp_path, sizes=(8, 16), ratios=(5,), workers=1, threads=1, with_checks=True)
+    assert calls[0][2:] == (1024, 10, 'ic', '_k5', 1.5)               # as long as the largest: it starts with them
+    assert calls[-1][2:6] == (256, 10, 'ic', '_k6')
+    assert len(calls) == 8 + 2 and len(e.value.done) == 9 and e.value.failed == ['sine gravity_P64 exited 1']
+    assert (tmp_path / m.ITEMS['cheb'] / 'constants.csv').exists()  # the rest of run_all still happens
+
+
+def test_a_failed_run_puts_its_error_in_the_log(tmp_path):
+    with pytest.raises(RuntimeError) as e:                          # no reference there: the run fails at once
+        m._run_process('cheb', 'viscous', 64, 5, tmp_path, tmp_path / 'no_such_dir', 'ic', 1)
+    first, rest = str(e.value).split('\n', 1)
+    assert first.startswith('cheb viscous') and 'exited 1' in first and 'Traceback' in rest
+
+
+def test_the_summary_skips_runs_that_did_not_finish(tmp_path, monkeypatch):
+    d = tmp_path / m.ITEMS['cheb']
+    for name in ('viscous_P64_NP5_ic', 'viscous_P64_NP5_ic_k6'):
+        (d / name).mkdir(parents=True)
+        (d / name / 'run.json').write_text(json.dumps({'package3': {'status': 'running'}}))
+        (d / name / 'constants_by_iterate.csv').write_text('k,c1\n0,1.0\n')        # written at every iterate
+    assert not m._complete(d / 'viscous_P64_NP5_ic') and not m._complete(tmp_path / 'missing')
+    monkeypatch.setattr(m, 'delta_table', lambda ref: {})
+    checks = m.summarize(tmp_path, tmp_path)
+    assert checks['incomplete runs (cheb)'] == {'runs': ['viscous_P64_NP5_ic', 'viscous_P64_NP5_ic_k6'], 'passed': False}
+    assert not any(k.startswith('K6') for k in checks)              # not compared with a partial run
