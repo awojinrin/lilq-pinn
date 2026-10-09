@@ -17,6 +17,57 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-08 -- Package 3, batch 1: item 1, Beltrami on CC-CGL grids
+
+**A separate solver path, not a branch in `solve_beltrami`.**
+`experiments/p3_1_beltrami_certified.py` reuses the paper's physics, bases, `gelsy` solve
+and error metric. Its own `System` assembles the same quasilinearization with a square-root
+weight per row. `problems/beltrami.py` is untouched, so the paper's run cannot change; K8
+still runs on Grace (batch 4).
+- **The assembly is the paper's linearization.** Given the paper's equispaced points and
+  per-block weights, `System.assemble` reproduces `solve_beltrami`'s own A and b on a small
+  configuration (N_vel = 3, N_p = 4, 499 coefficients): bit for bit at k = 0, and to 1e-14
+  at k = 1.
+- **Memory** (Section 3.4, optional): u, v and w share one set of basis matrices, and A is
+  preallocated, zeroed and refilled every iteration, with no list of row blocks.
+
+**Decisions within the instructions:**
+- **Pins.** The pins keep the paper's squared weight lambda_bc / N_p. K3 multiplies that
+  squared weight by 1e-3 and 1e3, reading "pin weight" in Section 2.2's squared-weight
+  convention.
+- **kappa.** It is computed at the last iterate only (Section 2.4): by SVD for P < 3,200,
+  otherwise by the paper's pivoted QR. The tracker's own conditioning is switched off. The
+  tracker is not given `n_interior_rows` or `interior_weight`, as Section 2.4 says. The kappa
+  time is recorded for B3 level 2's launch rule.
+- **The termination rule's class (A/C)** uses that last-iterate kappa, since no kappa exists
+  at the rule's own iterate. Class C means the round-off ratio at the rule's iterate is
+  below 10 x kappa_retained x eps (`stopping_rule_table.classify`). By then the iteration has
+  stalled, so kappa barely moves.
+- **"The returned iterate"** in `terminal.csv` is the first iterate whose coefficient change
+  is below 1e-9, the paper's criterion; the last iterate if none is. The combined error is
+  also given at the rule's iterate and the last one, and `errors.csv` has every iterate (u,
+  v, w, p shifted per level, the pin gauge, t = 1, combined).
+- **rho_r (B1).** The Y-system has no pins, so its rank is P - N_p (the unpinned gauge modes).
+  The denominator is a `gelsy` least squares. The round-off flag's kappa(A_Y) is therefore
+  kappa_retained, sigma_1 / sigma_r over the numerical rank.
+- **delta_P** is a dense `gelsy` least squares on the 21^3 x 11 grid. For p, 11 columns
+  constant on each time level are added (Section 3.5).
+- **K6.** `iterations.csv` is compared in every column except the three timings, which no
+  rerun reproduces. `errors.csv` and every `beta_<k>.npy` are compared bit for bit.
+- **A stopped run.** `run.json` is written at the start with status `running`, then
+  completed. `iterations.csv`, `errors.csv`, `rho_r.csv` and `beta_<k>.npy` are written after
+  every iterate (Section 2.1).
+
+**Tests** (`tests/test_p3_beltrami_certified.py`):
+- the assembly against the paper's solver;
+- the Newton identity on a CC grid;
+- B1 level 1's 160,386 x 1,393, and the pin weight;
+- delta_P's level columns, a pressure varying only in time coming out at 1e-13;
+- a run stopped at its second solve keeping its first iterate;
+- tiny runs end to end: K3 (2e-15 against 1e-6), K4, K6 and K7 pass.
+
+---
+
 ## 2026-10-08 -- Package 3, batch 0: the CC-CGL grids, the constants, checks K1 and K2, the SU plan
 
 Package 3 is the advisor's instructions of 8 October 2026: runs inside the hypotheses of

@@ -99,29 +99,33 @@ def _block(points, w, share, free, Ms):
     return {'points': points, 'w': np.asarray(w, float), 'share': float(share), 'free': tuple(free), 'Ms': tuple(Ms)}
 
 
-def beltrami_grid(M, intervals=((-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0), (0.0, 1.0))):
+def beltrami_grid(M, intervals=((-1.0, 1.0), (-1.0, 1.0), (-1.0, 1.0), (0.0, 1.0)), rule='cc'):
     """Item 1's collocation set (Section 3.2): the M^4 tensor CGL grid on the
     space-time box; each of the six faces with the M^3 grid in its free
     coordinates (two space, one time); the initial slab t = 0 with the M^3
     grid in (x, y, z). |dOmega| counts the six faces and both slabs (40 on
-    [-1, 1]^3 x [0, 1]); the final slab carries no rows."""
+    [-1, 1]^3 x [0, 1]); the final slab carries no rows.
+
+    ``rule='gauss'``: the same blocks with M Gauss-Legendre points per
+    direction (weights summing to 1), for the Y-norm of rho_r (Section 3.5)."""
+    make = {'cc': tensor_rule, 'gauss': lambda iv, Ms: gauss_rule(iv, Ms[0])}[rule]
     length = [b - a for a, b in intervals]
     face = lambda d: math.prod(length[i] for i in range(4) if i != d)  # noqa: E731  (measure of a face normal to d)
     boundary = 2 * sum(face(d) for d in range(4))         # six faces and the two slabs
-    pts, w = tensor_rule(intervals, (M,) * 4)
+    pts, w = make(intervals, (M,) * 4)
     blocks = {'interior': _block(pts, w, 1.0, (0, 1, 2, 3), (M,) * 4)}
     for d, name in ((0, 'x'), (1, 'y'), (2, 'z')):
         free = tuple(i for i in range(4) if i != d)
-        fp, fw = tensor_rule([intervals[i] for i in free], (M,) * 3)
+        fp, fw = make([intervals[i] for i in free], (M,) * 3)
         for side, value in (('-', intervals[d][0]), ('+', intervals[d][1])):
             p = np.empty((len(fp), 4))
             p[:, list(free)] = fp
             p[:, d] = value
             blocks[f'{name}{side}'] = _block(p, fw, face(d) / boundary, free, (M,) * 3)
-    sp, sw = tensor_rule(intervals[:3], (M,) * 3)
+    sp, sw = make(intervals[:3], (M,) * 3)
     p = np.column_stack([sp, np.full(len(sp), intervals[3][0])])
     blocks['initial'] = _block(p, sw, face(3) / boundary, (0, 1, 2), (M,) * 3)
-    return {'blocks': blocks, 'M': M, 'boundary_measure': boundary,
+    return {'blocks': blocks, 'M': M, 'rule': rule, 'boundary_measure': boundary,
             'N_points': sum(len(b['points']) for b in blocks.values())}
 
 
