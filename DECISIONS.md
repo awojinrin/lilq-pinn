@@ -17,6 +17,77 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-08 -- Package 3, batch 3: item 3, a posteriori certificates for elasticity and Darcy
+
+`experiments/p3_3_affine_certificates.py`.
+
+**The re-solve is the paper's own run.** `solve_elasticity` and `solve_lilq_darcy` run
+unchanged, and the system they pass to `scipy.linalg.lstsq` is captured with its solution
+(`captured_solve`). So A_h, b_h and beta_h are the paper's run itself, and its residual is
+compared with the logged k = 0 `norm_Rlin_h`:
+- **Against Package 1** (the paper's elasticity, and Darcy), wave 2 at 48 threads.
+- **Against P2-10** (`compatible`, `specified`), at 24 threads.
+- **Both stacks are the same:** numpy 1.26.4, scipy 1.13.1, FlexiBLAS 3.4.4.
+- **Each configuration runs in its own process** at its original thread count (`THREADS`),
+  so the Grace re-solves can match to all digits. `--threads` overrides it on a laptop.
+
+**The Y-system is built by row builders that follow the paper's code operation for
+operation.** At the paper's own points they reproduce the captured system bit for bit, in
+all 19 configurations (`assembly_matches_paper_bitwise`).
+
+**Decisions within the instructions:**
+- **Darcy's blocks** are the instructions' reading: Darcy-x, Darcy-y and continuity at the
+  13,200 cell centres, weight 1, no boundary rows. The sqrt(K*) factors are part of each
+  row's operator, not a row weight.
+- **Zero rows (Section 6).** A block is left out of both systems when its rows are zero to
+  round-off (|A| <= 1e-10 max|A_h|) and its data are zero.
+  - In elasticity these are the u_x and u_y Dirichlet blocks on edges where the basis
+    vanishes (bottom u_x, top u_x, left u_y, right u_y), and the lateral sigma_xx blocks
+    where the lateral traction is zero (paper, compatible).
+  - `specified` keeps its lateral sigma_xx blocks: they are zero in A but not in b, P2-10's
+    inconsistent rows.
+  - Single zero rows inside a kept block (the x = 0 corners) are kept; they add nothing to
+    any norm.
+- **The Y-norm, block-matched.** Each block carries its total squared weight in the
+  collocation set:
+  - elasticity: lambda per block, 96 x 96 Gauss-Legendre inside and 96 per edge;
+  - Darcy: 4 x 4 Gauss-Legendre per cell with that cell's K*, each cell's weights summing to
+    its centre row's 1.
+- **Section 6 from the R factor.** B_Y = [A_Y | b_Y] enters only through its R factor,
+  accumulated a chunk of cells at a time (`lilq.certified.tsqr`), because each quantity used
+  is invariant under B_Y's orthogonal factor:
+  - the column norms;
+  - the column-pivoted QR of the unit-scaled B_Y (B_Y D P = Q Q' R' when R D P = Q' R');
+  - the least-squares minimum and the residual at beta_h;
+  - kappa(A_Y), from R's leading block.
+
+  Darcy's B_Y is 633,600 x 3,170 (16 GB) at n_q = 4 and 1.43 M x 3,170 at n_q = 6 (K5); it
+  is never held whole. Checks:
+  - against the dense steps (item 2's `section6_constants`) on elasticity P = 200, it agrees
+    to 1e-10;
+  - with one Gauss point per cell (the centre, weight 1) the Y-system is the collocation
+    system, and it gives c1 = c2 = rho_r = 1 (`tests/test_p3_affine_certificates.py`).
+
+**Laptop rehearsal** (24 threads; 22 min with K5):
+- **The certificates:**
+  - elasticity: c2/c1 = 1.59, 1.75, 2.32, 3.00 and 4.14 at P = 50 .. 1,250; the three
+    solutions agree to 3 digits (P = 50: 1.5891, and 1.5894 for `specified`);
+  - Darcy: c2/c1 = 4.67 (S1), 5.48 (S2), 3.08 (S3) and 1.82 (SPE10); on span{A} alone S1 is
+    1.70;
+  - rho_r between 1.0003 and 1.024.
+- **Where f is numerically in the span,** its column is dropped and rho_r is flagged
+  round-off, as the instructions anticipate. That covers the paper's elasticity at every P,
+  and `compatible` at P = 1,250.
+- **K5 passed:** Darcy SPE10 at n_q = 6 changes c1 by 1.7e-7 and rho_r by 7e-11; elasticity
+  at 144 points changes c1 and c2 by 3e-13.
+- **The re-solves (laptop, so not to all digits):** `specified` matches P2-10 exactly at
+  P = 50, 200, 450 and 1,250. `compatible` differs by up to 1.5e-5 relative where its
+  residual is 8e-12. The paper's elasticity residuals are pure round-off (about 1e-14), so
+  off Grace they do not match at all. Darcy differs by 5e-16 to 2e-14. The all-digit check
+  is Grace's, at each run's thread count.
+
+---
+
 ## 2026-10-08 -- Package 3, batch 2: item 2, Buckley-Leverett on CC-CGL grids (2a and 2b)
 
 `experiments/p3_2_bl_certified.py`. It uses the paper's two cases and its flux

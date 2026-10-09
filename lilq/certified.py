@@ -274,3 +274,51 @@ def cc_exactness(points, w, intervals, Ms, rank=4, rng=None, tol=CC_EXACTNESS_TO
             'integral_degree_M_minus_1_err_over_L2_norm': float(err_int),
             'norm_degree_half_rel_err': float(err_norm),
             'passed': bool(err_int < tol and err_norm < tol)}
+
+
+# ---------------------------------------------------------------- Section 6 from the R factor (item 3)
+
+def tsqr(chunks):
+    """The R factor (n x n) of a tall matrix given as a sequence of row
+    chunks: Householder QR of [R; chunk] in turn (tall-skinny QR). The tall
+    matrix is never held whole. R is unique up to the signs of its rows."""
+    R = None
+    for C in chunks:
+        M = C if R is None else np.vstack([R, C])
+        R = sla.qr(M, mode='r', check_finite=False)[0][:M.shape[1]]
+    return R
+
+
+def section6_from_R(B_h, R_Y, tol=COLUMN_DROP_TOL):
+    """Section 6, steps 3-4, with the Y-matrix B_Y = [A_Y | b_Y] given by its
+    R factor. Every quantity used is invariant under B_Y's orthogonal factor:
+    its column norms, and the column-pivoted QR of its unit-scaled columns
+    (B_Y D P = Q Q' R' when R D P = Q' R'). So this equals the same steps on
+    B_Y itself. c1 and c2 are the extreme singular values of B_h R'^-1, over
+    the columns kept (|R'_ii| >= tol |R'_11|)."""
+    scale = np.linalg.norm(R_Y, axis=0)
+    scale[scale == 0] = 1.0
+    _, R2, piv = sla.qr(R_Y / scale, mode='economic', pivoting=True, check_finite=False)
+    d = np.abs(np.diag(R2))
+    k = int((d > tol * d[0]).sum())
+    X = sla.solve_triangular(R2[:k, :k], (B_h / scale)[:, piv[:k]].T, trans='T', check_finite=False).T
+    s = sla.svdvals(X, check_finite=False)
+    return {'c1': float(s[-1]), 'c2': float(s[0]), 'c2_over_c1': float(s[0] / s[-1]), 'dropped': R_Y.shape[1] - k}
+
+
+def rho_from_R(R_Y, beta_h, n_rows):
+    """rho_r (Section 6, step 5) from the R factor of B_Y = [A_Y | b_Y]
+    (``n_rows`` its row count): ||A_Y beta_h - b_Y|| = ||R [beta_h; -1]||, and
+    the least-squares minimum is the same least squares on R. kappa(A_Y) is
+    sigma_1 / sigma_r of R's leading block (R of A_Y) over the numerical rank;
+    the round-off flag is min < 100 eps kappa(A_Y) ||b_Y||."""
+    P = R_Y.shape[1] - 1
+    got = float(np.linalg.norm(R_Y @ np.append(beta_h, -1.0)))
+    coef = sla.lstsq(R_Y[:, :P], R_Y[:, P], lapack_driver='gelsy', cond=np.finfo(float).eps, check_finite=False)[0]
+    best = float(np.linalg.norm(R_Y[:, :P] @ coef - R_Y[:, P]))
+    s = sla.svdvals(R_Y[:P, :P], check_finite=False)
+    rank = int((s > max(n_rows, P) * np.finfo(float).eps * s[0]).sum())
+    kappa = float(s[0] / s[rank - 1])
+    floor = 100 * np.finfo(float).eps * kappa * float(np.linalg.norm(R_Y[:, P]))
+    return {'rho_r': got / best if best > 0 else float('inf'), 'rho_r_numerator': got, 'rho_r_denominator': best,
+            'kappa_A_Y': kappa, 'rank_A_Y': rank, 'roundoff_floor': floor, 'round_off': bool(best < floor)}
