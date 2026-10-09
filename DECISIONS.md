@@ -17,6 +17,29 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-09 -- Package 3, the assembly: Grace's tree, L1 at this commit, the Section 9 records
+
+`experiments/p3_assemble.py` builds `package3_results/` from the last report's tarball. That
+tarball is wave 1 and B3 level 2: 11 jobs, all COMPLETED.
+- **What is Grace's.** Every run and every summary is Grace's, at the runs' commit (97e463d,
+  under the source lock), except L1. L1 reads only the logged CSVs, and is re-evaluated at the
+  assembly with the corrected comparison. Grace's verdict is kept beside the new one in
+  `checks_item4.json`.
+- **`checks.json`** gathers K0-K8, item 3's all-digit re-solves, and L1-L4, each with its
+  source file.
+- **`su.csv`** is the report's `su_per_job.csv` plus the last report job's own row. That row
+  comes from `sacct`, since a job's tarball cannot hold its own charge.
+- **`hardware.json` and `environment.txt`** come from the jobs' own logs (the node, the
+  threads, the versions, the preflight) and `sacct.txt`. The Package 3 jobs did not call
+  `save_provenance`, so the CPU model is not in their logs. `hardware.json` says so, and cites
+  Package 2's record of a node in the same partition (Xeon Gold 6248R, 48 cores).
+- **The laptop's batch 0 K1 and K2** move to `laptop_preview/P3_checks/`. `P3_checks/` is now
+  Grace's.
+
+Tests: `tests/test_p3_assemble.py`.
+
+---
+
 ## 2026-10-09 -- Package 3, after wave 1: check L1 compares a terminal row like with like
 
 Wave 1 (bundle 97e463d) reported L1 failed, on one value. P2-12's k = 4 `norm_R_h` was
