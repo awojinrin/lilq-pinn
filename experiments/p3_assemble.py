@@ -19,10 +19,11 @@ Assembles ``package3_results/`` in the layout of the advisor's instructions of
   - ``su.csv``: every Package 3 job at Grace's rates (``wave_report.su_rows``),
     with the last report's own row, which its tarball cannot hold
     (``--sacct-extra``: ``sacct -X -P -n`` lines);
-  - ``environment.txt`` and ``hardware.json``: from the jobs' own logs and
-    ``sacct.txt``. The jobs did not call ``save_provenance``, so the CPU model is
-    not in Package 3's logs; ``hardware.json`` says so and points to Package 2's
-    record of the same partition;
+  - ``environment.txt`` and ``hardware.json``: each job's node, threads and
+    allocation, from its log and ``sacct.txt``. The run jobs did not call
+    ``save_provenance``; ``--provenance`` adds the record a short job wrote after the
+    runs (``p3_provenance.slurm``: the runs' class, environment and source lock), the
+    CPU from it, and its files in ``provenance_cpu/``;
   - ``DECISIONS_package3.md``: the Package 3 entries of ``DECISIONS.md``;
   - ``provenance.json``: the runs' commit and tree hash, this commit, and the
     commits between them.
@@ -159,18 +160,39 @@ def su_rows(out, sacct_extra):
         for r in wave_report.su_rows(Path(sacct_extra).read_text()):
             if r['job_id'] not in have:
                 rows.append({k: r[k] for k in wave_report.SU_COLUMNS}
-                            | {'note': 'its own charge: from sacct after it ended (its tarball cannot hold it)'})
+                            | {'note': 'not in the last tarball: from sacct after it ended'})
     total = sum(float(r['su'] or 0) for r in rows)
     return rows, total, wave_report.SU_COLUMNS
 
 
-def hardware(out):
-    """Per job: the node, the threads and cores env.sh reported, and the allocation."""
+def copy_provenance(prov, out, log):
+    """The record ``save_provenance`` wrote in a short job after the runs (``p3_provenance.slurm``):
+    ``hardware.json`` and ``environment.txt`` to ``provenance_cpu/``, its log to ``slurm_logs/``."""
+    prov, dst = Path(prov), out / 'provenance_cpu'
+    dst.mkdir(exist_ok=True)
+    for name in ('hardware.json', 'environment.txt'):
+        shutil.copy2(prov / name, dst / name)
+    for p in prov.glob('*.out'):
+        shutil.copy2(p, out / 'slurm_logs' / p.name)
+    for p in prov.glob('*.slurm'):                       # the job script, run from outside the bundle
+        shutil.copy2(p, dst / p.name)
+    captured = _json(dst / 'hardware.json')
+    log.append(f"copied provenance_cpu/ (job {captured['scheduler']['SLURM_JOB_ID']} on {captured['cpu']['hostname']}, "
+               f"commit {captured['git']['commit'][:7]})")
+    return captured
+
+
+def hardware(out, captured=None, extra_rows=()):
+    """Per job: the node, the threads and cores env.sh reported, and the allocation. The CPU
+    from ``captured`` (``copy_provenance``) when given; otherwise Package 2's record is cited."""
     sacct = {}
     for line in (out / 'sacct.txt').read_text().splitlines()[2:]:
         parts = line.split()
         if parts and parts[0].isdigit():
             sacct[parts[0]] = {'name': parts[1], 'partition': parts[2], 'alloc_tres': parts[3], 'elapsed': parts[4]}
+    for r in extra_rows:
+        sacct.setdefault(r['job_id'], {'name': r['job_name'], 'alloc_tres': r['alloc_tres'],
+                                       'elapsed_h': r['elapsed_h']})
     jobs = {}
     for p in sorted((out / 'slurm_logs').glob('*.out')):
         for line in p.read_text(errors='replace').splitlines()[:5]:
@@ -180,15 +202,22 @@ def hardware(out):
                 jobs[job] = {'log': p.name, 'node': node, 'threads': int(threads), 'cores_usable': int(cores),
                              'oversubscribe': oversub, **sacct.get(job, {})}
                 break
-    return {'cluster': 'Grace (TAMU HPRC)', 'jobs': jobs,
-            'cpu_model': None,
-            'cpu_model_note': ('not recorded by the Package 3 jobs (they did not call save_provenance). Every job ran '
-                               "in partition medium, on a whole node for the timed-cpu class; Package 2's record of a "
-                               f'node of the same partition: {P2_HARDWARE}'),
-            'gpu': None}
+    if captured is None:
+        return {'cluster': 'Grace (TAMU HPRC)', 'jobs': jobs, 'cpu_model': None,
+                'cpu_model_note': ('not recorded by the Package 3 jobs (they did not call save_provenance). Every job '
+                                   "ran in partition medium, on a whole node for the timed-cpu class; Package 2's "
+                                   f'record of a node of the same partition: {P2_HARDWARE}'),
+                'gpu': None}
+    s = captured['scheduler']
+    return {'cluster': 'Grace (TAMU HPRC)', 'cpu': captured['cpu'],
+            'cpu_source': (f"save_provenance in job {s['SLURM_JOB_ID']} ({s['SLURM_JOB_NAME']}) on "
+                           f"{captured['cpu']['hostname']}, after the runs: the runs' class (timed-cpu, a whole node, "
+                           f"partition {s['SLURM_JOB_PARTITION']}), their environment and their source lock (commit "
+                           f"{captured['git']['commit'][:7]}). Its full record: provenance_cpu/hardware.json"),
+            'jobs': jobs, 'gpu': None}
 
 
-def environment(out, runs_commit):
+def environment(out, runs_commit, captured=False):
     pre = next((out / 'slurm_logs').glob('lilq-p3-preflight.*.out')).read_text(errors='replace').splitlines()
     keep = [l for l in pre if l.startswith(('job ', 'torch ', 'numpy ', 'provenance lock', 'inputs OK', 'K1 ', 'K2 ',
                                             'PREFLIGHT')) or re.match(r'\d+ passed', l)]
@@ -205,6 +234,9 @@ def environment(out, runs_commit):
         '',
         'The preflight log (slurm_logs/lilq-p3-preflight.*.out):',
         *('  ' + l for l in keep),
+        *(['', "The full record (numpy's and scipy's build configuration, the BLAS thread pools, the packages),",
+           'written by save_provenance in a whole-node job after the runs, in their environment and under',
+           'their source lock: provenance_cpu/environment.txt.'] if captured else []),
         ''])
 
 
@@ -217,7 +249,7 @@ def decisions():
             + '\n\n---\n\n'.join(mine) + '\n')
 
 
-def assemble(grace, out, p2_12, sacct_extra=None):
+def assemble(grace, out, p2_12, sacct_extra=None, provenance=None):
     grace, out = Path(grace), Path(out)
     runs = _json(grace / 'COMMIT')
     head = _git('rev-parse', 'HEAD')
@@ -229,6 +261,7 @@ def assemble(grace, out, p2_12, sacct_extra=None):
     log = [f'Package 3 assembly, {datetime.datetime.now(datetime.timezone.utc).isoformat()}',
            f'from {grace.name} (runs at {runs["commit"][:7]}), assembled at {head[:7]}']
     copy_grace(grace, out, log)
+    captured = copy_provenance(provenance, out, log) if provenance else None
     item4 = recheck_l1(out, p2_12, log)
     checks = checks_json(out, item4)
     _write(out / 'checks.json', json.dumps(checks, indent=2) + '\n')
@@ -240,8 +273,10 @@ def assemble(grace, out, p2_12, sacct_extra=None):
     w.writerows(rows)
     _write(out / 'su.csv', buf.getvalue())
     log.append(f'su.csv: {len(rows)} jobs, {total:.1f} SU charged at Grace\'s rates')
-    _write(out / 'hardware.json', json.dumps(hardware(out), indent=2) + '\n')
-    _write(out / 'environment.txt', environment(out, runs['commit']))
+    have = {r['job_id'] for r in csv.DictReader(io.StringIO((out / 'su_per_job.csv').read_text()))}
+    _write(out / 'hardware.json', json.dumps(hardware(out, captured, [r for r in rows if r['job_id'] not in have]),
+                                             indent=2) + '\n')
+    _write(out / 'environment.txt', environment(out, runs['commit'], captured is not None))
     _write(out / 'DECISIONS_package3.md', decisions())
     between = _git('log', '--format=%h %s', f"{runs['commit']}..{head}") or ''
     _write(out / 'provenance.json', json.dumps({
@@ -263,8 +298,10 @@ def main(argv=None):
     ap.add_argument('--out', required=True)
     ap.add_argument('--p2-12', dest='p2_12', required=True, help="Stage 1's P2_12_reference_errors (L1's reference)")
     ap.add_argument('--sacct-extra', default=None, help='sacct -X -P -n lines of jobs the tarball lacks')
+    ap.add_argument('--provenance', default=None,
+                    help="p3_provenance.slurm's hardware.json, environment.txt and log, downloaded")
     args = ap.parse_args(argv)
-    checks, _ = assemble(args.grace, args.out, args.p2_12, args.sacct_extra)
+    checks, _ = assemble(args.grace, args.out, args.p2_12, args.sacct_extra, args.provenance)
     return 0 if all(v['passed'] for v in checks.values()) else 1
 
 
