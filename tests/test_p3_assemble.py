@@ -74,7 +74,7 @@ def test_the_assembly_and_its_records(tmp_path):
     assert l1['passed'] and not l1['grace']['passed'] and l1['reevaluated_at'] == _git('rev-parse', 'HEAD')
     assert json.loads((out / 'checks.json').read_text())['L1 (Addendum 1)']['passed']
     su = (out / 'su.csv').read_bytes().decode()
-    assert '\r' not in su and su.count('\n') == 4 and 'its own charge' in su
+    assert '\r' not in su and su.count('\n') == 4 and 'from sacct after it ended' in su
     hw = json.loads((out / 'hardware.json').read_text())
     assert hw['jobs']['12'] == {'log': 'lilq-p3-k0.12.out', 'node': 'c2', 'threads': 48, 'cores_usable': 48,
                                 'oversubscribe': 'NO', 'name': 'lilq-p3-k0', 'partition': 'medium',
@@ -89,6 +89,29 @@ def test_the_assembly_and_its_records(tmp_path):
     m.assemble(g, out, p2, extra)                                                  # a second time: Grace's verdict kept
     l1 = json.loads((out / 'P3_4_burgers_large_P' / 'checks_item4.json').read_text())['L1']
     assert not l1['grace']['passed'] and 'grace' not in l1['grace']
+
+
+@needs_git
+def test_the_assembly_takes_the_captured_record(tmp_path):
+    g, p2, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
+    prov = tmp_path / 'prov'
+    prov.mkdir()
+    cpu = {'model': 'Xeon', 'logical_cores': 48, 'hostname': 'c205'}
+    (prov / 'hardware.json').write_text(json.dumps({'cpu': cpu, 'git': {'commit': 'f' * 40},
+                                                    'scheduler': {'SLURM_JOB_ID': '14', 'SLURM_JOB_NAME': 'lilq-p3-provenance',
+                                                                  'SLURM_JOB_PARTITION': 'medium'}}))
+    (prov / 'environment.txt').write_text('numpy.show_config()\n')
+    (prov / 'lilq-p3-provenance.14.out').write_text('job 14 on c205: 48 threads, 48 cores usable, OverSubscribe=NO\n')
+    with open(extra, 'a') as fh:
+        fh.write('14|lilq-p3-provenance|billing=48,cpu=48,mem=360G,node=1|187|COMPLETED\n')
+    out = tmp_path / 'out'
+    _, total = m.assemble(g, out, p2, extra, prov)
+    hw = json.loads((out / 'hardware.json').read_text())
+    assert hw['cpu'] == cpu and 'job 14 (lilq-p3-provenance) on c205' in hw['cpu_source'] and 'cpu_model' not in hw
+    assert hw['jobs']['14']['node'] == 'c205' and hw['jobs']['14']['alloc_tres'].startswith('billing=48')
+    assert (out / 'provenance_cpu' / 'environment.txt').exists() and (out / 'slurm_logs' / 'lilq-p3-provenance.14.out').exists()
+    assert 'provenance_cpu/environment.txt' in (out / 'environment.txt').read_text()
+    assert total == pytest.approx(3.6 + 48.0 + 2.4 + 2.5)
 
 
 @needs_git
