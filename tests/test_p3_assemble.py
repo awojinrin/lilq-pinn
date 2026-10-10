@@ -1,5 +1,7 @@
 """Package 3's assembly (experiments/p3_assemble.py) on a small fake of Grace's tree."""
 
+import csv
+import io
 import json
 import subprocess
 from pathlib import Path
@@ -17,6 +19,18 @@ def _git(*a):
 
 
 needs_git = pytest.mark.skipif(_git('rev-parse', 'HEAD~1') is None, reason='needs a git checkout with history')
+DP = {'delta_P_u': 0.1, 'delta_P_v': 0.1, 'delta_P_w': 0.1, 'delta_P_p': 0.004, 'delta_P_combined': 0.02}
+
+
+@pytest.fixture
+def recompute(monkeypatch):
+    """Stand-ins for the two recomputations from Grace's files: item 1's delta_P (minutes for the
+    real bases) and item 4's terminal rows (which read full run folders)."""
+    import experiments.p3_4_burgers_large_P as item4
+    monkeypatch.setattr(m, 'beltrami_delta_P', lambda size: (dict(DP), {}))
+    monkeypatch.setattr(item4, 'terminal_row', lambda d: {'P': 625, 'kappa': '1e9', 'rank': '625',
+                                                          'num_rank_svd': 620, 'num_rank_svd_min': 619})
+    return monkeypatch
 
 
 def _fake_grace(root, commit):
@@ -56,6 +70,12 @@ def _fake_grace(root, commit):
     w('su_per_job.csv', 'job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note\n'
                         '11,lilq-p3-preflight,cpu=24,0.15,COMPLETED,24,3.6,\n12,lilq-p3-k0,cpu=48,1.0,COMPLETED,48,48.0,\n')
     w('report_log.txt', 'p3 report\n')
+    t1 = ('size,level,pin_scale,delta_P_u,delta_P_v,delta_P_w,delta_P_p,delta_P_combined,rel_l2_p_at_returned,'
+          'rel_l2_combined_at_returned,error_over_delta_P_p,error_over_delta_P_combined\r\n'
+          + ''.join(f'B1,1,{s},0.1,0.1,0.1,0.0041,0.021,0.12,0.1,{0.12 / 0.0041!r},{0.1 / 0.021!r}\r\n'
+                    for s in ('1.0', '0.001')))
+    (g / 'P3_1_beltrami_certified' / 'terminal.csv').write_bytes(t1.encode())     # CRLF, as Grace's csv module
+    (g / 'P3_4_burgers_large_P' / 'terminal.csv').write_bytes(b'P,kappa,rank\r\n625,1e9,625\r\n')
     p2 = root / 'P2_12' / 'B_instrumentation' / 'burgers_P625_cpu_paper'
     p2.mkdir(parents=True)
     (p2 / 'iterations.csv').write_text('\n'.join(rows.splitlines()[:5] + ['4,0.25,,0.02']) + '\n')   # k = 4: terminal
@@ -65,10 +85,21 @@ def _fake_grace(root, commit):
 
 
 @needs_git
-def test_the_assembly_and_its_records(tmp_path):
+def test_the_assembly_and_its_records(tmp_path, recompute):
     g, p2, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
     out = tmp_path / 'out'
     checks, total = m.assemble(g, out, p2, extra)
+    raw = (out / 'P3_1_beltrami_certified' / 'terminal.csv').read_bytes()       # Grace's line ending kept
+    assert raw.count(b'\r\n') == raw.count(b'\n') == 3
+    t1 = list(csv.DictReader(io.StringIO(raw.decode())))
+    for r in t1:                                     # the pressure delta_P and its ratios replaced; Grace's kept
+        assert (r['delta_P_p'], r['delta_P_p_grace'], r['delta_P_combined_grace']) == ('0.004', '0.0041', '0.021')
+        assert float(r['error_over_delta_P_p']) == 0.12 / 0.004 and float(r['error_over_delta_P_combined']) == 0.1 / 0.02
+        assert r['delta_P_u'] == '0.1'
+    rec = json.loads((out / 'P3_1_beltrami_certified' / 'delta_P_reevaluated.json').read_text())
+    assert rec['sizes']['B1']['rel_change_p'] == pytest.approx(0.004 / 0.0041 - 1)
+    t4 = (out / 'P3_4_burgers_large_P' / 'terminal.csv').read_bytes().decode()
+    assert t4 == 'P,kappa,rank,num_rank_svd,num_rank_svd_min\r\n625,1e9,625,620,619\r\n'
     assert all(v['passed'] for v in checks.values()) and total == pytest.approx(3.6 + 48.0 + 2.4)
     l1 = json.loads((out / 'P3_4_burgers_large_P' / 'checks_item4.json').read_text())['L1']
     assert l1['passed'] and not l1['grace']['passed'] and l1['reevaluated_at'] == _git('rev-parse', 'HEAD')
@@ -92,12 +123,15 @@ def test_the_assembly_and_its_records(tmp_path):
 
 
 @needs_git
-def test_the_assembly_takes_the_captured_record(tmp_path):
+def test_the_assembly_takes_the_captured_record(tmp_path, recompute):
     g, p2, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
     prov = tmp_path / 'prov'
     prov.mkdir()
     cpu = {'model': 'Xeon', 'logical_cores': 48, 'hostname': 'c205'}
-    (prov / 'hardware.json').write_text(json.dumps({'cpu': cpu, 'git': {'commit': 'f' * 40},
+    pools = [{'internal_api': 'flexiblas', 'version': '3.4.4', 'num_threads': 48, 'filepath': '/sw/libflexiblas.so.3.4'},
+             {'internal_api': 'openblas', 'version': '0.3.27', 'num_threads': 48,
+              'filepath': '/sw/OpenBLAS/lib/libopenblas_skylakexp-r0.3.27.so'}]
+    (prov / 'hardware.json').write_text(json.dumps({'cpu': cpu, 'git': {'commit': 'f' * 40}, 'threads': {'threadpools': pools},
                                                     'scheduler': {'SLURM_JOB_ID': '14', 'SLURM_JOB_NAME': 'lilq-p3-provenance',
                                                                   'SLURM_JOB_PARTITION': 'medium'}}))
     (prov / 'environment.txt').write_text('numpy.show_config()\n')
@@ -110,8 +144,23 @@ def test_the_assembly_takes_the_captured_record(tmp_path):
     assert hw['cpu'] == cpu and 'job 14 (lilq-p3-provenance) on c205' in hw['cpu_source'] and 'cpu_model' not in hw
     assert hw['jobs']['14']['node'] == 'c205' and hw['jobs']['14']['alloc_tres'].startswith('billing=48')
     assert (out / 'provenance_cpu' / 'environment.txt').exists() and (out / 'slurm_logs' / 'lilq-p3-provenance.14.out').exists()
-    assert 'provenance_cpu/environment.txt' in (out / 'environment.txt').read_text()
+    env = (out / 'environment.txt').read_text()
+    assert 'provenance_cpu/environment.txt' in env
+    assert 'BLAS and LAPACK: OpenBLAS 0.3.27 (libopenblas_skylakexp-r0.3.27.so), through FlexiBLAS 3.4.4, at 48' in env
     assert total == pytest.approx(3.6 + 48.0 + 2.4 + 2.5)
+
+
+@needs_git
+def test_the_recomputations_refuse_what_grace_did_not_write(tmp_path, recompute):
+    """A velocity delta_P, or an item 4 column, that differs from Grace's stops the assembly."""
+    import experiments.p3_4_burgers_large_P as item4
+    g, p2, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
+    recompute.setattr(m, 'beltrami_delta_P', lambda size: ({**DP, 'delta_P_v': 0.1 * (1 + 1e-8)}, {}))
+    with pytest.raises(SystemExit, match='velocity delta_P'):
+        m.assemble(g, tmp_path / 'out', p2, extra)
+    recompute.setattr(item4, 'terminal_row', lambda d: {'P': 625, 'kappa': '2e9', 'rank': '625', 'num_rank_svd': 620})
+    with pytest.raises(SystemExit, match=r"columns \['kappa'\]"):
+        m.assemble(g, tmp_path / 'out2', p2, extra)
 
 
 @needs_git

@@ -70,6 +70,25 @@ def test_delta_P_gives_the_pressure_its_time_levels():
     assert dp['delta_P_p'] < 1e-13 and 0 < dp['delta_P_u'] < 1
 
 
+def test_the_pressure_delta_P_is_the_projection_despite_dependent_columns(monkeypatch):
+    """The level columns span the pressure basis's N_p modes in t: the matrix has
+    N_p dependent columns, and delta_P_p must still be the orthogonal projection's
+    residual (an SVD truncated at the same threshold), not a round-off-inflated one."""
+    monkeypatch.setitem(m.SIZES, 'B1', TINY)
+    sys_ = m.System(m.config_for('B1'), cf.beltrami_grid(3, m.INTERVALS)['blocks'], pins=False)
+    exact = m.exact_on_grid(sys_.physics)
+    dp, res = m.delta_P(sys_, exact)
+    axes = m.eval_axes(sys_.physics)
+    X, Y, Z, T = (g.ravel() for g in np.meshgrid(*axes, indexing='ij'))
+    Phi = np.hstack([sys_.bp.evaluate(X, Y, Z, T), (T[:, None] == axes[3][None, :]).astype(float)])
+    U, s, _ = np.linalg.svd(Phi, full_matrices=False)
+    r = int(np.sum(s > max(Phi.shape) * np.finfo(float).eps * s[0]))
+    assert Phi.shape[1] - r == m.SIZES['B1'][1]                       # N_p dependent columns
+    fp = exact['p'].ravel()
+    best = np.linalg.norm(fp - U[:, :r] @ (U[:, :r].T @ fp))
+    assert abs(res['p'] / best - 1) < 1e-10
+
+
 def test_tiny_runs_end_to_end(tmp_path, monkeypatch):
     monkeypatch.setitem(m.SIZES, 'B1', TINY)
     for tag, scale in (('', 1.0), ('_pin1e-3', 1e-3), ('_pin1e3', 1e3), ('_rerun', 1.0)):
