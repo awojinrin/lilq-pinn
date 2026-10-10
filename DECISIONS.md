@@ -17,6 +17,49 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-10-10 -- Package 3, after the advisor's reply: item 4's ranks, Beltrami's pressure delta_P, the BLAS
+
+The advisor accepted Package 3 (reply of 10 October). He asked for three corrections for the
+release; none needs a rerun.
+
+**1. Item 4's ranks (his item 3.1).** `terminal.csv`'s `rank` is gelsy's (rcond = eps_mach):
+full at every size. The paper reports the rank at max(N, P) sigma_1 eps_mach. That is now
+beside gelsy's:
+- `num_rank_svd`: at the last iterate;
+- `num_rank_svd_min`: over the run.
+
+They are 625, 889, 996 and 1,155 at P = 625, 900, 1,024 and 1,225, and every other column is
+unchanged. Addendum 1 Section 5 counts this as information, not a failure. Items 1 and 2 are
+full rank at both thresholds (kappa at most 3e4), so their statements and K7 stand.
+
+**2. Beltrami's pressure delta_P (his item 3.2).**
+- **The cause.** The least squares [pressure basis | 11 time-level columns] has N_p dependent
+  columns (5, 6, 8 at B1, B2, B3): the level columns span the basis's modes T_j(t). gelsy at
+  rcond = eps_mach kept them, the coefficients grew to 1e8-1e11, and round-off raised
+  delta_P_p. On Grace the excess was 1.06e-4 (B1), 2.01e-4 (B2) and 8.1e-7 (B3) relative,
+  his figures.
+- **The fix.** `delta_P` now truncates the pressure least squares at the paper's threshold,
+  max(m, n) eps_mach. An SVD projection and a pivoted-QR projection agree with it to 1e-11.
+  The velocity fits have full rank and are unchanged.
+- **At the assembly,** item 1's `terminal.csv` takes the new delta_P_p, delta_P_combined and
+  their error ratios. Grace's are kept beside them (`*_grace`) and in
+  `delta_P_reevaluated.json`. The velocity delta_P, recomputed there, must equal Grace's to
+  1e-10, or the assembly stops.
+
+**3. The BLAS (his item 3.3).** The provenance job's thread pools, loaded in the runs'
+environment, show FlexiBLAS 3.4.4 dispatching to OpenBLAS 0.3.27
+(`libopenblas_skylakexp-r0.3.27.so`) at 48 threads. The manuscript's "OpenBLAS 0.3.27" is
+right. `environment.txt` now names both, from that record.
+
+`experiments/p3_assemble.py` re-evaluates items 1 and 4 from Grace's files, as for L1. The
+CSVs it rewrites keep Grace's line ending (CRLF), so a diff shows only the changed values.
+
+Tests: `tests/test_p3_beltrami_certified.py` (the pressure delta_P equals the truncated-SVD
+projection with N_p dependent columns; the old setting is off by 1.7e-4 there);
+`tests/test_p3_burgers_large_P.py`; `tests/test_p3_assemble.py`.
+
+---
+
 ## 2026-10-09 -- Package 3, the assembly: Grace's tree, L1 at this commit, the Section 9 records
 
 `experiments/p3_assemble.py` builds `package3_results/` from the last report's tarball. That

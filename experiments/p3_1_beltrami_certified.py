@@ -276,7 +276,14 @@ def field_errors(sys_, theta, exact):
 def delta_P(sys_, exact):
     """The relative L2 distance of each exact field to the span of its basis,
     by least squares on the error grid. For p, 11 columns constant on each
-    time level are added, matching the per-level pressure shift."""
+    time level are added, matching the per-level pressure shift.
+
+    Those columns span the pressure basis's N_p modes T_j(t), so the pressure
+    matrix has N_p dependent columns. Its least squares truncates at the
+    paper's rank threshold, rcond = max(m, n) eps_mach: at rcond = eps_mach
+    gelsy keeps the dependent columns, the coefficients grow to 1e10-1e11, and
+    round-off raised delta_P_p by 1e-4 relative at B1 and B2 (the advisor's
+    reply of 10 October; DECISIONS.md)."""
     axes = eval_axes(sys_.physics)
     X, Y, Z, T = (g.ravel() for g in np.meshgrid(*axes, indexing='ij'))
     out, res = {}, {}
@@ -289,7 +296,7 @@ def delta_P(sys_, exact):
     levels = (T[:, None] == axes[3][None, :]).astype(float)       # 11 columns, constant on each time level
     Phi = np.hstack([sys_.bp.evaluate(X, Y, Z, T), levels])
     fp = exact['p'].ravel()
-    c = sla.lstsq(Phi, fp, lapack_driver='gelsy', cond=EPS_MACH, check_finite=False)[0]
+    c = sla.lstsq(Phi, fp, lapack_driver='gelsy', cond=max(Phi.shape) * EPS_MACH, check_finite=False)[0]
     res['p'] = float(np.linalg.norm(Phi @ c - fp))
     norm = {f: float(np.linalg.norm(exact[f])) for f in 'uvwp'}
     out = {f'delta_P_{f}': res[f] / norm[f] for f in 'uvwp'}

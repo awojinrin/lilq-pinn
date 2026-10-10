@@ -201,8 +201,12 @@ def terminal_row(run_dir):
     K = sum(1 for r in log if r.get('rel_dbeta') not in ('', None))
     last = log[K - 1]
     tm = lambda key, f: timing.get(key, {}).get(f, '')  # noqa: E731
+    # rank: gelsy's (rcond = eps_mach). num_rank_svd: at the paper's threshold max(N, P) sigma_1 eps_mach,
+    # at the last iterate and its minimum over the run (the advisor's reply of 10 October, item 3.1)
+    svd_ranks = [int(float(r['num_rank_svd'])) for r in log[:K] if r.get('num_rank_svd') not in ('', None)]
     return {'P': meta['P_total'], 'modes': int(round(meta['P_total'] ** 0.5)), 'N': meta['N_total'],
             'kappa': last['kappa'], 'kappa_retained': last['kappa_retained'], 'rank': last['num_rank_gelsy'],
+            'num_rank_svd': last.get('num_rank_svd', ''), 'num_rank_svd_min': min(svd_ranks) if svd_ranks else '',
             'eps_min': float(eps[k_min]), 'k_min': k_min,
             'k_e': k_e if k_e is not None else 'none', 'eps_k_e': float(eps[k_e]) if k_e is not None else '',
             'k_r': k_r if k_r is not None else 'never', 'rule_class': cls,

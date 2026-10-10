@@ -36,6 +36,8 @@ def test_a_logged_pass_and_its_clean_runs(tmp_path):
     log, losses = m.read_log(d)
     assert sorted(losses) == list(range(61)) and len(log) == 61
     assert json.loads((d / 'run.json').read_text())['b2_check']['max_rel_err_over_run'] < 1e-10
+    row = m.terminal_row(d)                         # gelsy's rank, and the rank at the paper's threshold beside it
+    assert int(row['rank']) == 25 and 0 < row['num_rank_svd_min'] <= int(row['num_rank_svd']) <= 25
     t = m.clean_timing(5, 6, repeats=2)
     assert t['iterations'] == [6, 6] and all(float(v) == losses[6] for v in t['final_losses'])
     assert len(t['times_s']) == 2 and t['median_s'] > 0

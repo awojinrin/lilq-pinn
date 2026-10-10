@@ -112,6 +112,96 @@ def recheck_l1(out, p2_12, log):
     return checks
 
 
+def _read_csv(path):
+    with open(path, newline='') as fh:
+        return list(csv.DictReader(fh))
+
+
+def _write_rows(path, rows):
+    """Rewrite a CSV of Grace's with its own line ending (the csv module's CRLF), so a diff shows
+    only the values that changed."""
+    ending = '\r\n' if b'\r\n' in Path(path).read_bytes() else '\n'
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=list(rows[0]), lineterminator=ending)
+    w.writeheader()
+    w.writerows(rows)
+    _write(path, buf.getvalue())
+
+
+def recheck_item4_ranks(out, log):
+    """Item 4's terminal.csv at this commit, from Grace's files: the same rows, with the rank at the
+    paper's threshold (num_rank_svd, num_rank_svd_min) beside gelsy's (the advisor's reply of
+    10 October, item 3.1). Every column Grace wrote must come out unchanged."""
+    import experiments.p3_4_burgers_large_P as item4
+    d = out / 'P3_4_burgers_large_P'
+    old = {r['P']: r for r in _read_csv(d / 'terminal.csv')}
+    runs = sorted((x for x in d.iterdir() if x.is_dir() and (x / 'iterations.csv').exists()),
+                  key=lambda x: int(x.name.split('_P')[1]))
+    rows = []
+    for x in runs:
+        new = item4.terminal_row(x)
+        before = old[str(new['P'])]
+        changed = [k for k in before if str(new.get(k, '')) != before[k]]
+        if changed:
+            sys.exit(f'item 4, {x.name}: columns {changed} differ from Grace\'s terminal.csv')
+        rows.append(new)
+    _write_rows(d / 'terminal.csv', rows)
+    log.append('item 4 terminal.csv: num_rank_svd added (' + ', '.join(
+        f"P = {r['P']}: gelsy {r['rank']}, threshold {r['num_rank_svd']}" for r in rows) + '); every other column as Grace')
+
+
+def beltrami_delta_P(size):
+    """(delta_P by field and combined, absolute residuals, field norms) of a Beltrami size, as
+    item 1's summary computes them (the bases only; the grid is not used)."""
+    import experiments.p3_1_beltrami_certified as item1
+    from lilq import certified as cf
+    sys_ = item1.System(item1.config_for(size), cf.beltrami_grid(3, item1.INTERVALS)['blocks'], pins=False)
+    exact = item1.exact_on_grid(sys_.physics)
+    dp, res = item1.delta_P(sys_, exact)
+    return dp, res
+
+
+def recheck_delta_P(out, log, compute=None):
+    """Item 1's pressure delta_P at this commit (the paper's rank threshold for the pressure least
+    squares; the advisor's reply of 10 October, item 3.2), and the ratios that use it. Grace's
+    values are kept beside them; the velocity delta_P, recomputed here, must agree with Grace's."""
+    compute = compute or beltrami_delta_P
+    path = out / 'P3_1_beltrami_certified' / 'terminal.csv'
+    rows = _read_csv(path)
+    record, worst_v = {}, 0.0
+    for size in sorted({r['size'] for r in rows}):
+        dp, _ = compute(size)
+        grace = next(r for r in rows if r['size'] == size)
+        g = {k: float(grace[k + '_grace'] if k + '_grace' in grace else grace[k])
+             for k in ('delta_P_p', 'delta_P_combined')}
+        worst_v = max([worst_v] + [abs(dp[f'delta_P_{f}'] / float(grace[f'delta_P_{f}']) - 1) for f in 'uvw'])
+        record[size] = {'delta_P_p': dp['delta_P_p'], 'delta_P_p_grace': g['delta_P_p'],
+                        'rel_change_p': dp['delta_P_p'] / g['delta_P_p'] - 1,
+                        'delta_P_combined': dp['delta_P_combined'], 'delta_P_combined_grace': g['delta_P_combined']}
+        for r in rows:
+            if r['size'] != size:
+                continue
+            r.setdefault('delta_P_p_grace', r['delta_P_p'])
+            r.setdefault('delta_P_combined_grace', r['delta_P_combined'])
+            r['delta_P_p'], r['delta_P_combined'] = repr(dp['delta_P_p']), repr(dp['delta_P_combined'])
+            r['error_over_delta_P_p'] = repr(float(r['rel_l2_p_at_returned']) / dp['delta_P_p'])
+            r['error_over_delta_P_combined'] = repr(float(r['rel_l2_combined_at_returned']) / dp['delta_P_combined'])
+    if worst_v > 1e-10:
+        sys.exit(f"item 1: the velocity delta_P differs from Grace's by {worst_v:.1e}")
+    _write_rows(path, rows)
+    _write(out / 'P3_1_beltrami_certified' / 'delta_P_reevaluated.json', json.dumps({
+        'reevaluated_at': _git('rev-parse', 'HEAD'),
+        'note': ("the pressure least squares [pressure basis | 11 time-level columns] has N_p dependent columns; "
+                 "at rcond = eps_mach gelsy kept them and round-off raised delta_P_p. Re-evaluated with the "
+                 "paper's rank threshold max(m, n) eps_mach (an SVD or pivoted-QR projection agrees to 1e-11). "
+                 "terminal.csv's delta_P_p, delta_P_combined and their error ratios are the new values; "
+                 "the *_grace columns are Grace's"),
+        'velocity_delta_P_max_rel_diff_to_grace': worst_v, 'sizes': record}, indent=2) + '\n')
+    log.append('item 1 delta_P_p re-evaluated: ' + ', '.join(
+        f"{s} {v['rel_change_p']:+.1e}" for s, v in record.items()) + f'; velocity as Grace to {worst_v:.0e}')
+    return record
+
+
 def checks_json(out, item4):
     """K0-K8 and L1-L4, each with its verdict, key numbers and source file."""
     c = out / 'P3_checks'
@@ -217,7 +307,19 @@ def hardware(out, captured=None, extra_rows=()):
             'jobs': jobs, 'gpu': None}
 
 
-def environment(out, runs_commit, captured=False):
+def blas_line(captured):
+    """The BLAS the jobs used: FlexiBLAS and the library it dispatched to, from the thread pools
+    the captured record lists (threadpoolctl, in the runs' environment)."""
+    pools = {p['internal_api']: p for p in (captured or {}).get('threads', {}).get('threadpools', [])}
+    if 'flexiblas' in pools and 'openblas' in pools:
+        o = pools['openblas']
+        return (f"BLAS and LAPACK: OpenBLAS {o['version']} ({Path(o['filepath']).name}), through FlexiBLAS "
+                f"{pools['flexiblas']['version']}, at {o['num_threads']} threads on a whole node: the thread pools "
+                'loaded in the provenance job (provenance_cpu/hardware.json).')
+    return "BLAS and LAPACK: FlexiBLAS 3.4.4 (GCC 13.3.0), through the modules' numpy and scipy."
+
+
+def environment(out, runs_commit, captured=None):
     pre = next((out / 'slurm_logs').glob('lilq-p3-preflight.*.out')).read_text(errors='replace').splitlines()
     keep = [l for l in pre if l.startswith(('job ', 'torch ', 'numpy ', 'provenance lock', 'inputs OK', 'K1 ', 'K2 ',
                                             'PREFLIGHT')) or re.match(r'\d+ passed', l)]
@@ -227,7 +329,7 @@ def environment(out, runs_commit, captured=False):
         "Package 3's software environment, from its jobs' own logs (the preflight's).",
         f'Code: commit {runs_commit} (the bundle, under the source lock of every job).',
         f'Modules (scripts/cluster/env.sh): {modules}; the venv $SCRATCH/lilq-run/venv first on PYTHONPATH.',
-        'BLAS and LAPACK: FlexiBLAS 3.4.4 (GCC 13.3.0), through the modules\' numpy and scipy.',
+        blas_line(captured),
         'Threads: OMP, OpenBLAS and MKL set to the cores the job holds (48 on a whole node, 24 for the cpu class);',
         '  the runs that set their own count (item 2: 4 per run, six side by side; item 3: as the original run)',
         '  record it in their run.json.',
@@ -236,7 +338,7 @@ def environment(out, runs_commit, captured=False):
         *('  ' + l for l in keep),
         *(['', "The full record (numpy's and scipy's build configuration, the BLAS thread pools, the packages),",
            'written by save_provenance in a whole-node job after the runs, in their environment and under',
-           'their source lock: provenance_cpu/environment.txt.'] if captured else []),
+           'their source lock: provenance_cpu/environment.txt.'] if captured is not None else []),
         ''])
 
 
@@ -263,6 +365,8 @@ def assemble(grace, out, p2_12, sacct_extra=None, provenance=None):
     copy_grace(grace, out, log)
     captured = copy_provenance(provenance, out, log) if provenance else None
     item4 = recheck_l1(out, p2_12, log)
+    recheck_item4_ranks(out, log)
+    recheck_delta_P(out, log)
     checks = checks_json(out, item4)
     _write(out / 'checks.json', json.dumps(checks, indent=2) + '\n')
     log.append('checks.json: ' + ', '.join(f"{k} {'passed' if v['passed'] else 'FAILED'}" for k, v in checks.items()))
@@ -276,7 +380,7 @@ def assemble(grace, out, p2_12, sacct_extra=None, provenance=None):
     have = {r['job_id'] for r in csv.DictReader(io.StringIO((out / 'su_per_job.csv').read_text()))}
     _write(out / 'hardware.json', json.dumps(hardware(out, captured, [r for r in rows if r['job_id'] not in have]),
                                              indent=2) + '\n')
-    _write(out / 'environment.txt', environment(out, runs['commit'], captured is not None))
+    _write(out / 'environment.txt', environment(out, runs['commit'], captured))
     _write(out / 'DECISIONS_package3.md', decisions())
     between = _git('log', '--format=%h %s', f"{runs['commit']}..{head}") or ''
     _write(out / 'provenance.json', json.dumps({
