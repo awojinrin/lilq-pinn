@@ -6,10 +6,11 @@
     "locked_at_utc": "2026-10-09T05:43:41.191424+00:00"
   },
   "assembly": {
-    "commit": "086461c1c2976014a2b27c3254aa087bf27d7323",
+    "commit": "bfbac477ef71eec44f1645ff61cc18564de95159",
     "branch": "v3-dev"
   },
   "commits_between": [
+    "bfbac47 Package 3 after the advisor's reply: item 4's ranks, the pressure delta_P, the BLAS",
     "086461c Package 3 assembly: the provenance record captured after the runs",
     "3e13572 Package 3: the results assembly from Grace's tarball",
     "86cc344 Package 3 after wave 1: L1 compares P2-12's terminal row like with like"

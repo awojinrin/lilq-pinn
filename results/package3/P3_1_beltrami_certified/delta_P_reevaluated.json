@@ -1,0 +1,28 @@
+{
+  "reevaluated_at": "bfbac477ef71eec44f1645ff61cc18564de95159",
+  "note": "the pressure least squares [pressure basis | 11 time-level columns] has N_p dependent columns; at rcond = eps_mach gelsy kept them and round-off raised delta_P_p. Re-evaluated with the paper's rank threshold max(m, n) eps_mach (an SVD or pivoted-QR projection agrees to 1e-11). terminal.csv's delta_P_p, delta_P_combined and their error ratios are the new values; the *_grace columns are Grace's",
+  "velocity_delta_P_max_rel_diff_to_grace": 3.615996391204135e-13,
+  "sizes": {
+    "B1": {
+      "delta_P_p": 0.004131173685683818,
+      "delta_P_p_grace": 0.004131610669616492,
+      "rel_change_p": -0.00010576599965916866,
+      "delta_P_combined": 0.004836403503494867,
+      "delta_P_combined_grace": 0.004836646116653795
+    },
+    "B2": {
+      "delta_P_p": 0.0004986754615622171,
+      "delta_P_p_grace": 0.0004987757881578991,
+      "rel_change_p": -0.00020114568121376575,
+      "delta_P_combined": 0.0005223964514725074,
+      "delta_P_combined_grace": 0.0005224587012131979
+    },
+    "B3": {
+      "delta_P_p": 1.5542338109436737e-05,
+      "delta_P_p_grace": 1.5542350757333587e-05,
+      "rel_change_p": -8.137698760402046e-07,
+      "delta_P_combined": 3.130773228231869e-05,
+      "delta_P_combined_grace": 3.130773636334545e-05
+    }
+  }
+}

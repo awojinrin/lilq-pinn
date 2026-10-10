@@ -1,5 +1,5 @@
-Package 3 assembly, 2026-10-09T20:24:27.140470+00:00
-from package3 (runs at 97e463d), assembled at 086461c
+Package 3 assembly, 2026-10-10T01:27:12.864367+00:00
+from package3 (runs at 97e463d), assembled at bfbac47
 copied P3_1_beltrami_certified/
 copied P3_2a_bl_chebyshev_certified/
 copied P3_2b_bl_lifted_sine_cheb/
@@ -14,6 +14,8 @@ copied su_per_job.csv
 copied report_log.txt
 copied provenance_cpu/ (job 20075205 on c205, commit 97e463d)
 L1 re-evaluated: passed (Grace's run: failed)
+item 4 terminal.csv: num_rank_svd added (P = 625: gelsy 625, threshold 625, P = 900: gelsy 900, threshold 889, P = 1024: gelsy 1024, threshold 996, P = 1225: gelsy 1225, threshold 1155); every other column as Grace
+item 1 delta_P_p re-evaluated: B1 -1.1e-04, B2 -2.0e-04, B3 -8.1e-07; velocity as Grace to 4e-13
 checks.json: K0 passed, K1 passed, K2 passed, K3 passed, K4 passed, K5 passed, K6 passed, K7 passed, K8 passed, item 3 re-solves (Section 5) passed, L1 (Addendum 1) passed, L2 (Addendum 1) passed, L3 (Addendum 1) passed, L4 (Addendum 1) passed
 su.csv: 12 jobs, 629.7 SU charged at Grace's rates
-provenance.json: 3 commit(s) between the runs and the assembly
+provenance.json: 4 commit(s) between the runs and the assembly

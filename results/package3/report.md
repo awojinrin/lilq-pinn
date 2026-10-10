@@ -2,8 +2,10 @@
 
 **To:** R. Younis. **From:** G. Awojinrin. **Date:** 9 October 2026.
 **Refers to:** the Package 3 instructions and Addendum 1 (both 8 October).
+**Revised:** 10 October, after your reply of that date: the three corrections it asked for
+(Section 4.5).
 
-**Code:** `awojinrin/lilq-pinn`, branch `v3-dev` at 086461c. These are the 9 commits after
+**Code:** `awojinrin/lilq-pinn`, branch `v3-dev` at bfbac47. These are the 10 commits after
 7af8855, the commit of the Stage 2 report:
 
 | commit | what | DECISIONS.md entry |
@@ -17,13 +19,14 @@
 | 86cc344 | L1 compares P2-12's terminal row like with like | after wave 1 |
 | 3e13572 | the results assembly | the assembly |
 | 086461c | the assembly takes the hardware record captured after the runs | the assembly |
+| bfbac47 | the corrections of your reply: item 4's ranks, the pressure δ_P, the BLAS | after the advisor's reply |
 
-Every run ran at 97e463d, under the source lock. The three later commits change only L1's
-comparison and the assembly (Section 4).
+Every run ran at 97e463d, under the source lock. The four later commits change only L1's
+comparison, the pressure δ_P and the assembly (Section 4).
 
 **Results:** `package3_results/`, in the layout of Section 9. They are on the branch
-`package3-results` of `awojinrin/lilq-pinn`, under `results/package3/`. The branch starts at
-086461c; its README says what it holds.
+`package3-results` of `awojinrin/lilq-pinn`, under `results/package3/`. The branch holds
+`v3-dev` at bfbac47; its README says what it holds.
 
 ## Summary
 
@@ -32,9 +35,9 @@ It cost 630 SU on Grace, of the 850 cap. B3 level 2 passed the launch rule and t
 guard, and completed. No Section 8.2 rule had to be applied, and no Section 8.1 condition
 arose.
 
-**For your reply:** L1 compares a value that P2-12 and the control compute in two different
-ways (Section 4.1). With like compared with like, every value at k ≤ 4 is identical. Is that
-reading of L1 acceptable?
+**Your reply (10 October):** you accepted the package and the reading of L1 (Section 4.1), and
+asked for three corrections for the release. They are made (Section 4.5): item 4's ranks at
+the paper's threshold, Beltrami's pressure δ_P, and the BLAS library.
 
 ## 1. What ran
 
@@ -69,7 +72,7 @@ All in `checks.json`, each with its source file.
 | K4 | passed. B2 at k = 1: 2.7e-14 at most (items 1 and 2) |
 | K5 | passed. BL: c₁, c₂ and ϱ_r change by 5.6e-13 at most. Elasticity: 6.6e-13. Darcy SPE10 (n_q = 6): 1.7e-7. All against 1e-3 |
 | K6 | passed. B1 level 1 rerun and BL viscous P = 256 rerun: bit for bit, timings aside |
-| K7 | passed. Every run is full rank |
+| K7 | passed. Every item 1 and item 2 run is full rank, at gelsy's threshold and at the paper's |
 | K8 | passed. The paper's pinned Beltrami run and viscous BL P = 576 reproduce package1's iteration counts and residual norms to all digits |
 | item 3 re-solves | passed. All 19 reproduce the package1 / P2-10 residual to all digits. The assembly equals the paper's bit for bit |
 | L1 | passed, as re-evaluated (Section 4.1). Grace's evaluation reported one difference, of 9e-16 |
@@ -83,7 +86,7 @@ All in `checks.json`, each with its source file.
 
 Errors are at the returned iterate (the 1e-9 iterate), space–time relative L², with p
 gauge-corrected. c₁ and c₂ are the overall constants (interior, 21 blocks, overall in
-`constants.csv`). Every run is full rank.
+`constants.csv`). Every run is full rank. δ_P of the pressure is re-evaluated (Section 4.5).
 
 | run | N | N/P | 1e-9 at | rule (class) | u | p | combined | error/δ_P | c₁ | c₂ | κ | GB | h |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -198,14 +201,15 @@ P = 1,250, whose residual is 8.0e-12.
 
 ### Item 4: Burgers LiL-Q at larger sizes (Addendum 1)
 
-Times are the medians of three clean runs on one exclusive node (48 threads).
+Times are the medians of three clean runs on one exclusive node (48 threads). The rank is
+gelsy's (rcond = ε_mach) and the paper's, at max(N, P) σ₁ ε_mach, the same at every iterate.
 
-| P | N | κ | rank | smallest error (k) | k_e (error) | k_r (class, error) | error at k = 60 | to k_e (s) | to k_r (s) |
-|---|---|---|---|---|---|---|---|---|---|
-| 625 | 5,956 | 6.82e+09 | 625 | 3.67e-05 (3) | none | 6 (A, 4.56e-05) | 4.56e-05 |  | 1.68 |
-| 900 | 8,644 | 9.51e+11 | 900 | 1.11e-06 (4) | 3 (9.99e-06) | 6 (C, 1.11e-06) | 1.11e-06 | 1.67 | 3.33 |
-| 1,024 | 9,860 | 2.07e+12 | 1024 | 4.36e-07 (37) | 3 (9.72e-06) | 6 (C, 4.36e-07) | 4.36e-07 | 2.44 | 4.78 |
-| 1,225 | 11,836 | 6.99e+13 | 1225 | 3.52e-07 (23) | 3 (9.70e-06) | 6 (C, 3.52e-07) | 3.52e-07 | 3.47 | 6.97 |
+| P | N | κ | κ retained | rank: gelsy / threshold | smallest error (k) | k_e (error) | k_r (class, error) | error at k = 60 | to k_e (s) | to k_r (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 625 | 5,956 | 6.82e+09 | 6.82e+09 | 625 / 625 | 3.67e-05 (3) | none | 6 (A, 4.56e-05) | 4.56e-05 |  | 1.68 |
+| 900 | 8,644 | 9.51e+11 | 5.01e+11 | 900 / 889 | 1.11e-06 (4) | 3 (9.99e-06) | 6 (C, 1.11e-06) | 1.11e-06 | 1.67 | 3.33 |
+| 1,024 | 9,860 | 2.07e+12 | 4.46e+11 | 1,024 / 996 | 4.36e-07 (37) | 3 (9.72e-06) | 6 (C, 4.36e-07) | 4.36e-07 | 2.44 | 4.78 |
+| 1,225 | 11,836 | 6.99e+13 | 2.38e+11 | 1,225 / 1,155 | 3.52e-07 (23) | 3 (9.70e-06) | 6 (C, 3.52e-07) | 3.52e-07 | 3.47 | 6.97 |
 
 The P = 625 control's paper pass took 1.13 s (L2).
 
@@ -240,7 +244,9 @@ the new one in `checks_item4.json`.
   - item 2: 1.2e-12;
   - item 4: 2.7e-6, its passes going far past convergence.
 - **Addendum 1, Section 5.** No rule was needed. Every size from P = 900 up reached 1.6e-5,
-  every system was full rank, and L2 passed.
+  and L2 passed. Every system has full gelsy rank. At the paper's threshold the ranks are 889,
+  996 and 1,155 at P = 900, 1,024 and 1,225 (κ retained 5.0e11, 4.5e11, 2.4e11), which
+  Section 5 counts as information (Section 4.5).
 
 ### 4.3 Readings of the instructions (in `DECISIONS.md`)
 
@@ -269,7 +275,29 @@ the new one in `checks_item4.json`.
   environment and their source lock (97e463d).
   - **Its record:** `provenance_cpu/`, with its script.
   - **The CPU:** Intel Xeon Gold 6248R, 3.00 GHz, 48 cores.
-- **The stack:** torch 2.10.0+cu126, numpy 1.26.4, scipy 1.13.1, FlexiBLAS 3.4.4.
+- **The stack:** torch 2.10.0+cu126, numpy 1.26.4, scipy 1.13.1, OpenBLAS 0.3.27 through
+  FlexiBLAS 3.4.4 (Section 4.5).
+
+### 4.5 Corrections after your reply of 10 October
+
+1. **Item 4's ranks.** `P3_4_burgers_large_P/terminal.csv` now has `num_rank_svd` (the last
+   iterate) and `num_rank_svd_min` (over the run) beside gelsy's `rank` and `kappa_retained`.
+   They are 625, 889, 996 and 1,155. Every other column is unchanged, recomputed from Grace's
+   files. The table in Section 3 and the sentence in Section 4.2 are corrected. Items 1 and 2
+   are full rank at both thresholds (κ at most 3e4), so their statements and K7 stand.
+2. **Beltrami's pressure δ_P.** We used gelsy with rcond = ε_mach, as in the solves.
+   - **The cause.** With the 11 time-level columns the matrix has N_p dependent columns (5, 6
+     and 8 at B1, B2 and B3), as you found. gelsy kept them at that rcond, the coefficients
+     grew to 10⁸–10¹¹, and round-off raised δ_P. Grace's values were high by 1.06e-4, 2.01e-4
+     and 8.1e-7 relative.
+   - **The fix.** The pressure least squares now truncates at the paper's threshold,
+     max(m, n) ε_mach. An SVD projection and a pivoted-QR projection agree with it to 1e-11.
+   - **The new values,** re-evaluated at the assembly, are in `terminal.csv`, with Grace's
+     beside them (`*_grace`, `delta_P_reevaluated.json`). The velocity δ_P is recomputed
+     there and equals Grace's to 4e-13.
+3. **The BLAS.** The provenance job's thread pools, loaded in the runs' environment, show
+   FlexiBLAS 3.4.4 dispatching to OpenBLAS 0.3.27 (`libopenblas_skylakexp-r0.3.27.so`) at 48
+   threads. The manuscript's "OpenBLAS 0.3.27" is right. `environment.txt` names both.
 
 ## 5. SU
 
@@ -298,12 +326,14 @@ The plan was 1,164 SU requested, about 617 expected (`su_plan.csv`).
 
 In `package3_results/` (`results/package3/` on the branch):
 - `report.md`: this memo.
+- `note_after_reply.md`: the corrections after your reply of 10 October (Section 4.5).
 - `checks.json`: K0–K8, item 3's re-solves and L1–L4.
 - `su.csv`; `su_plan.csv`; `sacct.txt`; `su_per_job.csv`.
 - `DECISIONS_package3.md`: the Package 3 entries of `DECISIONS.md`.
 - `environment.txt`, `hardware.json`; `provenance_cpu/` (the full record, Section 4.4).
 - `provenance.json`: the runs' commit, this commit, and the commits between.
-- `P3_1_beltrami_certified/`: a folder per run; `constants.csv`; `terminal.csv`.
+- `P3_1_beltrami_certified/`: a folder per run; `constants.csv`; `terminal.csv`;
+  `delta_P_reevaluated.json`.
 - `P3_2a_bl_chebyshev_certified/`, `P3_2b_bl_lifted_sine_cheb/`: a folder per run;
   `terminal.csv`; 2a's `constants.csv`.
 - `P3_3_affine_certificates/`: `elasticity.csv`, `darcy.csv`, a record per run.
