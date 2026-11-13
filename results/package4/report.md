@@ -1,11 +1,40 @@
 # Computational Package 4: report
 
-The runs of the instructions of 12 November 2026, on Grace, 13 November 2026.
+**To:** R. Younis. **From:** G. Awojinrin. **Date:** 13 November 2026.
+**Refers to:** the Package 4 instructions (12 November 2026).
 
-- **Code:** branch `v3-dev`. Every run is at commit `8a1e849`, under the source lock (`COMMIT`).
-- **Results:** this folder, branch `package4-results`. It was assembled at `e949cc9`; the assembly changed no code a run uses.
-- **Expected values:** each table gives ours / expected. The expected values are those of `expected_burgers.json` and `expected_pb.json`.
+**Code:** `awojinrin/lilq-pinn`, branch `v3-dev` at e949cc9. These are the 7 commits after bfbac47, the commit of the Package 3 corrections:
+
+| commit | what | DECISIONS.md entry |
+|---|---|---|
+| 3601a54 | README, RELEASE.md and REPRODUCE.md rewritten as documentation of the code | Documentation rewritten |
+| 35ce117 | item 1, Burgers on Gauss points with enrichment at stall | Package 4, item 1 |
+| 7cf783e | item 2, Poisson-Boltzmann around three inclusions | Package 4, item 2 |
+| 7833af6 | check M0, `checks.json`, M9 for item 1 | Package 4, item 1; the Grace submission |
+| 9c5e52b | the Grace submission | the Grace submission |
+| 8a1e849 | a review before the runs: M6 without your file is "no verdict", not a failure; κ at the returned iterate (the runs' commit) | the Grace submission |
+| e949cc9 | the results assembly | the assembly |
+
+Every run ran at 8a1e849, under the source lock. The assembly commit changes no code a run uses.
+
+**Results:** `package4_results/`, in the layout of Section 7. They are on the branch `package4-results` of `awojinrin/lilq-pinn`, under `results/package4/`. The branch holds `v3-dev` at e949cc9; its README says what it holds.
+
+- **Expected values:** each table gives ours / expected, from `expected_burgers.json` and `expected_pb.json`.
 - **Times:** the times are Grace's. The expected files' times come from another machine, so they are not compared.
+
+## Summary
+
+Package 4 is done.
+- **Checks:** M0 to M8 pass. M9 fails for one of 29 timed configurations (1b E1 at 1e-5, a 22.6% spread); Section 6.2's rule is applied.
+- **Cost:** 36.0 SU on Grace, of the cap of 100.
+- **Section 6.1:** no stop condition arose.
+- **Section 6.2:** four of its rules were applied (Section 4): the M9 timings, 2b and 2d side by side, 2a at p = 30 rank deficient, and the 2f constants.
+
+**For your reply:**
+1. **M5 is judged on the stall levels, not on the errors** (Section 4, item 7). Section 5 asks for 1e-6 on both. The errors of a level differ from 1a's by up to 1.6e-4, and your reference script shows the same differences. Is the stall-level reading what you intend?
+2. **M3 is judged by the scaled identity against P·ε** (Section 4, item 6). Package 3's K4 reading, the plain relative difference at k = 1, reaches 1e-2 in item 2a at p = 30, from round-off in forming Aβ with coefficients near 6e9. Is the scaled reading acceptable for the paper's statement of the identity?
+3. **δ_P of item 2 holds to about three figures at P ≥ 484** (Section 4, item 4). Grace, the laptop and your file differ by up to 9e-4 at P = 676. The ratios to δ are given to three figures here. Should the manuscript quote them to three figures as well?
+4. **RELEASE.md:** per Section 7, the mapping of the new tables and figures waits for your list.
 
 ## 1. What ran
 
