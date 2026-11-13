@@ -52,8 +52,11 @@ def _run(args: list, cwd: Optional[Path] = None, timeout: float = 10.0) -> Optio
     all degrade to None rather than propagating.
     """
     try:
+        # UTF-8, not the locale's encoding: a diff with non-ASCII text
+        # otherwise fails to decode on Windows (cp1252) and stdout is None.
         result = subprocess.run(
             args, cwd=cwd, capture_output=True, text=True, timeout=timeout,
+            encoding="utf-8", errors="replace",
         )
     except (OSError, subprocess.TimeoutExpired):
         return None

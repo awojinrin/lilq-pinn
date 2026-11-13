@@ -17,6 +17,33 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-12 -- Package 4, item 1: Burgers on Gauss points (`experiments/p4_1_burgers_gauss.py`)
+
+The advisor's instructions of 12 November 2026, Section 3. The reference script `ref_burgers_enrichment.py` is the specification.
+
+**Construction.**
+- The trial space is the repository's `sin_cheb` (`Fourier1D(mode='sin')` on (-1, 1) times `Chebyshev1D` on (0, 1)), assembled in tensor form with x-major coefficients.
+- On the laptop (numpy 2.4.2, scipy 1.17.0), item 1a matches `expected_burgers.json` at every p: the same number of solves, and stall level, error and delta_P within 1e-11 relative (M1 at p = 10 and 22: within 2e-14 and 1e-11).
+- Item 1b matches the reference script's levels within 5e-10.
+
+**Check M3 (the identity of Remark 1) is judged by a scaled difference.**
+- The measure is ||(A beta - f) - N(beta)|| / || |A||beta| + |f| ||, at every iterate, against P eps. This is the scale at which the two vectors are formed (Section 4.1 of the manuscript).
+- Package 3's K4 reading, the plain relative difference at k = 1, is still recorded. At 1a's k = 1 it is at most 1e-15.
+- At the levels of 1b that start from an embedded iterate, the first iterate is already on the plateau. There ||N|| is about the stall level (down to 4e-6), and the plain relative difference reaches 1.8e-10 from cancellation alone. The scaled measure is at most 1.3e-16 everywhere.
+
+**Check M5 is judged on the stall levels.**
+- The stall levels of 1b's levels agree with 1a's within 3e-8. The errors of a level's returned iterate differ from 1a's by up to 2.3e-6 (variant E1) and 1.6e-4 (E2, p = 10).
+- The reason: a level returns a different step of the plateau than the single solve (E2: n_s = 1).
+- The reference script gives the same differences (its own enrichment against its own single solves), so the script decides. Section 3.3's "equal those of the single solves" holds to about 3 digits. Reported, not adjusted.
+
+**Timed region.**
+- A timing pass of 1a includes the construction of the level's collocation matrices, as 1b's must ("the assembly at each new level"), so that the comparison of 1b with 1a at the final P is like for like.
+- The timed run stops when the rule fires, and its number of solves is recorded and compared with the logged pass (M9).
+
+**`lilq/provenance._run` decodes subprocess output as UTF-8.** On Windows the locale's cp1252 failed on a git diff with non-ASCII text, which made `capture_git_info` raise (found when the documentation rewrite was uncommitted). This makes no difference on Grace; there is a test.
+
+---
+
 ## 2026-11-12 -- Documentation rewritten; release-time notes on the article moved here
 
 The README, `RELEASE.md` and `REPRODUCE.md` were rewritten to describe the code base, and they no longer track the article's status. The notes below were part of `RELEASE.md` at `v2.0.0`. They concern the article's text, not the code or the result files, so they are kept here unchanged. Their section, table and appendix numbers are those of the article version of 4 October 2026.

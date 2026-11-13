@@ -30,6 +30,14 @@ def test_run_returns_stdout_for_a_real_command():
     assert out == "hello"
 
 
+def test_run_decodes_utf8_output():
+    # A git diff with non-ASCII text used to fail to decode on Windows (the
+    # locale's cp1252), leaving stdout None.
+    out = provenance._run(["python", "-c",
+                           "import sys; sys.stdout.buffer.write('χ – é'.encode('utf-8'))"])
+    assert out == "χ – é"
+
+
 @requires_git_checkout
 def test_capture_git_info_reports_real_repo_state():
     info = provenance.capture_git_info()
