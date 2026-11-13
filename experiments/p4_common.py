@@ -112,6 +112,16 @@ def logged_run(rows, beta, run_dir, error_fn, k_max=K_MAX, stop_n_s=None, extra_
     return beta, k_s, float(solve_rows[i]['norm_Rlin_h']), float(solve_rows[i]['chi']), tracker, logger, max(scaled)
 
 
+def kappa_returned(solve_rows, k_s):
+    """kappa by SVD of the system assembled at the iterate the rule returns (k_s + 1): row k_s + 1
+    of a logged run's solve rows (Section 2.2). The ``*_at_rule`` columns are the system of the
+    step at which the rule fires (row k_s). NaN if the log ends at the rule."""
+    if k_s is None or k_s + 1 >= len(solve_rows):
+        return {'kappa_retained_returned': float('nan'), 'kappa_raw_returned': float('nan')}
+    r = solve_rows[k_s + 1]
+    return {'kappa_retained_returned': to_float(r['kappa_retained']), 'kappa_raw_returned': to_float(r['kappa_raw'])}
+
+
 def stall_class(row):
     """``C`` (conditioning-limited) or ``A`` at an ``iterations.csv`` row: the
     round-off comparison with kappa of the numerically nonsingular part, as

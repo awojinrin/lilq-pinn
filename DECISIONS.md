@@ -51,6 +51,11 @@ The p4 stage in `env.sh`, `sbatch.sh`, `submit_lib.sh` and `package2/stage_repor
 
 **Every logged run of item 2 saves `beta_returned.npy`**, the iterate the rule returns (the last one if it never fires), as Section 7 asks for 2a.
 
+**Review before the runs** (13 November; summaries and records only, no computed number changes).
+- **A check with no verdict is not a failure.** Without `expected_pb.json`, M6 has no verdict on the cluster (u\* and rho at the five points), and `checks.json` had read it as failed. It now records `pass: null` with a note, and the area's own verdict as `area_pass`. `collect` combines the items as: false if any part failed, null if any part has no verdict, true otherwise.
+- **kappa at the returned iterate.** Section 2.2 asks for kappa by SVD at the iterate the rule returns and at the last iterate. The `*_at_rule` columns of `terminal.csv` are the system of the step at which the rule fires (row k_s, as the reference scripts report the rank). `kappa_retained_returned` and `kappa_raw_returned` now add the system at the returned iterate (row k_s + 1). On the laptop rehearsal the two agree to the digits shown.
+- `lilq/provenance.py` and `tests/test_provenance.py` had been committed with CRLF line endings by the UTF-8 fix (35ce117); they are LF again. The bundle normalizes line endings, so no cluster file changed.
+
 ---
 
 ## 2026-11-12 -- Package 4, item 2: Poisson-Boltzmann around three inclusions (`problems/poisson_boltzmann.py`, `experiments/p4_2_pb_inclusions.py`)

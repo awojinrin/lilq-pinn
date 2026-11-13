@@ -84,8 +84,8 @@ import numpy as np
 import scipy
 import scipy.linalg as sla
 
-from experiments.p4_common import (K_MAX, N_S, iterate_to_rule, logged_run, m3_summary, read_csv, rel, stall_class,
-                                   timed, to_float, write_csv)
+from experiments.p4_common import (K_MAX, N_S, iterate_to_rule, kappa_returned, logged_run, m3_summary, read_csv, rel,
+                                   stall_class, timed, to_float, write_csv)
 from lilq.instrumentation import EPS_MACH, stall_rule_index
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
@@ -430,6 +430,7 @@ def run_row(run_dir, best):
                 'eL2_over_delta': to_float(e['eL2']) / best[0], 'eH2_over_delta': to_float(e['eH2']) / best[1],
                 'rank_gelsy': r['num_rank_gelsy'], 'rank_svd': r['num_rank_svd'],
                 'kappa_retained_at_rule': to_float(r['kappa_retained']), 'kappa_raw_at_rule': to_float(r['kappa_raw']),
+                **kappa_returned(solve, i),
                 'rank_gelsy_last': last['num_rank_gelsy'], 'rank_svd_last': last['num_rank_svd'],
                 'kappa_retained_last': to_float(last['kappa_retained']), 'kappa_raw_last': to_float(last['kappa_raw'])})
     t = Path(run_dir) / 'timing.json'
@@ -499,6 +500,10 @@ def summarize(out_root, expected=None):
         m6['u_rel_max'] = max(rel(float(pb.u_exact(x, y)), u) for x, y, u, _ in pts)
         m6['rho_rel_max'] = max(rel(float(pb.rho(x, y)), r) for x, y, _, r in pts)
         m6['pass'] = bool(m6['u_rel_max'] < 1e-12 and m6['rho_rel_max'] < 1e-12 and m6['area_rel_difference'] < 1e-3)
+    else:                                   # u* and rho at the five points need expected_pb.json: no verdict here
+        m6['area_pass'] = bool(m6['area_rel_difference'] < 1e-3)
+        m6['pass'] = None
+        m6['note'] = 'u* and rho at the five points of expected_pb.json are evaluated at the assembly'
     checks['M6'] = m6
     # M7
     if (root / 'check_M7.json').exists():

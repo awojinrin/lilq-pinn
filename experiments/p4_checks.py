@@ -72,6 +72,16 @@ def m0(out_root, package1):
             'threads': capture_blas_thread_env().get('OMP_NUM_THREADS'), 'commit': current_commit()}
 
 
+def combined_pass(verdicts):
+    """False if any part failed; None (not evaluated here) if any part has no verdict, as
+    M6 without the advisor's expected values; True otherwise."""
+    if any(v is False for v in verdicts):
+        return False
+    if not verdicts or any(v is None for v in verdicts):
+        return None
+    return True
+
+
 def collect(out_root):
     root = Path(out_root)
     out = {}
@@ -89,7 +99,7 @@ def collect(out_root):
             out.setdefault(key, {})[item] = v
     for key, v in list(out.items()):                   # a check over both items passes if each item's does
         if key != 'M0':
-            v['pass'] = all(x.get('pass') for x in v.values() if isinstance(x, dict))
+            v['pass'] = combined_pass([x.get('pass') for x in v.values() if isinstance(x, dict)])
     summary = {k: (v.get('pass') if isinstance(v, dict) else None) for k, v in out.items()}
     (root / 'checks.json').write_text(json.dumps({'summary': summary, 'checks': out}, indent=2, default=str))
     return summary

@@ -84,8 +84,8 @@ if _proj not in sys.path:
 import lilq.blas_threads  # noqa: F401  (must import before numpy)
 import numpy as np
 
-from experiments.p4_common import (K_MAX, N_S, iterate_to_rule, logged_run, m3_summary, read_csv, rel,
-                                   stall_class, timed, to_float, write_csv)
+from experiments.p4_common import (K_MAX, N_S, iterate_to_rule, kappa_returned, logged_run, m3_summary, read_csv,
+                                   rel, stall_class, timed, to_float, write_csv)
 from lilq.basis import Chebyshev1D, Fourier1D
 from lilq.instrumentation import EPS_MACH, stall_rule_index
 from lilq.provenance import capture_blas_thread_env
@@ -442,6 +442,7 @@ def terminal_row(run_dir, delta):
                 'chi_at_rule': to_float(r['chi']), 'norm_N_returned': to_float(ret['norm_R_h']), 'error': err,
                 'error_over_delta_P': err / delta, 'rank_gelsy': r['num_rank_gelsy'], 'rank_svd': r['num_rank_svd'],
                 'kappa_retained_at_rule': kr, 'kappa_raw_at_rule': to_float(r['kappa_raw']),
+                **kappa_returned(solve, k_s),
                 'kappa_retained_last': to_float(last['kappa_retained']), 'kappa_raw_last': to_float(last['kappa_raw']),
                 'rank_gelsy_last': last['num_rank_gelsy'], 'rank_svd_last': last['num_rank_svd'],
                 'solves_to_stop': k_s + 1, 'timing_matches_logged': (t.get('solves') == [k_s + 1]) if t else None,

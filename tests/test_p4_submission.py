@@ -181,3 +181,31 @@ def test_until_end_stops_a_run_before_the_walltime(tmp_path):
     script = f'set -euo pipefail\nLILQ_WALL_S=302\n{until_end}\n( until_end sleep 30 )\necho went-on\n'
     out = subprocess.run(['bash', '-c', script], capture_output=True, text=True, timeout=20)
     assert out.returncode == 0 and 'STOPPED OR FAILED (exit 124): sleep 30' in out.stdout and 'went-on' in out.stdout
+
+
+# ---------------------------------------------------------------- the report's checks.json
+
+def test_checks_json_marks_checks_not_evaluated_on_the_cluster(tmp_path):
+    """M6 needs the advisor's expected values, which the cluster does not have: no verdict there,
+    never a false failure; a failed part fails the check."""
+    import json
+    sys.path.insert(0, str(REPO))
+    from experiments import p4_checks
+    assert p4_checks.combined_pass([True, True]) is True
+    assert p4_checks.combined_pass([True, None]) is None and p4_checks.combined_pass([]) is None
+    assert p4_checks.combined_pass([None, False]) is False
+    (tmp_path / 'P4_2_pb_inclusions').mkdir()
+    (tmp_path / 'checks_item1.json').write_text(json.dumps({'M3': {'pass': True}, 'M9_item1': {'pass': True}}))
+    (tmp_path / 'P4_2_pb_inclusions' / 'checks_item2.json').write_text(json.dumps(
+        {'M3': {'pass': True}, 'M6': {'pass': None, 'area_pass': True}, 'M9_item2': {'pass': False}}))
+    summary = p4_checks.collect(tmp_path)
+    assert summary == {'M3': True, 'M9': False, 'M6': None}
+
+
+def test_kappa_at_the_returned_iterate_is_the_next_solve_row():
+    sys.path.insert(0, str(REPO))
+    from experiments.p4_common import kappa_returned
+    rows = [{'kappa_retained': str(10.0 * k), 'kappa_raw': str(20.0 * k)} for k in range(5)]
+    assert kappa_returned(rows, 2) == {'kappa_retained_returned': 30.0, 'kappa_raw_returned': 60.0}
+    assert all(v != v for v in kappa_returned(rows, 4).values())                 # the log ends at the rule: NaN
+    assert all(v != v for v in kappa_returned(rows, None).values())
