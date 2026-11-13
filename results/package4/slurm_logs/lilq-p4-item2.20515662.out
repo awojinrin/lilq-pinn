@@ -1,0 +1,99 @@
+provenance lock OK: commit 8a1e849b5c8c, tree f0be57564a07
+job 20515662 on c204: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p10_seed0
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p10_seed1
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p10_seed2
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p14_seed0
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p14_seed1
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p14_seed2
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p18_seed0
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p18_seed1
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p18_seed2
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p22_seed0
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p22_seed1
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p22_seed2
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p26_seed0
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p26_seed1
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p26_seed2
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p30_seed0
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p30_seed1
+2a $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/lilq/p30_seed2
+2b {'p': 10, 'P': 100, 'seed': 0, 'points': 'scattered', 'N': 100, 'status': 'budget', 'steps': 30, 'eL2': 37.206581606088825, 'eH2': 610.3267423731852, 'time_s': 0.08618168346583843}
+2b {'p': 10, 'P': 100, 'seed': 1, 'points': 'scattered', 'N': 100, 'status': 'diverged', 'steps': 27, 'eL2': 4136.238544694841, 'eH2': 90568.68803813582, 'time_s': 0.009329771623015404}
+2b {'p': 10, 'P': 100, 'seed': 2, 'points': 'scattered', 'N': 100, 'status': 'budget', 'steps': 30, 'eL2': 34.37012004131019, 'eH2': 748.5465945041193, 'time_s': 0.009736848995089531}
+2b {'p': 10, 'P': 100, 'seed': 0, 'points': 'fekete', 'N': 100, 'status': 'converged', 'steps': 6, 'eL2': 0.9525972022781045, 'eH2': 6.364963956686962, 'time_s': 0.0025008711963891983}
+2b {'p': 10, 'P': 100, 'seed': 1, 'points': 'fekete', 'N': 100, 'status': 'converged', 'steps': 20, 'eL2': 1.120538225112017, 'eH2': 18.295811908679433, 'time_s': 0.007042106240987778}
+2b {'p': 10, 'P': 100, 'seed': 2, 'points': 'fekete', 'N': 100, 'status': 'budget', 'steps': 30, 'eL2': 179.38739214053933, 'eH2': 3078.4065446499685, 'time_s': 0.010063022375106812}
+2b {'p': 14, 'P': 196, 'seed': 0, 'points': 'scattered', 'N': 196, 'status': 'diverged', 'steps': 5, 'eL2': 197012.04682558757, 'eH2': 9812391.797584195, 'time_s': 0.007062513381242752}
+2b {'p': 14, 'P': 196, 'seed': 1, 'points': 'scattered', 'N': 196, 'status': 'diverged', 'steps': 5, 'eL2': 6629.629987490779, 'eH2': 452623.3988125288, 'time_s': 0.007181460037827492}
+2b {'p': 14, 'P': 196, 'seed': 2, 'points': 'scattered', 'N': 196, 'status': 'diverged', 'steps': 5, 'eL2': 48178.748511260164, 'eH2': 2589278.4960384523, 'time_s': 0.023789621889591217}
+2b {'p': 14, 'P': 196, 'seed': 0, 'points': 'fekete', 'N': 196, 'status': 'diverged', 'steps': 24, 'eL2': 195.43702609202717, 'eH2': 21363.07918257001, 'time_s': 0.030918948352336884}
+2b {'p': 14, 'P': 196, 'seed': 1, 'points': 'fekete', 'N': 196, 'status': 'diverged', 'steps': 4, 'eL2': 45.115543485964295, 'eH2': 5405.0219735886485, 'time_s': 0.00586731918156147}
+2b {'p': 14, 'P': 196, 'seed': 2, 'points': 'fekete', 'N': 196, 'status': 'diverged', 'steps': 6, 'eL2': 65.00827839251615, 'eH2': 9928.310318174883, 'time_s': 0.008203951641917229}
+2b {'p': 18, 'P': 324, 'seed': 0, 'points': 'scattered', 'N': 324, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.004465604200959206}
+2b {'p': 18, 'P': 324, 'seed': 1, 'points': 'scattered', 'N': 324, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.00316685251891613}
+2b {'p': 18, 'P': 324, 'seed': 2, 'points': 'scattered', 'N': 324, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.00296638160943985}
+2b {'p': 18, 'P': 324, 'seed': 0, 'points': 'fekete', 'N': 324, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.0030244290828704834}
+2b {'p': 18, 'P': 324, 'seed': 1, 'points': 'fekete', 'N': 324, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.003177732229232788}
+2b {'p': 18, 'P': 324, 'seed': 2, 'points': 'fekete', 'N': 324, 'status': 'diverged', 'steps': 5, 'eL2': 69.8153296410154, 'eH2': 24097.307139037013, 'time_s': 0.01698794960975647}
+2b {'p': 22, 'P': 484, 'seed': 0, 'points': 'scattered', 'N': 484, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.005908515304327011}
+2b {'p': 22, 'P': 484, 'seed': 1, 'points': 'scattered', 'N': 484, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.005566021427512169}
+2b {'p': 22, 'P': 484, 'seed': 2, 'points': 'scattered', 'N': 484, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.005791252478957176}
+2b {'p': 22, 'P': 484, 'seed': 0, 'points': 'fekete', 'N': 484, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.0057475026696920395}
+2b {'p': 22, 'P': 484, 'seed': 1, 'points': 'fekete', 'N': 484, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.005256159231066704}
+2b {'p': 22, 'P': 484, 'seed': 2, 'points': 'fekete', 'N': 484, 'status': 'diverged', 'steps': 1, 'eL2': 10.17988346963727, 'eH2': 449.1732833898534, 'time_s': 0.01154005154967308}
+2b {'p': 26, 'P': 676, 'seed': 0, 'points': 'scattered', 'N': 676, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.010920798406004906}
+2b {'p': 26, 'P': 676, 'seed': 1, 'points': 'scattered', 'N': 676, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.010323058813810349}
+2b {'p': 26, 'P': 676, 'seed': 2, 'points': 'scattered', 'N': 676, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.012658772990107536}
+2b {'p': 26, 'P': 676, 'seed': 0, 'points': 'fekete', 'N': 676, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.010604817420244217}
+2b {'p': 26, 'P': 676, 'seed': 1, 'points': 'fekete', 'N': 676, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.010512471199035645}
+2b {'p': 26, 'P': 676, 'seed': 2, 'points': 'fekete', 'N': 676, 'status': 'diverged', 'steps': 0, 'eL2': 1.0, 'eH2': 1.0, 'time_s': 0.01891786977648735}
+2c {'p': 10, 'P': 100, 'seed': 0, 'points': 'scattered', 'N': 50, 'status': 'budget', 'steps': 30, 'eL2': 1.5252159576454332, 'eH2': 6.419896815142206, 'time_s': 0.0581799540668726}
+2c {'p': 10, 'P': 100, 'seed': 1, 'points': 'scattered', 'N': 50, 'status': 'converged', 'steps': 6, 'eL2': 0.8095201883240153, 'eH2': 7.102556609963796, 'time_s': 0.005689902231097221}
+2c {'p': 10, 'P': 100, 'seed': 2, 'points': 'scattered', 'N': 50, 'status': 'converged', 'steps': 8, 'eL2': 0.7554472827163035, 'eH2': 3.4395302031001505, 'time_s': 0.007447315379977226}
+2c {'p': 14, 'P': 196, 'seed': 0, 'points': 'scattered', 'N': 98, 'status': 'converged', 'steps': 6, 'eL2': 0.15145748208500917, 'eH2': 2.4617350715527095, 'time_s': 0.027503272518515587}
+2c {'p': 14, 'P': 196, 'seed': 1, 'points': 'scattered', 'N': 98, 'status': 'converged', 'steps': 7, 'eL2': 0.2061313803770368, 'eH2': 1.5571337555127371, 'time_s': 0.03251257538795471}
+2c {'p': 14, 'P': 196, 'seed': 2, 'points': 'scattered', 'N': 98, 'status': 'converged', 'steps': 6, 'eL2': 0.14330392955531074, 'eH2': 1.58729482041557, 'time_s': 0.027688998728990555}
+2c {'p': 18, 'P': 324, 'seed': 0, 'points': 'scattered', 'N': 162, 'status': 'converged', 'steps': 6, 'eL2': 0.043270497577223954, 'eH2': 0.6695874488285483, 'time_s': 0.06057620979845524}
+2c {'p': 18, 'P': 324, 'seed': 1, 'points': 'scattered', 'N': 162, 'status': 'converged', 'steps': 6, 'eL2': 0.041829797367303, 'eH2': 0.7872995369087844, 'time_s': 0.05973590910434723}
+2c {'p': 18, 'P': 324, 'seed': 2, 'points': 'scattered', 'N': 162, 'status': 'converged', 'steps': 6, 'eL2': 0.038134247612622296, 'eH2': 0.44885532788163424, 'time_s': 0.05927671305835247}
+2c {'p': 22, 'P': 484, 'seed': 0, 'points': 'scattered', 'N': 242, 'status': 'converged', 'steps': 8, 'eL2': 0.016803075061647455, 'eH2': 0.3283665860123291, 'time_s': 0.16312041506171227}
+2c {'p': 22, 'P': 484, 'seed': 1, 'points': 'scattered', 'N': 242, 'status': 'converged', 'steps': 8, 'eL2': 0.012752020620841084, 'eH2': 0.33028102255106545, 'time_s': 0.1646048855036497}
+2c {'p': 22, 'P': 484, 'seed': 2, 'points': 'scattered', 'N': 242, 'status': 'converged', 'steps': 7, 'eL2': 0.01350061778497759, 'eH2': 0.27832966509364504, 'time_s': 0.14190416410565376}
+2c {'p': 26, 'P': 676, 'seed': 0, 'points': 'scattered', 'N': 338, 'status': 'converged', 'steps': 9, 'eL2': 0.006602505997632301, 'eH2': 0.26629303059589593, 'time_s': 0.3291786164045334}
+2c {'p': 26, 'P': 676, 'seed': 1, 'points': 'scattered', 'N': 338, 'status': 'converged', 'steps': 12, 'eL2': 0.007141504618374015, 'eH2': 0.23346714639876823, 'time_s': 0.4581401441246271}
+2c {'p': 26, 'P': 676, 'seed': 2, 'points': 'scattered', 'N': 338, 'status': 'converged', 'steps': 7, 'eL2': 0.006770364580726277, 'eH2': 0.2121692111517652, 'time_s': 0.256478363648057}
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio1.5
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio2
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio3
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio4
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio6
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio8
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio12
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p14_ratio16
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio1.5
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio2
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio3
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio4
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio6
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio8
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio12
+2d $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/rows_per_unknown/p22_ratio16
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p14_lam1
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p14_lam10
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p14_lam100
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p14_lam1000
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p14_lam10000
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p18_lam1
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p18_lam10
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p18_lam100
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p18_lam1000
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p18_lam10000
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p22_lam1
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p22_lam10
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p22_lam100
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p22_lam1000
+2e $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/boundary_weight/p22_lam10000
+{'70x420': {'eL2': 1.8855107258861855e-05, 'eH2': 0.0007538072537931851, 'delta_L2': 5.9980400591747045e-06, 'delta_H2': 0.0003251370850791495}, '140x840': {'eL2': 1.894773389441125e-05, 'eH2': 0.000753349884645217, 'delta_L2': 6.01893461386384e-06, 'delta_H2': 0.000325815568082002}, 'relative_change': {'eL2': 0.00491254885361947, 'eH2': 0.0006067454852239677, 'delta_L2': 0.0034835637113117936, 'delta_H2': 0.002086759812979603}, 'pass': True}
+None

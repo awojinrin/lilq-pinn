@@ -1,0 +1,20 @@
+Package 4 assembly, 2026-11-13T08:32:11.455188+00:00
+from package4 (runs at 8a1e849), assembled at e949cc9
+copied P4_1a_burgers_gauss/
+copied P4_1b_burgers_enrichment/
+copied P4_1c_burgers_constants/
+copied P4_2_pb_inclusions/
+copied P4_checks/
+copied provenance/
+copied slurm_logs/
+copied COMMIT
+copied sacct.txt
+copied su_per_job.csv
+copied report_log.txt
+kept checks.json as checks_grace.json
+kept checks_item1.json as checks_item1_grace.json
+kept P4_2_pb_inclusions/checks_item2.json as P4_2_pb_inclusions/checks_item2_grace.json
+tables: rewritten from Grace's logs; every column but delta_P's within 0e+00 relative of Grace's (198 CSVs; Grace's kept); delta_P's columns differ by up to 1.4e-03 (delta_P_across_machines.json)
+checks.json: M0 passed, M1 passed, M2 passed, M3 passed, M4 passed, M5 passed, M6 passed, M7 passed, M8 passed, M9 FAILED (Grace's: M0 True, M2 True, M3 True, M4 True, M5 True, M9 False, M6 None, M7 True)
+su.csv: 6 jobs, 36.0 SU charged at Grace's rates
+provenance.json: 1 commit(s) between the runs and the assembly

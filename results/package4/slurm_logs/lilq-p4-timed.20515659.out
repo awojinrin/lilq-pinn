@@ -1,0 +1,36 @@
+provenance lock OK: commit 8a1e849b5c8c, tree f0be57564a07
+job 20515659 on c098: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+$SCRATCH/lilq-run/lilq-pinn/results/package4/provenance/timed
+  burgers_P625_cpu_paper: identical (5 rows; package1 5)
+  bratu_P225_cpu_paper: identical (5 rows; package1 5)
+M0 passed
+1a p=6: median 0.006098 s, solves [5]
+1a p=10: median 0.05094 s, solves [5]
+1a p=14: median 0.1917 s, solves [5]
+1a p=18: median 0.4514 s, solves [6]
+1a p=22: median 0.8114 s, solves [6]
+1a p=26: median 1.453 s, solves [6]
+1a p=30: median 2.848 s, solves [6]
+1b E1 tol=0.001: median 0.8337 s, solves [18]
+1b E1 tol=1e-05: median 2.946 s, solves [24]
+1b E2 tol=0.001: median 0.5917 s, solves [14]
+1b E2 tol=1e-05: median 2.107 s, solves [18]
+timing p=10 seed=0: median 0.03059 s, solves [3]
+timing p=10 seed=1: median 0.03057 s, solves [3]
+timing p=10 seed=2: median 0.03043 s, solves [3]
+timing p=14 seed=0: median 0.1441 s, solves [4]
+timing p=14 seed=1: median 0.144 s, solves [4]
+timing p=14 seed=2: median 0.1459 s, solves [4]
+timing p=18 seed=0: median 0.2891 s, solves [4]
+timing p=18 seed=1: median 0.2886 s, solves [4]
+timing p=18 seed=2: median 0.2899 s, solves [4]
+timing p=22 seed=0: median 0.7384 s, solves [5]
+timing p=22 seed=1: median 0.7659 s, solves [5]
+timing p=22 seed=2: median 0.7367 s, solves [5]
+timing p=26 seed=0: median 1.394 s, solves [5]
+timing p=26 seed=1: median 1.379 s, solves [5]
+timing p=26 seed=2: median 1.37 s, solves [5]
+timing p=30 seed=0: median 2.7 s, solves [5]
+timing p=30 seed=1: median 2.671 s, solves [5]
+timing p=30 seed=2: median 2.667 s, solves [5]

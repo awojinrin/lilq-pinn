@@ -1,0 +1,62 @@
+{
+  "N_total": 4422,
+  "N_composition": {
+    "interior": 4356,
+    "initial": 66
+  },
+  "P_total": 484,
+  "P_composition": {
+    "u": 484
+  },
+  "row_weights": "Eq. (2) of the manuscript: each component has normalized measure and its own lambda. Interior: tensor Gauss-Legendre weights normalized to sum 1, lambda = 1. Initial rows: lambda_0 = 10 times the x Gauss weights normalized to sum 1. Packages 2 and 3 instead carried the factor |block|/|dOmega|.",
+  "collocation_construction": {
+    "method": "tensor Gauss-Legendre",
+    "points_per_direction": 66,
+    "x_interval": [
+      -1.0,
+      1.0
+    ],
+    "t_interval": [
+      0.0,
+      1.0
+    ],
+    "lambda_interior": 1.0,
+    "lambda_initial": 10.0
+  },
+  "basis_description": {
+    "family": "sin(n pi (x + 1)/2), n = 1..p, times T_j(2t - 1), j < p (sin_cheb)",
+    "modes_per_direction": 22,
+    "ordering": "x-major: beta.reshape(p, p)[n, j]"
+  },
+  "initial_coefficients": "the previous level's returned iterate, embedded (zero padding)",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "termination rule",
+    "tau_chi": 0.1,
+    "tau_r": 0.01,
+    "n_s": 2
+  },
+  "K_max": 60,
+  "stopping_reason": "rule",
+  "first_stall_iteration": 1,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 3.288970333826058e-12,
+    "max_rel_err_over_run": 3.288970333826058e-12
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package4": {
+    "item": "1b",
+    "variant": "E1",
+    "tolerance": 0.001,
+    "level": 4,
+    "p": 22,
+    "n_s": 2,
+    "identity_scaled_max": 9.474379621638622e-17
+  },
+  "commit": "8a1e849b5c8c79afd6601a1f3566ac4efcd905fe"
+}

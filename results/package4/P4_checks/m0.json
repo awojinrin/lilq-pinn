@@ -1,0 +1,24 @@
+{
+  "check": "M0",
+  "runs": {
+    "burgers_P625_cpu_paper": {
+      "rows_here": 5,
+      "rows_package1": 5,
+      "differences": [],
+      "passed": true,
+      "seconds": 9.621333085000515,
+      "package1": "$SCRATCH/lilq-run/lilq-pinn/results/package1_v2.0.0/package1/B_instrumentation/burgers_P625_cpu_paper/iterations.csv"
+    },
+    "bratu_P225_cpu_paper": {
+      "rows_here": 5,
+      "rows_package1": 5,
+      "differences": [],
+      "passed": true,
+      "seconds": 0.5084553137421608,
+      "package1": "$SCRATCH/lilq-run/lilq-pinn/results/package1_v2.0.0/package1/B_instrumentation/bratu_P225_cpu_paper/iterations.csv"
+    }
+  },
+  "pass": true,
+  "threads": "48",
+  "commit": "8a1e849b5c8c79afd6601a1f3566ac4efcd905fe"
+}

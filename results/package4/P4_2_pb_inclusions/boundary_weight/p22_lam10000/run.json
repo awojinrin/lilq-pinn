@@ -1,0 +1,53 @@
+{
+  "N_total": 4136,
+  "N_composition": {
+    "interior": 3872,
+    "boundary": 264
+  },
+  "P_total": 484,
+  "P_composition": {
+    "u": 484
+  },
+  "row_weights": "interior: equal, squared weights summing to 1; boundary: lambda_d = 10000 times arc length per point / total length (Section 4.1)",
+  "collocation_construction": {
+    "interior": "first 3872 scrambled Halton points in Omega (scipy.stats.qmc.Halton, seed 0; drawn with scipy 1.17.0 and shipped)",
+    "boundary": "264 points on the four curves (boundary(12p))",
+    "interior_points_per_unknown": 8
+  },
+  "basis_description": {
+    "family": "T_i(x/1.32) T_j(y/1.32), i, j < p",
+    "modes_per_direction": 22,
+    "ordering": "x-major"
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the rule (tau_chi 0.1, tau_r 0.01, n_s 2) is read from the log"
+  },
+  "K_max": 30,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 2,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 4.174888995575774e-05,
+    "max_rel_err_over_run": 6.984196289904436e-05
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package4": {
+    "item": "2e",
+    "p": 22,
+    "seed": 0,
+    "lambda_boundary": 10000.0,
+    "interior_points_per_unknown": 8,
+    "kappa2": 4.0,
+    "rule_fires_at_step": 3,
+    "identity_scaled_max": 4.230436048069988e-17,
+    "quadrature": "70 x 420 polar Gauss",
+    "wall_time_s": 6.987052382901311
+  },
+  "commit": "8a1e849b5c8c79afd6601a1f3566ac4efcd905fe"
+}

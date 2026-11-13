@@ -1,0 +1,20 @@
+{
+  "runs": {
+    "commit": "8a1e849b5c8c79afd6601a1f3566ac4efcd905fe",
+    "tree_hash": "f0be57564a074328dd17ff0f3769d22a2c58eb6f81732337c4d84240c59a21b0",
+    "source": "bundle",
+    "locked_at_utc": "2026-11-13T06:25:02.345782+00:00"
+  },
+  "assembly": {
+    "commit": "e949cc95aec2e603dfa08bc9ae8fd1c0a2058ee9",
+    "branch": "v3-dev"
+  },
+  "commits_between": [
+    "e949cc9 Package 4 assembly: shared assembly helpers, p4_assemble, the delta_P record"
+  ],
+  "advisor_files": {
+    "expected_burgers.json": "5c511a2c0b340941981d96f902fbfbed73263c00b526f3a89f37a955ce7bdab8",
+    "expected_pb.json": "8c85f3df8817fec8da5201051c092848ca744c7593aa739c51df5eed6dd7927f"
+  },
+  "note": "Every run, table and log is Grace's, at the runs' commit. checks.json and the two items' checks files are re-evaluated at the assembly on Grace's files, with the advisor's expected values (M1, M6, M8); Grace's are kept as *_grace.json."
+}

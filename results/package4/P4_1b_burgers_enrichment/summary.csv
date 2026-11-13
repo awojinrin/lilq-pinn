@@ -1,0 +1,5 @@
+variant,tolerance,final_p,final_P,levels,total_solves,status,median_time_s,timed_solves,single_solve_time_at_final_P_s
+E1,0.001,22,484,5,18,tolerance met,0.8337440602481365,[18],0.811436777934432
+E1,1e-05,30,900,7,24,tolerance met,2.9459621030837297,[24],2.847783640027046
+E2,0.001,22,484,5,14,tolerance met,0.5917206965386868,[14],0.811436777934432
+E2,1e-05,30,900,7,18,tolerance met,2.1072085835039616,[18],2.847783640027046

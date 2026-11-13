@@ -1,0 +1,57 @@
+provenance lock OK: commit 8a1e849b5c8c, tree f0be57564a07
+job 20515658 on c165: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+numpy 1.26.4 scipy 1.13.1
+inputs OK (6 files)
+.................................................s...................... [  8%]
+.......................................s.............................ss. [ 17%]
+...........................................s....................s.....s. [ 25%]
+........................................................................ [ 34%]
+....sssss.ssss.......................................................... [ 42%]
+..................s..................................................... [ 51%]
+...............................s.s...s.....s..sss.s.........ssss........ [ 60%]
+........................................................................ [ 68%]
+.....................................................s..s............... [ 77%]
+........................................................................ [ 85%]
+........................................................................ [ 94%]
+..............................................                           [100%]
+=============================== warnings summary ===============================
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[bratu]
+tests/test_p2s2_lm_networks.py::test_run_records_c3_and_the_log[burgers]
+  $SCRATCH/lilq-run/lilq-pinn/experiments/p2_8_lm_networks.py:643: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+    axes[0, 0].legend(fontsize=7)
+
+tests/test_saved_models.py::test_f1_and_f2_models_reload
+  $SCRATCH/lilq-run/lilq-pinn/baselines/f1_pinn.py:330: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+  Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+    value = float(loss)
+
+tests/test_saved_models.py: 18 warnings
+  $SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/jit/_script.py:1480: DeprecationWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+807 passed, 31 skipped, 21 warnings in 432.33s (0:07:12)
+$SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/points
+{
+ "scipy_here": "1.13.1",
+ "scipy_shipped": "1.17.0",
+ "seeds": [
+  {
+   "seed": 0,
+   "identical": true,
+   "max_abs_difference": 0.0
+  },
+  {
+   "seed": 1,
+   "identical": true,
+   "max_abs_difference": 0.0
+  },
+  {
+   "seed": 2,
+   "identical": true,
+   "max_abs_difference": 0.0
+  }
+ ]
+}
+PREFLIGHT OK

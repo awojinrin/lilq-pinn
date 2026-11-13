@@ -1,0 +1,36 @@
+{
+  "warmup_s": 2.1027623675763607,
+  "warmup_solves": 18,
+  "timings": [
+    {
+      "time_s": 2.1209513563662767,
+      "runs_s": [
+        2.1209513563662767
+      ]
+    },
+    {
+      "time_s": 2.1072085835039616,
+      "runs_s": [
+        2.1072085835039616
+      ]
+    },
+    {
+      "time_s": 2.105446267873049,
+      "runs_s": [
+        2.105446267873049
+      ]
+    }
+  ],
+  "median_s": 2.1072085835039616,
+  "spread": 0.007364276509840062,
+  "solves": [
+    18
+  ],
+  "variant": "E2",
+  "tolerance": 1e-05,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  }
+}

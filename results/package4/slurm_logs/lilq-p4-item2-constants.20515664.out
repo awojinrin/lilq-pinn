@@ -1,0 +1,24 @@
+provenance lock OK: commit 8a1e849b5c8c, tree f0be57564a07
+job 20515664 on c204: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p10_seed2
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p10_seed1
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p10_seed0
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p14_seed2
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p14_seed1
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p14_seed0
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p18_seed2
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p18_seed1
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p18_seed0
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p22_seed2
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p22_seed0
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p22_seed1
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p26_seed2
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p26_seed0
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p26_seed1
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p22_ratio1.5
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p22_ratio16
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p30_seed0
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p30_seed1
+2f $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_2_pb_inclusions/constants/p30_seed2
+ITEM 2F DONE

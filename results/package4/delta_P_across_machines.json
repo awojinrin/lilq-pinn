@@ -1,0 +1,109 @@
+{
+  "note": "delta_P is the error of the best approximation in the basis, a least-squares projection (gelsy, rcond = eps). Item 2's basis on the domain with holes is ill-conditioned, and at P >= 484 the projection's round-off reaches the fourth digit: Grace, the assembly's machine and the advisor's expected_pb.json give three values. The tables are Grace's; this records the spread.",
+  "item2_by_P": {
+    "100": {
+      "grace": {
+        "delta_L2": 0.021573364122635295,
+        "delta_H2": 0.2555315844564351
+      },
+      "assembly_machine": {
+        "delta_L2": 0.021573364122635007,
+        "delta_H2": 0.255531584456434
+      },
+      "advisor": {
+        "delta_L2": 0.021573364122634883,
+        "delta_H2": 0.25553158445643487
+      },
+      "delta_L2_spread": 1.9137682233310146e-14,
+      "delta_H2_spread": 4.3447585040683705e-15
+    },
+    "196": {
+      "grace": {
+        "delta_L2": 0.0018485616383413853,
+        "delta_H2": 0.040691195901011175
+      },
+      "assembly_machine": {
+        "delta_L2": 0.0018485616383178507,
+        "delta_H2": 0.040691195901030416
+      },
+      "advisor": {
+        "delta_L2": 0.001848561638314118,
+        "delta_H2": 0.040691195901049346
+      },
+      "delta_L2_spread": 1.475052299690103e-11,
+      "delta_H2_spread": 9.380617728279919e-13
+    },
+    "324": {
+      "grace": {
+        "delta_L2": 0.00012964744236793703,
+        "delta_H2": 0.00452750423454266
+      },
+      "assembly_machine": {
+        "delta_L2": 0.0001296474414948735,
+        "delta_H2": 0.004527504234401447
+      },
+      "advisor": {
+        "delta_L2": 0.00012964744573934348,
+        "delta_H2": 0.004527504233767324
+      },
+      "delta_L2_spread": 3.273855568449344e-08,
+      "delta_H2_spread": 1.7125028542848088e-10
+    },
+    "484": {
+      "grace": {
+        "delta_L2": 5.9980400591747045e-06,
+        "delta_H2": 0.0003251370850791495
+      },
+      "assembly_machine": {
+        "delta_L2": 5.9985588808082706e-06,
+        "delta_H2": 0.00032513716471032597
+      },
+      "advisor": {
+        "delta_L2": 5.9982135349065054e-06,
+        "delta_H2": 0.0003251371714350084
+      },
+      "delta_L2_spread": 8.649852759360174e-05,
+      "delta_H2_spread": 2.655983057480111e-07
+    },
+    "676": {
+      "grace": {
+        "delta_L2": 1.5631795243028193e-07,
+        "delta_H2": 1.355689781474925e-05
+      },
+      "assembly_machine": {
+        "delta_L2": 1.5618017643371254e-07,
+        "delta_H2": 1.3556951791944721e-05
+      },
+      "advisor": {
+        "delta_L2": 1.5628688261422766e-07,
+        "delta_H2": 1.3556891010639709e-05
+      },
+      "delta_L2_spread": 0.000882160589874004,
+      "delta_H2_spread": 4.483425068828469e-06
+    },
+    "900": {
+      "grace": {
+        "delta_L2": 2.412936826725848e-09,
+        "delta_H2": 3.284014132199523e-07
+      },
+      "assembly_machine": {
+        "delta_L2": 2.4095381463777316e-09,
+        "delta_H2": 3.2842931005937994e-07
+      },
+      "delta_L2_spread": 0.0014105111194134257,
+      "delta_H2_spread": 8.494737934924151e-05
+    }
+  },
+  "largest_relative_difference_grace_vs_assembly": {
+    "P4_1a_burgers_gauss/terminal.csv delta_P": 3.6641758461177906e-11,
+    "P4_1a_burgers_gauss/terminal.csv error_over_delta_P": 3.6641738012541115e-11,
+    "P4_2_pb_inclusions/boundary_weight.csv eH2_over_delta": 2.449156392199679e-07,
+    "P4_2_pb_inclusions/boundary_weight.csv eL2_over_delta": 8.649104624555018e-05,
+    "P4_2_pb_inclusions/rows_per_unknown.csv eH2_over_delta": 2.449156392199679e-07,
+    "P4_2_pb_inclusions/rows_per_unknown.csv eL2_over_delta": 8.649104624554736e-05,
+    "lilq/terminal.csv delta_H2": 8.49401639049163e-05,
+    "lilq/terminal.csv delta_L2": 0.001408524380113311,
+    "lilq/terminal.csv eH2_over_delta": 8.49401639049742e-05,
+    "lilq/terminal.csv eL2_over_delta": 0.0014085243801133305
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "package4": {
+    "item": "1b",
+    "variant": "E2",
+    "n_s_after_embedding": 1,
+    "tolerance": 0.001,
+    "status": "tolerance met",
+    "levels": 5,
+    "final_p": 22,
+    "total_solves": 14,
+    "check_M4": [
+      {
+        "level": 1,
+        "p_from": 6,
+        "p_to": 10,
+        "max_abs_difference": 1.1102230246251565e-16
+      },
+      {
+        "level": 2,
+        "p_from": 10,
+        "p_to": 14,
+        "max_abs_difference": 1.1102230246251565e-16
+      },
+      {
+        "level": 3,
+        "p_from": 14,
+        "p_to": 18,
+        "max_abs_difference": 1.1102230246251565e-16
+      },
+      {
+        "level": 4,
+        "p_from": 18,
+        "p_to": 22,
+        "max_abs_difference": 1.1102230246251565e-16
+      }
+    ]
+  },
+  "commit": "8a1e849b5c8c79afd6601a1f3566ac4efcd905fe"
+}

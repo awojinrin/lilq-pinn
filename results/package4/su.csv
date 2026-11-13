@@ -1,0 +1,7 @@
+job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
+20515658,lilq-p4-preflight,"billing=24,cpu=24,mem=32G,node=1",0.1758,COMPLETED,24,4.2,
+20515659,lilq-p4-timed,"billing=48,cpu=48,mem=360G,node=1",0.0972,COMPLETED,48,4.7,
+20515660,lilq-p4-item1,"billing=24,cpu=24,mem=32G,node=1",0.2894,COMPLETED,24,6.9,
+20515662,lilq-p4-item2,"billing=24,cpu=24,mem=32G,node=1",0.26,COMPLETED,24,6.2,
+20515664,lilq-p4-item2-constants,"billing=24,cpu=24,mem=32G,node=1",0.5228,COMPLETED,24,12.5,
+20515667,lilq-p4-report,"billing=24,cpu=24,mem=32G,node=1",0.0614,COMPLETED,24,1.5,not in the last tarball: from sacct after it ended

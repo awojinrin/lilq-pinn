@@ -1,0 +1,21 @@
+{
+  "scipy_here": "1.13.1",
+  "scipy_shipped": "1.17.0",
+  "seeds": [
+    {
+      "seed": 0,
+      "identical": true,
+      "max_abs_difference": 0.0
+    },
+    {
+      "seed": 1,
+      "identical": true,
+      "max_abs_difference": 0.0
+    },
+    {
+      "seed": 2,
+      "identical": true,
+      "max_abs_difference": 0.0
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+p4 report, 2026-11-13T07:26:04.775118+00:00
+
+jobs: 20515660 20515664 20515662 20515658 20515659
+
+SUs by job (Grace's rates; su_per_job.csv): 34 in all
+  20515658 lilq-p4-preflight: 4.2 (0.18 h at 24/h), COMPLETED
+  20515659 lilq-p4-timed: 4.7 (0.10 h at 48/h), COMPLETED
+  20515660 lilq-p4-item1: 6.9 (0.29 h at 24/h), COMPLETED
+  20515662 lilq-p4-item2: 6.2 (0.26 h at 24/h), COMPLETED
+  20515664 lilq-p4-item2-constants: 12.5 (0.52 h at 24/h), COMPLETED

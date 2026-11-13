@@ -1,0 +1,21 @@
+provenance lock OK: commit 8a1e849b5c8c, tree f0be57564a07
+job 20515660 on c165: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+logged p 6 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1a_burgers_gauss/p6
+logged p 10 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1a_burgers_gauss/p10
+logged p 14 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1a_burgers_gauss/p14
+logged p 18 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1a_burgers_gauss/p18
+logged p 22 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1a_burgers_gauss/p22
+logged p 26 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1a_burgers_gauss/p26
+logged p 30 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1a_burgers_gauss/p30
+enrich E1 0.001 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1b_burgers_enrichment/E1_tol0.001
+enrich E1 1e-05 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1b_burgers_enrichment/E1_tol1e-05
+enrich E2 0.001 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1b_burgers_enrichment/E2_tol0.001
+enrich E2 1e-05 $SCRATCH/lilq-run/lilq-pinn/results/package4/P4_1b_burgers_enrichment/E2_tol1e-05
+constants {'p': 6, 'P': 36, 'N': 342, 'N_Y': 1332, 'iterates': 60, 'c1_min': 0.9991944055784665, 'c2_max': 1.0054242760834526, 'c2_over_c1_max': 1.0062348933002476, 'rho_r_max': 1.0000149447903424, 'dropped_max': 0}
+constants {'p': 10, 'P': 100, 'N': 930, 'N_Y': 3660, 'iterates': 60, 'c1_min': 0.9999870907059037, 'c2_max': 1.0001311091972138, 'c2_over_c1_max': 1.0001440203505112, 'rho_r_max': 1.0000015411908991, 'dropped_max': 1}
+constants {'p': 14, 'P': 196, 'N': 1806, 'N_Y': 7140, 'iterates': 60, 'c1_min': 0.9999997929477313, 'c2_max': 1.0000033298623714, 'c2_over_c1_max': 1.0000035369153724, 'rho_r_max': 1.0000000000035771, 'dropped_max': 1}
+constants {'p': 18, 'P': 324, 'N': 2970, 'N_Y': 11772, 'iterates': 60, 'c1_min': 0.9999999961848561, 'c2_max': 1.0000000844315182, 'c2_over_c1_max': 1.0000000882466624, 'rho_r_max': 1.0000000000000062, 'dropped_max': 1}
+constants {'p': 22, 'P': 484, 'N': 4422, 'N_Y': 17556, 'iterates': 60, 'c1_min': 0.9999999947889463, 'c2_max': 1.0000000051304347, 'c2_over_c1_max': 1.0000000103414886, 'rho_r_max': 1.0000000000000486, 'dropped_max': 1}
+constants {'p': 26, 'P': 676, 'N': 6162, 'N_Y': 24492, 'iterates': 60, 'c1_min': 0.9999996834670581, 'c2_max': 1.0000003429790005, 'c2_over_c1_max': 1.0000006595121511, 'rho_r_max': 1.000000002648617, 'dropped_max': 1}
+constants {'p': 30, 'P': 900, 'N': 8190, 'N_Y': 32580, 'iterates': 60, 'c1_min': 0.999999999768298, 'c2_max': 1.0000000002420912, 'c2_over_c1_max': 1.0000000004737932, 'rho_r_max': 1.0000000000042575, 'dropped_max': 1}

@@ -1,0 +1,70 @@
+{
+  "cluster": "Grace (TAMU HPRC)",
+  "cpu": {
+    "model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+    "machine": "x86_64",
+    "logical_cores": 48,
+    "usable_cores": 48,
+    "hostname": "c098",
+    "system": "Linux 4.18.0-553.125.1.el8_10.x86_64"
+  },
+  "cpu_source": "save_provenance in the timed job 20515659 (lilq-p4-timed) on c098, a whole node of partition medium: it ran M0 and every timing of Package 4 (1a, 1b, 2a). The other jobs (class cpu, 24 cores of a shared node) ran no timings; their nodes are in jobs. Its full record: provenance/timed/hardware.json",
+  "jobs": {
+    "20515660": {
+      "log": "lilq-p4-item1.20515660.out",
+      "node": "c165",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p4-item1",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
+      "elapsed": "00:17:22"
+    },
+    "20515664": {
+      "log": "lilq-p4-item2-constants.20515664.out",
+      "node": "c204",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p4-item2-constants",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
+      "elapsed": "00:31:22"
+    },
+    "20515662": {
+      "log": "lilq-p4-item2.20515662.out",
+      "node": "c204",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p4-item2",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
+      "elapsed": "00:15:36"
+    },
+    "20515658": {
+      "log": "lilq-p4-preflight.20515658.out",
+      "node": "c165",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p4-preflight",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=32G,node=1",
+      "elapsed": "00:10:33"
+    },
+    "20515659": {
+      "log": "lilq-p4-timed.20515659.out",
+      "node": "c098",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p4-timed",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "00:05:50"
+    }
+  },
+  "gpu": null
+}

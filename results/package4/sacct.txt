@@ -1,0 +1,7 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20515658                    lilq-p4-preflight     medium                             billing=24,cpu=24,mem=32G,node=1   00:10:33  COMPLETED      0:0 
+20515659                        lilq-p4-timed     medium                            billing=48,cpu=48,mem=360G,node=1   00:05:50  COMPLETED      0:0 
+20515660                        lilq-p4-item1     medium                             billing=24,cpu=24,mem=32G,node=1   00:17:22  COMPLETED      0:0 
+20515662                        lilq-p4-item2     medium                             billing=24,cpu=24,mem=32G,node=1   00:15:36  COMPLETED      0:0 
+20515664              lilq-p4-item2-constants     medium                             billing=24,cpu=24,mem=32G,node=1   00:31:22  COMPLETED      0:0 
