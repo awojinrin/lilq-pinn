@@ -17,6 +17,38 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-12 -- Package 4, item 2: Poisson-Boltzmann around three inclusions (`problems/poisson_boltzmann.py`, `experiments/p4_2_pb_inclusions.py`)
+
+The advisor's instructions of 12 November 2026, Section 4. The reference script `ref_pb_inclusions.py` is the specification. Its `halton` and `boundary` are used unchanged, so that the point sets coincide.
+
+**rho and the derivatives of u\* are in closed form, not SymPy** (the user's choice, 12 November).
+- u\* is a sum of three Gaussians, so the derivatives are short and exact, and Grace's environment needs no new package.
+- Agreement with the advisor's SymPy values (M6): within 6e-16 relative at his five points.
+- `tests/test_poisson_boltzmann.py` compares the closed form with a SymPy derivation where SymPy is installed (skipped otherwise) and with finite differences everywhere.
+
+**The Halton points are drawn on the laptop and shipped** (`points/halton_seed{0,1,2}.npz`, the first 8,000 points in Omega).
+- The first n points of a draw are the first n of any longer draw (tested), so every set of the package is a prefix of one draw per seed.
+- The laptop's scipy 1.17.0 reproduces the advisor's points (his 1.18.1): the reference script's numbers agree within 0.3% for LiL-Q and 1e-10 for underdetermined collocation.
+- Grace's scipy 1.13.1 is compared with the shipped points by the `compare-points` stage. It is recorded, never used.
+- Grace's numpy and scipy are not changed, which keeps check M0 safe.
+
+**Errors.** Relative L2 and H2 errors at every iterate go to `errors_by_iterate.csv`. `eps_ref` in `iterations.csv` is the L2 error; the logger's columns are not extended.
+
+**2f, the norm of Y.**
+- The 70 x 420 rule inside, and `boundary(4000)` with its weights on the boundary.
+- Each block carries its total squared weight in the collocation set: 1 inside, lambda_d on the boundary.
+- `experiments.p3_2_bl_certified.section6_row` is used unchanged.
+
+**Timed region.** The construction of the collocation matrices from the shipped points, the assemblies, the solves and the residuals of the rule, stopped where the rule fires.
+
+**Laptop rehearsal** (numpy 2.4.2, scipy 1.17.0; p = 14 and 22, seed 0, and all of 2d and 2e).
+- 2a: the rule fires at the advisor's step. Stall levels and both errors are within 0.2% (M8 passes).
+- 2d and 2e: every rule step matches. The H2 error / delta ratios match within 0.5%, except at P = 484 with 1.5, 2 and 3 interior points per unknown: 134.6, 52.2 and 8.7 against 136.3, 49.7 and 8.8. These systems are the worst conditioned of the sweep.
+- 2b: the square-collocation runs that diverge differ from the advisor's run by run, in status, step count and the errors of the diverged iterate. The two runs that converge are the same (P = 100, approximate Fekete points). This is round-off in a diverging Newton iteration (numpy 2.4 against his 2.5); it is reported side by side, as Section 6.2 directs.
+- At P = 484 the stall at the rule is classified conditioning-limited (C). Reported.
+
+---
+
 ## 2026-11-12 -- Package 4, item 1: Burgers on Gauss points (`experiments/p4_1_burgers_gauss.py`)
 
 The advisor's instructions of 12 November 2026, Section 3. The reference script `ref_burgers_enrichment.py` is the specification.

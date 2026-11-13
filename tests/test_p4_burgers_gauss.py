@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from experiments import p4_1_burgers_gauss as m
+from experiments.p4_common import identity_scaled
 from numpy.polynomial import chebyshev as C
 
 
@@ -44,7 +45,7 @@ def test_identity_of_remark_1():
     beta = np.random.default_rng(0).standard_normal(space.P) * 0.1
     A, f = rows.assemble(beta)
     N = rows.residual(beta)
-    assert m.identity_scaled(A, f, beta, N) < space.P * m.EPS_MACH
+    assert identity_scaled(A, f, beta, N) < space.P * m.EPS_MACH
     np.testing.assert_allclose(A @ beta - f, N, atol=1e-13)
 
 

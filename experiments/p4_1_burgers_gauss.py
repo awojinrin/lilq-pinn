@@ -71,11 +71,8 @@ Usage::
 """
 
 import argparse
-import csv
 import json
-import math
 import os
-import statistics
 import sys
 import time
 from pathlib import Path
@@ -86,11 +83,11 @@ if _proj not in sys.path:
 
 import lilq.blas_threads  # noqa: F401  (must import before numpy)
 import numpy as np
-import scipy.linalg as sla
 
+from experiments.p4_common import (K_MAX, N_S, iterate_to_rule, logged_run, m3_summary, read_csv, rel,
+                                   stall_class, timed, to_float, write_csv)
 from lilq.basis import Chebyshev1D, Fourier1D
-from lilq.instrumentation import EPS_MACH, phase_indicator, roundoff_comparison, stall_flag, stall_rule_index
-from lilq.iteration_log import IterationLogger, LilQDiagnosticsTracker
+from lilq.instrumentation import EPS_MACH, stall_rule_index
 from lilq.provenance import capture_blas_thread_env
 from lilq.run_metadata import build_run_metadata, first_stall_iteration, write_run_json
 
@@ -100,13 +97,9 @@ LAM0 = 10.0
 OVER = 3                      # Gauss points per direction: OVER * p
 Y_OVER = 6                    # the Y-norm rule of 1c: twice the collocation set's
 SIZES = (6, 10, 14, 18, 22, 26, 30)
-K_MAX = 60
-N_S = 2
 P_START, P_STEP, P_LIMIT = 6, 4, 34
 VARIANTS = {'E1': 2, 'E2': 1}      # n_s at the levels that start from an embedded iterate
 TOLERANCES = (1e-3, 1e-5)
-REPEATS = 3
-SHORT_RUN_S, SHORT_REPEATS = 1.0, 5
 WEIGHTS_NOTE = ("Eq. (2) of the manuscript: each component has normalized measure and its own lambda. Interior: "
                 "tensor Gauss-Legendre weights normalized to sum 1, lambda = 1. Initial rows: lambda_0 = 10 times "
                 "the x Gauss weights normalized to sum 1. Packages 2 and 3 instead carried the factor |block|/|dOmega|.")
@@ -243,25 +236,7 @@ def colexact(x, t, n_nodes=120):
     return out
 
 
-# ---------------------------------------------------------------- the iteration with the rule (no diagnostics)
-
-def iterate_to_rule(rows, beta, n_s, k_max=K_MAX):
-    """Algorithm 1 without the converged exit (the timed and the enrichment
-    runs): solve until the rule fires; returns the returned iterate, the step
-    at which it fired (or None), the stall level ||r|| there, and chi there."""
-    r_prev, run, rn, chi = None, 0, None, None
-    for k in range(k_max):
-        A, f = rows.assemble(beta)
-        new = sla.lstsq(A, f, lapack_driver='gelsy', cond=EPS_MACH, check_finite=False)[0]
-        r = A @ new - f
-        rn = float(np.linalg.norm(r))
-        chi = phase_indicator(rows.residual(new), r)
-        run = run + 1 if (r_prev is not None and stall_flag(chi, rn, r_prev)) else 0
-        beta, r_prev = new, rn
-        if run >= n_s:
-            return beta, k, rn, chi
-    return beta, None, rn, chi
-
+# ---------------------------------------------------------------- 1b's procedure
 
 def enrichment(tol, n_s_after, log_level=None):
     """Item 1b's procedure. ``log_level(level, p, rows, beta_start, n_s)`` runs
@@ -286,85 +261,6 @@ def enrichment(tol, n_s_after, log_level=None):
 
 # ---------------------------------------------------------------- the logged passes
 
-def _write_csv(path, rows):
-    keys = list(dict.fromkeys(k for r in rows for k in r))
-    with open(path, 'w', newline='') as fh:
-        w = csv.DictWriter(fh, fieldnames=keys)
-        w.writeheader()
-        w.writerows(rows)
-
-
-def _read_csv(path):
-    with open(path, newline='') as fh:
-        return list(csv.DictReader(fh))
-
-
-def _float(v):
-    return float(v) if v not in ('', None) else float('nan')
-
-
-def logged_level(rows, beta, run_dir, errors, k_max=K_MAX, stop_n_s=None):
-    """One logged LiL-Q run on ``rows`` from ``beta``. With ``stop_n_s`` None
-    termination is disabled (K_max iterations, 1a); otherwise the run stops
-    when the rule fires with that n_s (an enrichment level, 1b). Writes
-    ``iterations.csv`` and ``betas.npy`` (beta^(0..K)) after every iterate.
-    Returns the iterate at the rule (or the last), the step, the stall level,
-    chi there, the tracker and the logger."""
-    space = rows.space
-    run_dir.mkdir(parents=True, exist_ok=True)
-    tracker = LilQDiagnosticsTracker(test_error_fn=lambda b: {'eps_ref': errors.error(space, b)},
-                                     n_s=stop_n_s or N_S)
-    logger = IterationLogger()
-    betas = [np.asarray(beta, float).copy()]
-    k_s = None
-    tracker.identity_scaled = []
-    for k in range(k_max):
-        t0 = time.perf_counter()
-        A, f = rows.assemble(beta)
-        t1 = time.perf_counter()
-        new, _, rank, _ = sla.lstsq(A, f, lapack_driver='gelsy', cond=EPS_MACH, check_finite=False)
-        t2 = time.perf_counter()
-        tracker.identity_scaled.append(identity_scaled(A, f, beta, rows.residual(beta)))
-        R_new = rows.residual(new)
-        row = tracker.step(k=k, A_stacked=A, b_stacked=f, beta_prev=beta, beta_new=new,
-                           total_loss=float(R_new @ R_new), rank_gelsy=int(rank), t_assemble_s=t1 - t0,
-                           t_solve_s=t2 - t1, is_final_iterate=False, compute_residual_vector_fn=rows.residual)
-        logger.record(**row)
-        logger.to_csv(run_dir / 'iterations.csv')
-        betas.append(new.copy())
-        np.save(run_dir / 'betas.npy', np.array(betas))
-        beta = new
-        if k_s is None and row['stall_rule_fires']:
-            k_s = k
-            if stop_n_s is not None:
-                break
-    logger.record(**tracker.finish(k=len(betas) - 1))
-    logger.to_csv(run_dir / 'iterations.csv')
-    np.save(run_dir / 'beta_last.npy', beta)
-    rows_log = [r for r in logger.rows if r.get('norm_Rlin_h') is not None]
-    i = k_s if k_s is not None else len(rows_log) - 1
-    return beta, k_s, float(rows_log[i]['norm_Rlin_h']), float(rows_log[i]['chi']), tracker, logger
-
-
-def identity_scaled(A, f, beta, N_direct):
-    """Check M3 without cancellation: ||(A beta - f) - N(beta)|| over
-    || |A||beta| + |f| ||, the scale at which the two vectors are formed
-    (Section 4.1 of the manuscript). Its round-off bound is about P eps. The
-    plain relative difference of ``b2_check`` divides by ||N||, which is
-    small near the plateau, so it measures cancellation there."""
-    scale = float(np.linalg.norm(np.abs(A) @ np.abs(beta) + np.abs(f)))
-    return float(np.linalg.norm(A @ beta - f - N_direct)) / scale if scale > 0 else 0.0
-
-
-def m3_summary(run_json):
-    """M3 for one run: the K4 reading (k = 1) and the scaled maximum."""
-    p4 = run_json['package4']
-    P = run_json['P_total']
-    return {'b2_at_k1': run_json['b2_check']['rel_err'], 'b2_max': run_json['b2_check']['max_rel_err_over_run'],
-            'scaled_max': p4['identity_scaled_max'], 'bound_P_eps': P * EPS_MACH,
-            'pass': p4['identity_scaled_max'] <= P * EPS_MACH}
-
-
 def _metadata(rows, tracker, logger, k_max, stopping, reason, initial):
     thread_env = capture_blas_thread_env()
     space = rows.space
@@ -388,13 +284,14 @@ def logged(p, out_root, errors):
     rows = Rows(space)
     run_dir = Path(out_root) / ITEMS['1a'] / f'p{p}'
     t0 = time.perf_counter()
-    _, k_s, _, _, tracker, logger = logged_level(rows, np.zeros(space.P), run_dir, errors)
+    _, k_s, _, _, tracker, logger, scaled = logged_run(rows, np.zeros(space.P), run_dir,
+                                                       lambda b: errors.error(space, b))
     meta = _metadata(rows, tracker, logger, K_MAX,
                      {'type': 'none: K_max iterations; the rule (tau_chi 0.1, tau_r 0.01, n_s 2) is read from the log'},
                      'iteration_cap', 'zero')
     write_run_json(run_dir / 'run.json', {**meta, 'package4': {
         'item': '1a', 'p': p, 'nu': NU, 'lambda_0': LAM0, 'rule_fires_at_step': k_s,
-        'delta_P': errors.delta_P(space), 'identity_scaled_max': max(tracker.identity_scaled),
+        'delta_P': errors.delta_P(space), 'identity_scaled_max': scaled,
         'wall_time_s': time.perf_counter() - t0}})
     return run_dir
 
@@ -416,14 +313,16 @@ def enrich_logged(variant, tol, out_root, errors):
             after = errors.values(rows.space, beta_start)
             m4.append({'level': i, 'p_from': prev['p'], 'p_to': p,
                        'max_abs_difference': float(np.abs(after - before).max())})
-        beta, k_s, stall, chi, tracker, logger = logged_level(rows, beta_start, d, errors, stop_n_s=n_s)
+        beta, k_s, stall, chi, tracker, logger, scaled = logged_run(rows, beta_start, d,
+                                                                   lambda b: errors.error(rows.space, b),
+                                                                   stop_n_s=n_s)
         meta = _metadata(rows, tracker, logger, K_MAX, {'type': 'termination rule', 'tau_chi': 0.1,
                                                         'tau_r': 0.01, 'n_s': n_s},
                          'rule' if k_s is not None else 'iteration_cap',
                          'zero' if i == 0 else 'the previous level\'s returned iterate, embedded (zero padding)')
         write_run_json(d / 'run.json', {**meta, 'package4': {'item': '1b', 'variant': variant, 'tolerance': tol,
                                                              'level': i, 'p': p, 'n_s': n_s,
-                                                             'identity_scaled_max': max(tracker.identity_scaled)}})
+                                                             'identity_scaled_max': scaled}})
         levels_so_far.append({'p': p, 'beta': beta})
         return beta, k_s, stall, chi
 
@@ -437,7 +336,7 @@ def enrich_logged(variant, tol, out_root, errors):
                          'stall_level': lev['stall_level'], 'chi_at_stop': lev['chi_at_stop'],
                          'error': errors.error(space, lev['beta']), 'delta_P': errors.delta_P(space),
                          'cumulative_solves': cum})
-    _write_csv(run_dir / 'levels.csv', rows_out)
+    write_csv(run_dir / 'levels.csv', rows_out)
     np.save(run_dir / 'beta_returned.npy', levels[-1]['beta'])
     final = levels[-1]
     status = ('tolerance met' if final['stall_level'] is not None and final['stall_level'] <= tol
@@ -462,8 +361,8 @@ def constants(p, out_root):
     by_iter = []
     for k in range(len(betas) - 1):
         by_iter.append({'k': k, **section6_row(rows_h, rows_y, betas[k], betas[k + 1], ())})
-        _write_csv(out_dir / 'constants_by_iterate.csv', by_iter)
-    _write_csv(out_dir / 'rho_r.csv', [{key: x[key] for key in ('k', 'rho_r', 'rho_r_numerator', 'rho_r_denominator',
+        write_csv(out_dir / 'constants_by_iterate.csv', by_iter)
+    write_csv(out_dir / 'rho_r.csv', [{key: x[key] for key in ('k', 'rho_r', 'rho_r_numerator', 'rho_r_denominator',
                                                                  'kappa_A_Y', 'round_off')} for x in by_iter])
     return {'p': p, 'P': space.P, 'N': rows_h.N, 'N_Y': rows_y.N, 'iterates': len(by_iter),
             'c1_min': min(x['c1'] for x in by_iter), 'c2_max': max(x['c2'] for x in by_iter),
@@ -475,25 +374,6 @@ def constants(p, out_root):
 
 # ---------------------------------------------------------------- timing
 
-def _timed(fn):
-    """Section 2.3: an untimed warm-up, then three timings, each the median of
-    five runs if the first is shorter than 1 s. ``fn`` returns (seconds,
-    solves)."""
-    warm_s, warm_solves = fn()
-    timings, solves = [], set()
-    for _ in range(REPEATS):
-        s, n = fn()
-        solves.add(n)
-        if s < SHORT_RUN_S:
-            reps = [fn() for _ in range(SHORT_REPEATS)]
-            solves.update(r[1] for r in reps)
-            timings.append({'time_s': statistics.median(r[0] for r in reps), 'runs_s': [r[0] for r in reps]})
-        else:
-            timings.append({'time_s': s, 'runs_s': [s]})
-    return {'warmup_s': warm_s, 'warmup_solves': warm_solves, 'timings': timings,
-            'median_s': statistics.median(t['time_s'] for t in timings), 'solves': sorted(solves)}
-
-
 def time_single(p):
     def once():
         t0 = time.perf_counter()
@@ -501,7 +381,7 @@ def time_single(p):
         rows = Rows(space)
         _, k_s, _, _ = iterate_to_rule(rows, np.zeros(space.P), N_S)
         return time.perf_counter() - t0, None if k_s is None else k_s + 1
-    return _timed(once)
+    return timed(once)
 
 
 def time_enrichment(variant, tol):
@@ -509,7 +389,7 @@ def time_enrichment(variant, tol):
         t0 = time.perf_counter()
         levels = enrichment(tol, VARIANTS[variant])
         return time.perf_counter() - t0, sum(lev['solves'] or 0 for lev in levels)
-    return _timed(once)
+    return timed(once)
 
 
 def timing(out_root, which=('1a', '1b'), sizes=SIZES):
@@ -535,15 +415,15 @@ def timing(out_root, which=('1a', '1b'), sizes=SIZES):
 # ---------------------------------------------------------------- the summary and the checks
 
 def _log(run_dir):
-    rows = _read_csv(Path(run_dir) / 'iterations.csv')
+    rows = read_csv(Path(run_dir) / 'iterations.csv')
     solve = [r for r in rows if r['norm_Rlin_h'] not in ('', None)]
     return rows, solve
 
 
 def terminal_row(run_dir, delta):
     rows, solve = _log(run_dir)
-    chi = [_float(r['chi']) for r in solve]
-    rlin = [_float(r['norm_Rlin_h']) for r in solve]
+    chi = [to_float(r['chi']) for r in solve]
+    rlin = [to_float(r['norm_Rlin_h']) for r in solve]
     k_s = stall_rule_index(chi, rlin)
     run = json.loads((Path(run_dir) / 'run.json').read_text())
     timing_path = Path(run_dir) / 'timing.json'
@@ -555,23 +435,18 @@ def terminal_row(run_dir, delta):
         return out
     r = solve[k_s]
     ret = rows[k_s + 1]
-    kr = _float(r['kappa_retained'])
-    ratio, level = roundoff_comparison(_float(r['norm_Rlin_h']), _float(r['norm_f_h']), kr)
-    err = _float(ret['eps_ref'])
+    kr = to_float(r['kappa_retained'])
+    err = to_float(ret['eps_ref'])
     last = solve[-1]
-    out.update({'class': 'C' if ratio < 10 * level else 'A', 'stall_level': _float(r['norm_Rlin_h']),
-                'chi_at_rule': _float(r['chi']), 'norm_N_returned': _float(ret['norm_R_h']), 'error': err,
+    out.update({'class': stall_class(r), 'stall_level': to_float(r['norm_Rlin_h']),
+                'chi_at_rule': to_float(r['chi']), 'norm_N_returned': to_float(ret['norm_R_h']), 'error': err,
                 'error_over_delta_P': err / delta, 'rank_gelsy': r['num_rank_gelsy'], 'rank_svd': r['num_rank_svd'],
-                'kappa_retained_at_rule': kr, 'kappa_raw_at_rule': _float(r['kappa_raw']),
-                'kappa_retained_last': _float(last['kappa_retained']), 'kappa_raw_last': _float(last['kappa_raw']),
+                'kappa_retained_at_rule': kr, 'kappa_raw_at_rule': to_float(r['kappa_raw']),
+                'kappa_retained_last': to_float(last['kappa_retained']), 'kappa_raw_last': to_float(last['kappa_raw']),
                 'rank_gelsy_last': last['num_rank_gelsy'], 'rank_svd_last': last['num_rank_svd'],
                 'solves_to_stop': k_s + 1, 'timing_matches_logged': (t.get('solves') == [k_s + 1]) if t else None,
                 'b2_max_over_run': run['b2_check']['max_rel_err_over_run'], 'b2_at_k1': run['b2_check']['rel_err']})
     return out
-
-
-def _rel(a, b):
-    return abs(a - b) / abs(b) if b else abs(a - b)
 
 
 def summarize(out_root, reference_dir, expected=None, sizes=SIZES):
@@ -579,7 +454,7 @@ def summarize(out_root, reference_dir, expected=None, sizes=SIZES):
     root = Path(out_root)
     term = [terminal_row(root / ITEMS['1a'] / f'p{p}', errors.delta_P(Space(p))) for p in sizes
             if (root / ITEMS['1a'] / f'p{p}' / 'iterations.csv').exists()]
-    _write_csv(root / ITEMS['1a'] / 'terminal.csv', term)
+    write_csv(root / ITEMS['1a'] / 'terminal.csv', term)
     checks = {}
     by_p = {r['p']: r for r in term}
     # M1: 1a at p = 10 and 22 against the advisor's expected values
@@ -590,8 +465,8 @@ def summarize(out_root, reference_dir, expected=None, sizes=SIZES):
             if p in by_p and str(p) in exp:
                 e, r = exp[str(p)], by_p[p]
                 m1.append({'p': p, 'solves': r.get('solves_to_stop'), 'solves_expected': e['it'],
-                           'stall_rel': _rel(r['stall_level'], e['stall']), 'error_rel': _rel(r['error'], e['err']),
-                           'delta_P_rel': _rel(r['delta_P'], e['dP'])})
+                           'stall_rel': rel(r['stall_level'], e['stall']), 'error_rel': rel(r['error'], e['err']),
+                           'delta_P_rel': rel(r['delta_P'], e['dP'])})
         checks['M1'] = {'rows': m1, 'pass': bool(m1) and all(
             x['solves'] == x['solves_expected'] and max(x['stall_rel'], x['error_rel'], x['delta_P_rel']) <= 1e-6
             for x in m1)}
@@ -610,15 +485,15 @@ def summarize(out_root, reference_dir, expected=None, sizes=SIZES):
             d1b = root / ITEMS['1b'] / f'{variant}_tol{tol:g}'
             if not (d1b / 'levels.csv').exists():
                 continue
-            levels = _read_csv(d1b / 'levels.csv')
+            levels = read_csv(d1b / 'levels.csv')
             info = json.loads((d1b / 'run.json').read_text())['package4']
             m4 += [dict(x, variant=variant, tolerance=tol) for x in info['check_M4']]
             for lev in levels:
                 p = int(lev['p'])
                 if p in by_p and by_p[p].get('stall_level') is not None:
                     m5.append({'variant': variant, 'tolerance': tol, 'p': p,
-                               'stall_rel': _rel(_float(lev['stall_level']), by_p[p]['stall_level']),
-                               'error_rel': _rel(_float(lev['error']), by_p[p]['error'])})
+                               'stall_rel': rel(to_float(lev['stall_level']), by_p[p]['stall_level']),
+                               'error_rel': rel(to_float(lev['error']), by_p[p]['error'])})
             for lev_dir in sorted(d1b.glob('level*_p*')):
                 m3.append({'run': f'1b {variant} tol {tol:g} {lev_dir.name}',
                            **m3_summary(json.loads((lev_dir / 'run.json').read_text()))})
@@ -631,7 +506,7 @@ def summarize(out_root, reference_dir, expected=None, sizes=SIZES):
                                 'median_time_s': t.get('median_s'), 'timed_solves': t.get('solves'),
                                 'single_solve_time_at_final_P_s': single})
     if enrich_rows:
-        _write_csv(root / ITEMS['1b'] / 'summary.csv', enrich_rows)
+        write_csv(root / ITEMS['1b'] / 'summary.csv', enrich_rows)
     checks['M3'] = {'rows': m3, 'pass': all(x['pass'] for x in m3),
                     'note': ('judged by the scaled difference ||(A beta - f) - N|| / || |A||beta| + |f| || against '
                              'P eps at every iterate (no cancellation); b2_at_k1 is the K4 reading of Package 3, '
@@ -650,15 +525,15 @@ def summarize(out_root, reference_dir, expected=None, sizes=SIZES):
         for p in sizes:
             f = cdir / f'p{p}' / 'constants_by_iterate.csv'
             if f.exists():
-                c = _read_csv(f)
+                c = read_csv(f)
                 ok = [x for x in c if x['round_off'] == 'False']
-                rows_c.append({'p': p, 'P': p * p, 'iterates': len(c), 'c1_min': min(_float(x['c1']) for x in c),
-                               'c2_max': max(_float(x['c2']) for x in c),
-                               'c2_over_c1_max': max(_float(x['c2_over_c1']) for x in c),
-                               'rho_r_max': max((_float(x['rho_r']) for x in ok), default=float('nan')),
+                rows_c.append({'p': p, 'P': p * p, 'iterates': len(c), 'c1_min': min(to_float(x['c1']) for x in c),
+                               'c2_max': max(to_float(x['c2']) for x in c),
+                               'c2_over_c1_max': max(to_float(x['c2_over_c1']) for x in c),
+                               'rho_r_max': max((to_float(x['rho_r']) for x in ok), default=float('nan')),
                                'round_off_iterates': len(c) - len(ok),
                                'dropped_max': max(int(x['dropped']) for x in c)})
-        _write_csv(cdir / 'constants.csv', rows_c)
+        write_csv(cdir / 'constants.csv', rows_c)
     (root / 'checks_item1.json').write_text(json.dumps(checks, indent=2))
     return term, checks
 
