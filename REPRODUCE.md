@@ -1,131 +1,89 @@
-# Replication and Reproduction Guide
+# Running the studies
 
-This guide maps each manuscript table and figure to its corresponding command-line interface (CLI) execution command in the repository.
+This guide covers:
+- the commands that run each benchmark;
+- the instrumented drivers behind the released result files;
+- the cluster job scripts.
 
----
+[RELEASE.md](RELEASE.md) says where the released results are and how the published tables and figures are regenerated from them.
 
-## 1. Quick Validation (Dry Run)
-Before running full-scale sweeps, you can run a complete end-to-end dry run to verify that all solvers compile and run successfully on CPU in under 2 minutes:
+## 1. Validation
+
 ```bash
-python experiments/run_all_dry.py
+python -m pytest -q                  # unit and regression tests
+python experiments/run_all_dry.py    # every problem at minimal size, on the CPU, in under 2 minutes
 ```
 
----
+## 2. Sizes
 
-## 2. Parameter Mappings: Basis Modes ($N$) to Total DOFs ($P$)
-The experiment scripts accept a basis mode parameter `--N` (modes per dimension), whereas the manuscript tables and figures report the total degrees of freedom ($P$). The translations are:
+The runners take the number of modes per direction. The number of coefficients P follows from it:
 
-* **Bratu Equation** (2D scalar):
-  $P = N_x \cdot N_y = N^2$
-  * $N = 5 \rightarrow P = 25$
-  * $N = 10 \rightarrow P = 100$
-  * $N = 15 \rightarrow P = 225$
+| Problem | Unknown fields | P | Sizes used |
+|---|---|---|---|
+| Bratu | u | N² | N = 5, 10, 15 (P = 25, 100, 225) |
+| Burgers | u | N² | N = 5, 10, 15, 20, 25 (P = 25 to 625) |
+| Buckley–Leverett | S | N² | N = 8, 16, 24, 32 (P = 64 to 1,024) |
+| Kovasznay flow | u, v, p | 3N² | N = 5, 10, 15, 20, 25 (P = 75 to 1,875) |
+| Linear elasticity | u_x, u_y | 2N² | N = 5, 10, 15, 20, 25 (P = 50 to 1,250) |
+| Beltrami flow | u, v, w, p | 3N_vel⁴ + N_p⁴ | N_vel = 6, N_p = 8 (P = 7,984) |
+| Darcy flow | h, u, v | about 3N² | order 32 (P = 3,169) |
 
-* **Burgers Equation** (1D+time scalar):
-  $P = N_x \cdot N_t = N^2$
-  * $N = 5 \rightarrow P = 25$
-  * $N = 10 \rightarrow P = 100$
-  * $N = 15 \rightarrow P = 225$
-  * $N = 20 \rightarrow P = 400$
-  * $N = 25 \rightarrow P = 625$
+## 3. Benchmark runners
 
-* **Buckley-Leverett Equation** (1D+time scalar):
-  $P = N_x \cdot N_t = N^2$
-  * $N = 8 \rightarrow P = 64$
-  * $N = 16 \rightarrow P = 256$
-  * $N = 24 \rightarrow P = 576$
-  * $N = 32 \rightarrow P = 1024$
+Each runner writes its results under `results/`. The runtimes are approximate, for one laptop CPU (Intel Core Ultra 9 275HX).
 
-* **Kovasznay Flow** (2D steady Navier-Stokes, 3 variables: $u, v, p$):
-  $P = 3 \cdot N_x \cdot N_y = 3 N^2$
-  * $N = 5 \rightarrow P = 75$
-  * $N = 10 \rightarrow P = 300$
-  * $N = 15 \rightarrow P = 675$
-  * $N = 20 \rightarrow P = 1200$
-  * $N = 25 \rightarrow P = 1875$
+| Problem | Command | Runtime |
+|---|---|---|
+| Bratu, all four formulations | `python experiments/run_bratu.py --basis fourier --N 5 10 15` | 15–20 min |
+| Burgers, all four formulations | `python experiments/run_burgers.py --N 5 10 15 20 25` | about 1 h |
+| Buckley–Leverett, viscous | `python experiments/run_bl.py --N 8 16 24 32` | 40–60 min |
+| Buckley–Leverett, gravity-influenced | `python experiments/run_bl.py --gravity --N 8 16 24 32` | 40–60 min |
+| Kovasznay flow | `python experiments/run_kovasznay.py --N 5 10 15 20 25` | under 1 min |
+| Linear elasticity | `python experiments/run_elasticity.py --N 5 10 15 20 25` | seconds |
+| Beltrami flow | `python experiments/run_beltrami.py --N_vel 6 --N_p 8` | 5–10 min |
+| Darcy flow, LiL-Q and finite volumes only | `python experiments/run_darcy.py --fields S1 S2 S3 SPE10 --order 32 --skip-pinn` | about 2 min |
+| Darcy flow, with the network baseline | `python experiments/run_darcy.py --fields S1 S2 S3 SPE10 --order 32` | about 75 min on a GPU |
+| Burgers, basis comparison | `python experiments/run_burgers_basis_comparison.py` | about 1 min |
 
-* **Linear Elasticity** (2D plane-strain, 2 displacement variables: $u, v$):
-  $P = 2 \cdot N_x \cdot N_y = 2 N^2$
-  * $N = 5 \rightarrow P = 50$
-  * $N = 10 \rightarrow P = 200$
-  * $N = 15 \rightarrow P = 450$
-  * $N = 20 \rightarrow P = 800$
-  * $N = 25 \rightarrow P = 1250$
+**Where the runtime goes.**
+- **The four-formulation benchmarks:** most of the time is network training. LiL-Q itself takes seconds.
+- **The Darcy network baseline:** it trains for 150,000 iterations per field.
 
-* **Beltrami Flow** (3D+time unsteady Navier-Stokes, 4 variables: $u, v, w, p$):
-  Each velocity component uses a 4D tensor product basis with $N_\text{vel}$ modes per dimension;
-  pressure uses $N_p$ modes per dimension. Total DOFs: $P = 3 N_\text{vel}^4 + N_p^4$.
-  * $N_\text{vel}=6, N_p=8 \rightarrow P = 3 \times 1296 + 4096 = 7{,}984$ (manuscript configuration)
+## 4. Instrumented runs
 
----
+The released results were produced by these drivers. Each writes:
+- `iterations.csv`: every iterate's residuals, monitors, rank, condition number and errors;
+- `run.json`: settings, commit and checks;
+- `hardware.json`;
+- the saved model.
 
-## 3. Experiment Runner Commands
+| Driver | What it runs |
+|---|---|
+| `experiments/component_b.py` | The logged LiL-Q runs of every benchmark: the reported pass and the pass with termination disabled to 60 iterations (`--passes paper kmax`) |
+| `experiments/four_method_tables.py` | The four-formulation comparison over seeds, with the stall controls (`--controls`) |
+| `experiments/clean_timing.py` | Timings with the diagnostics off: one warm-up, then three timed runs, reported as their median |
+| `experiments/component_a.py`, `experiments/kovasznay_comparison.py` | The calibrated network baselines on the Kovasznay flow and their comparison with LiL-Q |
+| `experiments/component_c.py` | The oversampling and collocation-set study |
+| `experiments/stopping_rule_table.py` | The termination rule applied to logged histories, with its variants |
+| `experiments/p2_*.py`, `experiments/p3_*.py` | The supplementary studies: classical baselines, Levenberg–Marquardt networks, scaling, bases, refinement, certified grids, a posteriori constants |
+| `experiments/figure_data.py` | The solution fields of the field figures, from the saved models |
 
-> **Hardware note.** All runtimes below were recorded on an Intel Core Ultra 9 275HX CPU.
-> The dominant cost in each 4-method benchmark is NiL-N (L-BFGS) training; LiL-Q itself
-> completes in seconds. For LiL-Q-only problems (Kovasznay, Beltrami, Elasticity), the
-> runtime is the LiL-Q solver time alone.
+Every driver has a `--help`. Most have a `--smoke` or `--quick` mode for a short local check.
 
-### Table 1 & Figure (Bratu Convergence Sweep)
-Runs NiL-N, NiL-Q, LiL-N, and LiL-Q solvers across basis sizes:
+## 5. Cluster runs
+
+`scripts/cluster/` holds the SLURM job scripts and the submission scripts used on the Texas A&M HPRC Grace and FASTER clusters. Its README explains the environment and the submission order.
+
+To build the upload bundle, locked to a commit:
+
 ```bash
-python experiments/run_bratu.py --basis fourier --N 5 10 15
+python scripts/make_hprc_bundle.py
 ```
-*Expected CPU Runtime*: ~15–20 minutes. NiL-N and NiL-Q each take ~5–8 min across all 3 sizes (dominated by $P=225$); LiL-N ~3 min; LiL-Q < 1 s total.
 
-### Table 2 & Figure (Burgers Convergence Sweep)
-Runs all four solvers across basis sizes:
-```bash
-python experiments/run_burgers.py --N 5 10 15 20 25
-```
-*Expected CPU Runtime*: ~55–60 minutes. NiL-N and NiL-Q each take ~22 min total across all 5 sizes (dominated by $N \geq 15$); LiL-N ~13 min; LiL-Q < 2 s total.
+## 6. Reproducibility notes
 
-### Table 4 & Table 5 (Buckley-Leverett Sweeps)
-* **Viscous Case (No Gravity)**:
-  ```bash
-  python experiments/run_bl.py --N 8 16 24 32
-  ```
-* **Gravity Case**:
-  ```bash
-  python experiments/run_bl.py --gravity --N 8 16 24 32
-  ```
-*Expected CPU Runtime*: ~40–60 minutes per case. At $N=32$ alone, NiL-N takes ~16 min, NiL-Q ~15 min, LiL-N ~5 min, and LiL-Q ~3.5 s. Smaller $N$ values add another ~5–10 minutes total.
-
-### Table 8 (Kovasznay Navier-Stokes)
-Runs the LiL-Q steady 2D Navier-Stokes solver:
-```bash
-python experiments/run_kovasznay.py --N 5 10 15 20 25
-```
-*Expected CPU Runtime*: < 1 minute (LiL-Q only; $N=25$ takes ~13 s, total ~20 s for all sizes).
-
-### Table 10 (Beltrami 3D Flow)
-Runs the LiL-Q unsteady 3D Navier-Stokes solver with the manuscript configuration ($N_\text{vel}=6$, $N_p=8$, $P = 7{,}984$):
-```bash
-python experiments/run_beltrami.py --N_vel 6 --N_p 8
-```
-*Expected CPU Runtime*: ~9 minutes for the single manuscript configuration.
-
-### Table 11 (Linear Elasticity)
-Runs the LiL-Q plane-strain linear elasticity solver:
-```bash
-python experiments/run_elasticity.py --N 5 10 15 20 25
-```
-*Expected CPU Runtime*: < 1 minute (LiL-Q only; total ~3 s for all sizes).
-
-### Table 13 (SPE10 Darcy Flow)
-Runs FVM reference + LiL-Q solver for heterogeneous porous media. Use `--skip-pinn` to omit the NiL-N baseline (which trains for 150 K epochs per field):
-```bash
-# LiL-Q + FVM only (recommended for quick reproduction)
-python experiments/run_darcy.py --fields S1 S2 S3 SPE10 --order 32 --skip-pinn
-
-# Full run including NiL-N PINN baseline
-python experiments/run_darcy.py --fields S1 S2 S3 SPE10 --order 32
-```
-*Expected Runtime*: LiL-Q + FVM only: ~2 minutes for all 4 fields (LiL-Q ~24 s per field, FVM ~0.1 s per field). With NiL-N (default): ~75 minutes on GPU (NiL-N takes 960–1,580 s per field); significantly longer on CPU.
-
-### Figure (Burgers Basis Comparison Study)
-Runs Burgers equation comparing Chebyshev, Fourier, and ELM bases across basis sizes:
-```bash
-python experiments/run_burgers_basis_comparison.py
-```
-*Expected CPU Runtime*: < 1 minute (LiL-Q only across all basis types).
+- **Determinism:** LiL-Q runs are deterministic for a given machine, BLAS library and thread count.
+- **Thread count:** `lilq/blas_threads.py` sets it before NumPy is imported.
+- **Records:** `hardware.json` records the CPU, the BLAS backend and its threading.
+- **Network baselines:** they use seeds 0, 1 and 2. Their collocation sets are fixed by a separate seed (42).
+- **Across machines and library versions:** results agree to round-off, except in runs whose iteration diverges or whose systems are numerically rank deficient. There the individual iterates can differ.

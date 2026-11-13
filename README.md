@@ -1,43 +1,67 @@
-# Quasilinearized Physics-Informed Least-Squares Collocation in Linear-in-Learnables Trial Spaces
+# lilq-pinn
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23167176-blue.svg)](https://doi.org/10.5281/zenodo.23167176)
 
-Codebase for the paper:
-
-> **Quasilinearized Physics-Informed Least-Squares Collocation in Linear-in-Learnables Trial Spaces: Convergence Theory and Practical Stopping Criteria**
-> Gbenga T. Awojinrin, Abdul-Akeem Olawoyin, and Rami M. Younis
-> (under review)
-
-An earlier version of the paper appeared on arXiv as *A Convex Quasilinearization Method for Solving Nonlinear PDEs with Physics-Informed Neural Networks*; its code is the tag `v1.0-manuscript`.
+Quasilinearized least-squares collocation for nonlinear partial differential equations in trial spaces that are linear in their parameters.
 
 ## Overview
 
-LiL-Q parameterises PDE solution fields with **linear basis expansions** (linear networks or orthogonal polynomials) and applies **Bellman-Kalaba quasilinearisation** to reduce nonlinear PDEs to a sequence of weighted linear least-squares problems solved directly via QR factorisation. This eliminates neural network training epochs, bypasses non-convex optimisation landscapes, and provides reproducible, high-accuracy solutions.
+LiL-Q solves a nonlinear PDE by quasilinearization (Newton–Kantorovich).
+- Each outer iteration linearizes the operator about the current iterate.
+- It collocates the resulting linear problem at more points than unknowns.
+- It solves the weighted linear least-squares system by a column-pivoted QR factorization.
 
-The framework implements four solver variants for systematic comparison:
+The trial space is a fixed expansion whose coefficients enter linearly: tensor Chebyshev or Fourier bases, or random features. No step involves gradient-based training.
 
-| Method | Representation | Optimisation |
-|--------|---------------|-------------|
-| **NiL-N** | Neural Network (nonlinear) | L-BFGS (nonlinear) |
-| **NiL-Q** | Neural Network (nonlinear) | L-BFGS (nonlinear) |
-| **LiL-N** | Linear basis expansion | L-BFGS (nonlinear) |
-| **LiL-Q** | Linear basis expansion | QR factorisation (linear) |
+The iteration stops by an a posteriori rule built from quantities it already computes:
+- the phase indicator χ;
+- the stationarity of the linearized residual;
+- a classification of the stall as limited by the approximation or by conditioning.
 
-## Problems
+The repository also implements three comparison formulations that keep one or both sources of nonlinearity:
 
-### Four-Method Benchmark Problems
-- **Bratu equation** — 2D nonlinear elliptic PDE
-- **Burgers equation** — 1D+time nonlinear parabolic PDE
-- **Buckley-Leverett** — 1D+time nonlinear conservation law (with optional gravity)
+| Formulation | Trial function | Nonlinearity | Solver |
+|---|---|---|---|
+| **NiL-N** | neural network | minimizes the nonlinear residual | L-BFGS or Levenberg–Marquardt |
+| **NiL-Q** | neural network | quasilinearized, one training problem per iteration | L-BFGS |
+| **LiL-N** | linear expansion | minimizes the nonlinear residual | L-BFGS |
+| **LiL-Q** | linear expansion | quasilinearized, one least-squares problem per iteration | column-pivoted QR |
 
-### Application Problems (LiL-Q Only)
-- **Kovasznay flow** — 2D steady incompressible Navier-Stokes
-- **Beltrami flow** — 3D+time unsteady incompressible Navier-Stokes
-- **Linear elasticity** — 2D plane-strain (Haghighat et al., CMAME 2021)
+## Features
 
-### Porous Media (LiL-Q + FVM + NiL-N)
-- **SPE10/Darcy flow** — Heterogeneous permeability fields
+- **Trial spaces:**
+  - Chebyshev, Fourier (sine, cosine, mixed) and augmented one-dimensional families;
+  - tensor products in two to four dimensions;
+  - random-feature (ELM) bases.
+- **Collocation sets:**
+  - random tensor and scattered points;
+  - equispaced grids;
+  - Chebyshev–Gauss–Lobatto grids with Clenshaw–Curtis weights;
+  - cell-centred points for gridded coefficients.
+- **Monitoring:**
+  - per-iteration logs (`iterations.csv`) of the nonlinear and linearized residuals, the phase indicator and the observed order;
+  - the numerical rank and the condition number;
+  - the termination rule (`lilq/instrumentation.py`).
+- **Stability constants:** a posteriori norm-equivalence constants of a collocation set, and the realized quasi-optimality ratio (`lilq/certified.py`).
+- **Baselines:**
+  - physics-informed networks trained by L-BFGS and Levenberg–Marquardt;
+  - square Chebyshev collocation with Newton's method;
+  - a two-point-flux finite-volume solver for Darcy flow.
+- **Provenance:** every run records its commit, hardware, BLAS threading and settings (`run.json`, `hardware.json`). Trained models can be saved and reloaded (`lilq/saved_models.py`).
+
+## Benchmark problems
+
+| Problem | Type | Module |
+|---|---|---|
+| Bratu equation | 2D nonlinear elliptic | `problems/bratu.py` |
+| Viscous Burgers equation | 1D + time, nonlinear parabolic | `problems/burgers.py` |
+| Buckley–Leverett equation (viscous and gravity-influenced) | 1D + time, regularized conservation law | `problems/buckley_leverett.py` |
+| Plane-strain linear elasticity | 2D linear system | `problems/elasticity.py` |
+| Kovasznay flow | 2D steady incompressible Navier–Stokes | `problems/kovasznay.py` |
+| Beltrami flow | 3D + time incompressible Navier–Stokes | `problems/beltrami.py` |
+| Single-phase Darcy flow (synthetic and SPE10 permeability) | 2D heterogeneous elliptic, mixed form | `problems/darcy.py` |
 
 ## Installation
 
@@ -47,12 +71,12 @@ cd lilq-pinn
 pip install -r requirements.txt
 ```
 
-**Dependencies** (pinned for reproducibility):
-- Python >= 3.10
-- NumPy 2.4.2, SciPy 1.17.0, Matplotlib 3.10.8, Pandas 2.3.0
-- PyTorch 2.10.0 (for NiL-N/NiL-Q baseline comparisons)
+Requirements:
+- Python 3.10 or later.
+- The pinned versions in `requirements.txt`: NumPy 2.4.2, SciPy 1.17.0, PyTorch 2.10.0, Matplotlib 3.10.8, pandas 2.3.0 and threadpoolctl 3.6.0.
+- PyTorch is needed only for the network formulations and the GPU solve path.
 
-## Quick Start
+## Quick start
 
 ```python
 from problems.bratu import BratuConfig, BratuOptConfig, run_lil_q
@@ -64,112 +88,72 @@ basis, coefficients, metrics, summary = run_lil_q(config, opt)
 print(f"Final loss: {summary['final_loss']:.2e}")
 ```
 
-See [`examples/`](examples/) for standalone scripts and an
-[interactive notebook](examples/lilq_demo.ipynb).
+Standalone scripts for several problems are in [`examples/`](examples/), along with an [interactive notebook](examples/lilq_demo.ipynb).
 
-## Running Experiments
+## Running experiments
+
+Each problem has a command-line runner in `experiments/`:
 
 ```bash
-# End-to-end validation (all problems, minimal settings, < 2 min)
-python experiments/run_all_dry.py
+python experiments/run_all_dry.py                        # every problem at minimal size (< 2 min)
 
-# Full experiments per problem
 python experiments/run_bratu.py --basis fourier --N 5 10 15
-python experiments/run_burgers.py --N 5 10 15
+python experiments/run_burgers.py --N 5 10 15 20 25
 python experiments/run_bl.py --gravity --N 8 16 24 32
 python experiments/run_kovasznay.py --N 5 10 15 20 25
-python experiments/run_beltrami.py --N 3 4 5 6 8
+python experiments/run_beltrami.py --N_vel 6 --N_p 8
 python experiments/run_elasticity.py --N 5 10 15 20 25
-python experiments/run_darcy.py --fields S3 --order 32
-
-# Basis comparison study
-python experiments/run_burgers_basis_comparison.py
+python experiments/run_darcy.py --fields S1 S2 S3 SPE10 --order 32
+python experiments/run_burgers_basis_comparison.py --bases sin_cheb cheb_cheb elm
 ```
 
-### Reloading trained models
+- **Bratu, Burgers and Buckley–Leverett.** The runners compare all four formulations. `--lil-q-only` restricts them to LiL-Q.
+- **Sizes.** `--N` gives the number of modes per direction (P = N² coefficients for the scalar problems).
 
-The Package 1 drivers save every trained model next to its logs
-(`lilq/saved_models.py`): `solution.pt` for LiL runs, `network.pt` for NiL
-runs, F1's `model.pt` and F2's `theta.pt` for the Component A baselines, and
-the Darcy PINN's `network.pt`. Load them with the code at the commit in the
-run's `hardware.json`:
+**Reloading saved models.** Instrumented runs save their models next to their logs:
 
 ```python
-from lilq.saved_models import load_solution, evaluate_field, load_network, load_f1, load_f2
-sol = load_solution('B_instrumentation/bl_gravity_P1024_cpu_paper')   # basis + coefficients + config
-S = evaluate_field(sol, 'u', x, t)
-net = load_network('B_instrumentation/four_method_jobs/bl_gravity_gpu/models/bl_gravity_P1024_NiL-N_s0_cuda')['model']
-from problems.darcy import load_darcy_pinn
-pinn, saved = load_darcy_pinn('B_instrumentation/darcy_fv/S1_s0/models/NiL_S1_s0')
+from lilq.saved_models import load_solution, evaluate_field
+sol = load_solution('<run directory>')        # basis, coefficients and configuration
+u = evaluate_field(sol, 'u', x, t)
 ```
 
-## Project Structure
+## Repository layout
 
 ```
-lilq-pinn/
-├── .github/workflows/test.yml  # CI: the dry-run validation suite
-├── lilq/                       # Core library
-│   ├── basis.py                # Chebyshev, Fourier, ELM, tensor products (1D/2D/ND)
-│   ├── solvers.py              # Generic NiL-N, NiL-Q, LiL-N, LiL-Q templates
-│   ├── collocation.py          # Collocation point generation
-│   ├── pretraining.py, nn.py   # NN and LiL pretraining; MLP architecture (tanh/SiLU)
-│   ├── iteration_log.py        # Per-iteration log (iterations.csv)
-│   ├── instrumentation.py      # Monitors (chi, round-off, rank) and the stall-based termination rule
-│   ├── test_errors.py, references.py  # Errors against exact and reference solutions
-│   ├── saved_models.py         # Save and reload every trained model
-│   ├── provenance.py, source_lock.py, run_metadata.py  # Commit, hardware and run records
-│   ├── properties.py, analysis.py  # Residual-bound checks; SVD and condition numbers
-│   └── plotting.py, style.py, utils.py, ...
-├── problems/                   # Problem-specific physics (Bratu, Burgers, Buckley-Leverett,
-│                               #   Kovasznay, Beltrami, elasticity, Darcy)
-├── baselines/                  # Calibrated network baselines (F1, F2) and the classical
-│                               #   square Chebyshev collocation baselines
-├── experiments/                # Experiment runners
-│   ├── run_<problem>.py        # One runner per problem; run_all_dry.py validates them all
-│   ├── component_a.py, component_b.py, component_c.py  # Network baselines, instrumented runs,
-│   │                           #   oversampling study
-│   ├── four_method_tables.py, clean_timing.py, stopping_rule_table.py, ...
-│   ├── release_tables.py       # Regenerates the manuscript's tables and checks them (RELEASE.md)
-│   └── manuscript_scripts.py   # Runs the manuscript's figure scripts on the results (RELEASE.md)
-├── scripts/
-│   ├── cluster/                # SLURM jobs and submission scripts (TAMU HPRC Grace and FASTER)
-│   ├── make_hprc_bundle.py     # The upload bundle, locked to a commit
-│   └── generate_permeability.py, plot_permeability_grid.py
-├── reference_results/          # Results of the arXiv version (committed)
-├── examples/                   # Quick-start scripts and notebook
-├── data/spe10/                 # SPE10 permeability field data
-├── tests/                      # pytest suite
-├── RELEASE.md                  # Every table and figure of the manuscript -> script and result files
-├── REPRODUCE.md                # Replication guide
-├── DECISIONS.md                # Dated log of every design decision and deviation
-├── pyproject.toml, requirements.txt, CITATION.cff, LICENSE
-└── README.md
+lilq/          core library: bases, collocation, solvers, monitors and the termination rule,
+               stability constants, iteration logs, provenance, saved models
+problems/      one module per benchmark problem
+baselines/     calibrated network baselines and square-collocation baselines
+experiments/   runners, studies and the scripts that regenerate published tables and figures
+scripts/       cluster job scripts (SLURM) and data utilities
+data/spe10/    permeability fields
+examples/      quick-start scripts and notebook
+tests/         pytest suite
 ```
 
-## Repository Status
+## Testing
 
-**Fully implemented:**
-- All 7 benchmark problems with complete solver implementations
-- 4-method comparison (NiL-N, NiL-Q, LiL-N, LiL-Q) for Bratu, Burgers, Buckley-Leverett
-- LiL-Q for Kovasznay, Beltrami, elasticity
-- FVM + LiL-Q + NiL-N for Darcy/SPE10
-- Residual-bound checks of the convergence theory
-- Interactive Jupyter notebook
+```bash
+python -m pytest -q                  # unit and regression tests
+python experiments/run_all_dry.py    # end-to-end validation (also run by CI)
+```
 
-## Releases
+## Results and reproducibility
 
-| Tag | Paper version |
-|---|---|
-| `v2.0.1` | the code release the revised manuscript cites (DOI [10.5281/zenodo.23167177](https://doi.org/10.5281/zenodo.23167177)): `v2.0.0` with corrected citation metadata (`CITATION.cff`) only |
-| `v2.0.0` | the revised manuscript (4 October 2026). [RELEASE.md](RELEASE.md) maps every table and figure of its Sections 6 and Appendix B to the script that regenerates it and the result files it reads. |
-| `v1.0-manuscript` | the arXiv version |
+[RELEASE.md](RELEASE.md) maps each published table and figure to the script that regenerates it and the result files it reads. [REPRODUCE.md](REPRODUCE.md) lists the commands for each study.
+
+The result files are on the repository's `*-results` branches and in the Zenodo record [10.5281/zenodo.23147620](https://doi.org/10.5281/zenodo.23147620). They include:
+- the per-iteration logs;
+- the trained models;
+- the timing records.
+
+[DECISIONS.md](DECISIONS.md) records the design decisions and deviations, in date order.
 
 ## Citation
 
-G. T. Awojinrin, A.-A. Olawoyin, R. M. Younis, *Quasilinearized Physics-Informed Least-Squares Collocation in Linear-in-Learnables Trial Spaces: Convergence Theory and Practical Stopping Criteria*, arXiv:2606.18175 (2026); revised version in preparation. [CITATION.cff](CITATION.cff) has the software and paper citations.
-
----
+If you use this software, please cite it as described in [CITATION.cff](CITATION.cff). The archived code releases are at [10.5281/zenodo.23167176](https://doi.org/10.5281/zenodo.23167176).
 
 ## License
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE) for details.
+MIT; see [LICENSE](LICENSE).

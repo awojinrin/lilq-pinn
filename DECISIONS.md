@@ -17,6 +17,106 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-12 -- Documentation rewritten; release-time notes on the article moved here
+
+The README, `RELEASE.md` and `REPRODUCE.md` were rewritten to describe the code base, and they no longer track the article's status. The notes below were part of `RELEASE.md` at `v2.0.0`. They concern the article's text, not the code or the result files, so they are kept here unchanged. Their section, table and appendix numbers are those of the article version of 4 October 2026.
+
+#### Numbers in the text
+
+The text quotes many more numbers than these; the following were traced and
+checked by hand at the release.
+
+| Where | Numbers | Source |
+|---|---|---|
+| Section 6.6 | best-approximation errors 3.1e-1 ... 2.3e-14, ratios 1.3, 3.1, 5.7, 4.1, 40, and the field ratios 22 and 40 | MS `delta.py` (its output matches), on the exact solution with the CPU errors of `kovasznay_comparison.csv` |
+| Section 6.11 | the held-out evaluation: 192 runs, fires in 69, 76 censored, residual within 0.04%, E_u within 1.75 (median 1.004), 0.98–1.04 of the error at the stop, 26 A-class stalls at P = 1,200 | `experiments/stopping_rule_table.py --oversampling-root` (`stopping_rule/stopping_rule_summary.json`, `stopping_rule_heldout.csv`); all match. The authors' `heldout.py` and `ns_eval.py` compute the same. |
+| Table B.2 caption | 48 controls retraced every logged loss; the other six departed within the last 14 iterations | `experiments/stall_control_departures.py` (`stall_control_departures.csv`): matches |
+| Appendix B.4 | the identity check: at k = 1, and its maximum over the logged iterations | `b2_check` in each run's `run.json`: `rel_err` of the `*_cpu_paper` runs (BL 1,024: 1.3e-5; gravity 1,024: 3.2e-8), `max_rel_err_over_run` of the `*_cpu_kmax` runs (BL 576: 4.2e-3; BL 1,024: 5.6e-2; Kovasznay 1,875: 1.4e-2): matches |
+
+#### Corrections and notes at the v2.0.0 release
+
+**`kovasznay_comparison.csv`** (Package 2, Section 2, item 4).
+- **The change:** the F1 `eps_u` median is now the median of the final
+  errors in `run.json`, not of the minimum logged error. The minimum
+  logged error uses the exact solution to pick the best step.
+  - GPU: 4.11e-5 becomes 4.19e-5.
+  - CPU: 5.66e-5 becomes 5.88e-5.
+- **Other columns that also changed:** `eps_v` and `eps_p_meanfree` were
+  also taken from the final values, and the CPU `eps_p` median moved from
+  3.42e-4 to 3.45e-4.
+- **Where:** in `package1` (commit ce0afda; `A_calibration/results/`).
+  Table 11 of the manuscript already carries the corrected values.
+- **The superseded copy:** wave 4's `fixes/option_b/section46` copy of the
+  file still holds the old medians. `fig_compA.py` reads that copy, but
+  Figure 18 does not change between the two versions.
+
+**Stall controls** (Package 2, Section 2, item 5).
+- **The check:** `four_method_controls.csv` confirms the advisor's
+  correction: four of the six late-departing controls depart at the
+  original's last logged row before the stall, and two depart 13–14
+  iterations before it.
+- **The two runs:**
+  - `bl_P1024_NiL-Q_s2_cuda` departs at iteration 8,140; the original
+    stalled at 8,153.
+  - `burgers_P400_NiL-Q_s2_cuda` departs at 5,800; the original stalled at
+    5,814.
+- **Effect:** the manuscript's statement ("retrace their original exactly
+  up to the stall") is unaffected, because the departures fall within the
+  stall window.
+
+**Table 7** (`tab:bl_reference_errors`): four rounding slips, corrected in
+the manuscript of 4 October. The values are the same as in the authors'
+`A1_bl_lilq_errors.csv`; four cells had been rounded wrongly:
+
+| Case | P | Column | Value | Printed | Should be |
+|---|---|---|---|---|---|
+| N_g = 0 | 576 | E_S (stop) | 9.0458e-4 | 9.1e-4 | 9.0e-4 |
+| N_g = 0 | 576 | min E_S (k) | 9.0458e-4 (4) | 9.1e-4 (4) | 9.0e-4 (4) |
+| N_g = -5 | 1,024 | min E_S (k) | 1.1477e-2 (54) | 1.2e-2 (54) | 1.1e-2 (54) |
+| N_g = -5 | 1,024 | E_S (k = 60) | 1.1477e-2 | 1.2e-2 | 1.1e-2 |
+
+**Gravity BL P = 64 in `package1`.**
+- **What changed:** wave 4 reran every LiL-Q paper pass with K_max = 60, as
+  the advisor's reply to wave 2 asked. `package1` therefore holds wave 4's
+  `bl_gravity_P64_cpu_paper`, which reaches the target at k = 43; wave 2's
+  had K_max = 20 and did not (`WAVES.json`, overrides).
+- **The script:** the manuscript folder's `conv_data.py` asserted wave 2's
+  version and built the curve to k = 43 from wave 1's K_max pass, so on
+  `package1` it stopped before Figures 4 and 13. The authors' patched copy
+  (4 October) accepts wave 4's rerun as it is; with it, all 20 figures
+  regenerate pixel for pixel from `package1`.
+- **Why the figures are the same either way:** the two curves agree to
+  1.1e-16.
+
+**Table 14** (`tab:darcy_training`): corrected in the manuscript of 4
+October. Three NiL entries described the pre-GitHub notebook's per-field
+recipe, not the network behind the NiL rows of Table 15; the loss weights
+were added. `release_tables.py` now checks the table against the saved
+networks and `problems/darcy.py`.
+- **Why:** before wave 3, the authors decided to use one NiL formulation for
+  all four fields (`DECISIONS.md`, Addendum v2.2), so that delta_FV compares
+  NiL, LiL and the finite-volume reference on the same problem.
+- **The three entries:**
+
+  | Entry | Table 14 | The code that produced Table 15 (`problems/darcy.py`, `DarcyPINN`) |
+  |---|---|---|
+  | Activation | tanh / SiLU | SiLU |
+  | Output (h*) | sigmoid | linear: `P_MID + P_HALF * net_P` |
+  | Optimizer | Adam, StepLR | Adam, cosine annealing to 1e-5, gradient clipping |
+
+- **Not listed in the table:** the loss weights (50 for the PDE, 20 for the
+  boundaries).
+- **Correct as printed:** the network size (2 x 32 per field, 3,555
+  parameters), 150,000 iterations and float64.
+
+**Appendix B.5** (`b5_check.md`): one discrepancy and six clarifications.
+- **The discrepancy:** the four-method row's P range "25–1,051" mixes
+  LiL's smallest P (25) with NiL's largest parameter count. NiL's counts
+  are 37–1,051.
+- **The code was not changed** to match the table.
+
+---
+
 ## 2026-10-10 -- Package 3, after the advisor's reply: item 4's ranks, Beltrami's pressure delta_P, the BLAS
 
 The advisor accepted Package 3 (reply of 10 October). He asked for three corrections for the
