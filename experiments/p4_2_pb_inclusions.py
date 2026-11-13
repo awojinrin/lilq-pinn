@@ -8,7 +8,7 @@ implementation is ``ref_pb_inclusions.py``; where the text and that script
 differ, the script decides.
 
 **The Halton points are drawn once, on the laptop, and shipped**
-(``points/halton_seed{s}.npz``, the first ``HALTON_N`` points in Omega for
+(``data/package4/halton_seed{s}.npz``, the first ``HALTON_N`` points in Omega for
 each seed). The first n points of a draw are the first n of any longer draw,
 so every set below is a prefix of these. The laptop's scipy (1.17.0)
 reproduces the advisor's points (scipy 1.18.1). Grace's scipy (1.13.1) is
@@ -62,6 +62,7 @@ on a 321 x 321 grid of the box, with the mask of Omega.
 Usage::
 
     python experiments/p4_2_pb_inclusions.py points --out <root>            (laptop: draw and ship)
+    python experiments/p4_2_pb_inclusions.py points --out <root> --points data/package4   (Grace: copy the shipped draws)
     python experiments/p4_2_pb_inclusions.py compare-points --out <root> --points <dir>
     python experiments/p4_2_pb_inclusions.py {lilq,square,under,rows,weight,constants,time,m7,solution} --out <root> --points <dir>
     python experiments/p4_2_pb_inclusions.py summarize --out <root> --expected expected_pb.json
@@ -108,10 +109,15 @@ GRID_N = 321
 
 # ---------------------------------------------------------------- the shipped Halton points
 
-def draw_points(out_root):
+def draw_points(out_root, shipped=None):
+    """The points folder of the deliverables: the Halton draws (drawn here, or copied from the shipped
+    ``shipped/halton_seed{s}.npz``) and the evaluation quadrature."""
     out = Path(out_root) / ITEM / 'points'
     out.mkdir(parents=True, exist_ok=True)
     for seed in SEEDS:
+        if shipped:
+            (out / f'halton_seed{seed}.npz').write_bytes((Path(shipped) / f'halton_seed{seed}.npz').read_bytes())
+            continue
         x, y = pb.halton(HALTON_N, seed)
         np.savez(out / f'halton_seed{seed}.npz', x=x, y=y, scipy_version=scipy.__version__, n=HALTON_N, seed=seed)
     Xq, Yq, Wq = pb.fine_quadrature()
@@ -190,6 +196,8 @@ def logged(S, run_dir, norms, seed, scipy_version, k_max=K_MAX, lam=pb.LAM, rati
     extra = lambda b: dict(zip(('eL2', 'eH2'), norms.errors(b, p)))  # noqa: E731
     _, k_s, _, _, tracker, logger, scaled = logged_run(S, np.zeros(S.P), run_dir,
                                                        lambda b: norms.errors(b, p)[0], k_max=k_max, extra_fn=extra)
+    _, beta_ret = returned_iterate(run_dir)
+    np.save(Path(run_dir) / 'beta_returned.npy', beta_ret)       # the rule's returned iterate (the last if it never fired)
     meta = _meta(S, k_max, lam, ratio, seed, scipy_version)
     meta.update(first_stall_iteration=first_stall_iteration(logger.rows), b2_check=tracker.b2_check)
     write_run_json(Path(run_dir) / 'run.json', {**meta, 'package4': {
@@ -533,9 +541,10 @@ def main(argv=None):
     ap.add_argument('--p', type=int, nargs='+')
     ap.add_argument('--seeds', type=int, nargs='+', default=list(SEEDS))
     ap.add_argument('--expected', help="the advisor's expected_pb.json (checks M6, M8)")
+    ap.add_argument('--no-extremes', action='store_true', help='constants: leave out the two extreme 2d sets')
     a = ap.parse_args(argv)
     if a.stage == 'points':
-        print(draw_points(a.out))
+        print(draw_points(a.out, a.points))
         return
     if a.stage == 'summarize':
         _, checks = summarize(a.out, a.expected)
@@ -555,7 +564,7 @@ def main(argv=None):
              'under': lambda: run_under(a.out, halton, a.p or SQUARE_SIZES, a.seeds),
              'rows': lambda: run_rows(a.out, halton),
              'weight': lambda: run_weight(a.out, halton),
-             'constants': lambda: run_constants(a.out, halton, a.p or SIZES, a.seeds),
+             'constants': lambda: run_constants(a.out, halton, a.p or SIZES, a.seeds, extremes=not a.no_extremes),
              'time': lambda: run_timing(a.out, halton, a.p or SIZES, a.seeds)}
     stage[a.stage]()
 

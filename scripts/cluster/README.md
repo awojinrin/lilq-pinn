@@ -334,6 +334,45 @@ Its exit code says what it decided:
 
 Back up `results/package3.tar.gz` to `$HOME/lilq-results` after each report.
 
+## 6. Package 4 (Grace)
+
+Package 4 (the advisor's instructions of 12 November 2026) writes `results/package4`, locked
+to one commit. It is CPU only. It reads:
+- `results/package1_v2.0.0/package1`, for check M0;
+- `results/package2_stage1/reference`, for item 1's Cole–Hopf reference;
+- the shipped Halton points in the bundle, `data/package4/`.
+
+The job scripts are written by `scripts/cluster/package4/_generate_jobs.py`; edit it, not the
+`.slurm` files.
+
+**One submission** (6 jobs, 88 SU requested, about 40 expected; cap 100):
+
+```bash
+cd $SCRATCH/lilq-run/lilq-pinn
+DRY_RUN=1 bash scripts/cluster/package4/submit_p4.sh    # all 6 jobs through sbatch --test-only
+bash scripts/cluster/package4/submit_p4.sh
+```
+
+The chain:
+1. `p4_preflight` checks the versions and the inputs, runs the test suite, fills the
+   deliverables' `points/` folder from `data/package4/`, and records Grace's own scipy draw
+   against it (`compare-points`).
+2. Three jobs wait for it (afterok):
+   - `p4_timed`, on a whole node: M0, then the timings of 1a, 1b and 2a;
+   - `p4_item1`: 1a, 1b and 1c;
+   - `p4_item2`: 2a to 2e, M7 and the solution field.
+3. `p4_item2_constants` (2f) waits for `p4_item2`. It runs the three seeds side by side and
+   stops a p = 30 run 5 min before the walltime, keeping what it logged.
+4. `p4_report` runs after all of them (afterany).
+   - It writes the summaries and `checks.json`.
+   - It writes `sacct.txt` and `su_per_job.csv`.
+   - It packs `results/package4.tar.gz`.
+
+Checks M1, M6 and M8 compare with the advisor's expected values. They are evaluated at the
+assembly, on the laptop.
+
+Back up `results/package4.tar.gz` to `$HOME/lilq-results` after the report.
+
 ## Resource use
 
 Timed jobs hold the whole node and start one thread per core for BLAS,

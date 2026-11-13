@@ -13,7 +13,7 @@
 #               as the A100 nodes, no GPU surcharge (Addendum v2.2 Section 4.1)
 #   shared-gpu  one A100, 8 cores, 32 GB (untimed GPU work)
 #   cpu         24 cores, 32 GB, no GPU (untimed CPU work)
-# LILQ_WAVE (1, 2, 3 or 4, or Package 2's stages p2s1 and p2s2) must be set: it picks the results folder,
+# LILQ_WAVE (1, 2, 3 or 4, Package 2's stages p2s1 and p2s2, or p3, p4) must be set: it picks the results folder,
 # results/wave<N>, each locked to one commit (env.sh). Use this for
 # resubmissions too (e.g. LILQ_WAVE=1 bash scripts/cluster/sbatch.sh job.slurm --array=2).
 set -euo pipefail
@@ -21,8 +21,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER="${CLUSTER:-grace}"
 source "$here/profiles/$CLUSTER.sh"
 [[ -n "$ACCOUNT" ]] || { echo "set LILQ_ACCOUNT to your HPRC allocation account (myproject -l)" >&2; exit 1; }
-: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g or p3 (the wave or stage this job belongs to)}"
-[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g or p3, not '$LILQ_WAVE'" >&2; exit 1; }
+: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3 or p4 (the wave or stage this job belongs to)}"
+[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3|p4)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3 or p4, not '$LILQ_WAVE'" >&2; exit 1; }
 export CLUSTER LILQ_MODULES LILQ_WAVE
 
 script="$1"; shift

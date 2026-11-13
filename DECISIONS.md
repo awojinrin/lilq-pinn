@@ -17,6 +17,42 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-12 -- Package 4: the Grace submission (`scripts/cluster/package4/`, `data/package4/`)
+
+The p4 stage in `env.sh`, `sbatch.sh`, `submit_lib.sh` and `package2/stage_report.py` (`results/package4`, one commit, one lock), as for Package 3.
+
+**The jobs** (`_generate_jobs.py` writes all six; `submit_p4.sh` submits them).
+
+| Job | Class | Walltime | What | Laptop |
+|---|---|---|---|---|
+| `p4_preflight` | cpu | 0:30 | versions, inputs, the test suite, the points folder, `compare-points` | |
+| `p4_timed` | timed-cpu | 0:20 | M0; the timings of 1a, 1b and 2a | about 5 min |
+| `p4_item1` | cpu | 0:40 | 1a logged, 1b, 1c | 21 min |
+| `p4_item2` | cpu | 0:20 | 2a logged, 2b, 2c, 2d, 2e, M7, the solution field | 11 min |
+| `p4_item2_constants` | cpu | 1:15 | 2f, after `p4_item2` | 66 min one run after another; about 40 min side by side |
+| `p4_report` | cpu | 0:15 | summaries, `checks.json`, sacct, the tarball | |
+
+- **88 SU requested** (walltime x rate: 24 SU/h for cpu, 48 SU/h for timed-cpu), under the cap of 100 even if every job ran to its walltime. About 40 expected.
+- Walltimes are about 1.5 times the laptop's stage times. Package 3's runs of the same constants recipe took 0.7 to 1.5 times the laptop's time on Grace.
+- **M0 and every timing run on one whole node** at 48 threads, as `package1`'s and as Section 2.3 asks. That node's `hardware.json` and `environment.txt` go to `provenance/timed/` (`p4_checks.py provenance`).
+
+**2f runs the three seeds side by side** (one process per seed, 8 BLAS threads each, 24 in all). Each process goes from p = 10 up, and p = 30 is last. Seed 0's process also takes the two extreme 2d sets, before its p = 30.
+- **Measured on the laptop at p = 22:** the three seeds side by side took 321 s, against 567 s one after another at 24 threads (1.8 times faster, the same core count).
+- **The per-run constants of `constants.csv` are the same either way:** the smallest c1, the largest c2 and the largest rho_r agree within 1e-6.
+- **The per-iterate c1 and c2 are not.** At p = 22 the column-pivoted QR drops 12 or 13 near-dependent columns at the 1e-10 cutoff. Which ones it drops at a plateau iterate depends on round-off, so c1 takes 14 to 19 distinct values across the iterates of one run (0.084 to 0.092 for seed 2), whose coefficients agree to round-off. A different BLAS thread count moves an iterate between these values (up to 10% in c1). This is a property of the recipe, reported under Section 6.2's rule for the constants, not a change of the recipe.
+- Each p = 30 run is stopped 5 min before the walltime if it is still running (`until_end`). It keeps every iterate it wrote, since `constants_by_iterate.csv` is written after each one. Section 6.2's rule then applies: the sizes up to p = 26 stand.
+
+**The shipped Halton points are in the repository** (`data/package4/halton_seed{0,1,2}.npz`, 129 kB each, with a README). Every Grace job reads them.
+- The preflight copies them into the deliverables' `points/` folder (`points --points data/package4`).
+- `compare-points` records Grace's scipy draw against them.
+- **The tests that need the advisor's point sets build them from these files.** A test that drew with the local scipy would fail on Grace if scipy 1.13.1 draws other points. That would stop the preflight and cancel every job.
+
+**Checks M1, M6 (values at the five points) and M8 are evaluated at the assembly.** They compare with `expected_burgers.json` and `expected_pb.json`, the advisor's files, which are not in the repository or on Grace. The Grace report summarizes everything else.
+
+**Every logged run of item 2 saves `beta_returned.npy`**, the iterate the rule returns (the last one if it never fires), as Section 7 asks for 2a.
+
+---
+
 ## 2026-11-12 -- Package 4, item 2: Poisson-Boltzmann around three inclusions (`problems/poisson_boltzmann.py`, `experiments/p4_2_pb_inclusions.py`)
 
 The advisor's instructions of 12 November 2026, Section 4. The reference script `ref_pb_inclusions.py` is the specification. Its `halton` and `boundary` are used unchanged, so that the point sets coincide.
@@ -26,7 +62,7 @@ The advisor's instructions of 12 November 2026, Section 4. The reference script 
 - Agreement with the advisor's SymPy values (M6): within 6e-16 relative at his five points.
 - `tests/test_poisson_boltzmann.py` compares the closed form with a SymPy derivation where SymPy is installed (skipped otherwise) and with finite differences everywhere.
 
-**The Halton points are drawn on the laptop and shipped** (`points/halton_seed{0,1,2}.npz`, the first 8,000 points in Omega).
+**The Halton points are drawn on the laptop and shipped** (`data/package4/halton_seed{0,1,2}.npz`, the first 8,000 points in Omega).
 - The first n points of a draw are the first n of any longer draw (tested), so every set of the package is a prefix of one draw per seed.
 - The laptop's scipy 1.17.0 reproduces the advisor's points (his 1.18.1): the reference script's numbers agree within 0.3% for LiL-Q and 1e-10 for underdetermined collocation.
 - Grace's scipy 1.13.1 is compared with the shipped points by the `compare-points` stage. It is recorded, never used.

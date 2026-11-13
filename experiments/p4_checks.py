@@ -14,10 +14,14 @@ must reproduce ``package1`` to all digits: the number of rows of
 **collect** merges ``checks_item1.json``, ``checks_item2.json`` and
 ``m0.json`` into ``checks.json`` (M0 to M9).
 
+**provenance** writes ``hardware.json`` and ``environment.txt`` of the node a
+job runs on into ``<root>/provenance/<name>/`` (each timed job records its own).
+
 Usage::
 
     python experiments/p4_checks.py m0 --out <root> --package1 <package1>
     python experiments/p4_checks.py collect --out <root>
+    python experiments/p4_checks.py provenance --out <root> --name <job>
 """
 
 import argparse
@@ -93,10 +97,20 @@ def collect(out_root):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description='Package 4: check M0 and the combined checks.json.')
-    ap.add_argument('stage', choices=('m0', 'collect'))
+    ap.add_argument('stage', choices=('m0', 'collect', 'provenance'))
     ap.add_argument('--out', required=True)
     ap.add_argument('--package1')
+    ap.add_argument('--name', help='provenance: the folder under <root>/provenance/')
     a = ap.parse_args(argv)
+    if a.stage == 'provenance':
+        if not a.name:
+            ap.error('--name is required for provenance')
+        from lilq.provenance import save_provenance
+        out = Path(a.out) / 'provenance' / a.name
+        out.mkdir(parents=True, exist_ok=True)
+        save_provenance(out)
+        print(out)
+        return 0
     if a.stage == 'm0':
         if not a.package1:
             ap.error('--package1 is required for m0')

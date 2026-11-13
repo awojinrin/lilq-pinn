@@ -1,11 +1,17 @@
 """Package 4, item 2: the Poisson-Boltzmann problem around three inclusions."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from experiments import p4_2_pb_inclusions as drv
 from experiments.p4_common import identity_scaled, iterate_to_rule
 from problems import poisson_boltzmann as pb
+
+# The shipped Halton points. Tests that need the advisor's point sets build them from these, as
+# the cluster runs do: another scipy (Grace's 1.13.1) may draw different points.
+SHIPPED = Path(__file__).resolve().parents[1] / 'data' / 'package4'
 
 # Check M6: the advisor's values of u* and rho (instructions, Section 5)
 M6_POINTS = [
@@ -76,25 +82,49 @@ def test_identity_of_remark_1():
 
 
 def test_lilq_matches_the_reference_at_p10():
-    """expected_pb.json, P = 100, seed 0: the rule fires at step 2, stall 2.688, errors 4.854e-2 and 3.705e-1."""
-    S = pb.lilq_system(10, 0)
+    """expected_pb.json, P = 100, seed 0: the rule fires at step 2, stall 2.688, errors 4.854e-2 and 3.705e-1
+    (within check M8's 1%)."""
+    S = drv.lilq_set(drv.Halton(SHIPPED), 10, 0)
     beta, k_s, stall, _ = iterate_to_rule(S, np.zeros(S.P))
     e0, e2 = pb.Norms().errors(beta, 10)
     assert k_s == 2
-    assert stall == pytest.approx(2.688, rel=1e-3)
-    assert (e0, e2) == pytest.approx((4.854e-2, 3.705e-1), rel=1e-3)
+    assert stall == pytest.approx(2.688, rel=1e-2)
+    assert (e0, e2) == pytest.approx((4.854e-2, 3.705e-1), rel=1e-2)
 
 
-def test_shipped_points_rebuild_the_same_set(tmp_path):
-    drv.draw_points(tmp_path)
-    h = drv.Halton(tmp_path / drv.ITEM / 'points')
+def test_shipped_points_rebuild_the_set_of_a_local_draw(tmp_path):
+    """A set built from shipped points is the set the problem module builds from the same points;
+    where the local scipy draws the shipped points, it is the module's own set."""
+    h = drv.Halton(SHIPPED)
     S1 = drv.lilq_set(h, 10, 1)
-    S2 = pb.lilq_system(10, 1)
+    S2 = pb.lilq_system(10, 1, interior=h.take(1, int(round(pb.RATIO * 100))))
     np.testing.assert_array_equal(S1.points['interior'][0], S2.points['interior'][0])
     assert S1.N == S2.N
+    drv.draw_points(tmp_path)
+    if not np.array_equal(drv.Halton(tmp_path / drv.ITEM / 'points').take(1, 800)[0], h.take(1, 800)[0]):
+        pytest.skip('this scipy draws other Halton points than the shipped ones (recorded by compare-points)')
+    np.testing.assert_array_equal(S1.points['interior'][0], pb.lilq_system(10, 1).points['interior'][0])
 
 
 def test_newton_square_statuses():
     S = pb.square_system(10, 0, 'fekete')          # the smallest size of 2b
     b, it, status, _ = drv.newton(S, 'lu')
     assert status in ('converged', 'diverged', 'budget', 'singular') and it <= drv.NEWTON_K_MAX
+
+
+def test_points_stage_copies_the_shipped_draws(tmp_path):
+    """On Grace the points folder holds the shipped draws (data/package4), not Grace's own."""
+    out = drv.draw_points(tmp_path, SHIPPED)
+    for seed in drv.SEEDS:
+        assert (out / f'halton_seed{seed}.npz').read_bytes() == (SHIPPED / f'halton_seed{seed}.npz').read_bytes()
+    assert (out / 'evaluation_quadrature_70x420.npz').exists()
+    assert drv.Halton(out).scipy_version() == '1.17.0'
+
+
+def test_logged_run_saves_the_returned_iterate(tmp_path):
+    S = drv.lilq_set(drv.Halton(SHIPPED), 10, 0)
+    d = drv.logged(S, tmp_path / 'run', pb.Norms(), 0, 'test', k_max=6)
+    k_s, beta = drv.returned_iterate(d)
+    betas = np.load(d / 'betas.npy')
+    assert k_s == 2                                                   # as the reference at p = 10
+    np.testing.assert_array_equal(np.load(d / 'beta_returned.npy'), betas[k_s + 1])

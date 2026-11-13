@@ -39,7 +39,10 @@ fi
 # Before each wave: the balance, then an explicit go-ahead (YES=1 skips the question).
 confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave>
     local what="wave $LILQ_WAVE"
-    if [[ "$LILQ_WAVE" == p3 ]]; then   # Package 3 (8 October 2026) and its Addendum 1: results/package3
+    if [[ "$LILQ_WAVE" == p4 ]]; then   # Package 4 (12 November 2026): results/package4
+        what="Package 4"
+        echo "Package 4 (results/package4), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p3 ]]; then   # Package 3 (8 October 2026) and its Addendum 1: results/package3
         what="Package 3"
         echo "Package 3 (results/package3), code at $(code_commit)."
     elif [[ "$LILQ_WAVE" == p2s2g ]]; then   # Stage 2's GPU addendum (batch 8): results/package2_stage2_gpu
