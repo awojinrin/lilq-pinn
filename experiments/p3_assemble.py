@@ -38,14 +38,8 @@ Usage::
 """
 
 import argparse
-import csv
-import datetime
-import importlib.util
-import io
 import json
-import re
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -53,44 +47,21 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from experiments.assemble_common import (blas_line, copy_grace as _copy_grace, decisions as _decisions,  # noqa: E402
+                                         extra_rows, git as _git, job_table, log_start, modules, preflight_lines,
+                                         read_csv as _read_csv, read_json as _json, runs_and_head, su_rows,
+                                         write_lf as _write, write_provenance, write_rows as _write_rows, write_su)
+
 GRACE_ITEMS = ('P3_1_beltrami_certified', 'P3_2a_bl_chebyshev_certified', 'P3_2b_bl_lifted_sine_cheb',
                'P3_3_affine_certificates', 'P3_4_burgers_large_P', 'P3_checks', 'slurm_logs')
 GRACE_FILES = ('COMMIT', 'checks_item2.json', 'sacct.txt', 'su_per_job.csv', 'report_log.txt')
-LOG_HEAD = re.compile(r'^job (\d+) on (\S+): (\d+) threads, (\d+) cores usable, OverSubscribe=(\S+)')
 P2_HARDWARE = ('Package 2, Stage 2, job 20017335 (lilq-p2s2-scaling-cpu-a) on c528, partition medium: '
                'Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz, 48 cores, RealMemory 368640 MB '
                '(package2_results/hardware.json)')
 
 
-def _git(*args):
-    out = subprocess.run(['git', *args], cwd=REPO, capture_output=True, text=True)
-    return out.stdout.strip() if out.returncode == 0 else None
-
-
-def _module(name, path):
-    spec = importlib.util.spec_from_file_location(name, path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-def _json(path):
-    return json.loads(Path(path).read_text())
-
-
-def _write(path, text):
-    Path(path).write_bytes(text.encode())                 # LF on every platform
-
-
 def copy_grace(grace, out, log):
-    for name in GRACE_ITEMS:
-        if (out / name).exists():
-            shutil.rmtree(out / name)
-        shutil.copytree(grace / name, out / name)
-        log.append(f'copied {name}/')
-    for name in GRACE_FILES:
-        shutil.copy2(grace / name, out / name)
-        log.append(f'copied {name}')
+    _copy_grace(grace, out, GRACE_ITEMS, GRACE_FILES, log)
 
 
 def recheck_l1(out, p2_12, log):
@@ -110,22 +81,6 @@ def recheck_l1(out, p2_12, log):
     log.append(f"L1 re-evaluated: {'passed' if new['passed'] else 'FAILED'} (Grace's run: "
                f"{'passed' if grace_l1['passed'] else 'failed'})")
     return checks
-
-
-def _read_csv(path):
-    with open(path, newline='') as fh:
-        return list(csv.DictReader(fh))
-
-
-def _write_rows(path, rows):
-    """Rewrite a CSV of Grace's with its own line ending (the csv module's CRLF), so a diff shows
-    only the values that changed."""
-    ending = '\r\n' if b'\r\n' in Path(path).read_bytes() else '\n'
-    buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=list(rows[0]), lineterminator=ending)
-    w.writeheader()
-    w.writerows(rows)
-    _write(path, buf.getvalue())
 
 
 def recheck_item4_ranks(out, log):
@@ -241,20 +196,6 @@ def checks_json(out, item4):
     }
 
 
-def su_rows(out, sacct_extra):
-    wave_report = _module('wave_report', REPO / 'scripts' / 'cluster' / 'wave_report.py')
-    with open(out / 'su_per_job.csv') as fh:
-        rows = list(csv.DictReader(fh))
-    have = {r['job_id'] for r in rows}
-    if sacct_extra:
-        for r in wave_report.su_rows(Path(sacct_extra).read_text()):
-            if r['job_id'] not in have:
-                rows.append({k: r[k] for k in wave_report.SU_COLUMNS}
-                            | {'note': 'not in the last tarball: from sacct after it ended'})
-    total = sum(float(r['su'] or 0) for r in rows)
-    return rows, total, wave_report.SU_COLUMNS
-
-
 def copy_provenance(prov, out, log):
     """The record ``save_provenance`` wrote in a short job after the runs (``p3_provenance.slurm``):
     ``hardware.json`` and ``environment.txt`` to ``provenance_cpu/``, its log to ``slurm_logs/``."""
@@ -275,23 +216,7 @@ def copy_provenance(prov, out, log):
 def hardware(out, captured=None, extra_rows=()):
     """Per job: the node, the threads and cores env.sh reported, and the allocation. The CPU
     from ``captured`` (``copy_provenance``) when given; otherwise Package 2's record is cited."""
-    sacct = {}
-    for line in (out / 'sacct.txt').read_text().splitlines()[2:]:
-        parts = line.split()
-        if parts and parts[0].isdigit():
-            sacct[parts[0]] = {'name': parts[1], 'partition': parts[2], 'alloc_tres': parts[3], 'elapsed': parts[4]}
-    for r in extra_rows:
-        sacct.setdefault(r['job_id'], {'name': r['job_name'], 'alloc_tres': r['alloc_tres'],
-                                       'elapsed_h': r['elapsed_h']})
-    jobs = {}
-    for p in sorted((out / 'slurm_logs').glob('*.out')):
-        for line in p.read_text(errors='replace').splitlines()[:5]:
-            m = LOG_HEAD.match(line)
-            if m:
-                job, node, threads, cores, oversub = m.groups()
-                jobs[job] = {'log': p.name, 'node': node, 'threads': int(threads), 'cores_usable': int(cores),
-                             'oversubscribe': oversub, **sacct.get(job, {})}
-                break
+    jobs = job_table(out, extra_rows)
     if captured is None:
         return {'cluster': 'Grace (TAMU HPRC)', 'jobs': jobs, 'cpu_model': None,
                 'cpu_model_note': ('not recorded by the Package 3 jobs (they did not call save_provenance). Every job '
@@ -307,28 +232,12 @@ def hardware(out, captured=None, extra_rows=()):
             'jobs': jobs, 'gpu': None}
 
 
-def blas_line(captured):
-    """The BLAS the jobs used: FlexiBLAS and the library it dispatched to, from the thread pools
-    the captured record lists (threadpoolctl, in the runs' environment)."""
-    pools = {p['internal_api']: p for p in (captured or {}).get('threads', {}).get('threadpools', [])}
-    if 'flexiblas' in pools and 'openblas' in pools:
-        o = pools['openblas']
-        return (f"BLAS and LAPACK: OpenBLAS {o['version']} ({Path(o['filepath']).name}), through FlexiBLAS "
-                f"{pools['flexiblas']['version']}, at {o['num_threads']} threads on a whole node: the thread pools "
-                'loaded in the provenance job (provenance_cpu/hardware.json).')
-    return "BLAS and LAPACK: FlexiBLAS 3.4.4 (GCC 13.3.0), through the modules' numpy and scipy."
-
-
 def environment(out, runs_commit, captured=None):
-    pre = next((out / 'slurm_logs').glob('lilq-p3-preflight.*.out')).read_text(errors='replace').splitlines()
-    keep = [l for l in pre if l.startswith(('job ', 'torch ', 'numpy ', 'provenance lock', 'inputs OK', 'K1 ', 'K2 ',
-                                            'PREFLIGHT')) or re.match(r'\d+ passed', l)]
-    env_sh = (REPO / 'scripts' / 'cluster' / 'env.sh').read_text()
-    modules = re.search(r'LILQ_MODULES="\$\{LILQ_MODULES:-([^}]+)\}"', env_sh).group(1)
+    keep = preflight_lines(out, 'lilq-p3-preflight.*.out')
     return '\n'.join([
         "Package 3's software environment, from its jobs' own logs (the preflight's).",
         f'Code: commit {runs_commit} (the bundle, under the source lock of every job).',
-        f'Modules (scripts/cluster/env.sh): {modules}; the venv $SCRATCH/lilq-run/venv first on PYTHONPATH.',
+        f'Modules (scripts/cluster/env.sh): {modules()}; the venv $SCRATCH/lilq-run/venv first on PYTHONPATH.',
         blas_line(captured),
         'Threads: OMP, OpenBLAS and MKL set to the cores the job holds (48 on a whole node, 24 for the cpu class);',
         '  the runs that set their own count (item 2: 4 per run, six side by side; item 3: as the original run)',
@@ -343,25 +252,14 @@ def environment(out, runs_commit, captured=None):
 
 
 def decisions():
-    text = (REPO / 'DECISIONS.md').read_text()
-    parts = re.split(r'(?m)^(?=## \d{4}-\d{2}-\d{2} -- )', text)
-    mine = [p.rstrip().rstrip('-').rstrip() for p in parts if re.match(r'## \d{4}-\d{2}-\d{2} -- Package 3', p)]
-    return ('# DECISIONS.md: the Package 3 entries\n\nCopied from the repository\'s `DECISIONS.md` at the '
-            f"assembly's commit ({_git('rev-parse', '--short', 'HEAD')}), newest first.\n\n---\n\n"
-            + '\n\n---\n\n'.join(mine) + '\n')
+    return _decisions(3)
 
 
 def assemble(grace, out, p2_12, sacct_extra=None, provenance=None):
     grace, out = Path(grace), Path(out)
-    runs = _json(grace / 'COMMIT')
-    head = _git('rev-parse', 'HEAD')
-    if head is None:
-        sys.exit('the assembly needs a git checkout (it records the commits)')
-    if subprocess.run(['git', 'merge-base', '--is-ancestor', runs['commit'], head], cwd=REPO).returncode != 0:
-        sys.exit(f"the runs' commit {runs['commit'][:7]} is not an ancestor of HEAD {head[:7]}")
+    runs, head = runs_and_head(grace)
     out.mkdir(parents=True, exist_ok=True)
-    log = [f'Package 3 assembly, {datetime.datetime.now(datetime.timezone.utc).isoformat()}',
-           f'from {grace.name} (runs at {runs["commit"][:7]}), assembled at {head[:7]}']
+    log = log_start(3, grace, runs, head)
     copy_grace(grace, out, log)
     captured = copy_provenance(provenance, out, log) if provenance else None
     item4 = recheck_l1(out, p2_12, log)
@@ -371,26 +269,13 @@ def assemble(grace, out, p2_12, sacct_extra=None, provenance=None):
     _write(out / 'checks.json', json.dumps(checks, indent=2) + '\n')
     log.append('checks.json: ' + ', '.join(f"{k} {'passed' if v['passed'] else 'FAILED'}" for k, v in checks.items()))
     rows, total, cols = su_rows(out, sacct_extra)
-    buf = io.StringIO()
-    w = csv.DictWriter(buf, fieldnames=cols, lineterminator='\n', extrasaction='ignore')
-    w.writeheader()
-    w.writerows(rows)
-    _write(out / 'su.csv', buf.getvalue())
-    log.append(f'su.csv: {len(rows)} jobs, {total:.1f} SU charged at Grace\'s rates')
-    have = {r['job_id'] for r in csv.DictReader(io.StringIO((out / 'su_per_job.csv').read_text()))}
-    _write(out / 'hardware.json', json.dumps(hardware(out, captured, [r for r in rows if r['job_id'] not in have]),
-                                             indent=2) + '\n')
+    write_su(out, rows, cols)
+    log.append(f"su.csv: {len(rows)} jobs, {total:.1f} SU charged at Grace's rates")
+    _write(out / 'hardware.json', json.dumps(hardware(out, captured, extra_rows(out, rows)), indent=2) + '\n')
     _write(out / 'environment.txt', environment(out, runs['commit'], captured))
     _write(out / 'DECISIONS_package3.md', decisions())
-    between = _git('log', '--format=%h %s', f"{runs['commit']}..{head}") or ''
-    _write(out / 'provenance.json', json.dumps({
-        'runs': {'commit': runs['commit'], 'tree_hash': runs['tree_hash'], 'source': runs['source'],
-                 'locked_at_utc': runs['locked_at_utc']},
-        'assembly': {'commit': head, 'branch': _git('rev-parse', '--abbrev-ref', 'HEAD')},
-        'commits_between': between.splitlines(),
-        'note': "Every run and every summary but L1's is Grace's, at the runs' commit; L1 is re-evaluated "
-                'at the assembly (checks_item4.json).'}, indent=2) + '\n')
-    log.append(f"provenance.json: {len(between.splitlines())} commit(s) between the runs and the assembly")
+    write_provenance(out, runs, head, "Every run and every summary but L1's is Grace's, at the runs' commit; L1 is "
+                     're-evaluated at the assembly (checks_item4.json).', log)
     _write(out / 'assembly_log.txt', '\n'.join(log) + '\n')
     print('\n'.join(log))
     return checks, total

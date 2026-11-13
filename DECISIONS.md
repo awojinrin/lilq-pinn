@@ -17,6 +17,50 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-13 -- Package 4, the assembly: Grace's tree, the checks with the advisor's files, the Section 7 records (`experiments/p4_assemble.py`, `experiments/assemble_common.py`)
+
+The *assembly* turns the extracted `package4.tar.gz` of the report job into the results folder of Section 7. It changes no computed number of a run.
+
+**One shared module for every package's assembly.** `experiments/assemble_common.py` holds what Package 3's and Package 4's assemblies share:
+- the commit check;
+- copying Grace's tree;
+- LF writing;
+- `su.csv`;
+- the per-job table of `hardware.json`;
+- the BLAS, preflight and module lines of `environment.txt`;
+- the package's `DECISIONS.md` entries;
+- `provenance.json`.
+
+`p3_assemble.py` now imports them. Its output is unchanged: `tests/test_p3_assemble.py` passes as before. The published `package3-results` branch records the commit that assembled it.
+
+**The checks with the advisor's files.** The cluster had neither `expected_burgers.json` nor `expected_pb.json`, so it could not evaluate M1, M8, or M6's values at the five points. The assembly reruns both items' summaries on Grace's files with those files, then `p4_checks collect`.
+- Grace's `checks.json`, `checks_item1.json` and `checks_item2.json` are kept as `*_grace.json`.
+- Every verdict Grace gave must come out the same, or the assembly stops. A check Grace could not evaluate (M6's `null`) may take any verdict.
+- The advisor's two files are not copied. `provenance.json` records their SHA-256.
+
+**The tables stay Grace's.** The summaries also rewrite `terminal.csv` and the other tables from Grace's logs. The assembly compares them with Grace's and puts Grace's bytes back. Every column must agree within 1e-8 relative, except the columns of delta_P (the error of the best approximation in the basis) and the ratios to it. On Grace's tree, every other column agreed exactly.
+
+**delta_P of item 2 is reproducible to about three digits at P >= 484.** delta_P is a least-squares projection (gelsy, rcond = eps) onto the basis restricted to the domain with holes, which is ill-conditioned. Its round-off reaches the fourth digit at the larger sizes. Grace, the laptop and the advisor's `expected_pb.json` ("best") give three values:
+
+| P | delta_L2 spread (Grace, laptop, advisor) | delta_H2 spread |
+|---|---|---|
+| 100 | 2e-14 | 4e-15 |
+| 196 | 2e-11 | 9e-13 |
+| 324 | 3e-8 | 2e-10 |
+| 484 | 9e-5 | 3e-7 |
+| 676 | 9e-4 | 5e-6 |
+| 900 | 1.4e-3 (Grace and laptop; the advisor gives no value) | 8.5e-5 |
+
+- The assembly records the spread in `delta_P_across_machines.json` instead of stopping on it.
+- The report gives the ratios to delta_P at p >= 22 to three significant figures.
+- Item 1's delta_P (Burgers) agrees to 4e-11.
+
+**The report job is not in Grace's `su_per_job.csv`.** It ran after the table was written, so its row comes from `sacct` after it ended (`--sacct-extra`), as for Package 3.
+
+**M9 fails as Grace found:** 1b, E1 at tolerance 1e-5, a 22.6% spread of the three timings. Section 6.2's rule applies: the report gives all three timings and the median. It is a deviation recorded in the report, not a failure of the assembly; `p4_assemble.py` exits 0 once the folder is complete.
+
+---
+
 ## 2026-11-12 -- Package 4: the Grace submission (`scripts/cluster/package4/`, `data/package4/`)
 
 The p4 stage in `env.sh`, `sbatch.sh`, `submit_lib.sh` and `package2/stage_report.py` (`results/package4`, one commit, one lock), as for Package 3.
