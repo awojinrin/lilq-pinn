@@ -534,6 +534,16 @@ def summarize(out_root, reference_dir, expected=None, sizes=SIZES):
                                'round_off_iterates': len(c) - len(ok),
                                'dropped_max': max(int(x['dropped']) for x in c)})
         write_csv(cdir / 'constants.csv', rows_c)
+    # M9: every timing pass takes the logged pass's solves to the returned iterate; the three timings within 15%
+    m9 = [{'run': f"1a p{r['p']}", 'timed_solves': r.get('timed_solves'), 'logged_solves': r.get('solves_to_stop'),
+           'matches': r.get('timing_matches_logged'),
+           'spread': json.loads((root / ITEMS['1a'] / f"p{r['p']}" / 'timing.json').read_text())['spread']}
+          for r in term if r.get('timed_solves') is not None]
+    m9 += [{'run': f"1b {r['variant']} tol {r['tolerance']:g}", 'timed_solves': r['timed_solves'],
+            'logged_solves': r['total_solves'], 'matches': r['timed_solves'] == [r['total_solves']],
+            'spread': json.loads((root / ITEMS['1b'] / f"{r['variant']}_tol{r['tolerance']:g}" / 'timing.json')
+                                 .read_text())['spread']} for r in enrich_rows if r.get('timed_solves')]
+    checks['M9_item1'] = {'rows': m9, 'pass': bool(m9) and all(x['matches'] and x['spread'] < 0.15 for x in m9)}
     (root / 'checks_item1.json').write_text(json.dumps(checks, indent=2))
     return term, checks
 
