@@ -17,6 +17,32 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-13 -- Package 5, the plan: items 1, 2 and 4 before item 3; the readings of the instructions
+
+The advisor's Package 5 instructions (13 November 2026) have four items: 1, the errors in the norm of X and the boundary weight; 2, LiL-N by nonlinear least squares; 4, the irregular domain at larger sizes and with random features; 3, the cost at a common accuracy. Items 1, 2 and 4 come first and get their own report. Item 3 waits for the advisor's reply to that report, which proposes the Bratu boundary weight item 3 uses.
+
+**His reply to Package 4** (Section 1 of the instructions):
+- M5 is judged on the stall levels;
+- M3 is judged by the scaled identity, with the plain difference kept in the record;
+- the manuscript quotes the ratios to delta_P to two figures;
+- the manuscript no longer uses the class of a stall (A or C). The `class` columns stay in the files; no new decision is based on them.
+
+**The advisor's scripts on the laptop** (numpy 2.4.2, scipy 1.17.0), before any code:
+- `ref_weight_bratu.py` and `ref_weight_bl.py` reproduce `expected_weight_bratu.json` and `expected_weight_bl.json` to 4e-11 relative;
+- `ref_nlls_liln.py`: the errors and residuals of the three least-squares solvers and of LiL-Q agree with `expected_nlls_liln.json` to three figures. The evaluation counts differ by one in places, and the L-BFGS iteration counts by up to 30% (round-off in a long line-search iteration);
+- `ref_rf_pb.py` reproduces `expected_rf_pb.json` except at P = 800, sigma = 2, where the space is rank deficient (rank 693 to 695 of 800): 5 and 7 solves against 6 and 10, errors within 1.2% (H2) and 20% (L2);
+- `ref_pb_large.py`, seed 0: stall levels 4.1e-8, 6.6e-10, 1.5e-11, H2 errors 1.7e-8, 1.8e-10, 5.0e-12, ranks 1,099, 1,345, 1,598 at p = 34, 38, 42, as Section 5 states; the rule fires at step 4, 4 and 5 (Section 5: 4). delta_L2 at p = 42 is 6e-15, at the level of round-off.
+- Section 5's summary of item 4b ("3 to 5 solves", "1.1 to 4.5 times the best approximation") leaves out P = 800, sigma = 2, where his own file has 6 and 10 solves and ratios 13.6 and 8.3. The script decides; the report says so.
+
+**Readings of the instructions (decided here, stated in the report):**
+1. **Item 1 is untimed.** The configurations it repeats (P2-16, P3-2, P3-1) were untimed, and Section 3's per-run report has no time; items 2 and 4a ask for times explicitly. Timing the Beltrami runs by the protocol (warm-up and three timings to the returned iterate) would add about 180 SU (Package 3's logs: about 25 s per iterate at B1 level 1, 157 s at B2 level 1, whole node).
+2. **The weights of item 1 are those of Section 3:** 10, 10^3, 10^4, 10^6 (Beltrami: 10^3, 10^4, 10^6 beside the delivered 10). The advisor's scripts also try weights that grow with p (p^3, p^4); they are not in the instructions and are not run.
+3. **Where the errors are measured.** The L2 error and delta_L2 stay as delivered (the paper's 201 x 201 evaluation grids), so they are comparable with the Package 2 and 3 rows. The norm of X (H2 for Bratu; H^{2,1} = u, u_x, u_xx, u_t for Burgers and Buckley-Leverett) is integrated by a tensor Gauss-Legendre quadrature, as in the advisor's scripts, with the components weighted equally. delta in the norm of X is the least-squares distance in that norm (all components stacked), as `best` in his scripts.
+4. **Item 2's L-BFGS** is the four-method runs' (`lilq.solvers.solve_lil_n`: PyTorch L-BFGS, history 100, strong Wolfe line search), with the tolerances zero and 2,000 iterations. The advisor's scipy L-BFGS-B (maxcor 100) is run beside it, since his expected values come from it.
+5. **Beltrami's pressure pins:** `pin_scale` = 1, read literally. The pins' squared weight is `lambda_bc / N_p`, so they follow the new boundary weight. They fix the pressure constant only; Package 3's check K3 showed the errors do not depend on their scale (1e-3 to 1e3).
+6. **Runs without expected values** (item 2 at Burgers p = 30 and Poisson-Boltzmann p = 22; item 4b's third draw and P = 1,600; item 1 outside the advisor's sizes) are reported as they come out.
+7. **Checks.** Section 6 defines checks for item 3 only. For items 1, 2 and 4: every changed driver at its old settings reproduces the delivered rows (the new options default to the old behaviour), and the LiL-Q runs that repeat Package 4 reproduce its values.
+
 ## 2026-11-13 -- Package 4, the assembly: Grace's tree, the checks with the advisor's files, the Section 7 records (`experiments/p4_assemble.py`, `experiments/assemble_common.py`)
 
 The *assembly* turns the extracted `package4.tar.gz` of the report job into the results folder of Section 7. It changes no computed number of a run.
