@@ -151,3 +151,30 @@ def test_the_summary_reads_a_run_stopped_by_its_cap(tmp_path, monkeypatch):
     assert row['status'] == 'running' and row['iterates'] == 1 and row['returned_iterate'] == 1
     assert row['rank_min'] == row['P'] and checks['K7']['passed']
     assert row['b2_rel_err_k1'] is None and checks['K4']['max_rel_err_at_k1'] is None
+
+
+def test_the_weight_option_leaves_the_delivered_system_unchanged():
+    """Package 5, item 1: by default the faces and the slab keep lambda = 10, bit for bit."""
+    assert m.config_for('B1') == m.config_for('B1', None, None) == m.config_for('B1', 10.0, 10.0)
+    g = cf.beltrami_grid(6, m.INTERVALS)['blocks']
+    cfg = dataclasses.replace(m.config_for('B1'), N_vel=2, N_p=3, n_pressure_pin_levels=3)
+    a = m.System(cfg, g)
+    b = m.System(dataclasses.replace(cfg, lambda_bc=1e4, lambda_ic=1e6), g)
+    for x, y in zip(a.aux, b.aux):
+        scale = np.sqrt((1e6 if x['name'] == 'initial' else 1e4) / 10)
+        np.testing.assert_allclose(y['s'], scale * x['s'], rtol=1e-14)
+    np.testing.assert_allclose(b.s_pin, np.sqrt(1e3) * a.s_pin, rtol=1e-14)    # pin_scale = 1: lambda_bc / N_p
+    assert np.array_equal(a.s_mom, b.s_mom) and np.array_equal(a.s_cont, b.s_cont)
+
+
+def test_a_weighted_run_records_its_lambdas(tmp_path, monkeypatch):
+    monkeypatch.setitem(m.SIZES, 'B1', TINY)
+    m.run('B1', 1, tmp_path, tag='_lam1e3', k_iters=3, with_rho=False, lambda_bc=1e3, lambda_ic=1e3)
+    m.run('B1', 1, tmp_path, k_iters=3, with_rho=False)
+    meta = json.loads((tmp_path / m.ITEM / 'B1_L1_lam1e3' / 'run.json').read_text())['package3']
+    assert meta['lambda_bc'] == meta['lambda_ic'] == 1e3
+    terminal, _, _ = m.summarize(tmp_path)
+    by = {(r['lambda_bc'], r['lambda_ic']): r for r in terminal}
+    assert set(by) == {(10.0, 10.0), (1e3, 1e3)}
+    for r in terminal:
+        assert r['k_rule'] == 'never' or float(r['stall_level']) > 0

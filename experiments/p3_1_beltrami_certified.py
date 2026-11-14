@@ -60,6 +60,7 @@ gathers them, with ``terminal.csv`` and checks K3, K4, K6 and K7.
 Usage::
 
     python experiments/p3_1_beltrami_certified.py run --size B1 --level 1 --out <root> [--rho] [--pin-scale 1e-3 --tag _pin1e-3]
+    python experiments/p3_1_beltrami_certified.py run --size B1 --level 1 --out <root> --lambda-bc 1e3 --lambda-ic 1e3 --tag _lam1e3   (Package 5, item 1)
     python experiments/p3_1_beltrami_certified.py constants --size B1 --level 1 --out <root>
     python experiments/p3_1_beltrami_certified.py summarize --out <root>
 """
@@ -105,10 +106,13 @@ TIMING_COLUMNS = ('t_assemble_s', 't_solve_s', 't_cum_s')
 NOTE_B2 = ("Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested")
 
 
-def config_for(size):
+def config_for(size, lambda_bc=None, lambda_ic=None):
+    """The run's configuration. ``lambda_bc`` / ``lambda_ic``: the faces' and the
+    initial slab's lambda (Package 5, item 1); None keeps the delivered 10."""
     nv, npr, _ = SIZES[size]
+    lam = {k: float(v) for k, v in (('lambda_bc', lambda_bc), ('lambda_ic', lambda_ic)) if v is not None}
     return BeltramiConfig(N_vel=nv, N_p=npr, basis_type='chebyshev', n_pressure_pin_levels=npr,
-                          max_iter=K_ITERS, tol=0.0)
+                          max_iter=K_ITERS, tol=0.0, **lam)
 
 
 def peak_host_bytes():
@@ -365,11 +369,11 @@ def rho_r(sys_y, theta_k, theta_new):
             'kappa_retained_A_Y': kappa, 'rank_A_Y': int(rank), 'roundoff_floor': floor, 'round_off': best < floor}
 
 
-def run(size, level, out_root, pin_scale=1.0, tag='', with_rho=None, k_iters=K_ITERS):
+def run(size, level, out_root, pin_scale=1.0, tag='', with_rho=None, k_iters=K_ITERS, lambda_bc=None, lambda_ic=None):
     nv, npr, Ms = SIZES[size]
     M = Ms[level - 1]
     with_rho = (size == 'B1') if with_rho is None else with_rho
-    config = config_for(size)
+    config = config_for(size, lambda_bc, lambda_ic)
     t_start = time.perf_counter()
     g = cf.beltrami_grid(M, INTERVALS)
     sys_ = System(config, g['blocks'], pins=True, pin_scale=pin_scale)
@@ -377,7 +381,8 @@ def run(size, level, out_root, pin_scale=1.0, tag='', with_rho=None, k_iters=K_I
     run_dir = Path(out_root) / ITEM / f'{size}_L{level}{tag}'
     (run_dir / 'coefficients').mkdir(parents=True, exist_ok=True)
     base = {'package3': {'item': 1, 'size': size, 'level': level, 'M': M, 'N_vel': nv, 'N_p': npr,
-                         'pin_scale': pin_scale, 'status': 'running', 'N': sys_.N, 'P': sys_.P,
+                         'pin_scale': pin_scale, 'lambda_bc': config.lambda_bc, 'lambda_ic': config.lambda_ic,
+                         'status': 'running', 'N': sys_.N, 'P': sys_.P,
                          'weights_note': 'Clenshaw-Curtis squared row weights (Section 2.2): interior lambda x tensor CC '
                          'weight; each face and the initial slab lambda x CC weight x |block|/|dOmega| (4/40, 8/40). The '
                          "paper's runs put lambda on each face instead; accuracy differences from its tables are "
@@ -482,10 +487,13 @@ def terminal_row(run_dir, exact_cache={}):
     e_ret = errs[returned]
     ranks = p3.get('ranks') or [int(float(r['num_rank_gelsy'])) for r in log[:K]   # complete runs record them;
                                 if r.get('num_rank_gelsy') not in ('', None)]     # a capped one, its log
-    row = {'size': size, 'level': level, 'M': p3['M'], 'pin_scale': p3['pin_scale'], 'N': p3['N'], 'P': p3['P'],
+    row = {'size': size, 'level': level, 'M': p3['M'], 'pin_scale': p3['pin_scale'],
+           'lambda_bc': p3.get('lambda_bc', config.lambda_bc), 'lambda_ic': p3.get('lambda_ic', config.lambda_ic),
+           'N': p3['N'], 'P': p3['P'],
            'N_over_P': p3['N'] / p3['P'], 'iterates': K,
            'k_paper_1e9': k_paper if k_paper is not None else 'never',
            'k_rule': i + 1 if i is not None else 'never', 'rule_class': cls,
+           'stall_level': log[i]['norm_Rlin_h'] if i is not None else '',
            'rank_last': last['num_rank_gelsy'], 'rank_min': min(ranks),
            'kappa_last': last['kappa'], 'kappa_retained_last': last['kappa_retained'],
            'kappa_method': last['kappa_method'],
@@ -565,9 +573,12 @@ def main(argv=None):
     ap.add_argument('--pin-scale', type=float, default=1.0, help='K3: the pins squared weight x this')
     ap.add_argument('--tag', default='', help='a suffix for the run folder (K3, K6)')
     ap.add_argument('--rho', action='store_true', default=None, help='rho_r at every iterate (default: B1 only)')
+    ap.add_argument('--lambda-bc', type=float, help="the faces' lambda (Package 5, item 1; default 10, as delivered)")
+    ap.add_argument('--lambda-ic', type=float, help="the initial slab's lambda (Package 5, item 1; default 10)")
     args = ap.parse_args(argv)
     if args.stage == 'run':
-        d = run(args.size, args.level, args.out, pin_scale=args.pin_scale, tag=args.tag, with_rho=args.rho)
+        d = run(args.size, args.level, args.out, pin_scale=args.pin_scale, tag=args.tag, with_rho=args.rho,
+                lambda_bc=args.lambda_bc, lambda_ic=args.lambda_ic)
         print(f'wrote {d}')
     elif args.stage == 'constants':
         rows = constants(args.size, args.level)

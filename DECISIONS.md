@@ -17,6 +17,14 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-13 -- Package 5, item 1, Beltrami: `--lambda-bc` / `--lambda-ic` in `p3_1_beltrami_certified.py`
+
+- `config_for(size, lambda_bc=None, lambda_ic=None)` and `run(..., lambda_bc=None, lambda_ic=None)`. None keeps the delivered 10, so the delivered configuration is unchanged (test: same config, same row weights).
+- The faces carry `lambda_bc`, the initial slab `lambda_ic`, each with the Package 3 shares (4/40, 8/40), as delivered. The interior rows are unchanged.
+- **The pins**, read literally from Section 3 (`pin_scale` = 1): their squared weight stays `pin_scale x lambda_bc / N_p`, so they follow the new `lambda_bc`. They fix the pressure constant only.
+- `run.json` records `lambda_bc` and `lambda_ic`. `terminal.csv` gains `lambda_bc`, `lambda_ic` and `stall_level` (||r|| at the rule's step, as in Package 4); delivered runs read as 10.
+- Runs: B1 and B2 at level 1, with `lambda_bc = lambda_ic` in {1e3, 1e4, 1e6}, tagged `_lam1e3`, `_lam1e4`, `_lam1e6`, with eight iterates as delivered. Errors stay in L2 against the delivered delta_P.
+
 ## 2026-11-13 -- Package 5, item 1: the weight option, the norm of X, the fine Buckley-Leverett reference (`experiments/p5_1_weights.py`, `lilq/xnorm.py`, `lilq/references.cole_hopf_derivatives`)
 
 **New options, old defaults.** `p2_16_certified.grid(..., lam_aux=LAM_AUX)` and `p3_2_bl_certified.collocation_blocks(..., lam_aux=LAM_AUX)` take the weight of the boundary and initial lines; at the default every array is bit-identical (tests). `p2_16_certified.tensor` also returns the mixed derivative (1, 1), which no existing run reads. On the laptop, item 1 at lam = 10 reproduces the delivered P2-16 runs (Bratu P = 100, Burgers P = 225, Grace stage 2) to 1e-13 in ||N||, ||r|| and eps_ref at every iterate; chi on the plateau differs by up to 18%, a ratio of round-off-sized differences, as in Package 4.
@@ -37,7 +45,11 @@ v3-dev three-way comparison run.
 **The laptop runs** (all 96 scalar runs of item 1; Buckley-Leverett against a p = 64 reference):
 - Bratu agrees with the advisor's indicative values (Gauss-Legendre grids) to about two figures, e.g. L2 / H2 at weight 10: 71.8 / 1.83, 16.1 / 2.63, 15.0 / 2.64 at p = 5, 10, 15 (his 74 / 1.8, 17 / 2.7, 15 / 2.9).
 - Burgers: H^{2,1} ratios 1.01 to 1.13 at every size and weight; L2 ratios 1.3 to 5.
-- Buckley-Leverett, viscous, tensor Chebyshev: at weight 10^3 the ratios agree with his to about two figures (4.87 / 1.11 against 4.81 / 1.11 at p = 8). At weight 10 they are about twice his in L2 (45 against 28 at p = 16). Our lines carry Package 3's share |line| / |dOmega| (the initial line 1 / 2.8 of the weight), his rows do not, so our weight 10 is a smaller effective weight; the difference fades as the weight grows.
+- Buckley-Leverett, viscous, tensor Chebyshev: at weight 10^3 the ratios agree with his to about two figures (4.87 / 1.11 against 4.81 / 1.11 at p = 8). At weight 10 they are about twice his in L2 (45 against 28 at p = 16). The cause is the split of the weight among the lines:
+  - Our runs use the Package 3 rule his item 1 asks for ("unchanged except for the weight"): each line's squared weight is lambda x CC weights x |line| / |dOmega|, |dOmega| = 2.8. The initial line therefore gets lambda / 2.8 and each side line 0.4 lambda / 2.8.
+  - His `ref_weight_bl.py` gives the initial line lambda and each side line lambda / 2.
+  - **Laptop check** (scratch script; the same code with only the shares replaced by his): at weight 10, L2 / H^{2,1} ratios 8.97 / 1.30, 27.1 / 1.60, 32.0 / 1.33, 19.0 / 1.42 at p = 8, 16, 24, 32, against his 9.1 / 1.3, 27.6 / 1.59, 32.5 / 1.3, 19.3 / 1.34. At weight 10^3: 4.75 / 1.11, 10.8 / 1.15, 10.2 / 1.06, 5.8 / 1.15. The split accounts for the difference.
+  - The report gives our runs (the Package 3 rule), his values beside them, and this check. No change to the runs.
 - The laptop needed 42 minutes for the 64 Buckley-Leverett runs on 16 threads.
 
 ## 2026-11-13 -- Package 5, the plan: items 1, 2 and 4 before item 3; the readings of the instructions
