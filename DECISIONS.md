@@ -17,6 +17,29 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-13 -- Package 5, item 1: the weight option, the norm of X, the fine Buckley-Leverett reference (`experiments/p5_1_weights.py`, `lilq/xnorm.py`, `lilq/references.cole_hopf_derivatives`)
+
+**New options, old defaults.** `p2_16_certified.grid(..., lam_aux=LAM_AUX)` and `p3_2_bl_certified.collocation_blocks(..., lam_aux=LAM_AUX)` take the weight of the boundary and initial lines; at the default every array is bit-identical (tests). `p2_16_certified.tensor` also returns the mixed derivative (1, 1), which no existing run reads. On the laptop, item 1 at lam = 10 reproduces the delivered P2-16 runs (Bratu P = 100, Burgers P = 225, Grace stage 2) to 1e-13 in ||N||, ||r|| and eps_ref at every iterate; chi on the plateau differs by up to 18%, a ratio of round-off-sized differences, as in Package 4.
+
+**The run** is Package 4's `logged_run`: termination disabled, K_max = 60, the coefficients of every iterate in `betas.npy`, the scaled identity of M3. The termination rule is read from the log.
+
+**The norm of X** (`lilq.xnorm`): a tensor Gauss-Legendre rule, 96 x 96 (Buckley-Leverett: max(96, 2 p_ref) = 176), components weighted equally.
+- Bratu: H2 of the p = 48 reference, from the Chebyshev coefficients stored in `bratu_ref_p48.npz` (they reproduce its field to 1e-14).
+- Burgers: H^{2,1} by `cole_hopf_derivatives`, which differentiates the Cole-Hopf integrals (u_t from the heat kernel, not from the PDE). Section 3's check u_t + u u_x - nu u_xx = 0 holds to 5e-13 relative to the terms at the nodes (tolerance 1e-8); `references.json` records it.
+- Buckley-Leverett: H^{2,1} of the fine LiL-Q solution below.
+
+**The fine Buckley-Leverett reference.** The lifted sine x Chebyshev space at p_ref, weight 10^4, N/P = 10, the Package 3 guess of the case, stopped at the rule's returned iterate.
+- **p_ref = 88 (P = 7,744), neighbour p = 80: the user's reading of "the largest size you can afford".** The cost is set by compute, not memory: gelsy runs at about 35 GFLOP/s whether on 16 laptop threads or a whole Grace node (Package 3, Beltrami B2), and a solve grows like p^6. Estimated, as 24-core jobs: p = 64 with 56, about 7 SU; 80 with 88, about 35 SU; 88 with 96, about 60 SU; the memory limit of a node (p about 150), about 1,000 SU or more. The neighbouring size is Section 3's: the H^{2,1} difference between two fine solutions.
+- **The laptop ladder** (p = 24 to 64): the L2 difference from the finite-difference reference falls to 8.6e-6 (viscous) and 4.7e-5 (gravity) at p = 64; the H^{2,1} difference from p - 8 is 5.7e-3 (viscous) and 3.8e-2 (gravity), decreasing about like p^-2. Every item-1 run's delta_X exceeds three times the p = 64 figure except viscous tensor Chebyshev at P = 1,024 (delta_X = 0.014), so p = 88 should report every run.
+- **Sensitivity:** recomputed against references at p = 48, 56 and 64, the reported H^{2,1} ratios change by less than 1% except at viscous tensor Chebyshev P = 1,024, where they still move by a decreasing amount (weight 10^6: 1.61, 1.47, 1.38). Between references at 88 and 96 the change there is estimated at about 2%.
+- **The gate** is Section 3's: an H^{2,1} ratio is reported only where delta_X exceeds three times the neighbour difference (`x_ratio_reported`); the L2 ratio is always reported.
+
+**The laptop runs** (all 96 scalar runs of item 1; Buckley-Leverett against a p = 64 reference):
+- Bratu agrees with the advisor's indicative values (Gauss-Legendre grids) to about two figures, e.g. L2 / H2 at weight 10: 71.8 / 1.83, 16.1 / 2.63, 15.0 / 2.64 at p = 5, 10, 15 (his 74 / 1.8, 17 / 2.7, 15 / 2.9).
+- Burgers: H^{2,1} ratios 1.01 to 1.13 at every size and weight; L2 ratios 1.3 to 5.
+- Buckley-Leverett, viscous, tensor Chebyshev: at weight 10^3 the ratios agree with his to about two figures (4.87 / 1.11 against 4.81 / 1.11 at p = 8). At weight 10 they are about twice his in L2 (45 against 28 at p = 16). Our lines carry Package 3's share |line| / |dOmega| (the initial line 1 / 2.8 of the weight), his rows do not, so our weight 10 is a smaller effective weight; the difference fades as the weight grows.
+- The laptop needed 42 minutes for the 64 Buckley-Leverett runs on 16 threads.
+
 ## 2026-11-13 -- Package 5, the plan: items 1, 2 and 4 before item 3; the readings of the instructions
 
 The advisor's Package 5 instructions (13 November 2026) have four items: 1, the errors in the norm of X and the boundary weight; 2, LiL-N by nonlinear least squares; 4, the irregular domain at larger sizes and with random features; 3, the cost at a common accuracy. Items 1, 2 and 4 come first and get their own report. Item 3 waits for the advisor's reply to that report, which proposes the Bratu boundary weight item 3 uses.

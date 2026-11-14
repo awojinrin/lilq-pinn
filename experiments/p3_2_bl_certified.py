@@ -215,11 +215,12 @@ class Rows:
         return np.concatenate(R)
 
 
-def collocation_blocks(grid):
-    """``{name: (x, t, w2)}``: lambda x share x the CC weights (Section 2.2)."""
+def collocation_blocks(grid, lam_aux=LAM_AUX):
+    """``{name: (x, t, w2)}``: lambda x share x the CC weights (Section 2.2).
+    ``lam_aux``: the lines' lambda (Package 5, item 1; default Package 3's)."""
     out = {}
     for name, b in grid['blocks'].items():
-        lam = LAM_INT if name == 'interior' else LAM_AUX
+        lam = LAM_INT if name == 'interior' else lam_aux
         out[name] = (b['points'][:, 0], b['points'][:, 1], lam * b['share'] * b['w'])
     return out
 

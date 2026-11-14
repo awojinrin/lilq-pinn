@@ -128,7 +128,7 @@ def tensor(x, y, p, dom):
     """``{(dx, dy): matrix}`` of the p x p tensor basis at the points, x-index outer."""
     X, Y = cheb(x, p, *dom[0]), cheb(y, p, *dom[1])
     k = lambda A, B: (A[:, :, None] * B[:, None, :]).reshape(len(x), -1)  # noqa: E731
-    return {(i, j): k(X[i], Y[j]) for i, j in ((0, 0), (1, 0), (0, 1), (2, 0), (0, 2))}
+    return {(i, j): k(X[i], Y[j]) for i, j in ((0, 0), (1, 0), (0, 1), (2, 0), (1, 1), (0, 2))}
 
 
 # ---------------------------------------------------------------- collocation sets
@@ -137,9 +137,10 @@ def _cgl(m, a, b):
     return points_1d(a, b, m, 'cgl'), cc_weights(m)      # B10's nodes and weights; the weights sum to 1
 
 
-def grid(bench, P, r):
+def grid(bench, P, r, lam_aux=LAM_AUX):
     """The certified collocation set: ``{block: (x, y, w2)}`` with the squared
-    row weights, and the counts."""
+    row weights, and the counts. ``lam_aux``: the weight of the auxiliary
+    lines (Package 5, item 1; default the Package 2 value)."""
     (ax, bx), (ay, by) = DOMAIN[bench]
     blocks = {}
     if bench == 'bratu':
@@ -152,7 +153,7 @@ def grid(bench, P, r):
         t, w = _cgl(n_e, 0.0, 1.0)
         share = 1.0 / 4.0                                 # |e| / |dOmega| for the unit square's edges
         for name, x, y in (('bottom', t, 0 * t), ('top', t, 0 * t + 1), ('left', 0 * t, t), ('right', 0 * t + 1, t)):
-            blocks[name] = (x, y, LAM_AUX * share * w)
+            blocks[name] = (x, y, lam_aux * share * w)
     else:
         M = math.ceil(math.sqrt(0.9 * r * P))
         n_i, n_b = math.ceil(0.05 * r * P), math.ceil(0.025 * r * P)
@@ -162,11 +163,11 @@ def grid(bench, P, r):
         blocks['interior'] = (X.ravel(), T.ravel(), np.outer(wx, wt).ravel())
         perim = 2 * (bx - ax) + 2 * (by - ay)             # 6: the whole boundary of the space-time rectangle
         xi, wi = _cgl(n_i, ax, bx)
-        blocks['initial'] = (xi, 0 * xi, LAM_AUX * (bx - ax) / perim * wi)
+        blocks['initial'] = (xi, 0 * xi, lam_aux * (bx - ax) / perim * wi)
         tb, wb = _cgl(n_b + 1, ay, by)                    # (0, 1]: the (n_b + 1)-point rule without t = 0
         tb, wb = tb[1:], wb[1:]
         for name, xe in (('left', ax), ('right', bx)):
-            blocks[name] = (0 * tb + xe, tb, LAM_AUX * (by - ay) / perim * wb)
+            blocks[name] = (0 * tb + xe, tb, lam_aux * (by - ay) / perim * wb)
     N = sum(len(b[0]) for b in blocks.values())
     return {'blocks': blocks, 'M': M, 'N': N, 'N_interior': len(blocks['interior'][0]), 'ratio_actual': N / P}
 

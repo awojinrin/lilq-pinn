@@ -95,6 +95,40 @@ def cole_hopf_ux(x, t, nu, epsrel=1e-13):
     return -(H1 * G - H * G1) / G ** 2
 
 
+def cole_hopf_derivatives(x, t, nu, epsrel=1e-13):
+    """``{'u', 'u_x', 'u_xx', 'u_t'}`` at the points ``x`` (array) and the time
+    ``t`` (scalar, > 0), by differentiating the Cole-Hopf formula under the
+    integral (Package 5, item 1).
+
+    With F(y) = exp(-c cos(pi y) - c), c = 1/(2 pi nu), and the heat kernel
+    K(eta, t) = exp(-eta^2/(4 nu t)): u = -H/G, H = int sin(pi y) F K,
+    G = int F K, y = x - eta. Derivatives in x act on y only (F' = g F,
+    g = c pi sin(pi y)); the t-derivative acts on K only
+    (K_t = K eta^2/(4 nu t^2)). Independent of :func:`cole_hopf_ux` (which
+    gives u_x alone) and of the PDE: u_t is not formed from u_xx and u u_x."""
+    x = np.asarray(x, dtype=float)
+    L = _halfwidth(nu, t)
+    c = 1.0 / (2 * np.pi * nu)
+    pi = np.pi
+
+    def integrand(eta):
+        y, w = _kernels(x, eta, nu, t)
+        s, co = np.sin(pi * y), np.cos(pi * y)
+        g, g1 = c * pi * s, c * pi * pi * co                   # F'/F and its y-derivative
+        h1 = pi * co + s * g                                    # (sin F)'/F
+        h2 = -pi * pi * s + pi * co * g + h1 * g + s * g1       # (sin F)''/F
+        kt = eta * eta / (4 * nu * t * t)                       # K_t/K
+        return np.concatenate([s * w, w, h1 * w, g * w, h2 * w, (g1 + g * g) * w, s * kt * w, kt * w])
+
+    val, _ = quad_vec(integrand, -L, L, epsabs=0.0, epsrel=epsrel, norm='max', limit=20000)
+    H, G, Hx, Gx, Hxx, Gxx, Ht, Gt = val.reshape(8, len(x))
+    u = -H / G
+    u_x = -(Hx * G - H * Gx) / G ** 2
+    u_xx = -(Hxx / G - 2 * Hx * Gx / G ** 2 - H * Gxx / G ** 2 + 2 * H * Gx ** 2 / G ** 3)
+    u_t = -(Ht * G - H * Gt) / G ** 2
+    return {'u': u, 'u_x': u_x, 'u_xx': u_xx, 'u_t': u_t}
+
+
 def cole_hopf_series(x, t, nu, n_terms=None):
     """u from the cosine series of the Cole-Hopf transform (independent of
     :func:`cole_hopf`)."""
