@@ -272,6 +272,8 @@ def test_su_per_job_at_grace_rates_reproduces_wave_3s_charge():
     assert report.su_rate('billing=48,cpu=48,gres/gpu:a100=1,gres/gpu=1,mem=360G,node=1') == 192   # timed A100
     assert report.su_rate('billing=48,cpu=48,mem=360G,node=1') == 48                               # timed CPU
     assert report.su_rate('billing=24,cpu=24,mem=32G,node=1') == 24
+    assert report.su_rate('billing=24,cpu=24,mem=96G,node=1') == 24                                # Package 5's cpu-mem
+    assert report.su_rate('billing=30,cpu=24,mem=225G,node=1') == 30                               # billed for memory
     sacct = '\n'.join([
         '1_0|lilq-b8|billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1|36000|COMPLETED',
         '2|lilq-wave-report|billing=24,cpu=24,mem=32G,node=1|150|RUNNING',

@@ -124,3 +124,50 @@ def test_terminal_row_gate(tmp_path):
     left_out = m.terminal_row(d, dL2=0.05, dX=0.1, gate=0.05)
     assert left_out['eX_over_delta'] is None and not left_out['x_ratio_reported']
     assert left_out['eL2_over_delta'] == pytest.approx(2.0)
+
+
+# ---------------------------------------------------------------- the fine reference's fallback
+
+def _fake_reference(out_root, case, p, rule_step=5):
+    d = m.reference_dir_bl(out_root) / f'{case}_p{p}'
+    d.mkdir(parents=True, exist_ok=True)
+    (d / 'run.json').write_text(json.dumps({'package5': {'rule_step': rule_step}}))
+
+
+def test_choose_keeps_88_when_both_stop_by_the_rule(tmp_path, monkeypatch):
+    monkeypatch.setattr(m, 'bl_reference_run', lambda *a, **k: pytest.fail('no fallback run expected'))
+    for p in (88, 80):
+        _fake_reference(tmp_path, 'viscous', p)
+    rec = m.choose('viscous', tmp_path, 'refdir')
+    assert rec['p_ref'] == 88 and rec['p_neighbour'] == 80 and not rec['fallback']
+    assert m.p_ref_of(tmp_path, 'viscous') == 88 and m.p_ref_of(tmp_path, 'viscous', 40) == 40
+
+
+def test_choose_falls_back_per_case(tmp_path, monkeypatch):
+    """The advisor's reply, answer 1: p = 88 fails or does not stop by the rule -> 64 with 56, case by case."""
+    ran = []
+
+    def fake_run(case, p, out_root, reference_dir):
+        ran.append((case, p))
+        _fake_reference(out_root, case, p)
+    monkeypatch.setattr(m, 'bl_reference_run', fake_run)
+    _fake_reference(tmp_path, 'viscous', 80)
+    (m.reference_dir_bl(tmp_path) / 'viscous_p88').mkdir()          # stopped at its time limit: no run.json
+    _fake_reference(tmp_path, 'gravity', 80)
+    _fake_reference(tmp_path, 'gravity', 88, rule_step=None)         # ran to K_max without the rule
+    v = m.choose('viscous', tmp_path, 'refdir')
+    g = m.choose('gravity', tmp_path, 'refdir')
+    assert v['p_ref'] == 64 and v['fallback'] and 'did not finish' in v['reason']
+    assert g['p_ref'] == 64 and 'did not stop by the rule' in g['reason']
+    assert ran == [('viscous', 56), ('viscous', 64), ('gravity', 56), ('gravity', 64)]
+    rec = json.loads((m.reference_dir_bl(tmp_path) / m.CHOSEN).read_text())
+    assert set(rec) == {'viscous', 'gravity'} and m.p_ref_of(tmp_path, 'gravity') == 64
+
+
+def test_choose_reports_a_failed_fallback(tmp_path, monkeypatch):
+    monkeypatch.setattr(m, 'bl_reference_run', lambda case, p, out_root, rd: _fake_reference(out_root, case, p, None))
+    assert m.main(['choose', '--case', 'viscous', '--out', str(tmp_path), '--reference-dir', 'refdir']) == 1
+    rec = m.chosen_record(tmp_path)['viscous']
+    assert rec['p_ref'] is None and 'the fallback failed too' in rec['reason']
+    assert m.p_ref_of(tmp_path, 'viscous') == m.P_REF_DEFAULT       # nothing chosen: the default
+    assert m.main(['ref-ok', '--case', 'viscous', '--p-ref', '64', '--out', str(tmp_path)]) == 1

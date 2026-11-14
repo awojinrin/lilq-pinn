@@ -90,3 +90,15 @@ def test_rf_run_delta_and_summary(tmp_path, monkeypatch):
     row = out['delta'][0]
     assert {'delta_H2_gelsy', 'delta_H2_gelsd', 'rel_diff_H2'} <= set(row)
 
+
+
+def test_rf_runs_a_chosen_part_of_the_set(tmp_path, monkeypatch):
+    """--P and --sigma split 4b among processes; by default the whole set runs."""
+    calls = []
+    monkeypatch.setattr(pb, 'Norms', lambda: None)
+    monkeypatch.setattr(m, 'rf_run', lambda out, h, P, sigma, draw, norms: calls.append((P, sigma, draw)))
+    m.run_rf(tmp_path, None, sizes=(1600,), sigmas=(4.0,))
+    assert calls == [(1600, 4.0, d) for d in m.RF_DRAWS]
+    calls.clear()
+    m.run_rf(tmp_path, None)
+    assert len(calls) == len(m.RF_P) * len(m.RF_SIGMA) * len(m.RF_DRAWS)

@@ -17,6 +17,43 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-14 -- Package 5, items 1, 2 and 4: the advisor's reply to the cost check, and the Grace jobs (`scripts/cluster/package5/`)
+
+**The reply** (`Computational Package 5/Package5_Reply_to_cost_check.md`, 14 November 2026). The runs as implemented match the intent; submit them with three answers. About 135 SU expected, up to about 170 if Beltrami is slower on 24 cores; both approved. All other choices accepted.
+1. **The fine reference: p = 88 with 80.** The viscous tensor Chebyshev P = 1,024 ratio must be reported and settled. Report both cases' L2 difference from the finite-difference reference and the H^{2,1} difference between 88 and 80 (`references.json`, `l2_vs_fd` and `h21_diff_neighbour`). **Fallback:** if the p = 88 solve fails or does not stop by the rule, use p = 64 with 56, apply the factor-of-three rule, and say which runs are left out.
+2. **Item 2's L-BFGS times: one logged pass.** The least-squares solvers and LiL-Q keep the protocol.
+3. **The weight split: the Package 3 rule** (no rerun); his indicative values and our check go beside our results.
+
+**How the fallback is implemented** (`p5_1_weights`; the user approved per case and the 60-minute limit, 14 November 2026):
+- **Per case.** Each case has its own reference, so a failure in one does not discard the other's p = 88. `choose` writes `bl_reference/chosen.json` with each case's size and the reason, and every later stage (`Context`, `summarize`, `run_all`) reads each case's size from it.
+- **"Fails or does not stop by the rule":** no `run.json` (the job stopped the solve at its time limit, or it failed), or a rule step of None (60 iterations without the rule).
+- **Time limits:** p = 88 has 60 min (expected 25 to 32 min). Its neighbour p = 80 has 40 min (expected 15 to 18 min). An iteration at p = 88 costs about 4.5 min, so K_max = 60 without the rule would take about 4.5 h.
+- **The neighbour gets the same treatment.** If p = 80 does not stop by the rule, p = 88 is not run and the case falls back: the pair needs both. This goes slightly beyond the reply's wording, which names p = 88 only, and the report says so.
+- **The new stages:**
+  - `ref-ok` (exit 0 if a reference stopped by the rule);
+  - `choose` (keeps the pair, or runs and checks 64 and 56);
+  - `runs` (the families without running a reference or writing the summary, so six processes can run side by side).
+
+**Item 2** (`p5_2_nlls.ONE_PASS`): `lbfgs` and `lbfgs_scipy` take the time of their one logged pass; the others keep `p4_common.timed`.
+
+**Item 4:** `rf --sigma` splits 4b among processes. `compare-points` records Grace's scipy against the shipped 16,000 points: a record only, as in Package 4.
+
+**The jobs** (`_generate_jobs.py`; 330 SU requested, about 145 expected):
+- **Classes.**
+  - A new `cpu-mem` class (24 cores, 96 GB) for everything untimed. The p = 88 reference needs about 38 GB: measured 2.5 GB at p = 40 and 7.0 GB at p = 56, fitted as a + b p^4. Beltrami B2 needs about 18 GB.
+  - Items 1 and 4 run six processes at 4 threads each.
+  - 96 GB is under 24 cores' share of a node (180 GB), so the class should bill as 24 cores. The preflight (itself `cpu-mem`) reads `billing=` from `scontrol` and stops everything if it is above 24.
+  - `wave_report.su_rate` now takes `billing` when it exceeds the cores, so the SU record would show such a charge.
+- **Jobs and dependencies:**
+  - Both references come after the preflight.
+  - The item 1 sweep runs after the preflight and after both references, whatever their outcome. A failed case's families then fail, and Bratu and Burgers still run.
+  - Beltrami, the timed job (4a's timings, then item 2) and item 4 each run after the preflight.
+  - The report runs after all of them (afterany): summaries, sacct, `su_per_job.csv`, tarball.
+- **Inputs.**
+  - Item 1 reads Package 2 stage 2's references: P2-16's, and P3-2's finite-difference ones.
+  - Item 2 reads stage 1's Cole-Hopf, as Package 4 did.
+  - The checks C1 to C3 and the comparisons with the advisor's expected values run at the assembly.
+
 ## 2026-11-14 -- Package 5, items 1, 2 and 4: the checks against the delivered runs (`experiments/p5_checks.py`)
 
 Reading 7 of the plan entry, made concrete. Each check compares a Package 5 run from Grace with a delivered Grace run of the same configuration. The checks are evaluated at the assembly on the laptop, where the delivered results are. `checks.json` holds the rows and the verdicts.

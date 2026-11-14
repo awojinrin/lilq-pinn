@@ -67,6 +67,17 @@ def test_timing_repeats_the_count(tmp_path, monkeypatch):
     assert r['timing_matches'] and r['time_s'] == 1.0
 
 
+def test_the_lbfgs_solvers_are_timed_by_their_one_logged_pass(tmp_path, monkeypatch):
+    """The advisor's reply to the cost check (14 November 2026), answer 2."""
+    def no_protocol(once, warmup):
+        raise AssertionError('the L-BFGS solvers take no timing protocol')
+    monkeypatch.setattr(m, 'timed', no_protocol)
+    monkeypatch.setattr(m, 'LBFGS_MAX_IT', 20)
+    for name in m.ONE_PASS:
+        r = m.run(small_burgers(), name, tmp_path)
+        assert r['time_s'] > 0 and r['timing'].startswith('one logged pass') and r['timing_matches']
+
+
 def test_summary_and_comparison(tmp_path):
     prob = small_burgers(6)
     for name in ('lilq', 'trf'):

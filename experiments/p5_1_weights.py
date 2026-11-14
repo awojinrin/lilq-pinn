@@ -32,6 +32,13 @@ in ``betas.npy``. Untimed (DECISIONS.md, the Package 5 plan, reading 1).
     and its H^{2,1} difference from the solution at the neighbouring size
     ``p_ref - 8``; an H^{2,1} ratio is reported only where delta_X exceeds
     that difference three times (Section 3).
+  - **The fallback** (the advisor's reply to the cost check, 14 November
+    2026, answer 1): p_ref = 88 with 80; if, for a case, the p = 88 solve
+    fails or does not stop by the rule, that case falls back to p = 64 with
+    56. Each case is decided on its own (``choose`` stage), and
+    ``bl_reference/chosen.json`` records the size and the reason. A job that
+    stops a solve at its time limit leaves no ``run.json``: that counts as a
+    failure. Every later stage reads the size of each case from that record.
 
 Outputs under ``P5_1_weights/``: per run ``<family>/<run>/{run.json,
 iterations.csv, betas.npy, errors_by_iterate.csv}``; the fine references in
@@ -40,8 +47,11 @@ iterations.csv, betas.npy, errors_by_iterate.csv}``; the fine references in
 Usage::
 
     python experiments/p5_1_weights.py reference --case viscous --p-ref 88 --out <root> --reference-dir <dir>
+    python experiments/p5_1_weights.py ref-ok --case viscous --p-ref 80 --out <root>      (exit 0 if it met the rule)
+    python experiments/p5_1_weights.py choose --case viscous --out <root> --reference-dir <dir>
     python experiments/p5_1_weights.py run --family bratu --P 100 --lam 1e3 --out <root> --reference-dir <dir>
     python experiments/p5_1_weights.py all --out <root> --reference-dir <dir> [--p-ref 88]
+    python experiments/p5_1_weights.py runs --only bratu --out <root> --reference-dir <dir>   (no reference, no summary)
     python experiments/p5_1_weights.py summarize --out <root> --reference-dir <dir>
 """
 
@@ -77,6 +87,8 @@ K_MAX = 60
 N_X = 96                       # Gauss-Legendre nodes per direction for the norm of X (at least)
 LAM_REFERENCE = 1e4            # the fine Buckley-Leverett reference's weight (Section 3)
 P_REF_DEFAULT = 88            # the fine reference (P = 7,744); its neighbour p = 80 (DECISIONS.md, Package 5 item 1)
+P_REF_FALLBACK = 64           # with 56, if a case's p = 88 solve fails or does not stop by the rule (the advisor's reply)
+CHOSEN = 'chosen.json'        # bl_reference/chosen.json: the size of each case's reference, and why
 REF_NEIGHBOUR_STEP = 8
 GATE_FACTOR = 3.0
 H2 = ('u', 'u_x', 'u_y', 'u_xx', 'u_xy', 'u_yy')
@@ -209,6 +221,55 @@ def bl_reference_run(case, p_ref, out_root, reference_dir, lam=LAM_REFERENCE):
     return run_dir
 
 
+def reference_ok(case, p_ref, out_root):
+    """None if the fine solution at p_ref finished and stopped by the rule; otherwise the reason."""
+    f = reference_dir_bl(out_root) / f'{case}_p{p_ref}' / 'run.json'
+    if not f.exists():
+        return f'p = {p_ref} did not finish (stopped at its time limit, or failed: see the job log)'
+    if json.loads(f.read_text())['package5']['rule_step'] is None:
+        return f'p = {p_ref} did not stop by the rule within K_max = {K_MAX}'
+    return None
+
+
+def chosen_record(out_root):
+    f = reference_dir_bl(out_root) / CHOSEN
+    return json.loads(f.read_text()) if f.exists() else {}
+
+
+def p_ref_of(out_root, case, p_ref=None):
+    """The size of a case's fine reference: an explicit p_ref, else the ``choose`` record, else 88."""
+    if p_ref is not None:
+        return p_ref
+    rec = chosen_record(out_root).get(case) if out_root is not None else None
+    return rec['p_ref'] if rec and rec.get('p_ref') else P_REF_DEFAULT
+
+
+def choose(case, out_root, reference_dir, p_ref=P_REF_DEFAULT, fallback=P_REF_FALLBACK):
+    """The advisor's fallback, for one case: keep p_ref (with p_ref - 8) if both stopped by the rule;
+    otherwise run the fallback pair here and keep it if both stop by the rule. Writes chosen.json."""
+    tried = {p: reference_ok(case, p, out_root) for p in (p_ref, p_ref - REF_NEIGHBOUR_STEP)}
+    if not any(tried.values()):
+        rec = {'p_ref': p_ref, 'p_neighbour': p_ref - REF_NEIGHBOUR_STEP, 'fallback': False,
+               'reason': f'p = {p_ref} and {p_ref - REF_NEIGHBOUR_STEP} stopped by the rule'}
+    else:
+        for p in (fallback - REF_NEIGHBOUR_STEP, fallback):
+            if reference_ok(case, p, out_root) is not None:
+                bl_reference_run(case, p, out_root, reference_dir)
+        fb = {p: reference_ok(case, p, out_root) for p in (fallback, fallback - REF_NEIGHBOUR_STEP)}
+        ok = not any(fb.values())
+        why = '; '.join(v for v in tried.values() if v)
+        rec = {'p_ref': fallback if ok else None, 'p_neighbour': fallback - REF_NEIGHBOUR_STEP if ok else None,
+               'fallback': True,
+               'reason': why + (f'; fell back to p = {fallback} with {fallback - REF_NEIGHBOUR_STEP}' if ok else
+                                '; the fallback failed too: ' + '; '.join(v for v in fb.values() if v))}
+    rec['tried'] = {str(p): v or 'stopped by the rule' for p, v in tried.items()}
+    allrec = chosen_record(out_root)
+    allrec[case] = rec
+    reference_dir_bl(out_root).mkdir(parents=True, exist_ok=True)
+    (reference_dir_bl(out_root) / CHOSEN).write_text(json.dumps(allrec, indent=2))
+    return rec
+
+
 def load_bl_reference(case, p_ref, out_root):
     run_dir = reference_dir_bl(out_root) / f'{case}_p{p_ref}'
     meta = json.loads((run_dir / 'run.json').read_text())['package5']
@@ -245,7 +306,7 @@ def bl_reference_record(case, p_ref, out_root, n=None):
 class Context:
     """What every run of a family shares: the norm of X on its quadrature."""
 
-    def __init__(self, family, reference_dir, out_root=None, p_ref=P_REF_DEFAULT):
+    def __init__(self, family, reference_dir, out_root=None, p_ref=None):
         self.family = family
         if family in SCALAR_SIZES:
             x, y, w = quadrature(family)
@@ -258,6 +319,7 @@ class Context:
             self.l2_ref = p216.load_reference(family, reference_dir)
         else:
             variant, case = bl_parts(family)
+            p_ref = p_ref_of(out_root, case, p_ref)
             n = max(N_X, 2 * p_ref)
             x, t, w = quadrature(family, n)
             self.x, self.y, self.p_ref, self.pde_check = x, t, p_ref, None
@@ -355,7 +417,7 @@ def terminal_row(run_dir, dL2, dX, gate=None):
     return row
 
 
-def summarize(out_root, reference_dir, p_ref=P_REF_DEFAULT, only=None):
+def summarize(out_root, reference_dir, p_ref=None, only=None):
     out = Path(out_root) / ITEM
     rows, records = [], {}
     for family in only or families():
@@ -365,7 +427,10 @@ def summarize(out_root, reference_dir, p_ref=P_REF_DEFAULT, only=None):
         gate = None
         if family in BL_FAMILIES:
             case = bl_parts(family)[1]
-            rec = records.setdefault(f'bl_{case}', bl_reference_record(case, p_ref, out_root))
+            if f'bl_{case}' not in records:
+                records[f'bl_{case}'] = {**bl_reference_record(case, p_ref_of(out_root, case, p_ref), out_root),
+                                         'chosen': chosen_record(out_root).get(case)}
+            rec = records[f'bl_{case}']
             gate = rec['h21_diff_neighbour']
         if ctx.pde_check is not None:
             records['burgers_pde_check'] = ctx.pde_check
@@ -380,10 +445,14 @@ def summarize(out_root, reference_dir, p_ref=P_REF_DEFAULT, only=None):
     return rows, records
 
 
-def run_all(out_root, reference_dir, p_ref=P_REF_DEFAULT, only=None):
+def run_all(out_root, reference_dir, p_ref=None, only=None, references=True, summary=True):
+    """Every run of the chosen families. ``references=False`` never runs a fine reference (a
+    Buckley-Leverett family whose reference is missing then fails); ``summary=False`` leaves
+    the summary to a later stage, so that several processes can run families side by side."""
     chosen = only or families()
-    for case in sorted({bl_parts(f)[1] for f in chosen if f in BL_FAMILIES}):
-        for p in (p_ref - REF_NEIGHBOUR_STEP, p_ref):
+    for case in sorted({bl_parts(f)[1] for f in chosen if f in BL_FAMILIES} if references else ()):
+        pr = p_ref_of(out_root, case, p_ref)
+        for p in (pr - REF_NEIGHBOUR_STEP, pr):
             if not (reference_dir_bl(out_root) / f'{case}_p{p}' / 'run.json').exists():
                 bl_reference_run(case, p, out_root, reference_dir)
     for family in chosen:
@@ -392,25 +461,37 @@ def run_all(out_root, reference_dir, p_ref=P_REF_DEFAULT, only=None):
             for lam in WEIGHTS:
                 run(family, P, lam, out_root, reference_dir, ctx)
                 print(f'  {family} P = {P} lam = {lam:g}', flush=True)
-    return summarize(out_root, reference_dir, p_ref, only)
+    return summarize(out_root, reference_dir, p_ref, only) if summary else None
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description='Package 5, item 1: the norm of X and the boundary weight.')
-    ap.add_argument('stage', choices=('all', 'run', 'reference', 'summarize'))
+    ap.add_argument('stage', choices=('all', 'runs', 'run', 'reference', 'ref-ok', 'choose', 'summarize'))
     ap.add_argument('--out', required=True)
-    ap.add_argument('--reference-dir', required=True)
+    ap.add_argument('--reference-dir')
     ap.add_argument('--family', choices=families())
     ap.add_argument('--P', type=int)
     ap.add_argument('--lam', type=float)
     ap.add_argument('--case', choices=tuple(p32.CASES))
-    ap.add_argument('--p-ref', type=int, default=P_REF_DEFAULT)
+    ap.add_argument('--p-ref', type=int, help="the fine reference's size (default: each case's chosen.json, else 88)")
     ap.add_argument('--only', nargs='*', choices=families())
     a = ap.parse_args(argv)
+    if a.stage != 'ref-ok' and not a.reference_dir:
+        ap.error('--reference-dir is required')
+    if a.stage == 'ref-ok':
+        why = reference_ok(a.case, a.p_ref or P_REF_DEFAULT, a.out)
+        print(why or f'p = {a.p_ref or P_REF_DEFAULT} stopped by the rule')
+        return 0 if why is None else 1
+    if a.stage == 'choose':
+        rec = choose(a.case, a.out, a.reference_dir, a.p_ref or P_REF_DEFAULT)
+        print(json.dumps(rec))
+        return 0 if rec['p_ref'] else 1
     if a.stage == 'reference':
-        print(bl_reference_run(a.case, a.p_ref, a.out, a.reference_dir))
+        print(bl_reference_run(a.case, a.p_ref or P_REF_DEFAULT, a.out, a.reference_dir))
     elif a.stage == 'run':
         print(run(a.family, a.P, a.lam, a.out, a.reference_dir, Context(a.family, a.reference_dir, a.out, a.p_ref)))
+    elif a.stage == 'runs':
+        run_all(a.out, a.reference_dir, a.p_ref, a.only, references=False, summary=False)
     elif a.stage == 'all':
         rows, _ = run_all(a.out, a.reference_dir, a.p_ref, a.only)
         print(f'{len(rows)} runs')

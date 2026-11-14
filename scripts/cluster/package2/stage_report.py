@@ -30,7 +30,7 @@ import tarfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-STAGES = {'p2s1': 'package2_stage1', 'p2s2': 'package2_stage2', 'p2s2g': 'package2_stage2_gpu', 'p3': 'package3', 'p4': 'package4'}
+STAGES = {'p2s1': 'package2_stage1', 'p2s2': 'package2_stage2', 'p2s2g': 'package2_stage2_gpu', 'p3': 'package3', 'p4': 'package4', 'p5': 'package5'}
 
 
 def _wave_report():

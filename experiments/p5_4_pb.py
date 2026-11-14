@@ -102,6 +102,23 @@ def draw_points(out_dir, shipped, n=HALTON_N, seeds=SEEDS):
     return report
 
 
+def compare_points(points_dir, out_root, n=HALTON_N, seeds=SEEDS):
+    """This machine's scipy against the shipped 16,000 points (a record only: every set is built
+    from the shipped points). Writes P5_4_pb/points/halton_compare.json."""
+    shipped = p42.Halton(points_dir)
+    rows = []
+    for seed in seeds:
+        x, y = shipped.take(seed, n)
+        gx, gy = pb.halton(n, seed)
+        rows.append({'seed': seed, 'identical': bool(np.array_equal(x, gx) and np.array_equal(y, gy)),
+                     'max_abs_difference': float(max(np.abs(x - gx).max(), np.abs(y - gy).max()))})
+    out = {'scipy_here': scipy.__version__, 'scipy_shipped': shipped.scipy_version(), 'n': n, 'seeds': rows}
+    path = Path(out_root) / ITEM / 'points' / 'halton_compare.json'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, indent=2))
+    return out
+
+
 # ---------------------------------------------------------------- 4b: random features
 
 def rf_dir(out_root, P, sigma, draw):
@@ -130,10 +147,12 @@ def rf_run(out_root, halton, P, sigma, draw, norms):
     return d
 
 
-def run_rf(out_root, halton, sizes=None):
+def run_rf(out_root, halton, sizes=None, sigmas=None):
+    """The 4b runs (resumable). ``sizes`` and ``sigmas`` choose a part of the set, so that one job
+    can run parts side by side; the default is the whole set."""
     norms = pb.Norms()
     for P in sizes or RF_P:
-        for sigma in RF_SIGMA:
+        for sigma in sigmas or RF_SIGMA:
             for draw in RF_DRAWS:
                 if (rf_dir(out_root, P, sigma, draw) / 'run.json').exists():
                     continue                                   # resume
@@ -257,13 +276,14 @@ def compare_rf(rows, expected_path):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description='Package 5, item 4: the irregular domain.')
-    ap.add_argument('stage', choices=('points', 'lilq', 'under', 'time', 'rf', 'delta', 'summarize'))
+    ap.add_argument('stage', choices=('points', 'compare-points', 'lilq', 'under', 'time', 'rf', 'delta', 'summarize'))
     ap.add_argument('--out', required=True)
     ap.add_argument('--points', help='the folder of the 16,000-point halton_seed*.npz (data/package5)')
     ap.add_argument('--shipped', help="points: Package 4's draws (data/package4)")
     ap.add_argument('--p', type=int, nargs='+')
     ap.add_argument('--seeds', type=int, nargs='+', default=list(SEEDS))
     ap.add_argument('--P', type=int, nargs='+', help='4b sizes (rf, delta)')
+    ap.add_argument('--sigma', type=float, nargs='+', help='rf: these sigma only (default: all)')
     ap.add_argument('--which', nargs='+', default=['p4', '4a', '4b'], help="delta: spaces of 'p4', '4a', '4b'")
     ap.add_argument('--expected-rf', help='expected_rf_pb.json')
     a = ap.parse_args(argv)
@@ -279,6 +299,9 @@ def main(argv=None):
         return 0
     if not a.points:
         ap.error('--points is required for this stage')
+    if a.stage == 'compare-points':
+        print(json.dumps(compare_points(a.points, a.out)))
+        return 0
     halton = p42.Halton(a.points)
     if a.stage == 'lilq':
         p42.run_lilq(a.out, halton, a.p or SIZES_A, a.seeds, item=ITEM)
@@ -287,7 +310,7 @@ def main(argv=None):
     elif a.stage == 'time':
         p42.run_timing(a.out, halton, a.p or SIZES_A, a.seeds, item=ITEM)
     else:
-        run_rf(a.out, halton, a.P)
+        run_rf(a.out, halton, a.P, a.sigma)
     return 0
 
 

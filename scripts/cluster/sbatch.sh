@@ -13,7 +13,11 @@
 #               as the A100 nodes, no GPU surcharge (Addendum v2.2 Section 4.1)
 #   shared-gpu  one A100, 8 cores, 32 GB (untimed GPU work)
 #   cpu         24 cores, 32 GB, no GPU (untimed CPU work)
-# LILQ_WAVE (1, 2, 3 or 4, Package 2's stages p2s1 and p2s2, or p3, p4) must be set: it picks the results folder,
+#   cpu-mem     24 cores, 96 GB, no GPU (untimed CPU work that needs more memory: Package 5's
+#               p = 88 reference, about 38 GB; Beltrami B2, about 18 GB). 96 GB is under 24
+#               cores' share of a node (360 GB / 48 x 24 = 180 GB), so it is billed as 24 cores:
+#               Package 5's preflight checks the billing before the other jobs run.
+# LILQ_WAVE (1, 2, 3 or 4, Package 2's stages p2s1 and p2s2, or p3, p4, p5) must be set: it picks the results folder,
 # results/wave<N>, each locked to one commit (env.sh). Use this for
 # resubmissions too (e.g. LILQ_WAVE=1 bash scripts/cluster/sbatch.sh job.slurm --array=2).
 set -euo pipefail
@@ -21,8 +25,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER="${CLUSTER:-grace}"
 source "$here/profiles/$CLUSTER.sh"
 [[ -n "$ACCOUNT" ]] || { echo "set LILQ_ACCOUNT to your HPRC allocation account (myproject -l)" >&2; exit 1; }
-: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3 or p4 (the wave or stage this job belongs to)}"
-[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3|p4)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3 or p4, not '$LILQ_WAVE'" >&2; exit 1; }
+: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4 or p5 (the wave or stage this job belongs to)}"
+[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3|p4|p5)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4 or p5, not '$LILQ_WAVE'" >&2; exit 1; }
 export CLUSTER LILQ_MODULES LILQ_WAVE
 
 script="$1"; shift
@@ -36,6 +40,8 @@ case "$class" in
     shared-gpu) res=(--partition="$GPU_PARTITION" --gres="$GPU_GRES" --ntasks=1 --cpus-per-task=8 --mem=32G) ;;
     cpu)        [[ -n "$CPU_PARTITION" ]] || { echo "set CPU_PARTITION (see sinfo -s)" >&2; exit 1; }
                 res=(--partition="$CPU_PARTITION" --ntasks=1 --cpus-per-task=24 --mem=32G) ;;
+    cpu-mem)    [[ -n "$CPU_PARTITION" ]] || { echo "set CPU_PARTITION (see sinfo -s)" >&2; exit 1; }
+                res=(--partition="$CPU_PARTITION" --ntasks=1 --cpus-per-task=24 --mem=96G) ;;
     *)          echo "$script: no '# lilq-resources:' class" >&2; exit 1 ;;
 esac
 # --kill-on-invalid-dep: a job whose dependency can no longer be satisfied (the

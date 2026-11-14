@@ -268,7 +268,7 @@ def su_rate(alloc_tres: str):
     cpu, gpu = int(tres.get('cpu', 0)), int(tres.get('gres/gpu', 0))
     if gpu:
         return GRACE_WHOLE_GPU_NODE_SU_PER_HOUR if cpu >= GRACE_GPU_NODE_CORES else cpu + GRACE_GPU_SU_PER_HOUR * gpu
-    return cpu
+    return max(cpu, int(tres.get('billing', 0)))   # a CPU job billed above its cores (memory) pays its billing
 
 
 def su_rows(sacct_parsable: str):

@@ -37,6 +37,10 @@ coefficients is the warm-up. The clock covers the solver
 from zero coefficients to its return; the collocation set and the basis
 matrices are built before it, as in the advisor's script. The errors are
 evaluated after the clock.
+The two L-BFGS solvers are timed by their one logged pass (``ONE_PASS``): the
+advisor's reply to the cost check, 14 November 2026, answer 2. Their runs end
+at the 2,000-iteration cap, so one pass is their time; the least-squares
+solvers and LiL-Q keep the protocol.
 
 **Output** under ``<out>/P5_2_nlls/``: ``<problem>_p<p>/<solver>/result.json``
 and ``beta.npy`` (LiL-Q also ``betas.npy``, every iterate);
@@ -80,6 +84,7 @@ LS_MAX_NFEV = 200
 LBFGS_MAX_IT = 2000
 LBFGS_SCIPY_MAXCOR = 100
 SOLVERS = ('lilq',) + LS_METHODS + ('lbfgs', 'lbfgs_scipy')
+ONE_PASS = ('lbfgs', 'lbfgs_scipy')      # timed by their logged pass (the advisor's reply, 14 November 2026)
 HEADLINE = {'burgers': 'eL2', 'pb': 'eH2'}
 
 
@@ -201,7 +206,10 @@ def run(prob, name, out_root, timing=True):
     beta, counts, status = solve_lilq(prob, iterates.append) if iterates is not None else fn(prob)
     first_s = time.perf_counter() - t0
     out = {'problem': prob.name, 'p': prob.p, 'P': prob.P, 'solver': name, **counts, 'status': status}
-    if timing:
+    if timing and name in ONE_PASS:
+        out.update(time_s=first_s, timing_counts=[_count(counts)], timing_matches=True,
+                   timing="one logged pass (the advisor's reply to the cost check, 14 November 2026)")
+    elif timing:
         def once():
             s = time.perf_counter()
             _, c, _ = fn(prob)
