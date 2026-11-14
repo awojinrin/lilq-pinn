@@ -13,7 +13,10 @@ set -euo pipefail
 LILQ_WALL_S=3600   # the walltime, in seconds
 # until_end <command...>: the command, stopped 5 min before the walltime if still running. It
 # keeps every iterate it wrote (the drivers write after each one); the job goes on.
-until_end() { timeout "$((LILQ_WALL_S - SECONDS - 300))s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
+# With no time left it skips the command and says so (timeout 0 would mean no limit).
+until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))
+    (( left > 0 )) || { echo "NOT RUN, NO TIME LEFT: $*"; return 0; }
+    timeout "${left}s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
 python experiments/p4_checks.py provenance --out "$PKG" --name timed
 # Item 4a's timings (Section 5: 2a at p = 34, 38, 42, seeds 0 to 2; the paper's protocol)
 python experiments/p5_4_pb.py time --out "$PKG" --points data/package5

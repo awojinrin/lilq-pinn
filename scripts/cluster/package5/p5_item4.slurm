@@ -14,7 +14,10 @@ set -euo pipefail
 LILQ_WALL_S=9000   # the walltime, in seconds
 # until_end <command...>: the command, stopped 5 min before the walltime if still running. It
 # keeps every iterate it wrote (the drivers write after each one); the job goes on.
-until_end() { timeout "$((LILQ_WALL_S - SECONDS - 300))s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
+# With no time left it skips the command and says so (timeout 0 would mean no limit).
+until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))
+    (( left > 0 )) || { echo "NOT RUN, NO TIME LEFT: $*"; return 0; }
+    timeout "${left}s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
 P4A=(--out "$PKG" --points data/package5)
 # Six processes side by side, 4 threads each (24 in all). 4a, one seed each (2a logged, then

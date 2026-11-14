@@ -36,7 +36,8 @@ in ``betas.npy``. Untimed (DECISIONS.md, the Package 5 plan, reading 1).
     2026, answer 1): p_ref = 88 with 80; if, for a case, the p = 88 solve
     fails or does not stop by the rule, that case falls back to p = 64 with
     56. Each case is decided on its own (``choose`` stage), and
-    ``bl_reference/chosen.json`` records the size and the reason. A job that
+    ``bl_reference/chosen_<case>.json`` records the size and the reason (one file per case:
+    the two cases' jobs run side by side). A job that
     stops a solve at its time limit leaves no ``run.json``: that counts as a
     failure. Every later stage reads the size of each case from that record.
 
@@ -88,7 +89,7 @@ N_X = 96                       # Gauss-Legendre nodes per direction for the norm
 LAM_REFERENCE = 1e4            # the fine Buckley-Leverett reference's weight (Section 3)
 P_REF_DEFAULT = 88            # the fine reference (P = 7,744); its neighbour p = 80 (DECISIONS.md, Package 5 item 1)
 P_REF_FALLBACK = 64           # with 56, if a case's p = 88 solve fails or does not stop by the rule (the advisor's reply)
-CHOSEN = 'chosen.json'        # bl_reference/chosen.json: the size of each case's reference, and why
+CHOSEN = 'chosen_{case}.json' # bl_reference/chosen_<case>.json: the size of each case's reference, and why
 REF_NEIGHBOUR_STEP = 8
 GATE_FACTOR = 3.0
 H2 = ('u', 'u_x', 'u_y', 'u_xx', 'u_xy', 'u_yy')
@@ -211,42 +212,56 @@ def bl_reference_run(case, p_ref, out_root, reference_dir, lam=LAM_REFERENCE):
     beta, k_s, stall, chi, tracker, logger, scaled = logged_run(
         rows, p32.initial_guess(space, physics, p32.CASES[case]['guess']), run_dir,
         lambda b: err(b)['eps_ref'], k_max=K_MAX, stop_n_s=2)
+    np.save(run_dir / 'beta_reference.npy', beta)          # before run.json, which marks the reference finished
     write_run_json(run_dir / 'run.json', {
         'package5': {'item': '1', 'role': 'fine Buckley-Leverett reference for the norm of X', 'case': case,
                      'variant': 'sine', 'p': p_ref, 'P': P, 'N': grid['N_points'], 'lam': lam, 'ratio': RATIO,
                      'rule_step': k_s, 'returned_iterate': None if k_s is None else k_s + 1, 'stall_level': stall,
                      'chi_at_rule': chi, 'eps_ref_vs_fd': err(beta)['eps_ref'], 'identity_scaled_max': scaled,
                      'wall_time_s': time.perf_counter() - t0}})
-    np.save(run_dir / 'beta_reference.npy', beta)
     return run_dir
 
 
 def reference_ok(case, p_ref, out_root):
     """None if the fine solution at p_ref finished and stopped by the rule; otherwise the reason."""
-    f = reference_dir_bl(out_root) / f'{case}_p{p_ref}' / 'run.json'
-    if not f.exists():
+    d = reference_dir_bl(out_root) / f'{case}_p{p_ref}'
+    if not d.exists():
+        return f'p = {p_ref} was not run'
+    if not (d / 'run.json').exists():
         return f'p = {p_ref} did not finish (stopped at its time limit, or failed: see the job log)'
+    f = d / 'run.json'
     if json.loads(f.read_text())['package5']['rule_step'] is None:
         return f'p = {p_ref} did not stop by the rule within K_max = {K_MAX}'
     return None
 
 
 def chosen_record(out_root):
-    f = reference_dir_bl(out_root) / CHOSEN
-    return json.loads(f.read_text()) if f.exists() else {}
+    """Every case's ``choose`` record, keyed by case."""
+    d = reference_dir_bl(out_root)
+    return {case: json.loads((d / CHOSEN.format(case=case)).read_text())
+            for case in sorted(p32.CASES) if (d / CHOSEN.format(case=case)).exists()}
 
 
-def p_ref_of(out_root, case, p_ref=None):
-    """The size of a case's fine reference: an explicit p_ref, else the ``choose`` record, else 88."""
+def p_ref_of(out_root, case, p_ref=None, require_chosen=False):
+    """The size of a case's fine reference: an explicit p_ref, else the ``choose`` record, else 88.
+    A record with no usable size (the fallback failed too) is an error, with its reason; so is a
+    missing record when ``require_chosen`` (the Grace jobs, where ``choose`` must have run)."""
     if p_ref is not None:
         return p_ref
     rec = chosen_record(out_root).get(case) if out_root is not None else None
-    return rec['p_ref'] if rec and rec.get('p_ref') else P_REF_DEFAULT
+    if rec is None:
+        if require_chosen:
+            raise RuntimeError(f'no fine reference was chosen for {case}: bl_reference/{CHOSEN.format(case=case)} '
+                               'is missing (did the reference job stop before its choose step? see its log)')
+        return P_REF_DEFAULT
+    if not rec.get('p_ref'):
+        raise RuntimeError(f'no usable fine reference for {case}: {rec["reason"]}')
+    return rec['p_ref']
 
 
 def choose(case, out_root, reference_dir, p_ref=P_REF_DEFAULT, fallback=P_REF_FALLBACK):
     """The advisor's fallback, for one case: keep p_ref (with p_ref - 8) if both stopped by the rule;
-    otherwise run the fallback pair here and keep it if both stop by the rule. Writes chosen.json."""
+    otherwise run the fallback pair here and keep it if both stop by the rule. Writes chosen_<case>.json."""
     tried = {p: reference_ok(case, p, out_root) for p in (p_ref, p_ref - REF_NEIGHBOUR_STEP)}
     if not any(tried.values()):
         rec = {'p_ref': p_ref, 'p_neighbour': p_ref - REF_NEIGHBOUR_STEP, 'fallback': False,
@@ -263,10 +278,11 @@ def choose(case, out_root, reference_dir, p_ref=P_REF_DEFAULT, fallback=P_REF_FA
                'reason': why + (f'; fell back to p = {fallback} with {fallback - REF_NEIGHBOUR_STEP}' if ok else
                                 '; the fallback failed too: ' + '; '.join(v for v in fb.values() if v))}
     rec['tried'] = {str(p): v or 'stopped by the rule' for p, v in tried.items()}
-    allrec = chosen_record(out_root)
-    allrec[case] = rec
-    reference_dir_bl(out_root).mkdir(parents=True, exist_ok=True)
-    (reference_dir_bl(out_root) / CHOSEN).write_text(json.dumps(allrec, indent=2))
+    d = reference_dir_bl(out_root)
+    d.mkdir(parents=True, exist_ok=True)
+    tmp = d / (CHOSEN.format(case=case) + '.tmp')
+    tmp.write_text(json.dumps(rec, indent=2))
+    os.replace(tmp, d / CHOSEN.format(case=case))           # whole or not at all
     return rec
 
 
@@ -306,7 +322,7 @@ def bl_reference_record(case, p_ref, out_root, n=None):
 class Context:
     """What every run of a family shares: the norm of X on its quadrature."""
 
-    def __init__(self, family, reference_dir, out_root=None, p_ref=None):
+    def __init__(self, family, reference_dir, out_root=None, p_ref=None, require_chosen=False):
         self.family = family
         if family in SCALAR_SIZES:
             x, y, w = quadrature(family)
@@ -319,7 +335,7 @@ class Context:
             self.l2_ref = p216.load_reference(family, reference_dir)
         else:
             variant, case = bl_parts(family)
-            p_ref = p_ref_of(out_root, case, p_ref)
+            p_ref = p_ref_of(out_root, case, p_ref, require_chosen)
             n = max(N_X, 2 * p_ref)
             x, t, w = quadrature(family, n)
             self.x, self.y, self.p_ref, self.pde_check = x, t, p_ref, None
@@ -423,6 +439,14 @@ def summarize(out_root, reference_dir, p_ref=None, only=None):
     for family in only or families():
         if not (out / family).exists():
             continue
+        if family in BL_FAMILIES:
+            case = bl_parts(family)[1]
+            try:
+                p_ref_of(out_root, case, p_ref)
+            except RuntimeError as e:                       # no usable reference: say so, go on
+                records[f'bl_{case}'] = {'case': case, 'error': str(e), 'chosen': chosen_record(out_root).get(case)}
+                print(f'  {family}: left out of the summary: {e}', flush=True)
+                continue
         ctx = Context(family, reference_dir, out_root, p_ref)
         gate = None
         if family in BL_FAMILIES:
@@ -446,9 +470,10 @@ def summarize(out_root, reference_dir, p_ref=None, only=None):
 
 
 def run_all(out_root, reference_dir, p_ref=None, only=None, references=True, summary=True):
-    """Every run of the chosen families. ``references=False`` never runs a fine reference (a
-    Buckley-Leverett family whose reference is missing then fails); ``summary=False`` leaves
-    the summary to a later stage, so that several processes can run families side by side."""
+    """Every run of the chosen families. ``references=False`` never runs a fine reference and
+    needs each Buckley-Leverett case's ``choose`` record (the Grace jobs: a case without one
+    fails with the reason); ``summary=False`` leaves the summary to a later stage, so that
+    several processes can run families side by side."""
     chosen = only or families()
     for case in sorted({bl_parts(f)[1] for f in chosen if f in BL_FAMILIES} if references else ()):
         pr = p_ref_of(out_root, case, p_ref)
@@ -456,7 +481,7 @@ def run_all(out_root, reference_dir, p_ref=None, only=None, references=True, sum
             if not (reference_dir_bl(out_root) / f'{case}_p{p}' / 'run.json').exists():
                 bl_reference_run(case, p, out_root, reference_dir)
     for family in chosen:
-        ctx = Context(family, reference_dir, out_root, p_ref)
+        ctx = Context(family, reference_dir, out_root, p_ref, require_chosen=not references)
         for P in sizes(family):
             for lam in WEIGHTS:
                 run(family, P, lam, out_root, reference_dir, ctx)
@@ -473,7 +498,7 @@ def main(argv=None):
     ap.add_argument('--P', type=int)
     ap.add_argument('--lam', type=float)
     ap.add_argument('--case', choices=tuple(p32.CASES))
-    ap.add_argument('--p-ref', type=int, help="the fine reference's size (default: each case's chosen.json, else 88)")
+    ap.add_argument('--p-ref', type=int, help="the fine reference's size (default: each case's chosen_<case>.json, else 88)")
     ap.add_argument('--only', nargs='*', choices=families())
     a = ap.parse_args(argv)
     if a.stage != 'ref-ok' and not a.reference_dir:

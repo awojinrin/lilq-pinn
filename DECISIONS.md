@@ -25,7 +25,7 @@ v3-dev three-way comparison run.
 3. **The weight split: the Package 3 rule** (no rerun); his indicative values and our check go beside our results.
 
 **How the fallback is implemented** (`p5_1_weights`; the user approved per case and the 60-minute limit, 14 November 2026):
-- **Per case.** Each case has its own reference, so a failure in one does not discard the other's p = 88. `choose` writes `bl_reference/chosen.json` with each case's size and the reason, and every later stage (`Context`, `summarize`, `run_all`) reads each case's size from it.
+- **Per case.** Each case has its own reference, so a failure in one does not discard the other's p = 88. `choose` writes `bl_reference/chosen_<case>.json` with each case's size and the reason (one file per case, written whole: the two cases' jobs run side by side), and every later stage (`Context`, `summarize`, `run_all`) reads each case's size from it. On Grace, item 1's runs stop with the reason if a case has no usable reference; the summary records that case and goes on with the others.
 - **"Fails or does not stop by the rule":** no `run.json` (the job stopped the solve at its time limit, or it failed), or a rule step of None (60 iterations without the rule).
 - **Time limits:** p = 88 has 60 min (expected 25 to 32 min). Its neighbour p = 80 has 40 min (expected 15 to 18 min). An iteration at p = 88 costs about 4.5 min, so K_max = 60 without the rule would take about 4.5 h.
 - **The neighbour gets the same treatment.** If p = 80 does not stop by the rule, p = 88 is not run and the case falls back: the pair needs both. This goes slightly beyond the reply's wording, which names p = 88 only, and the report says so.

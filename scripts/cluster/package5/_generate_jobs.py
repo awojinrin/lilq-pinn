@@ -25,7 +25,10 @@ LIMIT_REF = '60m'              # p = 88: about 25 to 32 min expected (the user's
 THREADS4 = 'export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4'
 UNTIL_END = ("# until_end <command...>: the command, stopped 5 min before the walltime if still running. It\n"
              "# keeps every iterate it wrote (the drivers write after each one); the job goes on.\n"
-             'until_end() { timeout "$((LILQ_WALL_S - SECONDS - 300))s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }\n')
+             "# With no time left it skips the command and says so (timeout 0 would mean no limit).\n"
+             'until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))\n'
+             '    (( left > 0 )) || { echo "NOT RUN, NO TIME LEFT: $*"; return 0; }\n'
+             '    timeout "${left}s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }\n')
 WAIT_ALL = '''failed=0
 for pid in "${{pids[@]}}"; do wait "$pid" || failed=1; done
 [[ $failed == 0 ]] || {{ echo "{what}: A PROCESS FAILED (see above)"; exit 1; }}
@@ -60,7 +63,7 @@ echo "PREFLIGHT OK"
 def reference_body(case):
     return f'''# The advisor's answer 1: p = {P_REF} with its neighbour p = {P_REF - 8}; if either does not finish
 # within its limit or does not stop by the rule, this case falls back to p = 64 with 56
-# (`choose`, which runs them and writes bl_reference/chosen.json with the reason).
+# (`choose`, which runs them and writes bl_reference/chosen_<case>.json with the reason).
 ref() {{   # ref <limit> <p>
     timeout "$1" python {W} reference --case {case} --p-ref "$2" --out "$PKG" --reference-dir {REF2} \\
         || echo "REFERENCE {case} p = $2: STOPPED OR FAILED (exit $?)"
@@ -76,7 +79,7 @@ python {W} choose --case {case} --p-ref {P_REF} --out "$PKG" --reference-dir {RE
 SWEEP_BODY = f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
 {UNTIL_END}{THREADS4}
 # Six processes side by side, 4 threads each (24 in all), one family each. A Buckley-Leverett
-# family reads its case's fine reference from bl_reference/chosen.json and never runs one.
+# family reads its case's fine reference from bl_reference/chosen_<case>.json and never runs one.
 pids=()
 for family in bratu burgers bl_cheb_viscous bl_cheb_gravity bl_sine_viscous bl_sine_gravity; do
     until_end python {W} runs --only "$family" --out "$PKG" --reference-dir {REF2} & pids+=($!)

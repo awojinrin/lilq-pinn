@@ -295,7 +295,8 @@ def run_square(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS):
     write_csv(out / 'square.csv', rows)
 
 
-def run_under(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS, item=ITEM):
+def run_under(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS, item=ITEM, name='underdetermined.csv'):
+    """``name``: the csv (Package 5 runs the seeds side by side, one file per seed)."""
     norms = pb.Norms()
     rows = []
     for p in sizes:
@@ -308,7 +309,7 @@ def run_under(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS, item=ITEM):
             print('2c', rows[-1], flush=True)
     out = Path(out_root) / item / 'underdetermined'
     out.mkdir(parents=True, exist_ok=True)
-    write_csv(out / 'underdetermined.csv', rows)
+    write_csv(out / name, rows)
 
 
 # ---------------------------------------------------------------- 2f: constants at the iterates

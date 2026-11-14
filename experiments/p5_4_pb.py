@@ -205,6 +205,10 @@ def best_of(out_root, label):
 
 # ---------------------------------------------------------------- the summary
 
+def under_name(seed):
+    return f'underdetermined_seed{seed}.csv'
+
+
 def summarize(out_root, expected_rf=None):
     root = Path(out_root) / ITEM
     out = {}
@@ -212,6 +216,12 @@ def summarize(out_root, expected_rf=None):
     if deltas:
         write_csv(root / 'delta_P_two_ways.csv', deltas)
     out['delta'] = deltas
+    under = [r for seed in SEEDS if (root / 'underdetermined' / under_name(seed)).exists()
+             for r in read_csv(root / 'underdetermined' / under_name(seed))]
+    under.sort(key=lambda r: (int(r['p']), int(r['seed'])))
+    if under:
+        write_csv(root / 'underdetermined' / 'underdetermined.csv', under)
+    out['2c'] = under
     lilq = []
     for p in SIZES_A:
         for seed in SEEDS:
@@ -306,7 +316,8 @@ def main(argv=None):
     if a.stage == 'lilq':
         p42.run_lilq(a.out, halton, a.p or SIZES_A, a.seeds, item=ITEM)
     elif a.stage == 'under':
-        p42.run_under(a.out, halton, a.p or SIZES_A, a.seeds, item=ITEM)
+        for seed in a.seeds:                  # one file per seed: the job runs the seeds side by side
+            p42.run_under(a.out, halton, a.p or SIZES_A, [seed], item=ITEM, name=under_name(seed))
     elif a.stage == 'time':
         p42.run_timing(a.out, halton, a.p or SIZES_A, a.seeds, item=ITEM)
     else:

@@ -13,7 +13,10 @@ set -euo pipefail
 LILQ_WALL_S=10800   # the walltime, in seconds
 # until_end <command...>: the command, stopped 5 min before the walltime if still running. It
 # keeps every iterate it wrote (the drivers write after each one); the job goes on.
-until_end() { timeout "$((LILQ_WALL_S - SECONDS - 300))s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
+# With no time left it skips the command and says so (timeout 0 would mean no limit).
+until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))
+    (( left > 0 )) || { echo "NOT RUN, NO TIME LEFT: $*"; return 0; }
+    timeout "${left}s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
 # B1 and B2 at level 1, lambda_bc = lambda_ic = 1e3, 1e4, 1e6 (the delivered runs have 10),
 # pin_scale 1, eight iterates; at 24 threads (the advisor's reply: untimed, no whole node).
 for size in B1 B2; do

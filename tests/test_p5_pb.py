@@ -102,3 +102,15 @@ def test_rf_runs_a_chosen_part_of_the_set(tmp_path, monkeypatch):
     calls.clear()
     m.run_rf(tmp_path, None)
     assert len(calls) == len(m.RF_P) * len(m.RF_SIGMA) * len(m.RF_DRAWS)
+
+
+def test_the_seeds_of_2c_side_by_side_keep_their_own_rows(tmp_path):
+    """Item 4's job runs ``under`` for each seed in its own process: one file per seed, merged by the summary."""
+    pts = str(REPO / 'data' / 'package5')
+    for seed in (0, 1):
+        m.main(['under', '--p', '6', '--seeds', str(seed), '--out', str(tmp_path), '--points', pts])
+    under = tmp_path / m.ITEM / 'underdetermined'
+    assert sorted(f.name for f in under.glob('*.csv')) == ['underdetermined_seed0.csv', 'underdetermined_seed1.csv']
+    out = m.summarize(tmp_path)
+    assert [(int(r['p']), int(r['seed'])) for r in out['2c']] == [(6, 0), (6, 1)]
+    assert (under / 'underdetermined.csv').exists()

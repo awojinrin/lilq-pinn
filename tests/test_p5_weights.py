@@ -160,8 +160,9 @@ def test_choose_falls_back_per_case(tmp_path, monkeypatch):
     assert v['p_ref'] == 64 and v['fallback'] and 'did not finish' in v['reason']
     assert g['p_ref'] == 64 and 'did not stop by the rule' in g['reason']
     assert ran == [('viscous', 56), ('viscous', 64), ('gravity', 56), ('gravity', 64)]
-    rec = json.loads((m.reference_dir_bl(tmp_path) / m.CHOSEN).read_text())
-    assert set(rec) == {'viscous', 'gravity'} and m.p_ref_of(tmp_path, 'gravity') == 64
+    for case in ('viscous', 'gravity'):                                 # one file per case (the jobs run side by side)
+        assert json.loads((m.reference_dir_bl(tmp_path) / m.CHOSEN.format(case=case)).read_text())['p_ref'] == 64
+    assert set(m.chosen_record(tmp_path)) == {'viscous', 'gravity'} and m.p_ref_of(tmp_path, 'gravity') == 64
 
 
 def test_choose_reports_a_failed_fallback(tmp_path, monkeypatch):
@@ -169,5 +170,32 @@ def test_choose_reports_a_failed_fallback(tmp_path, monkeypatch):
     assert m.main(['choose', '--case', 'viscous', '--out', str(tmp_path), '--reference-dir', 'refdir']) == 1
     rec = m.chosen_record(tmp_path)['viscous']
     assert rec['p_ref'] is None and 'the fallback failed too' in rec['reason']
-    assert m.p_ref_of(tmp_path, 'viscous') == m.P_REF_DEFAULT       # nothing chosen: the default
+    with pytest.raises(RuntimeError, match='the fallback failed too'):   # never a silent default
+        m.p_ref_of(tmp_path, 'viscous')
     assert m.main(['ref-ok', '--case', 'viscous', '--p-ref', '64', '--out', str(tmp_path)]) == 1
+
+
+def test_a_size_never_run_is_named_so(tmp_path, monkeypatch):
+    """The job runs p = 88 only if p = 80 stopped by the rule; the record says 88 was not run."""
+    monkeypatch.setattr(m, 'bl_reference_run', lambda case, p, out_root, rd: _fake_reference(out_root, case, p))
+    _fake_reference(tmp_path, 'viscous', 80, rule_step=None)
+    rec = m.choose('viscous', tmp_path, 'refdir')
+    assert rec['tried'] == {'88': 'p = 88 was not run', '80': 'p = 80 did not stop by the rule within K_max = 60'}
+    assert rec['p_ref'] == 64
+
+
+def test_the_grace_runs_need_each_cases_choice(tmp_path):
+    """``runs`` (the Grace job) never falls back to 88 silently: a case without a record stops with the reason."""
+    assert m.p_ref_of(tmp_path, 'viscous') == m.P_REF_DEFAULT        # the laptop's 'all' stage: the default
+    with pytest.raises(RuntimeError, match='no fine reference was chosen for viscous'):
+        m.p_ref_of(tmp_path, 'viscous', require_chosen=True)
+    with pytest.raises(RuntimeError, match='no fine reference was chosen'):
+        m.main(['runs', '--only', 'bl_cheb_viscous', '--out', str(tmp_path), '--reference-dir', 'refdir'])
+
+
+def test_the_summary_records_a_case_without_a_reference_and_goes_on(tmp_path, monkeypatch):
+    monkeypatch.setattr(m, 'bl_reference_run', lambda case, p, out_root, rd: _fake_reference(out_root, case, p, None))
+    m.choose('viscous', tmp_path, 'refdir')                             # no usable size
+    (tmp_path / m.ITEM / 'bl_cheb_viscous').mkdir(parents=True)
+    rows, records = m.summarize(tmp_path, 'refdir', only=['bl_cheb_viscous'])
+    assert rows == [] and 'the fallback failed too' in records['bl_viscous']['error']
