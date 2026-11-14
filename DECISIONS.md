@@ -17,6 +17,39 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-14 -- Package 5, items 1, 2 and 4: the cost, firmed before the Grace runs; three questions to the advisor
+
+**This entry replaces the cost figures of the four entries below** (item 1, its fine reference, item 2 and item 4). Nothing here changes a computed result.
+
+**Job sizes, from the Package 3 and 4 Grace logs** (median gelsy rate per iterate, about 2NP^2 flops per solve):
+- one process at 24 threads: 19 to 43 GFLOP/s (P = 484 to 900, N/P about 8 to 10);
+- one process at 48 threads: 19 to 40 GFLOP/s (P = 576 to 7,984; Beltrami B2 level 1: 36);
+- six processes at 4 threads each in one 24-core job (Package 3, Buckley-Leverett): 10 to 16 GFLOP/s each, about 1.7 times the throughput of one 24-thread process.
+
+So a whole node is no faster than 24 cores for these solves. The untimed runs (item 1, item 4's logged runs, delta_P) go on 24-core jobs, several runs to a job where there are many small ones. The thread count changes only the order of the arithmetic, so results change only by round-off. The timed runs (item 2, item 4a's timings) keep a whole node, as Section 2 asks.
+
+The laptop (a hybrid CPU with performance and efficiency cores) is no guide to thread scaling: there, gelsy stops gaining at about 8 threads. Only its single-process times are used, as the Grace 24-core time.
+
+**Expected SU:**
+
+| Part | As planned | With the cheaper choices of questions 1 and 2 |
+|---|---|---|
+| Item 1, the six Beltrami runs (24 cores; Package 3's B1 and B2 level-1 times, 398 s and 1,301 s per run) | 35 | 35 |
+| Item 1, Bratu, Burgers and the Buckley-Leverett weight runs (packed) | 12 | 12 |
+| Item 1, the fine Buckley-Leverett references (laptop ladder to p = 64, scaled as p^6) | 35 (p = 88, 80) | 6 (p = 64, 56) |
+| Item 2 (one whole node; laptop pass 913 s, of which L-BFGS 835 s) | 50 (full protocol) | 15 (one pass for the L-BFGS solvers) |
+| Item 4 (packed), with the 4a timings (about 10) | 37 | 37 |
+| **Total** | **about 170** | **about 105** |
+
+**Questions to the advisor** (the memo `Package5_items124_cost_check.md`, sent with these commits), to settle before any SU are spent:
+1. **The fine Buckley-Leverett reference:** p = 88 with 80, or p = 64 with 56.
+   - With p = 64, Section 3's factor-of-three rule leaves out the H^{2,1} ratios of viscous tensor Chebyshev at P = 1,024 (all four weights). That ratio is still moving with the reference: 1.61, 1.47, 1.38 at weight 10^6 against references at p = 48, 56, 64. The other ratios move by less than 1%.
+2. **Item 2's L-BFGS times:** may they come from one logged pass, as Section 6 allows for item 3's optimizer runs?
+   - In Package 4's 16 timed Grace runs, the three timings typically differed by 0.8% (the median spread), but one differed by 23%.
+3. **The Buckley-Leverett weight split:** the Package 3 rule (run as planned) or the split of `ref_weight_bl.py`. No cost either way.
+
+Until he answers, the plan stands as decided in the entries below.
+
 ## 2026-11-13 -- Package 5, item 4: the irregular domain (`experiments/p5_4_pb.py`)
 
 The user approved these readings before the code.
