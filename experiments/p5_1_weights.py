@@ -53,7 +53,8 @@ Usage::
     python experiments/p5_1_weights.py run --family bratu --P 100 --lam 1e3 --out <root> --reference-dir <dir>
     python experiments/p5_1_weights.py all --out <root> --reference-dir <dir> [--p-ref 88]
     python experiments/p5_1_weights.py runs --only bratu --out <root> --reference-dir <dir>   (no reference, no summary)
-    python experiments/p5_1_weights.py summarize --out <root> --reference-dir <dir>
+    python experiments/p5_1_weights.py summarize --out <root> --reference-dir <dir> [--expected-bratu expected_weight_bratu.json --expected-bl expected_weight_bl.json]
+    python experiments/p5_1_weights.py beltrami --out <root> --package3 <Package 3 root>   (Beltrami beside the delivered rows)
 """
 
 import argparse
@@ -433,7 +434,7 @@ def terminal_row(run_dir, dL2, dX, gate=None):
     return row
 
 
-def summarize(out_root, reference_dir, p_ref=None, only=None):
+def summarize(out_root, reference_dir, p_ref=None, only=None, expected_bratu=None, expected_bl=None):
     out = Path(out_root) / ITEM
     rows, records = [], {}
     for family in only or families():
@@ -466,7 +467,93 @@ def summarize(out_root, reference_dir, p_ref=None, only=None):
                     rows.append(terminal_row(d, dL2, dX, gate))
     write_csv(out / 'terminal.csv', rows)
     (out / 'references.json').write_text(json.dumps(records, indent=2))
+    if expected_bratu or expected_bl:
+        write_csv(out / 'compare_expected.csv', compare_expected(rows, expected_bratu, expected_bl))
     return rows, records
+
+
+# ---------------------------------------------------------------- beside the advisor's values
+
+def compare_expected(rows, bratu_path=None, bl_path=None):
+    """Our terminal rows beside the advisor's indicative values (Section 3: his runs on Gauss-Legendre
+    grids, "agreement to one figure is expected"): Bratu (``expected_weight_bratu.json``) and viscous
+    Buckley-Leverett with the tensor Chebyshev space (``expected_weight_bl.json``), at the sizes and
+    weights both ran. His ``solves`` is our returned iterate (the rule's step + 1). An H^{2,1} ratio
+    the factor-3 rule leaves out stays empty, with ``x_ratio_reported`` False."""
+    exp = []
+    if bratu_path:
+        exp += [('bratu', e['p'], e['lam'], e['rL2'], e['rH2'], e['solves'], e['dL2'], e['dH2'])
+                for e in json.loads(Path(bratu_path).read_text())['bratu']]
+    if bl_path:
+        exp += [('bl_cheb_viscous', e['p'], e['lam'], e['eL2'] / e['dL2'], e['eH'] / e['dH'], e['solves'],
+                 e['dL2'], e['dH']) for e in json.loads(Path(bl_path).read_text())]
+    ours = {(r['family'], int(round(math.sqrt(int(r['P'])))), float(r['lam'])): r for r in rows}
+
+    def num(v):                                            # a summary row's number, or None (empty, None, nan)
+        x = to_float(None if v in ('None',) else v)
+        return None if math.isnan(x) else x
+    out, seen = [], set()
+    for family, p, lam, rL2, rX, solves, dL2, dX in exp:
+        r = ours.get((family, p, float(lam)))
+        if r is None or (family, p, float(lam)) in seen:
+            continue                                       # his p = 20 and weights we did not run; p^3 = 1e3 at p = 10 once
+        seen.add((family, p, float(lam)))
+        oL2, oX = num(r.get('eL2_over_delta')), num(r.get('eX_over_delta'))
+        out.append({'family': family, 'p': p, 'P': p * p, 'lam': lam,
+                    'solves': r.get('returned_iterate'), 'solves_expected': solves,
+                    'eL2_over_delta': oL2, 'eL2_over_delta_expected': rL2,
+                    'eL2_over_delta_ours_over_his': None if oL2 is None else oL2 / rL2,
+                    'eX_over_delta': oX, 'eX_over_delta_expected': rX,
+                    'eX_over_delta_ours_over_his': None if oX is None else oX / rX,
+                    'x_ratio_reported': str(r.get('x_ratio_reported', True)) == 'True',
+                    'delta_L2': to_float(r['delta_L2']), 'delta_L2_expected': dL2,
+                    'delta_X': to_float(r['delta_X']), 'delta_X_expected': dX})
+    return out
+
+
+BELTRAMI = 'P3_1_beltrami_certified'
+FIELDS = ('u', 'v', 'w', 'p_pin_gauge', 'p')
+
+
+def beltrami_beside_delivered(p5_root, p3_root):
+    """Section 3: Beltrami at B1 and B2, level 1, beside the delivered rows (Package 3,
+    ``P3_1_beltrami_certified/terminal.csv``, lambda = 10, pin_scale 1). Per row: the rule's step
+    and stall level; the errors of u, v, w and p in the pin gauge (Section 3) and gauge-corrected
+    (the delivered ``error_over_delta_P_p``) at the returned iterate, as delivered (the 1e-9
+    criterion's iterate, else the last), and their ratios to the DELIVERED delta_P of each field;
+    the combined error at the rule's iterate. The stall level is the weighted ||R_lin||, so it
+    scales with the weight. Writes ``P3_1_beltrami_certified/beside_delivered.csv``."""
+    def rows_of(root):
+        return read_csv(Path(root) / BELTRAMI / 'terminal.csv')
+    delivered = {}
+    for r in rows_of(p3_root):
+        key = r['size']
+        if r['level'] == '1' and float(r['pin_scale']) == 1.0 and key in ('B1', 'B2') and key not in delivered:
+            log = read_csv(Path(p3_root) / BELTRAMI / f'{key}_L1' / 'iterations.csv')
+            k = r['k_rule']
+            delivered[key] = {**r, 'lambda_bc': 10.0, 'stall_level': log[int(k) - 1]['norm_Rlin_h'] if k != 'never' else ''}
+    out = []
+    for source, rows in (('delivered (Package 3)', [delivered[s] for s in ('B1', 'B2') if s in delivered]),
+                         ('Package 5', [r for r in rows_of(p5_root) if r['level'] == '1'])):
+        for r in rows:
+            d = delivered[r['size']]
+            dp = {f: to_float(d[f'delta_P_{"p" if f == "p_pin_gauge" else f}']) for f in FIELDS}
+            row = {'size': r['size'], 'P': int(r['P']), 'lambda': float(r['lambda_bc']), 'source': source,
+                   'k_rule': r['k_rule'], 'stall_level': to_float(r['stall_level']),
+                   'returned_iterate': r['returned_iterate']}
+            for f in FIELDS:
+                e = to_float(r[f'rel_l2_{f}_at_returned'])
+                row[f'error_{f}'] = e
+                row[f'error_{f}_over_delivered_delta_P'] = e / dp[f]
+            row['error_combined'] = to_float(r['rel_l2_combined_at_returned'])
+            row['error_combined_over_delivered_delta_P'] = row['error_combined'] / to_float(d['delta_P_combined'])
+            row['error_combined_at_rule'] = to_float(r['rel_l2_combined_at_rule'])
+            row.update({f'delivered_delta_P_{f}': dp[f] for f in ('u', 'v', 'w', 'p')},
+                       delivered_delta_P_combined=to_float(d['delta_P_combined']))
+            out.append(row)
+    out.sort(key=lambda x: (x['size'], x['lambda']))
+    write_csv(Path(p5_root) / BELTRAMI / 'beside_delivered.csv', out)
+    return out
 
 
 def run_all(out_root, reference_dir, p_ref=None, only=None, references=True, summary=True):
@@ -491,7 +578,7 @@ def run_all(out_root, reference_dir, p_ref=None, only=None, references=True, sum
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description='Package 5, item 1: the norm of X and the boundary weight.')
-    ap.add_argument('stage', choices=('all', 'runs', 'run', 'reference', 'ref-ok', 'choose', 'summarize'))
+    ap.add_argument('stage', choices=('all', 'runs', 'run', 'reference', 'ref-ok', 'choose', 'summarize', 'beltrami'))
     ap.add_argument('--out', required=True)
     ap.add_argument('--reference-dir')
     ap.add_argument('--family', choices=families())
@@ -500,7 +587,15 @@ def main(argv=None):
     ap.add_argument('--case', choices=tuple(p32.CASES))
     ap.add_argument('--p-ref', type=int, help="the fine reference's size (default: each case's chosen_<case>.json, else 88)")
     ap.add_argument('--only', nargs='*', choices=families())
+    ap.add_argument('--expected-bratu', help='summarize: expected_weight_bratu.json')
+    ap.add_argument('--expected-bl', help='summarize: expected_weight_bl.json')
+    ap.add_argument('--package3', help="beltrami: Package 3's root (the delivered P3_1_beltrami_certified)")
     a = ap.parse_args(argv)
+    if a.stage == 'beltrami':
+        if not a.package3:
+            ap.error('--package3 is required for beltrami')
+        print(f'{len(beltrami_beside_delivered(a.out, a.package3))} rows')
+        return 0
     if a.stage != 'ref-ok' and not a.reference_dir:
         ap.error('--reference-dir is required')
     if a.stage == 'ref-ok':
@@ -521,7 +616,7 @@ def main(argv=None):
         rows, _ = run_all(a.out, a.reference_dir, a.p_ref, a.only)
         print(f'{len(rows)} runs')
     else:
-        rows, rec = summarize(a.out, a.reference_dir, a.p_ref, a.only)
+        rows, rec = summarize(a.out, a.reference_dir, a.p_ref, a.only, a.expected_bratu, a.expected_bl)
         print(f'{len(rows)} runs; references {json.dumps(rec)}')
     return 0
 

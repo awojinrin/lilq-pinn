@@ -8,6 +8,7 @@ import pytest
 from experiments import p2_16_certified as p216
 from experiments import p3_2_bl_certified as p32
 from experiments import p5_1_weights as m
+from experiments.p4_common import write_csv
 from lilq import certified as cf
 from lilq.references import cole_hopf, cole_hopf_derivatives, cole_hopf_ux
 from lilq.xnorm import XNorm, gauss_legendre_2d
@@ -199,3 +200,68 @@ def test_the_summary_records_a_case_without_a_reference_and_goes_on(tmp_path, mo
     (tmp_path / m.ITEM / 'bl_cheb_viscous').mkdir(parents=True)
     rows, records = m.summarize(tmp_path, 'refdir', only=['bl_cheb_viscous'])
     assert rows == [] and 'the fallback failed too' in records['bl_viscous']['error']
+
+
+# ---------------------------------------------------------------- beside the advisor's values
+
+def test_compare_expected_matches_size_and_weight_once(tmp_path):
+    """His p^3 = 1e3 at p = 10 duplicates his 1e3 row: one row; his weights we did not run: none.
+    His solves = our returned iterate; an H^{2,1} ratio the factor-3 rule left out stays empty."""
+    bratu = tmp_path / 'b.json'
+    bratu.write_text(json.dumps({'bratu': [
+        {'p': 10, 'rule': '1e3', 'lam': 1000.0, 'rL2': 4.0, 'rH2': 1.6, 'solves': 4, 'dL2': 1e-3, 'dH2': 1e-2},
+        {'p': 10, 'rule': 'p^3', 'lam': 1000.0, 'rL2': 4.1, 'rH2': 1.7, 'solves': 4, 'dL2': 1e-3, 'dH2': 1e-2},
+        {'p': 10, 'rule': 'p^4', 'lam': 1e4, 'rL2': 3.9, 'rH2': 1.5, 'solves': 4, 'dL2': 1e-3, 'dH2': 1e-2},
+        {'p': 20, 'rule': '10', 'lam': 10.0, 'rL2': 9.0, 'rH2': 2.0, 'solves': 5, 'dL2': 1e-4, 'dH2': 1e-3}]}))
+    bl = tmp_path / 'bl.json'
+    bl.write_text(json.dumps([{'p': 8, 'rule': '10', 'lam': 10.0, 'eL2': 0.2, 'eH': 0.8, 'dL2': 0.02, 'dH': 0.4,
+                               'solves': 12}]))
+    rows = [{'family': 'bratu', 'P': 100, 'lam': 1000.0, 'returned_iterate': 4, 'eL2_over_delta': 4.08,
+             'eX_over_delta': 1.63, 'x_ratio_reported': True, 'delta_L2': 1e-3, 'delta_X': 1.4e-2},
+            {'family': 'bratu', 'P': 100, 'lam': 1e4, 'returned_iterate': 4, 'eL2_over_delta': 3.9,
+             'eX_over_delta': 1.53, 'x_ratio_reported': True, 'delta_L2': 1e-3, 'delta_X': 1.4e-2},
+            {'family': 'bl_cheb_viscous', 'P': 64, 'lam': '10.0', 'returned_iterate': '15', 'eL2_over_delta': '11.5',
+             'eX_over_delta': '', 'x_ratio_reported': 'False', 'delta_L2': '0.02', 'delta_X': '0.6'}]
+    out = m.compare_expected(rows, bratu, bl)
+    assert [(r['family'], r['p'], r['lam']) for r in out] == [('bratu', 10, 1000.0), ('bratu', 10, 1e4),
+                                                                ('bl_cheb_viscous', 8, 10.0)]
+    assert out[0]['eL2_over_delta_expected'] == 4.0 and out[0]['eX_over_delta_ours_over_his'] == pytest.approx(1.63 / 1.6)
+    b = out[2]
+    assert b['eL2_over_delta_expected'] == pytest.approx(10.0) and b['eX_over_delta_expected'] == pytest.approx(2.0)
+    assert b['eX_over_delta'] is None and b['eX_over_delta_ours_over_his'] is None and not b['x_ratio_reported']
+    assert b['solves'] == '15' and b['solves_expected'] == 12
+
+
+def _beltrami_root(root, rows, logs=None):
+    d = root / m.BELTRAMI
+    d.mkdir(parents=True)
+    write_csv(d / 'terminal.csv', rows)
+    for name, log in (logs or {}).items():
+        (d / name).mkdir()
+        write_csv(d / name / 'iterations.csv', log)
+
+
+def _brow(size, P, k_rule, e, lam=None, stall=''):
+    r = {'size': size, 'level': 1, 'pin_scale': 1.0, 'P': P, 'k_rule': k_rule, 'stall_level': stall,
+         'returned_iterate': 6, 'rel_l2_combined_at_returned': 2 * e, 'rel_l2_combined_at_rule': 2 * e,
+         **{f'rel_l2_{f}_at_returned': e for f in ('u', 'v', 'w', 'p', 'p_pin_gauge')},
+         **{f'delta_P_{f}': 0.01 for f in ('u', 'v', 'w', 'p', 'combined')}}
+    if lam is not None:
+        r.update(lambda_bc=lam, delta_P_u=0.02)       # Package 5 recomputed delta_P: the delivered one is used
+    return r
+
+
+def test_beltrami_beside_delivered_uses_the_delivered_delta_P_and_stall(tmp_path):
+    p3, p5 = tmp_path / 'p3', tmp_path / 'p5'
+    log = [{'norm_Rlin_h': v} for v in (1.0, 0.5, 0.2, 0.1, 0.1)]
+    _beltrami_root(p3, [_brow('B1', 1393, 4, 0.03), _brow('B1', 1393, 4, 0.03), _brow('B2', 3171, 4, 0.003),
+                        {**_brow('B1', 1393, 4, 0.5), 'level': 2}], {'B1_L1': log, 'B2_L1': log})
+    _beltrami_root(p5, [_brow('B1', 1393, 3, 0.04, lam=1e3, stall=0.7), _brow('B2', 3171, 3, 0.002, lam=1e6, stall=0.9)])
+    out = m.beltrami_beside_delivered(p5, p3)
+    assert [(r['size'], r['lambda'], r['source'][:3]) for r in out] == [('B1', 10.0, 'del'), ('B1', 1000.0, 'Pac'),
+                                                                         ('B2', 10.0, 'del'), ('B2', 1e6, 'Pac')]
+    d, ours = out[0], out[1]
+    assert d['stall_level'] == 0.1 and ours['stall_level'] == 0.7                  # delivered: log row k_rule - 1
+    assert ours['error_u_over_delivered_delta_P'] == pytest.approx(4.0)            # 0.04 / delivered 0.01, not 0.02
+    assert ours['error_p_pin_gauge_over_delivered_delta_P'] == pytest.approx(4.0)  # pin gauge over delta_P_p
+    assert (p5 / m.BELTRAMI / 'beside_delivered.csv').exists()

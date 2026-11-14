@@ -17,6 +17,31 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-14 -- Package 5, item 1: how the runs are set beside the advisor's values and the delivered Beltrami rows
+
+Assembly of the Grace runs (commit 60c2d8c). Two comparisons the summaries did not yet write
+(`experiments/p5_1_weights.py`: `compare_expected`, `beltrami_beside_delivered`).
+
+- **Bratu and viscous Buckley-Leverett beside `expected_weight_*.json`** (Section 3: his runs on
+  Gauss-Legendre grids, "agreement to one figure is expected"). Rows where both ran the same size and
+  weight: Bratu at 10, 10^3, 10^6 (and his p^4 = 10^4 at p = 10, the same weight as our 10^4);
+  Buckley-Leverett at 10 and 10^3 (his other weights are p^3 and 10^5). His p^3 = 10^3 at p = 10 repeats
+  his 10^3 row: matched once. His `solves` is our returned iterate (the rule's step + 1), as in item 4.
+  Ratios ours / his are given; no verdict is drawn (the margin is "one figure"). Buckley-Leverett at
+  weight 10 differs by up to 2.2 times: his script splits the weight as initial lambda, sides lambda / 2,
+  while Package 3's split, which item 1 keeps, is by |line| / |dOmega| (the advisor's reply, answer 3:
+  report his values and the check, no rerun).
+- **Beltrami beside the delivered rows** (Section 3: errors of u, v, w and p in the pin gauge, their
+  ratios to the delivered delta_P of each field, the rule step and the stall level). The ratios use the
+  DELIVERED delta_P (Package 5's recomputation differs by about 1e-4 in delta_P_p, round-off). p is given
+  in the pin gauge, as asked, and gauge-corrected, as in the delivered `error_over_delta_P_p`. The errors
+  are at the delivered convention's returned iterate (the 1e-9 criterion's, else the last), with the
+  combined error at the rule's iterate beside them. The delivered table has no stall level: it is read
+  from the delivered log at the rule's step, as for the new rows. The stall level is the weighted
+  ||R_lin||, so it grows with the weight and is not compared across weights.
+
+---
+
 ## 2026-11-14 -- Package 5, items 1, 2 and 4: the advisor's reply to the cost check, and the Grace jobs (`scripts/cluster/package5/`)
 
 **The reply** (`Computational Package 5/Package5_Reply_to_cost_check.md`, 14 November 2026). The runs as implemented match the intent; submit them with three answers. About 135 SU expected, up to about 170 if Beltrami is slower on 24 cores; both approved. All other choices accepted.
