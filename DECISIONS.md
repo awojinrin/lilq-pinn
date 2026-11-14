@@ -17,6 +17,29 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-14 -- Package 5, items 1, 2 and 4: the checks against the delivered runs (`experiments/p5_checks.py`)
+
+Reading 7 of the plan entry, made concrete. Each check compares a Package 5 run from Grace with a delivered Grace run of the same configuration. The checks are evaluated at the assembly on the laptop, where the delivered results are. `checks.json` holds the rows and the verdicts.
+
+- **C1: item 1 at weight 10 against Packages 2 and 3.**
+  - The pairs: Bratu and Burgers against P2-16 at N/P = 10 (Package 2, stage 2); Buckley-Leverett against P3-2a and P3-2b at N/P = 10 with the delivered guess.
+  - Compared up to the delivered run's first stall: ||N|| and the L2 error at every iterate, and the linearized residual of every step before the stall step.
+  - The linearized residual's difference is taken relative to its step's ||f||. Burgers' first step solves its system to round-off (||r|| about 1e-15), where a relative difference means nothing: 60% between the laptop and Grace at P = 625.
+  - Tolerance 1e-8: far above round-off, far below the figures any table quotes.
+  - The rule step and the stall level are recorded beside the delivered ones, with no verdict. After the stall the values are round-off, as in Package 4's M5.
+- **C2: item 2's LiL-Q against Package 4** (1a: Burgers p = 10, 18, 26, 30; 2a: Poisson-Boltzmann seed 0, p = 10, 18, 22).
+  - The solves must equal Package 4's returned iterate.
+  - The errors must agree to 5e-3 relative, the same cutoff as C3, set by the two figures to which the ratios are quoted.
+  - ||N|| is recorded.
+  - I first set 1e-6. The laptop run gives 5e-5 in L2 at Poisson-Boltzmann p = 22: there the space is rank deficient and the error at the stall carries round-off in its fourth figure, as delta_P does (Package 4). So 1e-6 did not separate a code change from round-off. The cutoff now comes from the quoted figures, not from that value.
+- **C3: delta_P of Package 4 by gelsy.** Item 4's delta_P for p = 10 to 30 against Package 4's, to 5e-3 relative.
+
+**On the laptop data** (laptop runs against the delivered Grace runs):
+- C1: worst 3.1e-12 (Bratu, Burgers) and 9.1e-13 (Buckley-Leverett, 16 runs); every rule step equal.
+- C2: Burgers within 1e-10; Poisson-Boltzmann within 5e-5; solves equal.
+- C3: within 1.4e-3 (L2, p = 30).
+- All three pass.
+
 ## 2026-11-14 -- Package 5, items 1, 2 and 4: the cost, firmed before the Grace runs; three questions to the advisor
 
 **This entry replaces the cost figures of the four entries below** (item 1, its fine reference, item 2 and item 4). Nothing here changes a computed result.
