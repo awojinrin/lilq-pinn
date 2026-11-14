@@ -26,16 +26,19 @@ REPEATS = 3
 SHORT_RUN_S, SHORT_REPEATS = 1.0, 5
 
 
-def iterate_to_rule(rows, beta, n_s=N_S, k_max=K_MAX):
+def iterate_to_rule(rows, beta, n_s=N_S, k_max=K_MAX, on_iterate=None):
     """Algorithm 1 without the converged exit, diagnostics off: solve until
     the rule fires (tau_chi = 0.1, tau_r = 0.01). ``rows`` has
     ``assemble(beta)`` and ``residual(beta)``. Returns the returned iterate,
     the step at which the rule fired (or None), the stall level ||r|| there
-    and chi there."""
+    and chi there. ``on_iterate(beta)``, if given, sees every new iterate
+    (Package 5, item 2: the run that gives the coefficients stores them all)."""
     r_prev, run, rn, chi = None, 0, None, None
     for k in range(k_max):
         A, f = rows.assemble(beta)
         new = sla.lstsq(A, f, lapack_driver='gelsy', cond=EPS_MACH, check_finite=False)[0]
+        if on_iterate is not None:
+            on_iterate(new)
         r = A @ new - f
         rn = float(np.linalg.norm(r))
         chi = phase_indicator(rows.residual(new), r)

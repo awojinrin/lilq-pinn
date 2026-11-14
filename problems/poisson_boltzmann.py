@@ -168,6 +168,38 @@ def basis(X, Y, p, keys=KEYS):
     return {key: (vx[full[key][0]][:, :, None] * vy[full[key][1]][:, None, :]).reshape(len(X), -1) for key in keys}
 
 
+class RandomFeatures:
+    """Package 5, item 4b: the trial functions tanh(a_j x + b_j y + c_j), j < P, with a, b and c uniform in
+    [-sigma, sigma], drawn by ``numpy.random.default_rng(100 + draw)`` in the order a, b, c (as the advisor's
+    ``ref_rf_pb.py``)."""
+
+    def __init__(self, P, sigma, draw):
+        self.P, self.sigma, self.draw = int(P), float(sigma), int(draw)
+        rng = np.random.default_rng(100 + self.draw)
+        self.a, self.b, self.c = (rng.uniform(-self.sigma, self.sigma, self.P) for _ in range(3))
+
+    def __repr__(self):
+        return f'RandomFeatures(P={self.P}, sigma={self.sigma:g}, draw={self.draw})'
+
+    def basis(self, X, Y, keys=KEYS):
+        t = np.tanh(np.outer(X, self.a) + np.outer(Y, self.b) + self.c)
+        s = 1 - t * t
+        q = -2 * t * s
+        a, b = self.a, self.b
+        make = dict(v=lambda: t, x=lambda: s * a, y=lambda: s * b, xx=lambda: q * a * a, xy=lambda: q * a * b,
+                    yy=lambda: q * b * b)
+        return {k: make[k]() for k in keys}
+
+
+def space_basis(X, Y, space, keys=KEYS):
+    """The basis of a trial space: an int p (tensor Chebyshev) or an object with ``basis`` (random features)."""
+    return basis(X, Y, space, keys) if isinstance(space, (int, np.integer)) else space.basis(X, Y, keys)
+
+
+def space_size(space):
+    return space * space if isinstance(space, (int, np.integer)) else space.P
+
+
 # ---------------------------------------------------------------- errors and best approximation
 
 class Norms:
@@ -186,7 +218,7 @@ class Norms:
 
     def _b(self, p):
         if self._p != p:
-            self._p, self._bb = p, basis(self.X, self.Y, p)
+            self._p, self._bb = p, space_basis(self.X, self.Y, p)
         return self._bb
 
     def errors(self, beta, p):
@@ -195,15 +227,16 @@ class Norms:
         e2 = np.sqrt(sum(np.sum(((b[k] @ beta - r) * self.sw) ** 2) for k, r in zip(KEYS, self.ref))) / self.den2
         return float(e0), float(e2)
 
-    def best(self, p):
+    def best(self, p, driver='gelsy'):
+        """(delta_L2, delta_H2) by least squares with ``driver`` at rcond = eps (Package 5, item 4: gelsd too)."""
         from scipy.linalg import lstsq
         b = self._b(p)
         eps = np.finfo(float).eps
-        q = lstsq(b['v'] * self.sw[:, None], self.ref[0] * self.sw, lapack_driver='gelsy', cond=eps)[0]
+        q = lstsq(b['v'] * self.sw[:, None], self.ref[0] * self.sw, lapack_driver=driver, cond=eps)[0]
         d0 = np.linalg.norm((b['v'] @ q - self.ref[0]) * self.sw) / self.den0
         M = np.vstack([b[k] * self.sw[:, None] for k in KEYS])
         rhs = np.concatenate([r * self.sw for r in self.ref])
-        q2 = lstsq(M, rhs, lapack_driver='gelsy', cond=eps)[0]
+        q2 = lstsq(M, rhs, lapack_driver=driver, cond=eps)[0]
         return float(d0), float(np.linalg.norm(M @ q2 - rhs) / self.den2)
 
 
@@ -216,12 +249,13 @@ class System:
     'interior' and 'boundary')."""
 
     def __init__(self, p, Xi, Yi, Wi, Xb, Yb, Wb):
-        bi = basis(Xi, Yi, p, ['v', 'xx', 'yy'])
+        """``p``: the trial space, an int (tensor Chebyshev, P = p^2) or a :class:`RandomFeatures`."""
+        bi = space_basis(Xi, Yi, p, ['v', 'xx', 'yy'])
         self.V, self.Lap = bi['v'], bi['xx'] + bi['yy']
-        self.Vb = basis(Xb, Yb, p, ['v'])['v']
+        self.Vb = space_basis(Xb, Yb, p, ['v'])['v']
         self.wi, self.wb = np.sqrt(Wi), np.sqrt(Wb)
         self.rho, self.g = rho(Xi, Yi), u_exact(Xb, Yb)
-        self.p, self.P = p, p * p
+        self.p, self.P = p, space_size(p)
         self.n_interior, self.n_boundary = len(Xi), len(Xb)
         self.N = len(Xi) + len(Xb)
         self.points = {'interior': (np.asarray(Xi), np.asarray(Yi), np.asarray(Wi)),
@@ -246,12 +280,17 @@ class System:
 def lilq_system(p, seed, ratio=RATIO, lam=LAM, nb=None, interior=None):
     """The LiL-Q set: ``ratio * P`` Halton points in Omega with equal squared weights summing to 1, and the
     boundary set of about 12p points with squared weights lam times arc length per point / total length.
-    ``interior`` gives the Halton points instead of drawing them (shipped point sets)."""
-    P = p * p
+    ``interior`` gives the Halton points instead of drawing them (shipped point sets). ``p`` may be a
+    :class:`RandomFeatures` space; its boundary set has 12 round(sqrt(P)) points (``ref_rf_pb.py``)."""
+    P = space_size(p)
     n = int(round(ratio * P))
     Xi, Yi = interior if interior is not None else halton(n, seed)
+    if len(Xi) < n:
+        raise ValueError(f'{n} interior points needed; {len(Xi)} given')
     Xi, Yi = Xi[:n], Yi[:n]
-    Xb, Yb, Wb = boundary(12 * p if nb is None else nb)
+    if nb is None:
+        nb = 12 * (p if isinstance(p, (int, np.integer)) else int(round(P ** 0.5)))
+    Xb, Yb, Wb = boundary(nb)
     return System(p, Xi, Yi, np.full(len(Xi), 1 / len(Xi)), Xb, Yb, lam * Wb)
 
 

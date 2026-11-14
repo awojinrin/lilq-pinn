@@ -17,6 +17,52 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-13 -- Package 5, item 4: the irregular domain (`experiments/p5_4_pb.py`)
+
+The user approved these readings before the code.
+- **More Halton points** (forced by the sizes, not stated): 4a at p = 42 needs 8P = 14,112 interior points per seed, and 4b at P = 1,600 needs 12,800. Package 4 shipped 8,000.
+  - The `points` stage drew 16,000 per seed on the laptop (`pb.halton`, scipy 1.17.0) into `data/package5`.
+  - Its first 8,000 are Package 4's `data/package4` points bit for bit (checked when drawn, and by a test), so every Package 4 set is unchanged.
+- **4a** is Package 4's own `run_lilq`, `run_under` and `run_timing`, at p = 34, 38, 42 with seeds 0 to 2. Their new `item` argument names the results folder; its default is unchanged. Everything else is as delivered: 2a logged with K_max = 60 and every iterate stored; the timing by the paper's protocol (Section 2); 2c with N = P/2 rows and Newton steps by gelsd.
+- **4b:** `pb.RandomFeatures(P, sigma, draw)`, drawn as `ref_rf_pb.py` does (test).
+  - `pb.System`, `pb.lilq_system` and `pb.Norms` accept such a space in place of p. With an int p the behaviour is unchanged (test).
+  - Boundary points: 12 round(sqrt(P)), his script's reading of "about 12 sqrt(P)".
+  - Logged as 2a: K_max = 60, every iterate stored, the rule read from the log. Untimed.
+- **delta_P two ways:** `pb.Norms.best(space, driver)`, gelsy (the default, as delivered) or gelsd, both at rcond = eps. It is computed for p = 10..30 of Package 4, p = 34, 38, 42, and the 45 spaces of 4b. The record has both values and |gelsy - gelsd| / gelsd.
+- **Every iterate (Section 2)** is stored for 4a and 4b (`betas.npy`), with `beta_returned.npy`.
+- `p4_2_pb_inclusions.run_row` is now `rule_row` (the values at the rule) plus the run's identity. 4b reads `rule_row`, and Package 4's rows are unchanged.
+
+**Laptop run** (16 threads):
+- **4a seed 0 against Section 5's indicative values**, all within the stated factor of two:
+
+  | p | rule step | stall level | H2 error | rank |
+  |---|---|---|---|---|
+  | 34 | 4 | 4.14e-8 | 1.67e-8 | 1,099 |
+  | 38 | 4 | 6.59e-10 | 1.88e-10 | 1,347 |
+  | 42 | 5 | 1.52e-11 | 5.01e-12 | 1,599 |
+
+  His values: 4.1e-8 / 6.6e-10 / 1.5e-11; 1.7e-8 / 1.8e-10 / 5.0e-12; about 1,098 / 1,340 / 1,594. His text gives rule step 4; his own script, rerun in Batch 0, gives 4, 4, 5. H2 ratios to delta_H2 (gelsy): 3.6, 2.8, 3.2.
+- **2c at p = 34 to 42:** Newton stops at the 30-step budget each time, with H2 errors of 380 to 1,000.
+- **4b against `expected_rf_pb.json`** (24 runs: P up to 800, draws 0 and 1):
+  - Ranks are identical. Stall levels agree to 3 figures, H2 ratios to 2, delta_H2 to 3e-3 or better.
+  - The step count agrees in 22 of 24 runs. The two others are at P = 800, sigma = 2, where the stall is near round-off and chi stays within 10% of tau_chi on the plateau: draw 0 gives 5 solves (his 6), draw 1 gives 20 (his 10). In Batch 0 his own script on the laptop gave 5 and 7 there. Reported beside his, as Section 7 asks.
+- **4b at P = 1,600, sigma = 2, draw 0 (one laptop run):** the rule does not fire within 60 iterations.
+  - The iteration reaches its plateau at step 2: ||r|| about 4.8e-11, H2 error 2.7e-11, rank 968 of 1,600.
+  - On the plateau chi stays between 0.21 and 0.25, above tau_chi = 0.1. The run is reported as logged (the last iterate), as in Package 4.
+  - Its H2 ratio is 37 against delta_H2 by gelsy (7.4e-13), or 9 against gelsd (3.0e-12).
+- **delta_P two ways** (|gelsy - gelsd| / gelsd):
+  - **Well-conditioned spaces: round-off.** Chebyshev p <= 18: up to 2.5e-10 in H2, 3e-8 in L2. Random features P <= 200: up to 1e-8. H2 at P = 400, sigma = 4 and 8: up to 1e-10.
+  - **The difference grows with the rank deficiency.**
+    - Chebyshev H2: 1e-5 (p = 22) to 2.8e-3 (p = 42). L2 at p = 42: 8.5e-2.
+    - Random features H2: 6e-3 and 3e-2 at P = 400, sigma = 2; 0.18 to 0.86 at P = 800 for sigma = 2 and 4; 0.76 at P = 1,600.
+    - Random features L2: from 1e-2 at P = 400 to 0.93 at P = 1,600.
+  - Where the two differ by more than 1e-3, gelsd's delta is the larger in every case but one, Chebyshev L2 at p = 38 (2.3e-3).
+- **Cost** (laptop times, which match a 24-core Grace job for gelsy):
+  - 4b: 770 s for the 36 runs up to P = 800, and 314 s per P = 1,600 run, about 1 h in all.
+  - 4a logged: 691 s per seed, 35 min for three. 2c: 1.5 min.
+  - delta_P: about 17 min.
+  - About 2 h of 24-core jobs (about 50 SU), plus the 4a timings in one timed-cpu job of 0.5 h (24 SU requested, about 10 expected).
+
 ## 2026-11-13 -- Package 5, item 2: LiL-N by nonlinear least squares (`experiments/p5_2_nlls.py`)
 
 The user approved these readings before the code. Where Section 4 is silent, the advisor's `ref_nlls_liln.py` fills the gap; none of them departs from his text.
@@ -26,7 +72,8 @@ The user approved these readings before the code. Where Section 4 is silent, the
 - **L-BFGS:** Batch 0's reading 4. The four-method runs' `solve_lil_n` runs with `stall_rule='f1'` (its tolerances are 0), no target, and 2,000 iterations, on ||N||^2 with the gradient 2 A^T N. His scipy `L-BFGS-B` (maxcor 100, ftol = gtol = 0, 2,000 iterations) runs beside it as `lbfgs_scipy`.
 - **LiL-Q:** Algorithm 1 runs to the rule and returns the iterate after the rule's step, as in Package 4's timings. It is compared with the delivered Package 4 runs (Batch 5).
 - **Counts and status:** `nfev` / `njev` for least_squares; iterations and evaluations for L-BFGS; solves for LiL-Q. Each solver's status is recorded as returned (Section 7).
-- **Timing** (the one gap neither his text nor his script covers): Package 4's protocol (`p4_common.timed`: warm-up, then the median of three) for all six solvers, in one job on one whole node at 48 threads.
+- **Timing:** the protocol of the paper, which Section 2 sets for every timing "unless stated otherwise" (dedicated node, warm-up, median of three: `p4_common.timed`). It applies to all six solvers, in one job on one whole node at 48 threads. The user confirmed the full protocol for the L-BFGS runs too, after weighing a single timing (about 23 SU less).
+- **Every iterate (Section 2):** LiL-Q's coefficient run stores beta^(0..K) in `betas.npy` (`iterate_to_rule(..., on_iterate=...)`); the timed runs do not.
   - The clock runs from zero coefficients to the solver's return. The collocation set and the basis matrices are built before it, as in his script; the errors are evaluated after it.
   - The run that gives the coefficients serves as the warm-up (`p4_common.timed(fn, warmup=...)`; the default is unchanged), so each solver runs four times.
   - **Cost, corrected after the laptop run:** one pass of all 42 runs takes 913 s on the laptop (8 threads). The PyTorch L-BFGS takes 625 s of that and the scipy L-BFGS-B 210 s: both run to the 2,000-iteration cap where they do not converge, and every evaluation assembles A. Four passes take about 61 min. That is one timed-cpu job of about 1.5 h: 72 SU requested, about 50 expected, not the 24 / 10 first estimated.

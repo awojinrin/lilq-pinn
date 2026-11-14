@@ -56,6 +56,9 @@ def test_every_solver_reaches_lilq_on_a_small_burgers(tmp_path):
     assert rows['lilq']['solves'] >= 3 and rows['trf']['nfev'] <= m.LS_MAX_NFEV
     d = m.run_dir_of(tmp_path, 'burgers', 6, 'trf')
     assert (d / 'beta.npy').exists() and json.loads((d / 'result.json').read_text())['solver'] == 'trf'
+    betas = np.load(m.run_dir_of(tmp_path, 'burgers', 6, 'lilq') / 'betas.npy')
+    assert len(betas) == rows['lilq']['solves'] + 1 and not betas[0].any()
+    np.testing.assert_array_equal(betas[-1], np.load(m.run_dir_of(tmp_path, 'burgers', 6, 'lilq') / 'beta.npy'))
 
 
 def test_timing_repeats_the_count(tmp_path, monkeypatch):

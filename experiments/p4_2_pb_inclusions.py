@@ -214,9 +214,10 @@ def save_set(S, path):
     np.savez(path, interior_x=Xi, interior_y=Yi, interior_w2=Wi, boundary_x=Xb, boundary_y=Yb, boundary_w2=Wb)
 
 
-def run_lilq(out_root, halton, sizes=SIZES, seeds=SEEDS):
+def run_lilq(out_root, halton, sizes=SIZES, seeds=SEEDS, item=ITEM):
+    """``item``: the results folder (Package 5, item 4a: the same runs at larger p)."""
     norms = pb.Norms()
-    root = Path(out_root) / ITEM
+    root = Path(out_root) / item
     for p in sizes:
         for seed in seeds:
             S = lilq_set(halton, p, seed)
@@ -294,7 +295,7 @@ def run_square(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS):
     write_csv(out / 'square.csv', rows)
 
 
-def run_under(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS):
+def run_under(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS, item=ITEM):
     norms = pb.Norms()
     rows = []
     for p in sizes:
@@ -305,7 +306,7 @@ def run_under(out_root, halton, sizes=SQUARE_SIZES, seeds=SEEDS):
             rows.append({'p': p, 'P': p * p, 'seed': seed, 'points': 'scattered', 'N': S.N, 'status': status,
                          'steps': it, 'eL2': e0, 'eH2': e2, 'time_s': t})
             print('2c', rows[-1], flush=True)
-    out = Path(out_root) / ITEM / 'underdetermined'
+    out = Path(out_root) / item / 'underdetermined'
     out.mkdir(parents=True, exist_ok=True)
     write_csv(out / 'underdetermined.csv', rows)
 
@@ -353,7 +354,7 @@ def run_constants(out_root, halton, sizes=SIZES, seeds=SEEDS, extremes=True):
 
 # ---------------------------------------------------------------- timing, M7, the solution figure
 
-def run_timing(out_root, halton, sizes=SIZES, seeds=SEEDS):
+def run_timing(out_root, halton, sizes=SIZES, seeds=SEEDS, item=ITEM):
     thread_env = capture_blas_thread_env()
     for p in sizes:
         for seed in seeds:
@@ -365,7 +366,7 @@ def run_timing(out_root, halton, sizes=SIZES, seeds=SEEDS):
                 _, k_s, _, _ = iterate_to_rule(S, np.zeros(S.P), N_S)
                 return time.perf_counter() - t0, None if k_s is None else k_s + 1
             out = timed(once)
-            d = Path(out_root) / ITEM / 'lilq' / f'p{p}_seed{seed}'
+            d = Path(out_root) / item / 'lilq' / f'p{p}_seed{seed}'
             d.mkdir(parents=True, exist_ok=True)
             (d / 'timing.json').write_text(json.dumps({**out, 'p': p, 'seed': seed, 'thread_env': thread_env},
                                                       indent=2))
@@ -411,15 +412,20 @@ def run_solution(out_root):
 
 def run_row(run_dir, best):
     """The terminal values of one logged run: at the rule's step, and the errors of the iterate it returns."""
+    run = json.loads((Path(run_dir) / 'run.json').read_text())
+    p4 = run['package4']
+    out = {'p': p4['p'], 'P': run['P_total'], 'N': run['N_total'], 'seed': p4['seed'],
+           'lambda_boundary': p4['lambda_boundary'], 'interior_points_per_unknown': p4['interior_points_per_unknown']}
+    return {**out, **rule_row(run_dir, best)}
+
+
+def rule_row(run_dir, best):
+    """``run_row`` without the run's identity (Package 5, item 4b reads it for its random-feature runs)."""
     rows = read_csv(Path(run_dir) / 'iterations.csv')
     solve = [r for r in rows if r['norm_Rlin_h'] not in ('', None)]
     errs = read_csv(Path(run_dir) / 'errors_by_iterate.csv')
-    run = json.loads((Path(run_dir) / 'run.json').read_text())
     k_s = stall_rule_index([to_float(r['chi']) for r in solve], [to_float(r['norm_Rlin_h']) for r in solve])
-    p4 = run['package4']
-    out = {'p': p4['p'], 'P': run['P_total'], 'N': run['N_total'], 'seed': p4['seed'],
-           'lambda_boundary': p4['lambda_boundary'], 'interior_points_per_unknown': p4['interior_points_per_unknown'],
-           'rule_step': k_s, 'returned_iterate': None if k_s is None else k_s + 1,
+    out = {'rule_step': k_s, 'returned_iterate': None if k_s is None else k_s + 1,
            'delta_L2': best[0], 'delta_H2': best[1]}
     i = k_s if k_s is not None else len(solve) - 1          # 6.2: report the history as is
     r, e = solve[i], errs[i + 1]

@@ -1,0 +1,24 @@
+{
+  "drawn_with_scipy": "1.17.0",
+  "seeds": [
+    {
+      "seed": 0,
+      "n": 16000,
+      "prefix_of_package4": 8000,
+      "prefix_identical": true
+    },
+    {
+      "seed": 1,
+      "n": 16000,
+      "prefix_of_package4": 8000,
+      "prefix_identical": true
+    },
+    {
+      "seed": 2,
+      "n": 16000,
+      "prefix_of_package4": 8000,
+      "prefix_identical": true
+    }
+  ],
+  "note": "Package 5, item 4: pb.halton(16000, seed); the first 8,000 are data/package4 bit for bit"
+}

@@ -39,7 +39,8 @@ matrices are built before it, as in the advisor's script. The errors are
 evaluated after the clock.
 
 **Output** under ``<out>/P5_2_nlls/``: ``<problem>_p<p>/<solver>/result.json``
-and ``beta.npy``; ``terminal.csv``; ``compare_expected.csv`` against
+and ``beta.npy`` (LiL-Q also ``betas.npy``, every iterate);
+``terminal.csv``; ``compare_expected.csv`` against
 ``expected_nlls_liln.json``.
 
 Usage::
@@ -116,8 +117,8 @@ def poisson_boltzmann(p, points_dir, norms=None):
 
 # ---------------------------------------------------------------- the solvers: (beta, counts, status)
 
-def solve_lilq(prob):
-    beta, k_s, _, _ = iterate_to_rule(prob.rows, np.zeros(prob.P), N_S)
+def solve_lilq(prob, on_iterate=None):
+    beta, k_s, _, _ = iterate_to_rule(prob.rows, np.zeros(prob.P), N_S, on_iterate=on_iterate)
     return beta, {'solves': None if k_s is None else k_s + 1}, 'rule fired' if k_s is not None else 'K_max'
 
 
@@ -195,8 +196,9 @@ def run_dir_of(out_root, problem, p, name):
 
 def run(prob, name, out_root, timing=True):
     fn = solver(name)
+    iterates = [np.zeros(prob.P)] if name == 'lilq' else None     # Section 2: every iterate of a LiL run
     t0 = time.perf_counter()
-    beta, counts, status = fn(prob)
+    beta, counts, status = solve_lilq(prob, iterates.append) if iterates is not None else fn(prob)
     first_s = time.perf_counter() - t0
     out = {'problem': prob.name, 'p': prob.p, 'P': prob.P, 'solver': name, **counts, 'status': status}
     if timing:
@@ -218,6 +220,8 @@ def run(prob, name, out_root, timing=True):
     d = run_dir_of(out_root, prob.name, prob.p, name)
     d.mkdir(parents=True, exist_ok=True)
     np.save(d / 'beta.npy', beta)
+    if iterates is not None:
+        np.save(d / 'betas.npy', np.array(iterates))                  # beta^(0..K)
     (d / 'result.json').write_text(json.dumps(out, indent=2, default=str))
     return out
 
