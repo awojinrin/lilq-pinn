@@ -17,6 +17,26 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-13 -- Package 5, item 2: LiL-N by nonlinear least squares (`experiments/p5_2_nlls.py`)
+
+The user approved these readings before the code. Where Section 4 is silent, the advisor's `ref_nlls_liln.py` fills the gap; none of them departs from his text.
+- **Problems:** Package 4's own classes, unchanged. Burgers is `p4_1_burgers_gauss.Rows` at p = 10, 18, 26, 30. Poisson-Boltzmann is `p4_2_pb_inclusions.lilq_set`, seed 0, on the shipped Halton points, at p = 10, 18, 22.
+- **The error.** Burgers: the relative L2 error on the 201 x 201 grid, against Package 4's delta_P. Poisson-Boltzmann: the H2 error against delta_H2 (his script's), with L2 beside it.
+- **least_squares:** `trf`, `lm`, `dogbox`, xtol = ftol = gtol = 1e-12. The analytic Jacobian is A(beta), the linearized collocation matrix (test: equal to the centred differences of N). At most 200 evaluations, from his script; his runs need at most 51.
+- **L-BFGS:** Batch 0's reading 4. The four-method runs' `solve_lil_n` runs with `stall_rule='f1'` (its tolerances are 0), no target, and 2,000 iterations, on ||N||^2 with the gradient 2 A^T N. His scipy `L-BFGS-B` (maxcor 100, ftol = gtol = 0, 2,000 iterations) runs beside it as `lbfgs_scipy`.
+- **LiL-Q:** Algorithm 1 runs to the rule and returns the iterate after the rule's step, as in Package 4's timings. It is compared with the delivered Package 4 runs (Batch 5).
+- **Counts and status:** `nfev` / `njev` for least_squares; iterations and evaluations for L-BFGS; solves for LiL-Q. Each solver's status is recorded as returned (Section 7).
+- **Timing** (the one gap neither his text nor his script covers): Package 4's protocol (`p4_common.timed`: warm-up, then the median of three) for all six solvers, in one job on one whole node at 48 threads.
+  - The clock runs from zero coefficients to the solver's return. The collocation set and the basis matrices are built before it, as in his script; the errors are evaluated after it.
+  - The run that gives the coefficients serves as the warm-up (`p4_common.timed(fn, warmup=...)`; the default is unchanged), so each solver runs four times.
+  - **Cost, corrected after the laptop run:** one pass of all 42 runs takes 913 s on the laptop (8 threads). The PyTorch L-BFGS takes 625 s of that and the scipy L-BFGS-B 210 s: both run to the 2,000-iteration cap where they do not converge, and every evaluation assembles A. Four passes take about 61 min. That is one timed-cpu job of about 1.5 h: 72 SU requested, about 50 expected, not the 24 / 10 first estimated.
+
+**Laptop run** (one pass each, no timing protocol):
+- **The three least-squares solvers reach LiL-Q's point** at every size: ||N|| equal to 1e-14 relative. The error and the ratio match LiL-Q's to every printed figure: Burgers 2.01, 1.04, 1.00, 1.00 x delta_P at p = 10, 18, 26, 30; Poisson-Boltzmann H2 1.45, 1.81, 2.32 x delta_H2 at p = 10, 18, 22.
+- **Against `expected_nlls_liln.json`**, the errors agree to 4 figures. Evaluation counts are the same, or differ by one or two (Poisson-Boltzmann `trf` at p = 10: 16 / 14 against his 21 / 13). LiL-Q's solves are identical: 5, 6, 6 on Burgers and 3, 4 on Poisson-Boltzmann.
+- **scipy L-BFGS-B, Burgers:** it reaches LiL-Q's point in 78, 287, 620 iterations at p = 10, 18, 26 (his 77, 274, 594), and in 841 at p = 30. On Poisson-Boltzmann it stops at the cap at every size, as in his runs: H2 1.42, 1.67, 6.1 x delta_H2. At p = 10 and 18 that is slightly below LiL-Q's error, with ||N|| above LiL-Q's (2.706 against 2.688; 0.054 against 0.0469).
+- **The four-method PyTorch L-BFGS, Burgers:** at p = 10 it stops on the f1 stall at LiL-Q's point, after 132 iterations. At p = 18 it reaches that point by the cap. At p = 26 and 30 it ends at the cap short of it: error 1.27 and 36.6 x delta_P, ||N|| 4.91e-6 against 4.15e-6 at p = 30. On Poisson-Boltzmann it ends at the cap close to the scipy values.
+
 ## 2026-11-13 -- Package 5, item 1, Beltrami: `--lambda-bc` / `--lambda-ic` in `p3_1_beltrami_certified.py`
 
 - `config_for(size, lambda_bc=None, lambda_ic=None)` and `run(..., lambda_bc=None, lambda_ic=None)`. None keeps the delivered 10, so the delivered configuration is unchanged (test: same config, same row weights).

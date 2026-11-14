@@ -133,11 +133,13 @@ def stall_class(row):
     return 'C' if ratio < 10 * level else 'A'
 
 
-def timed(fn):
+def timed(fn, warmup=None):
     """Section 2.3: an untimed warm-up, then three timings, each the median of
     five runs if the first is shorter than 1 s. ``fn`` returns (seconds,
-    solves)."""
-    warm_s, warm_solves = fn()
+    solves). ``warmup``: the (seconds, solves) of a run already done, which
+    then serves as the warm-up (Package 5, item 2: the run that gives the
+    coefficients)."""
+    warm_s, warm_solves = warmup if warmup is not None else fn()
     timings, solves = [], set()
     for _ in range(REPEATS):
         s, n = fn()
