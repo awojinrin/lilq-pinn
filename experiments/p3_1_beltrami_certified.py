@@ -589,8 +589,11 @@ def main(argv=None):
         print(f"{args.size} L{args.level}: overall c1 {o['c1']:.4f}, c2 {o['c2']:.4f}, ratio {o['c2_over_c1']:.4f}")
     else:
         terminal, _, checks = summarize(args.out)
-        for r in terminal:
-            print(f"  {r['size']} L{r['level']} pin x{r['pin_scale']} ({r['status']}, {r['iterates']} iterates): "
+        names = sorted(d.name for d in (Path(args.out) / ITEM).iterdir() if d.is_dir() and (d / 'iterations.csv').exists()
+                       and (d / 'errors.csv').exists())                # the same order as summarize's
+        for name, r in zip(names, terminal):
+            print(f"  {name} ({r['size']} L{r['level']} pin x{r['pin_scale']}, lambda {float(r['lambda_bc']):g}; "
+                  f"{r['status']}, {r['iterates']} iterates): "
                   f"N/P {r['N_over_P']:.1f}, 1e-9 at "
                   f"{r['k_paper_1e9']}, rule {r['k_rule']} ({r['rule_class']}), combined error "
                   f"{r['rel_l2_combined_at_returned']:.2e}, error/delta_P {r['error_over_delta_P_combined']:.2f}")
