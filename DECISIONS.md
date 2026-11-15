@@ -39,7 +39,13 @@ need to know it.
   node (timed-cpu, as the timed job) in its own stage `p5t` -> `results/package5_retime`, under its
   own commit lock (`scripts/cluster/package5/submit_p5_retime.sh`, `p5_retime.slurm`; 12 SU requested,
   about 5 expected). The other item 2 runs are not rerun: their times sit at 1-2x the laptop's.
-- The report shows the original 30.9 s beside the re-timed value and its `warmup_s`.
+- The report shows the original 30.9 s beside the re-timed value and its `warmup_s`. The assembly
+  (`p5_assemble.py --retime`) copies `package5_retime/` as Grace wrote it, stops unless its run is the
+  timed job's (same counts and status; errors and coefficients within 1e-8 of their scale), and
+  writes `P5_2_nlls/retime.csv`; Grace's own tables keep the timed job's 30.9 s.
+- **Result (job 20534654, node c057, 3.9 SU):** 0.372 s (2.7 ms per iteration) against 30.9 s
+  (224 ms); the same 138 iterations and identical coefficients. The warm-up itself took 59.7 s for 5
+  iterations: the one-time cost is real and was larger on this node.
 - Item 3's one-pass optimizer timings will use the same warm-up.
 
 **Affects:** item 2's `time_s` for that one run (and `warmup_s` added for the one-pass solvers in

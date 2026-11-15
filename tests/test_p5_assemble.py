@@ -179,3 +179,57 @@ def test_the_assembly_refuses_runs_from_another_line(tmp_path, stand_ins):
     g, adv, extra = _fake_grace(tmp_path, '0' * 40)
     with pytest.raises(SystemExit, match='not an ancestor'):
         m.assemble(g, tmp_path / 'out', tmp_path, tmp_path, tmp_path, tmp_path, adv, extra)
+
+
+# ---------------------------------------------------------------- the re-time (stage p5t)
+
+RUN = {'problem': 'burgers', 'p': 10, 'P': 100, 'solver': 'lbfgs', 'iterations': 138, 'evaluations': 222,
+       'restarts': 2, 'status': 'stall (f1)', 'time_s': 30.9, 'timing_counts': [138], 'norm_N': 0.0323,
+       'eL2': 0.00399, 'delta_eL2': 0.00199}
+
+
+def _fake_retime(root, g, commit, change=None):
+    """The timed job's run in Grace's tree, and the re-time's tree (stage p5t) of the same run."""
+    import numpy as np
+    beta = np.linspace(-0.6, 0.6, 7)
+    for base, extra in ((g, {}), (root / 'package5_retime', {'time_s': 0.37, 'warmup_s': 59.7})):
+        run = base / m.RETIMED
+        run.mkdir(parents=True, exist_ok=True)
+        (run / 'result.json').write_text(json.dumps(RUN | extra | ((change or {}) if extra else {})))
+        np.save(run / 'beta.npy', beta)
+    r = root / 'package5_retime'
+    (r / 'COMMIT').write_text(json.dumps({'commit': commit, 'tree_hash': 'def', 'source': 'bundle',
+                                          'locked_at_utc': 'later'}))
+    (r / 'provenance' / 'timed').mkdir(parents=True)
+    (r / 'provenance' / 'timed' / 'hardware.json').write_text(json.dumps({
+        'cpu': {'hostname': 'c057'}, 'scheduler': {'SLURM_JOB_ID': '44', 'SLURM_JOB_NAME': 'lilq-p5t-retime',
+                                                   'SLURM_JOB_PARTITION': 'medium', 'holds_whole_node': True}}))
+    return r
+
+
+@needs_git
+def test_the_retime_sits_beside_the_timed_jobs_run(tmp_path, stand_ins):
+    g, adv, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
+    r = _fake_retime(tmp_path, g, _git('rev-parse', 'HEAD~1'))
+    extra.write_text(extra.read_text() + '44|lilq-p5t-retime|billing=48,cpu=48,mem=360G,node=1|291|COMPLETED\n')
+    out = tmp_path / 'out'
+    _, total = m.assemble(g, out, tmp_path, tmp_path, tmp_path, tmp_path, adv, extra, r)
+    assert total == pytest.approx(4.4 + 28.0 + 1.0 + 48 * 291 / 3600, abs=0.05)
+    assert (out / m.RETIME / m.RETIMED / 'result.json').read_bytes() == (r / m.RETIMED / 'result.json').read_bytes()
+    assert json.loads((out / m.RETIMED / 'result.json').read_text())['time_s'] == 30.9      # Grace's kept
+    row = (out / m.RETIME_TABLE).read_text().splitlines()
+    assert row[0].startswith('problem,p,solver,iterations,time_s_timed_job,')
+    assert row[1].startswith('burgers,10,lbfgs,138,30.9,') and ',0.37,' in row[1] and ',59.7,5,44,c057,0.0' in row[1]
+    assert json.loads((out / 'hardware.json').read_text())['retime']['node'] == 'c057'
+    assert json.loads((out / 'provenance.json').read_text())['retime']['job'] == '44'
+    m.assemble(g, out, tmp_path, tmp_path, tmp_path, tmp_path, adv, extra)        # without it: its folder goes
+    assert not (out / m.RETIME).exists()
+
+
+@needs_git
+@pytest.mark.parametrize('change', [{'iterations': 139}, {'eL2': 0.00398}])
+def test_a_retime_of_a_different_run_stops_the_assembly(tmp_path, stand_ins, change):
+    g, adv, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
+    r = _fake_retime(tmp_path, g, _git('rev-parse', 'HEAD~1'), change)
+    with pytest.raises(SystemExit, match='the timed job had'):
+        m.assemble(g, tmp_path / 'out', tmp_path, tmp_path, tmp_path, tmp_path, adv, extra, r)

@@ -30,6 +30,11 @@ the report job. The helpers every package's assembly shares are in
   ``environment.txt``, ``DECISIONS_package5.md``, ``provenance.json`` (the
   runs' commit, this one, those between, and the SHA-256 of the advisor's
   files, which are not copied).
+- **The re-time** (``--retime``, stage p5t): one item 2 run re-timed after an
+  untimed warm-up, copied as Grace wrote it to ``package5_retime/``; its run
+  must be the timed job's (the assembly stops otherwise), and
+  ``P5_2_nlls/retime.csv`` sets the two times side by side. Grace's own
+  tables keep the timed job's time.
 
 Refuses a Grace tree whose commit is not an ancestor of this checkout's HEAD.
 Can be run again: it rewrites what it writes.
@@ -38,12 +43,16 @@ Usage::
 
     python experiments/p5_assemble.py --grace <extracted>/package5 --out ../package5_results \\
         --reference-dir <package2_stage2>/reference --package2 <package2_stage2> --package3 <package3> \\
-        --package4 <package4> --advisor <folder of the advisor's expected_*.json> [--sacct-extra <file>]
+        --package4 <package4> --advisor <folder of the advisor's expected_*.json> [--sacct-extra <file>] \\
+        [--retime <extracted>/package5_retime]
 """
 
 import argparse
+import csv
 import hashlib
+import io
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -65,6 +74,9 @@ TIMED = 'provenance/timed'
 TABLE_RTOL = 1e-8
 ROUNDOFF_COLUMNS = (lambda column: 'delta' in column)   # delta_P (delta_L2, delta_X, ...) and the ratios to it
 RECORD = 'table_rerun_differences.json'
+RETIME = 'package5_retime'                       # stage p5t: one item 2 run re-timed (DECISIONS, 14 November 2026)
+RETIMED = 'P5_2_nlls/burgers_p10/lbfgs'
+RETIME_TABLE = 'P5_2_nlls/retime.csv'
 # references.json's round-off quantities: the Burgers PDE check's residual is about 1e-12 (5e-13 of the
 # equation's terms, against the check's 1e-8), so it differs between machines in its first digits. Its
 # values are recorded; its verdict (``passed``) and everything else must be Grace's.
@@ -179,11 +191,60 @@ def environment(out, runs_commit):
         ''])
 
 
+def add_retime(out, retime, log):
+    """The re-timed run (stage p5t, ``RETIME``): copied as Grace wrote it, beside the timed job's run.
+    The re-time changes the clock only, so its run must be the timed job's: the same counts and
+    status, the same errors and coefficients within ``TABLE_RTOL`` of their scale (else this stops).
+    Writes ``RETIME_TABLE`` (both times, per iteration, and the warm-up) and returns its row and
+    the re-time job's record."""
+    import numpy as np
+    from experiments.p5_2_nlls import WARMUP_IT
+    out, retime = Path(out), Path(retime)
+    runs, _ = runs_and_head(retime)
+    dest = out / RETIME
+    if dest.exists():
+        shutil.rmtree(dest)
+    shutil.copytree(retime, dest)
+    log.append(f"copied {RETIME}/ (the re-time, commit {runs['commit'][:7]})")
+    old, new = read_json(out / RETIMED / 'result.json'), read_json(dest / RETIMED / 'result.json')
+    for k in ('problem', 'p', 'P', 'solver', 'iterations', 'evaluations', 'restarts', 'status', 'timing_counts'):
+        if old[k] != new[k]:
+            sys.exit(f'{RETIME}/{RETIMED}: {k} is {new[k]!r}, the timed job had {old[k]!r}')
+    for k in ('norm_N', 'eL2', 'delta_eL2'):
+        if abs(new[k] - old[k]) > TABLE_RTOL * abs(old[k]):
+            sys.exit(f'{RETIME}/{RETIMED}: {k} is {new[k]!r}, the timed job had {old[k]!r}')
+    b_old, b_new = np.load(out / RETIMED / 'beta.npy'), np.load(dest / RETIMED / 'beta.npy')
+    beta_diff = float(np.abs(b_new - b_old).max() / np.abs(b_old).max())
+    if beta_diff > TABLE_RTOL:
+        sys.exit(f'{RETIME}/{RETIMED}: the coefficients differ from the timed job\'s by {beta_diff:.1e} of their scale')
+    captured = read_json(dest / TIMED / 'hardware.json')
+    s = captured['scheduler']
+    it = new['iterations']
+    row = {'problem': new['problem'], 'p': new['p'], 'solver': new['solver'], 'iterations': it,
+           'time_s_timed_job': old['time_s'], 'ms_per_iteration_timed_job': 1e3 * old['time_s'] / it,
+           'time_s_retime': new['time_s'], 'ms_per_iteration_retime': 1e3 * new['time_s'] / it,
+           'warmup_s_retime': new['warmup_s'], 'warmup_iterations': WARMUP_IT,
+           'retime_job': s['SLURM_JOB_ID'], 'retime_node': captured['cpu']['hostname'],
+           'coefficients_relative_difference': beta_diff}
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=list(row), lineterminator='\n')
+    w.writeheader()
+    w.writerow(row)
+    write_lf(out / RETIME_TABLE, buf.getvalue())
+    log.append(f"{RETIME_TABLE}: {new['problem']} p = {new['p']} {new['solver']}: {old['time_s']:.2f} s in the timed "
+               f"job, {new['time_s']:.3f} s re-timed after a {new['warmup_s']:.1f} s warm-up of {WARMUP_IT} iterations; "
+               f'the same {it} iterations, coefficients within {beta_diff:.0e}')
+    job = {'job': s['SLURM_JOB_ID'], 'name': s['SLURM_JOB_NAME'], 'node': captured['cpu']['hostname'],
+           'partition': s['SLURM_JOB_PARTITION'], 'whole_node': captured['scheduler'].get('holds_whole_node'),
+           'commit': runs['commit'], 'record': f'{RETIME}/{TIMED}/hardware.json'}
+    return row, job
+
+
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def assemble(grace, out, reference_dir, package2, package3, package4, advisor, sacct_extra=None):
+def assemble(grace, out, reference_dir, package2, package3, package4, advisor, sacct_extra=None, retime=None):
     grace, out = Path(grace), Path(out)
     runs, head = runs_and_head(grace)
     out.mkdir(parents=True, exist_ok=True)
@@ -191,19 +252,32 @@ def assemble(grace, out, reference_dir, package2, package3, package4, advisor, s
     copy_grace(grace, out, GRACE_FOLDERS, GRACE_FILES, log)
     rerun_summaries(out, reference_dir, package3, advisor, log)
     summary = run_checks(out, package2, package3, package4, log)
+    retime_job = None
+    if retime:
+        _, retime_job = add_retime(out, retime, log)
+    elif (out / RETIME).exists():
+        shutil.rmtree(out / RETIME)
     rows, total, cols = su_rows(out, sacct_extra)
     write_su(out, rows, cols)
     log.append(f"su.csv: {len(rows)} jobs, {total:.1f} SU charged at Grace's rates"
                + ('' if sacct_extra else "; the report job is not in it (it ran after its tarball's table: "
                                          'pass its sacct line with --sacct-extra)'))
-    write_lf(out / 'hardware.json', json.dumps(hardware(out, extra_rows(out, rows)), indent=2) + '\n')
+    if retime_job and retime_job['job'] not in {r['job_id'] for r in rows}:
+        log.append(f"su.csv: the re-time job {retime_job['job']} is not in it (pass its sacct line with --sacct-extra)")
+    hw = hardware(out, extra_rows(out, rows))
+    if retime_job:
+        hw['retime'] = retime_job
+    write_lf(out / 'hardware.json', json.dumps(hw, indent=2) + '\n')
     write_lf(out / 'environment.txt', environment(out, runs['commit']))
     write_lf(out / 'DECISIONS_package5.md', decisions(5))
     write_provenance(out, runs, head, (
         "Every run, table and log is Grace's, at the runs' commit. The comparisons with the advisor's files and "
         "with the delivered Beltrami rows, and checks.json (C1 to C3, against Packages 2, 3 and 4 as delivered), "
-        "are written at the assembly on Grace's files."), log,
-        advisor_files={name: sha256(Path(advisor) / name) for name in ADVISOR_FILES})
+        "are written at the assembly on Grace's files."
+        + (f" {RETIME}/ is the re-time of one item 2 run (stage p5t, its own commit lock), as Grace wrote it; "
+           f"{RETIME_TABLE} sets its time beside the timed job's." if retime_job else '')), log,
+        advisor_files={name: sha256(Path(advisor) / name) for name in ADVISOR_FILES},
+        **({'retime': {'commit': retime_job['commit'], 'job': retime_job['job']}} if retime_job else {}))
     write_lf(out / 'assembly_log.txt', '\n'.join(log) + '\n')
     print('\n'.join(log))
     return summary, total
@@ -219,9 +293,10 @@ def main(argv=None):
     ap.add_argument('--package4', required=True, help="Package 4's results root (C2, C3)")
     ap.add_argument('--advisor', required=True, help="the folder of the advisor's expected_*.json")
     ap.add_argument('--sacct-extra', default=None, help='sacct -X -P -n lines of jobs the tarball lacks')
+    ap.add_argument('--retime', default=None, help='the extracted package5_retime/ folder (stage p5t)')
     a = ap.parse_args(argv)
     summary, _ = assemble(a.grace, a.out, a.reference_dir, a.package2, a.package3, a.package4, a.advisor,
-                          a.sacct_extra)
+                          a.sacct_extra, a.retime)
     return 0 if all(v is not False for v in summary.values()) else 1
 
 
