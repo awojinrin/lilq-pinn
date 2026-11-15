@@ -17,7 +17,10 @@ package; this module holds the rest:
 - each job's node, threads and allocation, from its log and ``sacct.txt``;
 - the BLAS line, the preflight lines and the modules for ``environment.txt``;
 - the package's entries of ``DECISIONS.md``;
-- ``provenance.json``: the runs' commit, the assembly's, and those between.
+- ``provenance.json``: the runs' commit, the assembly's, and those between;
+- the rewritten tables against Grace's (``compare_tables``): a summary rerun at the assembly
+  (with the advisor's files, which Grace had not) must give Grace's numbers, but for columns
+  that carry round-off of a least-squares projection (delta_P), which are recorded.
 """
 
 import csv
@@ -25,6 +28,7 @@ import datetime
 import importlib.util
 import io
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -59,6 +63,60 @@ def write_lf(path, text):
 def read_csv(path):
     with open(path, newline='') as fh:
         return list(csv.DictReader(fh))
+
+
+def read_csv_bytes(b):
+    return list(csv.DictReader(io.StringIO(b.decode())))
+
+
+def tables(out, folders):
+    """Every CSV under ``folders`` of ``out``: its bytes, by path (Grace's, before a summary rewrites them)."""
+    return {p: p.read_bytes() for d in folders for p in (Path(out) / d).rglob('*.csv')}
+
+
+def cell_diff(a, b):
+    """0 for equal cells; the relative difference of two numbers; inf for other differences."""
+    if a == b:
+        return 0.0
+    try:
+        x, y = float(a), float(b)
+    except ValueError:
+        return math.inf
+    if math.isnan(x) and math.isnan(y):
+        return 0.0
+    return abs(x - y) / max(abs(x), abs(y))
+
+
+def compare_tables(before, log, rtol, roundoff_columns, record_name):
+    """The rewritten tables against Grace's (``before``: ``tables`` taken before the summaries): the
+    same rows and columns; every number within ``rtol``, but the columns ``roundoff_columns(name)``
+    accepts, whose largest differences are recorded (in ``record_name``, which the caller writes).
+    Grace's bytes are put back either way (the tables are Grace's record). Exits otherwise.
+    Returns {path: the rewritten rows} and {(table, column): the largest relative difference}."""
+    worst, worst_at, recorded, rewritten = 0.0, None, {}, {}
+    for path, grace_bytes in before.items():
+        new_bytes = path.read_bytes()
+        rewritten[path] = read_csv_bytes(new_bytes)
+        if new_bytes == grace_bytes:
+            continue
+        old, new = read_csv_bytes(grace_bytes), rewritten[path]
+        if len(old) != len(new) or any(list(o) != list(n) for o, n in zip(old, new)):
+            sys.exit(f"{path}: the rewritten table's rows or columns differ from Grace's")
+        for o, n in zip(old, new):
+            for k in o:
+                d = cell_diff(o[k], n[k])
+                if roundoff_columns(k):
+                    key = (f'{path.parent.name}/{path.name}', k)
+                    recorded[key] = max(recorded.get(key, 0.0), d)
+                elif d > worst:
+                    worst, worst_at = d, f'{path.name} {k}'
+        path.write_bytes(grace_bytes)
+    if worst > rtol:
+        sys.exit(f"the rewritten tables differ from Grace's by {worst:.1e} relative ({worst_at})")
+    log.append(f"tables: rewritten from Grace's logs; every column but delta_P's within {worst:.0e} relative of "
+               f"Grace's ({len(before)} CSVs; Grace's kept); delta_P's columns differ by up to "
+               f"{max(recorded.values(), default=0.0):.1e} ({record_name})")
+    return rewritten, recorded
 
 
 def write_rows(path, rows):

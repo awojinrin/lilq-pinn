@@ -48,11 +48,8 @@ Usage::
 """
 
 import argparse
-import csv
 import hashlib
-import io
 import json
-import math
 import shutil
 import sys
 from pathlib import Path
@@ -61,9 +58,10 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+from experiments.assemble_common import compare_tables as _compare_tables  # noqa: E402
 from experiments.assemble_common import (blas_line, copy_grace, decisions, extra_rows, job_table,  # noqa: E402
                                          log_start, modules, preflight_lines, read_csv, read_json, runs_and_head,
-                                         su_rows, write_lf, write_provenance, write_su)
+                                         su_rows, tables, write_lf, write_provenance, write_su)
 
 GRACE_FOLDERS = ('P4_1a_burgers_gauss', 'P4_1b_burgers_enrichment', 'P4_1c_burgers_constants', 'P4_2_pb_inclusions',
                  'P4_checks', 'provenance', 'slurm_logs')
@@ -87,51 +85,13 @@ def keep_grace_checks(grace, out, log):
 
 def _tables(out):
     """Every CSV the summaries rewrite: Grace's bytes, by path."""
-    return {p: p.read_bytes() for d in GRACE_FOLDERS for p in (out / d).rglob('*.csv')}
-
-
-def _cell_diff(a, b):
-    """0 for equal cells; the relative difference of two numbers; inf for other differences."""
-    if a == b:
-        return 0.0
-    try:
-        x, y = float(a), float(b)
-    except ValueError:
-        return math.inf
-    if math.isnan(x) and math.isnan(y):
-        return 0.0
-    return abs(x - y) / max(abs(x), abs(y))
+    return tables(out, GRACE_FOLDERS)
 
 
 def compare_tables(before, log):
-    """The rewritten tables against Grace's: the same rows and columns; every number within
-    TABLE_RTOL, but the columns of delta_P (``ROUNDOFF_COLUMNS``), whose differences are recorded.
-    Grace's bytes are put back either way (the tables are Grace's record). Returns {path: the
-    rewritten rows} and {(table, column): the largest relative difference} of the recorded columns."""
-    worst, worst_at, recorded, rewritten = 0.0, None, {}, {}
-    for path, grace_bytes in before.items():
-        new_bytes = path.read_bytes()
-        rewritten[path] = read_csv_bytes(new_bytes)
-        if new_bytes == grace_bytes:
-            continue
-        old, new = read_csv_bytes(grace_bytes), rewritten[path]
-        if len(old) != len(new) or any(list(o) != list(n) for o, n in zip(old, new)):
-            sys.exit(f"{path}: the rewritten table's rows or columns differ from Grace's")
-        for o, n in zip(old, new):
-            for k in o:
-                d = _cell_diff(o[k], n[k])
-                if ROUNDOFF_COLUMNS(k):
-                    key = (f'{path.parent.name}/{path.name}', k)
-                    recorded[key] = max(recorded.get(key, 0.0), d)
-                elif d > worst:
-                    worst, worst_at = d, f'{path.name} {k}'
-        path.write_bytes(grace_bytes)
-    if worst > TABLE_RTOL:
-        sys.exit(f"the rewritten tables differ from Grace's by {worst:.1e} relative ({worst_at})")
-    log.append(f"tables: rewritten from Grace's logs; every column but delta_P's within {worst:.0e} relative of "
-               f"Grace's ({len(before)} CSVs; Grace's kept); delta_P's columns differ by up to "
-               f"{max(recorded.values(), default=0.0):.1e} (delta_P_across_machines.json)")
-    return rewritten, recorded
+    """The rewritten tables against Grace's (``assemble_common.compare_tables``); delta_P's columns
+    are recorded in ``delta_P_across_machines.json``."""
+    return _compare_tables(before, log, TABLE_RTOL, ROUNDOFF_COLUMNS, 'delta_P_across_machines.json')
 
 
 def delta_P_record(out, rewritten, recorded, expected_pb):
@@ -163,10 +123,6 @@ def delta_P_record(out, rewritten, recorded, expected_pb):
                                                           for (tab, col), d in sorted(recorded.items())}},
         indent=2) + '\n')
     return by_P
-
-
-def read_csv_bytes(b):
-    return list(csv.DictReader(io.StringIO(b.decode())))
 
 
 def rerun_checks(out, reference_dir, expected_burgers, expected_pb, log):

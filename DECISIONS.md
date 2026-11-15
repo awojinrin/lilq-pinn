@@ -17,6 +17,23 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-14 -- Package 5, items 1, 2 and 4: the assembly (`experiments/p5_assemble.py`)
+
+As Package 4's: Grace's run folders copied as they are; the summaries rerun on them with the advisor's
+files (which Grace had not) to write the comparisons; Grace's tables kept, and the assembly stops if a
+rewritten number differs from Grace's by more than 1e-8 relative, but for delta_P's columns (recorded).
+The table comparison moved from `p4_assemble.py` to `assemble_common.py` (`compare_tables`), unchanged.
+
+- **Item 1's `references.json`** is compared the same way. One quantity in it is round-off: the Burgers
+  PDE check's residual (Grace 2.46e-12, the assembly 2.37e-12; 5e-13 of the equation's terms against the
+  check's 1e-8). It differs between machines in its first digits, so its two values are recorded in
+  `table_rerun_differences.json`; its verdict and every other number must be Grace's (they agree to 2e-12).
+- **On the Grace runs (60c2d8c):** every table outside delta_P's columns equals Grace's exactly; delta_P's
+  columns differ by up to 1e-12. C1, C2 and C3 pass.
+- **`su.csv`** takes the report job's own row from `--sacct-extra` (its tarball was written before it ended).
+
+---
+
 ## 2026-11-14 -- Package 5, item 1: how the runs are set beside the advisor's values and the delivered Beltrami rows
 
 Assembly of the Grace runs (commit 60c2d8c). Two comparisons the summaries did not yet write
