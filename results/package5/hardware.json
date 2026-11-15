@@ -1,0 +1,101 @@
+{
+  "cluster": "Grace (TAMU HPRC)",
+  "cpu": {
+    "model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+    "machine": "x86_64",
+    "logical_cores": 48,
+    "usable_cores": 48,
+    "hostname": "c080",
+    "system": "Linux 4.18.0-553.125.1.el8_10.x86_64"
+  },
+  "cpu_source": "save_provenance in the timed job 20533642 (lilq-p5-timed) on c080, a whole node of partition medium: it ran every timing of Package 5 (4a, then item 2). The other jobs (class cpu-mem, 24 cores and 96 GB of a shared node) ran no timings; their nodes are in jobs. Its full record: provenance/timed/hardware.json",
+  "jobs": {
+    "20533641": {
+      "log": "lilq-p5-beltrami.20533641.out",
+      "node": "c074",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p5-beltrami",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=96G,node=1",
+      "elapsed": "01:11:35"
+    },
+    "20533640": {
+      "log": "lilq-p5-item1.20533640.out",
+      "node": "c080",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p5-item1",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=96G,node=1",
+      "elapsed": "00:14:00"
+    },
+    "20533643": {
+      "log": "lilq-p5-item4.20533643.out",
+      "node": "c074",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p5-item4",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=96G,node=1",
+      "elapsed": "00:53:39"
+    },
+    "20533636": {
+      "log": "lilq-p5-preflight.20533636.out",
+      "node": "c302",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p5-preflight",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=96G,node=1",
+      "elapsed": "00:11:02"
+    },
+    "20533639": {
+      "log": "lilq-p5-ref-gravity.20533639.out",
+      "node": "c039",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p5-ref-gravity",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=96G,node=1",
+      "elapsed": "00:32:56"
+    },
+    "20533637": {
+      "log": "lilq-p5-ref-viscous.20533637.out",
+      "node": "c302",
+      "threads": 24,
+      "cores_usable": 24,
+      "oversubscribe": "OK",
+      "name": "lilq-p5-ref-viscous",
+      "partition": "medium",
+      "alloc_tres": "billing=24,cpu=24,mem=96G,node=1",
+      "elapsed": "00:37:05"
+    },
+    "20533642": {
+      "log": "lilq-p5-timed.20533642.out",
+      "node": "c080",
+      "threads": 48,
+      "cores_usable": 48,
+      "oversubscribe": "NO",
+      "name": "lilq-p5-timed",
+      "partition": "medium",
+      "alloc_tres": "billing=48,cpu=48,mem=360G,node=1",
+      "elapsed": "00:35:01"
+    }
+  },
+  "gpu": null,
+  "retime": {
+    "job": "20534654",
+    "name": "lilq-p5t-retime",
+    "node": "c057",
+    "partition": "medium",
+    "whole_node": true,
+    "commit": "16b128bd2a58db39be2d6ba15f2e9014b0042440",
+    "record": "package5_retime/provenance/timed/hardware.json"
+  }
+}

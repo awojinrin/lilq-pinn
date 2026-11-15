@@ -1,0 +1,54 @@
+{
+  "problem": "burgers",
+  "p": 18,
+  "P": 324,
+  "solver": "lm",
+  "nfev": 7,
+  "njev": 6,
+  "status": "4: Both `ftol` and `xtol` termination conditions are satisfied.",
+  "time_s": 1.4712726827710867,
+  "timing_spread": 0.020077413811918188,
+  "timing_counts": [
+    7
+  ],
+  "timing_matches": true,
+  "timing": {
+    "warmup_s": 1.479656096547842,
+    "warmup_solves": 7,
+    "timings": [
+      {
+        "time_s": 1.4682580158114433,
+        "runs_s": [
+          1.4682580158114433
+        ]
+      },
+      {
+        "time_s": 1.4977368395775557,
+        "runs_s": [
+          1.4977368395775557
+        ]
+      },
+      {
+        "time_s": 1.4712726827710867,
+        "runs_s": [
+          1.4712726827710867
+        ]
+      }
+    ],
+    "median_s": 1.4712726827710867,
+    "spread": 0.020077413811918188,
+    "solves": [
+      7
+    ]
+  },
+  "norm_N": 0.0011087897367841892,
+  "eL2": 2.5460155639465763e-05,
+  "delta_eL2": 2.4424062399115438e-05,
+  "eL2_over_delta": 1.0424210036569448,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1"
+}

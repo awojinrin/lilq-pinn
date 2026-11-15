@@ -1,0 +1,18 @@
+Package 5's software environment (items 1, 2 and 4), from its jobs' own logs (the preflight's) and the timed job's record.
+Code: commit 60c2d8ce2e450038ac3f8105019c2437bd2dcb48 (the bundle, under the source lock of every job).
+Modules (scripts/cluster/env.sh): GCC/13.3.0 OpenMPI/5.0.3 PyTorch/2.9.1-CUDA-12.6.0; the venv $SCRATCH/lilq-run/venv first on PYTHONPATH.
+BLAS and LAPACK: OpenBLAS 0.3.27 (libopenblas_skylakexp-r0.3.27.so), through FlexiBLAS 3.4.4, at 48 threads on a whole node: the thread pools loaded in the timed job (provenance/timed/hardware.json).
+Threads: OMP, OpenBLAS and MKL set to the cores the job holds (48 for the timed job, a whole node; 24 for
+  the cpu-mem class: the references and the Beltrami runs). Item 1 and item 4 run six processes side by
+  side at 4 threads each (each job log's first line reports the 24 the job holds).
+
+The preflight log (slurm_logs/lilq-p5-preflight.*.out):
+  provenance lock OK: commit 60c2d8ce2e45, tree 8e715b6f2e93
+  job 20533636 on c302: 24 threads, 24 cores usable, OverSubscribe=OK
+  numpy 1.26.4 scipy 1.13.1
+  inputs OK (11 files)
+  861 passed, 35 skipped, 21 warnings in 453.95s (0:07:33)
+  PREFLIGHT OK
+
+The full record (numpy's and scipy's build configuration, the BLAS thread pools, the packages),
+written by save_provenance in the timed job: provenance/timed/environment.txt.

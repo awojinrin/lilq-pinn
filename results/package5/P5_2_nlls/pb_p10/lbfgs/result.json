@@ -1,0 +1,29 @@
+{
+  "problem": "pb",
+  "p": 10,
+  "P": 100,
+  "solver": "lbfgs",
+  "iterations": 2000,
+  "evaluations": 2096,
+  "restarts": 0,
+  "status": "iteration cap",
+  "time_s": 6.216422524303198,
+  "timing_counts": [
+    2000
+  ],
+  "timing_matches": true,
+  "timing": "one logged pass (the advisor's reply to the cost check, 14 November 2026)",
+  "norm_N": 2.706382352129417,
+  "eL2": 0.04886305235250743,
+  "eH2": 0.3637398105245753,
+  "delta_eL2": 0.021573364122634293,
+  "delta_eH2": 0.2555315844564345,
+  "eL2_over_delta": 2.2649713820591106,
+  "eH2_over_delta": 1.4234632141397348,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1"
+}

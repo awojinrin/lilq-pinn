@@ -1,0 +1,7 @@
+provenance lock OK: commit 60c2d8ce2e45, tree 8e715b6f2e93
+job 20533639 on c039: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+$SCRATCH/lilq-run/lilq-pinn/results/package5/P5_1_weights/bl_reference/gravity_p80
+p = 80 stopped by the rule
+$SCRATCH/lilq-run/lilq-pinn/results/package5/P5_1_weights/bl_reference/gravity_p88
+{"p_ref": 88, "p_neighbour": 80, "fallback": false, "reason": "p = 88 and 80 stopped by the rule", "tried": {"88": "stopped by the rule", "80": "stopped by the rule"}}

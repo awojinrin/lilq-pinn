@@ -1,0 +1,8 @@
+job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
+20533636,lilq-p5-preflight,"billing=24,cpu=24,mem=96G,node=1",0.1839,COMPLETED,24,4.4,
+20533637,lilq-p5-ref-viscous,"billing=24,cpu=24,mem=96G,node=1",0.6181,COMPLETED,24,14.8,
+20533639,lilq-p5-ref-gravity,"billing=24,cpu=24,mem=96G,node=1",0.5489,COMPLETED,24,13.2,
+20533640,lilq-p5-item1,"billing=24,cpu=24,mem=96G,node=1",0.2333,COMPLETED,24,5.6,
+20533641,lilq-p5-beltrami,"billing=24,cpu=24,mem=96G,node=1",1.1931,COMPLETED,24,28.6,
+20533642,lilq-p5-timed,"billing=48,cpu=48,mem=360G,node=1",0.5836,COMPLETED,48,28.0,
+20533643,lilq-p5-item4,"billing=24,cpu=24,mem=96G,node=1",0.8942,COMPLETED,24,21.5,

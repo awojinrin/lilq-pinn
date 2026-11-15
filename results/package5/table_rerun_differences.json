@@ -1,0 +1,22 @@
+{
+  "note": "The summaries rerun at the assembly (with the advisor's files) recompute delta_P, a least-squares projection (gelsy, rcond = eps), on this machine. Every other number equals Grace's to 1e-08 relative; delta_P and the ratios to it differ by the round-off below. The tables are Grace's.",
+  "largest_relative_difference_grace_vs_assembly": {
+    "P5_1_weights/terminal.csv delta_L2": 1.0269600178296779e-12,
+    "P5_1_weights/terminal.csv delta_X": 9.073491987526242e-13,
+    "P5_1_weights/terminal.csv eL2_over_delta": 1.0270820008468838e-12,
+    "P5_1_weights/terminal.csv eX_over_delta": 9.073981398535001e-13
+  },
+  "references_json_roundoff": {
+    "note": "The Burgers PDE check's residual is round-off (about 1e-12, 5e-13 of the equation's terms; the check asks 1e-8): it differs between machines in its first digits. The verdict is the same.",
+    "/burgers_pde_check/max_abs_pde_residual": {
+      "grace": 2.4630297801309098e-12,
+      "assembly": 2.3716584252042594e-12,
+      "relative_difference": 0.03709713770565697
+    },
+    "/burgers_pde_check/relative": {
+      "grace": 5.350671751361356e-13,
+      "assembly": 5.152177144583858e-13,
+      "relative_difference": 0.03709713770555912
+    }
+  }
+}

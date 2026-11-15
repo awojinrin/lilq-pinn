@@ -1,0 +1,12 @@
+p5 report, 2026-11-14T20:58:27.860458+00:00
+
+jobs: 20533641 20533640 20533643 20533636 20533639 20533637 20533642
+
+SUs by job (Grace's rates; su_per_job.csv): 116 in all
+  20533636 lilq-p5-preflight: 4.4 (0.18 h at 24/h), COMPLETED
+  20533637 lilq-p5-ref-viscous: 14.8 (0.62 h at 24/h), COMPLETED
+  20533639 lilq-p5-ref-gravity: 13.2 (0.55 h at 24/h), COMPLETED
+  20533640 lilq-p5-item1: 5.6 (0.23 h at 24/h), COMPLETED
+  20533641 lilq-p5-beltrami: 28.6 (1.19 h at 24/h), COMPLETED
+  20533642 lilq-p5-timed: 28.0 (0.58 h at 48/h), COMPLETED
+  20533643 lilq-p5-item4: 21.5 (0.89 h at 24/h), COMPLETED

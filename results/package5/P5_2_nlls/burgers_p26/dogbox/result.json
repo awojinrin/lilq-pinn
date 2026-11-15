@@ -1,0 +1,54 @@
+{
+  "problem": "burgers",
+  "p": 26,
+  "P": 676,
+  "solver": "dogbox",
+  "nfev": 6,
+  "njev": 6,
+  "status": "1: `gtol` termination condition is satisfied.",
+  "time_s": 1.9463760666549206,
+  "timing_spread": 0.028858457524818304,
+  "timing_counts": [
+    6
+  ],
+  "timing_matches": true,
+  "timing": {
+    "warmup_s": 1.944276813417673,
+    "warmup_solves": 6,
+    "timings": [
+      {
+        "time_s": 1.9977165777236223,
+        "runs_s": [
+          1.9977165777236223
+        ]
+      },
+      {
+        "time_s": 1.9463760666549206,
+        "runs_s": [
+          1.9463760666549206
+        ]
+      },
+      {
+        "time_s": 1.9416826125234365,
+        "runs_s": [
+          1.9416826125234365
+        ]
+      }
+    ],
+    "median_s": 1.9463760666549206,
+    "spread": 0.028858457524818304,
+    "solves": [
+      6
+    ]
+  },
+  "norm_N": 2.7784255927247965e-05,
+  "eL2": 3.1491237668905754e-07,
+  "delta_eL2": 3.1461832013022246e-07,
+  "eL2_over_delta": 1.00093464537829,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1"
+}

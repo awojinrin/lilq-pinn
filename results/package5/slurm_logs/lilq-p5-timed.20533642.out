@@ -1,0 +1,56 @@
+provenance lock OK: commit 60c2d8ce2e45, tree 8e715b6f2e93
+job 20533642 on c080: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+$SCRATCH/lilq-run/lilq-pinn/results/package5/provenance/timed
+timing p=34 seed=0: median 4.71 s, solves [5]
+timing p=34 seed=1: median 4.673 s, solves [5]
+timing p=34 seed=2: median 4.694 s, solves [5]
+timing p=38 seed=0: median 8.431 s, solves [5]
+timing p=38 seed=1: median 8.357 s, solves [5]
+timing p=38 seed=2: median 8.427 s, solves [5]
+timing p=42 seed=0: median 19.51 s, solves [6]
+timing p=42 seed=1: median 26.34 s, solves [8]
+timing p=42 seed=2: median 19.59 s, solves [6]
+burgers p=10 lilq: 0.0467 s, ||N|| 0.03235, eL2 0.003994 (2.01 x delta), rule fired
+burgers p=10 trf: 0.137 s, ||N|| 0.03235, eL2 0.003994 (2.01 x delta), 2: `ftol` termination condition is satisfied.
+burgers p=10 lm: 0.0497 s, ||N|| 0.03235, eL2 0.003994 (2.01 x delta), 2: `ftol` termination condition is satisfied.
+burgers p=10 dogbox: 0.1 s, ||N|| 0.03235, eL2 0.003994 (2.01 x delta), 2: `ftol` termination condition is satisfied.
+burgers p=10 lbfgs: 30.9 s, ||N|| 0.03235, eL2 0.003994 (2.01 x delta), stall (f1)
+burgers p=10 lbfgs_scipy: 0.0913 s, ||N|| 0.03235, eL2 0.003994 (2.01 x delta), 0: CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH
+burgers p=18 lilq: 0.426 s, ||N|| 0.001109, eL2 2.546e-05 (1.04 x delta), rule fired
+burgers p=18 trf: 0.827 s, ||N|| 0.001109, eL2 2.546e-05 (1.04 x delta), 3: `xtol` termination condition is satisfied.
+burgers p=18 lm: 1.47 s, ||N|| 0.001109, eL2 2.546e-05 (1.04 x delta), 4: Both `ftol` and `xtol` termination conditions are satisfied.
+burgers p=18 dogbox: 0.576 s, ||N|| 0.001109, eL2 2.546e-05 (1.04 x delta), 3: `xtol` termination condition is satisfied.
+burgers p=18 lbfgs: 12.1 s, ||N|| 0.001109, eL2 2.546e-05 (1.04 x delta), stall (f1)
+burgers p=18 lbfgs_scipy: 4.3 s, ||N|| 0.001109, eL2 2.546e-05 (1.04 x delta), 2: ABNORMAL_TERMINATION_IN_LNSRCH
+burgers p=26 lilq: 1.37 s, ||N|| 2.778e-05, eL2 3.149e-07 (1 x delta), rule fired
+burgers p=26 trf: 2.73 s, ||N|| 2.778e-05, eL2 3.149e-07 (1 x delta), 1: `gtol` termination condition is satisfied.
+burgers p=26 lm: 13 s, ||N|| 2.778e-05, eL2 3.149e-07 (1 x delta), 3: `xtol` termination condition is satisfied.
+burgers p=26 dogbox: 1.95 s, ||N|| 2.778e-05, eL2 3.149e-07 (1 x delta), 1: `gtol` termination condition is satisfied.
+burgers p=26 lbfgs: 160 s, ||N|| 2.778e-05, eL2 3.327e-07 (1.06 x delta), iteration cap
+burgers p=26 lbfgs_scipy: 43 s, ||N|| 2.778e-05, eL2 3.149e-07 (1 x delta), 0: CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH
+burgers p=30 lilq: 2.68 s, ||N|| 4.146e-06, eL2 3.605e-08 (1 x delta), rule fired
+burgers p=30 trf: 4.65 s, ||N|| 4.146e-06, eL2 3.605e-08 (1 x delta), 1: `gtol` termination condition is satisfied.
+burgers p=30 lm: 31.6 s, ||N|| 4.146e-06, eL2 3.605e-08 (1 x delta), 3: `xtol` termination condition is satisfied.
+burgers p=30 dogbox: 3.48 s, ||N|| 4.146e-06, eL2 3.605e-08 (1 x delta), 1: `gtol` termination condition is satisfied.
+burgers p=30 lbfgs: 459 s, ||N|| 4.252e-06, eL2 7.509e-07 (20.8 x delta), iteration cap
+burgers p=30 lbfgs_scipy: 116 s, ||N|| 4.146e-06, eL2 3.605e-08 (1 x delta), 0: CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH
+pb p=10 lilq: 0.0277 s, ||N|| 2.688, eH2 0.3705 (1.45 x delta), rule fired
+pb p=10 trf: 0.287 s, ||N|| 2.688, eH2 0.3705 (1.45 x delta), 2: `ftol` termination condition is satisfied.
+pb p=10 lm: 0.0655 s, ||N|| 2.688, eH2 0.3705 (1.45 x delta), 1: `gtol` termination condition is satisfied.
+pb p=10 dogbox: 0.205 s, ||N|| 2.688, eH2 0.3705 (1.45 x delta), 2: `ftol` termination condition is satisfied.
+pb p=10 lbfgs: 6.22 s, ||N|| 2.706, eH2 0.3637 (1.42 x delta), iteration cap
+pb p=10 lbfgs_scipy: 3.45 s, ||N|| 2.706, eH2 0.3638 (1.42 x delta), 1: STOP: TOTAL NO. of ITERATIONS REACHED LIMIT
+pb p=18 lilq: 0.27 s, ||N|| 0.04688, eH2 0.00818 (1.81 x delta), rule fired
+pb p=18 trf: 3.28 s, ||N|| 0.04688, eH2 0.00818 (1.81 x delta), 3: `xtol` termination condition is satisfied.
+pb p=18 lm: 4.26 s, ||N|| 0.04688, eH2 0.00818 (1.81 x delta), 3: `xtol` termination condition is satisfied.
+pb p=18 dogbox: 2.27 s, ||N|| 0.04688, eH2 0.00818 (1.81 x delta), 3: `xtol` termination condition is satisfied.
+pb p=18 lbfgs: 24.8 s, ||N|| 0.054, eH2 0.007586 (1.68 x delta), iteration cap
+pb p=18 lbfgs_scipy: 20.9 s, ||N|| 0.05401, eH2 0.007649 (1.69 x delta), 1: STOP: TOTAL NO. of ITERATIONS REACHED LIMIT
+pb p=22 lilq: 0.703 s, ||N|| 0.003183, eH2 0.0007538 (2.32 x delta), rule fired
+pb p=22 trf: 7.68 s, ||N|| 0.003183, eH2 0.0007538 (2.32 x delta), 3: `xtol` termination condition is satisfied.
+pb p=22 lm: 18.4 s, ||N|| 0.003183, eH2 0.0007538 (2.32 x delta), 3: `xtol` termination condition is satisfied.
+pb p=22 dogbox: 7.53 s, ||N|| 0.003183, eH2 0.0007539 (2.32 x delta), 3: `xtol` termination condition is satisfied.
+pb p=22 lbfgs: 51.3 s, ||N|| 0.006827, eH2 0.001976 (6.08 x delta), iteration cap
+pb p=22 lbfgs_scipy: 45 s, ||N|| 0.006812, eH2 0.001977 (6.08 x delta), 1: STOP: TOTAL NO. of ITERATIONS REACHED LIMIT
+42 runs; 0 beside the expected values

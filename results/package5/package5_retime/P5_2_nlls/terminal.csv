@@ -1,0 +1,2 @@
+problem,p,P,solver,solves,nfev,njev,iterations,evaluations,restarts,status,time_s,timing_spread,timing_matches,norm_N,eL2,delta_eL2,eL2_over_delta,eH2,delta_eH2,eH2_over_delta
+burgers,10,100,lbfgs,,,,138,222,2,stall (f1),0.3722758125513792,,True,0.03234827605166527,0.0039944249708316875,0.0019900010686250496,2.007247651174154,,,

@@ -1,0 +1,60 @@
+{
+  "N_total": 2276,
+  "N_composition": {
+    "interior": 1936,
+    "bottom": 85,
+    "top": 85,
+    "left": 85,
+    "right": 85
+  },
+  "P_total": 225,
+  "P_composition": {
+    "u": 225
+  },
+  "row_weights": "Clenshaw-Curtis; boundary and initial lines lambda = 1e+06 x 1D weights x |e|/|dOmega|",
+  "collocation_construction": {
+    "method": "CGL tensor grid with Clenshaw-Curtis weights (P2-16 / P3-2)",
+    "ratio_target": 10
+  },
+  "basis_description": {
+    "family": "tensor Chebyshev",
+    "modes_per_direction": 15
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the termination rule is read from the log"
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 2,
+  "device": "cpu",
+  "thread_count": 4,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 8.738670838732316e-14,
+    "max_rel_err_over_run": 3.7004133816452495e-12
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package5": {
+    "item": "1",
+    "family": "bratu",
+    "P": 225,
+    "lam": 1000000.0,
+    "rule_fires_at_step": 3,
+    "identity_scaled_max": 1.1076294759783364e-16,
+    "norm_X": [
+      "u",
+      "u_x",
+      "u_y",
+      "u_xx",
+      "u_xy",
+      "u_yy"
+    ],
+    "n_gl": 96,
+    "wall_time_s": 5.587128549814224
+  },
+  "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48"
+}

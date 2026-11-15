@@ -1,0 +1,29 @@
+{
+  "runs": {
+    "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48",
+    "tree_hash": "8e715b6f2e939cfec3957f520b72742a097e1a980f47ed582a7d3994c06728e9",
+    "source": "bundle",
+    "locked_at_utc": "2026-11-14T19:29:35.739441+00:00"
+  },
+  "assembly": {
+    "commit": "57ba02a6402313cfc13bd9c515e79e7e393f4bcc",
+    "branch": "v3-dev"
+  },
+  "commits_between": [
+    "57ba02a Package 5 assembly: the re-timed item 2 run beside the timed job's",
+    "16b128b Package 5, item 2: untimed warm-up for one-pass timings; re-time stage p5t",
+    "21ec859 Package 5 assembly A2: the results folder from Grace's tarball (experiments/p5_assemble.py)",
+    "8674498 Package 5 assembly A1: item 1 beside the advisor's values and the delivered Beltrami rows"
+  ],
+  "advisor_files": {
+    "expected_weight_bratu.json": "ca4669175a5b336fb3c3d7457d39fc82ce98cb23f2e2de9e02d9b6b5bb4c015b",
+    "expected_weight_bl.json": "3e5abef1dbb41b6a7c5e3484b03c1d57770883de27c0e6f3c7d7c8c48eb2e584",
+    "expected_nlls_liln.json": "a5c17988350bd7d057db64f6874aedb477a9a3879ffbc1366c1e50c8ae647359",
+    "expected_rf_pb.json": "d7f8baa8640d5945275f082423632171edd96d2f47c8d39b92b839698087440a"
+  },
+  "retime": {
+    "commit": "16b128bd2a58db39be2d6ba15f2e9014b0042440",
+    "job": "20534654"
+  },
+  "note": "Every run, table and log is Grace's, at the runs' commit. The comparisons with the advisor's files and with the delivered Beltrami rows, and checks.json (C1 to C3, against Packages 2, 3 and 4 as delivered), are written at the assembly on Grace's files. package5_retime/ is the re-time of one item 2 run (stage p5t, its own commit lock), as Grace wrote it; P5_2_nlls/retime.csv sets its time beside the timed job's."
+}

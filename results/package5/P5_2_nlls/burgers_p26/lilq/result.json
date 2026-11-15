@@ -1,0 +1,53 @@
+{
+  "problem": "burgers",
+  "p": 26,
+  "P": 676,
+  "solver": "lilq",
+  "solves": 6,
+  "status": "rule fired",
+  "time_s": 1.369784252718091,
+  "timing_spread": 0.0031726905148539153,
+  "timing_counts": [
+    6
+  ],
+  "timing_matches": true,
+  "timing": {
+    "warmup_s": 1.4254467226564884,
+    "warmup_solves": 6,
+    "timings": [
+      {
+        "time_s": 1.370545156300068,
+        "runs_s": [
+          1.370545156300068
+        ]
+      },
+      {
+        "time_s": 1.369784252718091,
+        "runs_s": [
+          1.369784252718091
+        ]
+      },
+      {
+        "time_s": 1.3662105929106474,
+        "runs_s": [
+          1.3662105929106474
+        ]
+      }
+    ],
+    "median_s": 1.369784252718091,
+    "spread": 0.0031726905148539153,
+    "solves": [
+      6
+    ]
+  },
+  "norm_N": 2.778425592723181e-05,
+  "eL2": 3.149123766868852e-07,
+  "delta_eL2": 3.1461832013022246e-07,
+  "eL2_over_delta": 1.0009346453713854,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1"
+}

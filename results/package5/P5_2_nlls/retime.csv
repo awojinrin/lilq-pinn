@@ -1,0 +1,2 @@
+problem,p,solver,iterations,time_s_timed_job,ms_per_iteration_timed_job,time_s_retime,ms_per_iteration_retime,warmup_s_retime,warmup_iterations,retime_job,retime_node,coefficients_relative_difference
+burgers,10,lbfgs,138,30.945722620934248,224.2443668183641,0.3722758125513792,2.6976508155897045,59.72994259931147,5,20534654,c057,0.0

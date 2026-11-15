@@ -1,0 +1,57 @@
+{
+  "problem": "pb",
+  "p": 22,
+  "P": 484,
+  "solver": "trf",
+  "nfev": 52,
+  "njev": 31,
+  "status": "3: `xtol` termination condition is satisfied.",
+  "time_s": 7.683654796332121,
+  "timing_spread": 0.10993199890162009,
+  "timing_counts": [
+    52
+  ],
+  "timing_matches": true,
+  "timing": {
+    "warmup_s": 7.852861801162362,
+    "warmup_solves": 52,
+    "timings": [
+      {
+        "time_s": 8.515864932909608,
+        "runs_s": [
+          8.515864932909608
+        ]
+      },
+      {
+        "time_s": 7.672420419752598,
+        "runs_s": [
+          7.672420419752598
+        ]
+      },
+      {
+        "time_s": 7.683654796332121,
+        "runs_s": [
+          7.683654796332121
+        ]
+      }
+    ],
+    "median_s": 7.683654796332121,
+    "spread": 0.10993199890162009,
+    "solves": [
+      52
+    ]
+  },
+  "norm_N": 0.003183475285831551,
+  "eL2": 1.8855718159479813e-05,
+  "eH2": 0.0007537988021673711,
+  "delta_eL2": 5.997970910136859e-06,
+  "delta_eH2": 0.00032513711614551923,
+  "eL2_over_delta": 3.143682829073536,
+  "eH2_over_delta": 2.3184028052644687,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1"
+}

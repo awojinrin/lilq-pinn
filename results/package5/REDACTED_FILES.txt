@@ -1,0 +1,10 @@
+package5_retime/provenance/timed/environment.txt
+package5_retime/provenance/timed/hardware.json
+provenance/timed/environment.txt
+provenance/timed/hardware.json
+slurm_logs/lilq-p5-beltrami.20533641.out
+slurm_logs/lilq-p5-item4.20533643.out
+slurm_logs/lilq-p5-preflight.20533636.out
+slurm_logs/lilq-p5-ref-gravity.20533639.out
+slurm_logs/lilq-p5-ref-viscous.20533637.out
+slurm_logs/lilq-p5-timed.20533642.out

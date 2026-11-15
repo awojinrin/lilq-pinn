@@ -1,0 +1,21 @@
+{
+  "package5": {
+    "item": "1",
+    "role": "fine Buckley-Leverett reference for the norm of X",
+    "case": "viscous",
+    "variant": "sine",
+    "p": 80,
+    "P": 6400,
+    "N": 64000,
+    "lam": 10000.0,
+    "ratio": 10,
+    "rule_step": 5,
+    "returned_iterate": 6,
+    "stall_level": 0.0021406928329293813,
+    "chi_at_rule": 1.494319473352642e-11,
+    "eps_ref_vs_fd": 4.797932811347304e-06,
+    "identity_scaled_max": 3.862373148261196e-16,
+    "wall_time_s": 839.3554856497794
+  },
+  "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48"
+}

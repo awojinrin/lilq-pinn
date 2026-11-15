@@ -1,0 +1,9 @@
+provenance lock OK: commit 60c2d8ce2e45, tree 8e715b6f2e93
+job 20533641 on c074: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package5/P3_1_beltrami_certified/B1_L1_lam1e3
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package5/P3_1_beltrami_certified/B1_L1_lam1e4
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package5/P3_1_beltrami_certified/B1_L1_lam1e6
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package5/P3_1_beltrami_certified/B2_L1_lam1e3
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package5/P3_1_beltrami_certified/B2_L1_lam1e4
+wrote $SCRATCH/lilq-run/lilq-pinn/results/package5/P3_1_beltrami_certified/B2_L1_lam1e6

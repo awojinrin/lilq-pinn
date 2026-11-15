@@ -1,0 +1,101 @@
+{
+  "N_total": 273381,
+  "N_composition": {
+    "momentum (each of 3)": 50625,
+    "continuity": 50625,
+    "x- (each of u, v, w)": 3375,
+    "x+ (each of u, v, w)": 3375,
+    "y- (each of u, v, w)": 3375,
+    "y+ (each of u, v, w)": 3375,
+    "z- (each of u, v, w)": 3375,
+    "z+ (each of u, v, w)": 3375,
+    "initial (each of u, v, w)": 3375,
+    "pressure_pin": 6
+  },
+  "P_total": 3171,
+  "P_composition": {
+    "u": 625,
+    "v": 625,
+    "w": 625,
+    "p": 1296
+  },
+  "row_weights": "Clenshaw-Curtis (Package 3, Section 2.2); pins sqrt(pin_scale x lambda_bc / N_p)",
+  "collocation_construction": {
+    "method": "tensor CGL with Clenshaw-Curtis weights (Package 3, Section 3.2)",
+    "M": 15,
+    "blocks": {
+      "interior": 50625,
+      "x-": 3375,
+      "x+": 3375,
+      "y-": 3375,
+      "y+": 3375,
+      "z-": 3375,
+      "z+": 3375,
+      "initial": 3375
+    },
+    "boundary_measure": 40.0
+  },
+  "basis_description": {
+    "family": "tensor Chebyshev",
+    "N_vel": 5,
+    "N_p": 6
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: 8 iterates (tol = 0); the 1e-9 criterion and the termination rule are read from the log"
+  },
+  "K_max": 8,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 2,
+  "device": "cpu",
+  "thread_count": 24,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 1.1159426593003144e-14,
+    "max_rel_err_over_run": 1.4348763104496963e-12
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package3": {
+    "item": 1,
+    "size": "B2",
+    "level": 1,
+    "M": 15,
+    "N_vel": 5,
+    "N_p": 6,
+    "pin_scale": 1.0,
+    "lambda_bc": 1000.0,
+    "lambda_ic": 1000.0,
+    "status": "complete",
+    "N": 273381,
+    "P": 3171,
+    "weights_note": "Clenshaw-Curtis squared row weights (Section 2.2): interior lambda x tensor CC weight; each face and the initial slab lambda x CC weight x |block|/|dOmega| (4/40, 8/40). The paper's runs put lambda on each face instead; accuracy differences from its tables are partly due to this.",
+    "wall_time_s": 1051.6240219231695,
+    "kappa_time_s": 32.29546943306923,
+    "seconds_per_iteration": 126.6747375454288,
+    "peak_host_bytes": 17448497152,
+    "ranks": [
+      3171,
+      3171,
+      3171,
+      3171,
+      3171,
+      3171,
+      3171,
+      3171
+    ],
+    "b2_rel_err_by_k": {
+      "0": 0.0,
+      "1": 1.1159426593003144e-14,
+      "2": 1.395572938470493e-12,
+      "3": 1.287030129537819e-12,
+      "4": 1.19751882819394e-12,
+      "5": 1.3876770587786377e-12,
+      "6": 1.1859157147519253e-12,
+      "7": 1.4348763104496963e-12
+    }
+  },
+  "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48"
+}

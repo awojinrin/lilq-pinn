@@ -1,0 +1,21 @@
+{
+  "package5": {
+    "item": "1",
+    "role": "fine Buckley-Leverett reference for the norm of X",
+    "case": "gravity",
+    "variant": "sine",
+    "p": 88,
+    "P": 7744,
+    "N": 77440,
+    "lam": 10000.0,
+    "ratio": 10,
+    "rule_step": 4,
+    "returned_iterate": 5,
+    "stall_level": 0.02998822704829836,
+    "chi_at_rule": 1.4586306313215563e-09,
+    "eps_ref_vs_fd": 7.297283178270938e-06,
+    "identity_scaled_max": 1.9582565151374792e-16,
+    "wall_time_s": 1161.928657412529
+  },
+  "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48"
+}

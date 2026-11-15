@@ -1,0 +1,21 @@
+Package 5 assembly, 2026-11-15T01:08:39.844176+00:00
+from package5 (runs at 60c2d8c), assembled at 57ba02a
+copied P5_1_weights/
+copied P3_1_beltrami_certified/
+copied P5_2_nlls/
+copied P5_4_pb/
+copied provenance/
+copied slurm_logs/
+copied COMMIT
+copied sacct.txt
+copied su_per_job.csv
+copied report_log.txt
+tables: rewritten from Grace's logs; every column but delta_P's within 0e+00 relative of Grace's (330 CSVs; Grace's kept); delta_P's columns differ by up to 1.0e-12 (table_rerun_differences.json)
+P5_1_weights/references.json: rewritten within 2e-12 relative of Grace's, but the Burgers PDE check's round-off residual (recorded in table_rerun_differences.json); Grace's kept
+P3_1_beltrami_certified/beside_delivered.csv: 8 rows (delivered and Package 5)
+written with the advisor's files: P5_1_weights/compare_expected.csv, P5_2_nlls/compare_expected.csv, P5_4_pb/compare_expected_4b.csv
+checks.json: C1 passed, C2 passed, C3 passed
+copied package5_retime/ (the re-time, commit 16b128b)
+P5_2_nlls/retime.csv: burgers p = 10 lbfgs: 30.95 s in the timed job, 0.372 s re-timed after a 59.7 s warm-up of 5 iterations; the same 138 iterations, coefficients within 0e+00
+su.csv: 9 jobs, 122.6 SU charged at Grace's rates
+provenance.json: 4 commit(s) between the runs and the assembly

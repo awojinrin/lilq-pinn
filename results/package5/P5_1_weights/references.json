@@ -1,0 +1,51 @@
+{
+  "burgers_pde_check": {
+    "max_abs_pde_residual": 2.4630297801309098e-12,
+    "max_term_scale": 4.603215997139515,
+    "relative": 5.350671751361356e-13,
+    "tol": 1e-08,
+    "passed": true
+  },
+  "bl_viscous": {
+    "case": "viscous",
+    "p_ref": 88,
+    "p_neighbour": 80,
+    "n_gl": 176,
+    "l2_vs_fd": 3.7178354508290986e-06,
+    "l2_vs_fd_neighbour": 4.797932811347304e-06,
+    "h21_diff_neighbour": 0.002840840010677759,
+    "rule_step": 5,
+    "rule_step_neighbour": 5,
+    "chosen": {
+      "p_ref": 88,
+      "p_neighbour": 80,
+      "fallback": false,
+      "reason": "p = 88 and 80 stopped by the rule",
+      "tried": {
+        "88": "stopped by the rule",
+        "80": "stopped by the rule"
+      }
+    }
+  },
+  "bl_gravity": {
+    "case": "gravity",
+    "p_ref": 88,
+    "p_neighbour": 80,
+    "n_gl": 176,
+    "l2_vs_fd": 7.297283178270938e-06,
+    "l2_vs_fd_neighbour": 1.2385755600792663e-05,
+    "h21_diff_neighbour": 0.013006710734136832,
+    "rule_step": 4,
+    "rule_step_neighbour": 4,
+    "chosen": {
+      "p_ref": 88,
+      "p_neighbour": 80,
+      "fallback": false,
+      "reason": "p = 88 and 80 stopped by the rule",
+      "tried": {
+        "88": "stopped by the rule",
+        "80": "stopped by the rule"
+      }
+    }
+  }
+}

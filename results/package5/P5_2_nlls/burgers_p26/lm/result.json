@@ -1,0 +1,54 @@
+{
+  "problem": "burgers",
+  "p": 26,
+  "P": 676,
+  "solver": "lm",
+  "nfev": 7,
+  "njev": 6,
+  "status": "3: `xtol` termination condition is satisfied.",
+  "time_s": 12.992907362058759,
+  "timing_spread": 0.003513597074707553,
+  "timing_counts": [
+    7
+  ],
+  "timing_matches": true,
+  "timing": {
+    "warmup_s": 12.948012065142393,
+    "warmup_solves": 7,
+    "timings": [
+      {
+        "time_s": 12.992907362058759,
+        "runs_s": [
+          12.992907362058759
+        ]
+      },
+      {
+        "time_s": 12.947491738945246,
+        "runs_s": [
+          12.947491738945246
+        ]
+      },
+      {
+        "time_s": 12.992984008044004,
+        "runs_s": [
+          12.992984008044004
+        ]
+      }
+    ],
+    "median_s": 12.992907362058759,
+    "spread": 0.003513597074707553,
+    "solves": [
+      7
+    ]
+  },
+  "norm_N": 2.7784255927213216e-05,
+  "eL2": 3.14912376681723e-07,
+  "delta_eL2": 3.1461832013022246e-07,
+  "eL2_over_delta": 1.0009346453549774,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1"
+}

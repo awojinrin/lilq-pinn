@@ -1,0 +1,56 @@
+{
+  "N_total": 3440,
+  "N_composition": {
+    "interior": 3200,
+    "boundary": 240
+  },
+  "P_total": 400,
+  "P_composition": {
+    "u": 400
+  },
+  "row_weights": "interior: equal, squared weights summing to 1; boundary: lambda_d = 1000 times arc length per point / total length (Section 4.1)",
+  "collocation_construction": {
+    "interior": "first 3200 scrambled Halton points in Omega (scipy.stats.qmc.Halton, seed 0; drawn with scipy 1.17.0 and shipped)",
+    "boundary": "240 points on the four curves (boundary(12p))",
+    "interior_points_per_unknown": 8
+  },
+  "basis_description": {
+    "family": "tanh(a_j x + b_j y + c_j), a, b, c uniform in [-sigma, sigma]",
+    "P": 400,
+    "sigma": 2.0,
+    "draw": 0,
+    "generator": "numpy.random.default_rng(100), in the order a, b, c"
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the rule (tau_chi 0.1, tau_r 0.01, n_s 2) is read from the log"
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 3,
+  "device": "cpu",
+  "thread_count": 4,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 0.003704603508135328,
+    "max_rel_err_over_run": 0.007371146718728692
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package5": {
+    "item": "4b",
+    "P": 400,
+    "sigma": 2.0,
+    "draw": 0,
+    "halton_seed": 0,
+    "n_interior": 3200,
+    "n_boundary": 240,
+    "lambda_boundary": 1000.0,
+    "rule_fires_at_step": 4,
+    "identity_scaled_max": 1.3485169274921822e-16,
+    "wall_time_s": 21.944583917036653
+  },
+  "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48"
+}

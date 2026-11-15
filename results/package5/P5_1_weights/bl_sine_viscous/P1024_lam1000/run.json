@@ -1,0 +1,57 @@
+{
+  "N_total": 10240,
+  "N_composition": {
+    "interior": 9216,
+    "initial": 512,
+    "left": 256,
+    "right": 256
+  },
+  "P_total": 1024,
+  "P_composition": {
+    "u": 1024
+  },
+  "row_weights": "Clenshaw-Curtis; boundary and initial lines lambda = 1000 x 1D weights x |e|/|dOmega|",
+  "collocation_construction": {
+    "method": "CGL tensor grid with Clenshaw-Curtis weights (P2-16 / P3-2)",
+    "ratio_target": 10
+  },
+  "basis_description": {
+    "family": "lifted plain sine in x x Chebyshev in t: S = (1 - x) + sum beta sin(i pi x) T_j",
+    "modes_per_direction": 32
+  },
+  "initial_coefficients": "ic",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the termination rule is read from the log"
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 4,
+  "device": "cpu",
+  "thread_count": 4,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 2.133393728231645e-15,
+    "max_rel_err_over_run": 1.0022935391902319e-12
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package5": {
+    "item": "1",
+    "family": "bl_sine_viscous",
+    "P": 1024,
+    "lam": 1000.0,
+    "rule_fires_at_step": 5,
+    "identity_scaled_max": 3.0377819729798584e-16,
+    "norm_X": [
+      "u",
+      "u_x",
+      "u_xx",
+      "u_t"
+    ],
+    "n_gl": 176,
+    "wall_time_s": 148.58401108719409
+  },
+  "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48"
+}

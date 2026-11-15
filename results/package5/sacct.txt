@@ -1,0 +1,9 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20533636                    lilq-p5-preflight     medium                             billing=24,cpu=24,mem=96G,node=1   00:11:02  COMPLETED      0:0 
+20533637                  lilq-p5-ref-viscous     medium                             billing=24,cpu=24,mem=96G,node=1   00:37:05  COMPLETED      0:0 
+20533639                  lilq-p5-ref-gravity     medium                             billing=24,cpu=24,mem=96G,node=1   00:32:56  COMPLETED      0:0 
+20533640                        lilq-p5-item1     medium                             billing=24,cpu=24,mem=96G,node=1   00:14:00  COMPLETED      0:0 
+20533641                     lilq-p5-beltrami     medium                             billing=24,cpu=24,mem=96G,node=1   01:11:35  COMPLETED      0:0 
+20533642                        lilq-p5-timed     medium                            billing=48,cpu=48,mem=360G,node=1   00:35:01  COMPLETED      0:0 
+20533643                        lilq-p5-item4     medium                             billing=24,cpu=24,mem=96G,node=1   00:53:39  COMPLETED      0:0 

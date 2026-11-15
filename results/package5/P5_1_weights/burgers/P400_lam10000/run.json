@@ -1,0 +1,57 @@
+{
+  "N_total": 4000,
+  "N_composition": {
+    "interior": 3600,
+    "initial": 200,
+    "left": 100,
+    "right": 100
+  },
+  "P_total": 400,
+  "P_composition": {
+    "u": 400
+  },
+  "row_weights": "Clenshaw-Curtis; boundary and initial lines lambda = 10000 x 1D weights x |e|/|dOmega|",
+  "collocation_construction": {
+    "method": "CGL tensor grid with Clenshaw-Curtis weights (P2-16 / P3-2)",
+    "ratio_target": 10
+  },
+  "basis_description": {
+    "family": "tensor Chebyshev",
+    "modes_per_direction": 20
+  },
+  "initial_coefficients": "zero",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the termination rule is read from the log"
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 3,
+  "device": "cpu",
+  "thread_count": 4,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 3.0211810697239596e-14,
+    "max_rel_err_over_run": 7.976574529965225e-13
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package5": {
+    "item": "1",
+    "family": "burgers",
+    "P": 400,
+    "lam": 10000.0,
+    "rule_fires_at_step": 4,
+    "identity_scaled_max": 1.600675090948186e-16,
+    "norm_X": [
+      "u",
+      "u_x",
+      "u_xx",
+      "u_t"
+    ],
+    "n_gl": 96,
+    "wall_time_s": 23.230622366070747
+  },
+  "commit": "60c2d8ce2e450038ac3f8105019c2437bd2dcb48"
+}

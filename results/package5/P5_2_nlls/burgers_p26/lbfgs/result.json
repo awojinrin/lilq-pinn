@@ -1,0 +1,26 @@
+{
+  "problem": "burgers",
+  "p": 26,
+  "P": 676,
+  "solver": "lbfgs",
+  "iterations": 2000,
+  "evaluations": 2672,
+  "restarts": 0,
+  "status": "iteration cap",
+  "time_s": 160.49672124534845,
+  "timing_counts": [
+    2000
+  ],
+  "timing_matches": true,
+  "timing": "one logged pass (the advisor's reply to the cost check, 14 November 2026)",
+  "norm_N": 2.7784323294210163e-05,
+  "eL2": 3.3272056942301077e-07,
+  "delta_eL2": 3.1461832013022246e-07,
+  "eL2_over_delta": 1.0575371748386924,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1"
+}
