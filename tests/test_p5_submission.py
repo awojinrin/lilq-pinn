@@ -15,6 +15,7 @@ import pytest
 REPO = Path(__file__).resolve().parents[1]
 P5 = REPO / 'scripts' / 'cluster' / 'package5'
 SUBMIT = P5 / 'submit_p5.sh'
+RETIME = P5 / 'submit_p5_retime.sh'
 CLASS = {'p5_preflight': ('cpu-mem', '00:30:00'), 'p5_ref_viscous': ('cpu-mem', '02:00:00'),
          'p5_ref_gravity': ('cpu-mem', '02:00:00'), 'p5_item1': ('cpu-mem', '01:15:00'),
          'p5_beltrami': ('cpu-mem', '03:00:00'), 'p5_timed': ('timed-cpu', '01:00:00'),
@@ -41,7 +42,7 @@ def _text(name):
 
 
 def test_job_scripts_their_classes_and_the_su_plan():
-    assert {p.stem for p in P5.glob('*.slurm')} == set(CLASS)
+    assert {p.stem for p in P5.glob('*.slurm')} == set(CLASS) | {'p5_retime'}
     for name, (cls, wall) in CLASS.items():
         t = _text(name)
         assert re.search(rf'^# lilq-resources: {cls} ', t, re.M), name
@@ -110,7 +111,7 @@ def test_p5_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p5)   export PKG="$RESULTS/package5"' in (cluster / 'env.sh').read_text()
     sb = (cluster / 'sbatch.sh').read_text()
-    assert '|p3|p4|p5)$' in sb
+    assert '|p3|p4|p5|p5t)$' in sb
     assert 'cpu-mem)' in sb and '--cpus-per-task=24 --mem=96G' in sb
     assert 'LILQ_WAVE" == p5' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5'] == 'package5'
@@ -231,3 +232,42 @@ def test_the_preflight_stops_if_cpu_mem_is_billed_above_24(tmp_path):
                              capture_output=True, text=True, timeout=30)
         assert ('PASSED' in out.stdout) == ok, out.stdout + out.stderr
         assert ok or 'NOT 24: STOPPING' in out.stdout
+
+
+# ---------------------------------------------------------------- the re-time (stage p5t)
+
+def test_the_retime_job_runs_the_one_run_on_a_whole_node():
+    t = _text('p5_retime')
+    assert re.search(r'^# lilq-resources: timed-cpu ', t, re.M) and '#SBATCH --time=00:15:00\n' in t
+    assert '#SBATCH --job-name=lilq-p5t-retime\n' in t
+    body = t.split('source scripts/cluster/env.sh\nset -euo pipefail\n', 1)[1]
+    runs = [l for l in body.splitlines() if l.startswith('python ')]
+    assert runs == ['python experiments/p4_checks.py provenance --out "$PKG" --name timed',
+                    'python experiments/p5_2_nlls.py run --out "$PKG" --reference-dir '
+                    '"$RESULTS/package2_stage1/reference" --points data/package4 --problem burgers --p 10 '
+                    '--solver lbfgs',
+                    'python scripts/cluster/package2/stage_report.py --stage p5t --results "$RESULTS"']
+    assert 48 * _hours('00:15:00') == 12 and '12 SU requested' in RETIME.read_text()
+    cluster = REPO / 'scripts' / 'cluster'
+    assert 'p5t)  export PKG="$RESULTS/package5_retime"' in (cluster / 'env.sh').read_text()
+    assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5t'] == 'package5_retime'
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_retime_dry_run_checks_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(RETIME)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    assert 'results/package5_retime' in out.stdout and '12 SU requested' in out.stdout
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5_retime'
+    assert '--exclusive' in lines[0] and '--test-only' in lines[0] and '--dependency' not in lines[0]
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_retime_submits_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(RETIME)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5_retime' and '--account=000000000000' in lines[0]

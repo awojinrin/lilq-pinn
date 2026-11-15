@@ -54,6 +54,7 @@ case "$LILQ_WAVE" in
     p3)   export PKG="$RESULTS/package3" ;;               # Package 3 (8 October 2026) and its Addendum 1
     p4)   export PKG="$RESULTS/package4" ;;               # Package 4 (12 November 2026)
     p5)   export PKG="$RESULTS/package5" ;;               # Package 5 (13 November 2026), items 1, 2 and 4
+    p5t)  export PKG="$RESULTS/package5_retime" ;;        # Package 5, item 2: one run re-timed (14 November 2026)
     *)    export PKG="$RESULTS/wave$LILQ_WAVE" ;;
 esac
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"

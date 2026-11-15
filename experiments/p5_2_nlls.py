@@ -85,6 +85,7 @@ LBFGS_MAX_IT = 2000
 LBFGS_SCIPY_MAXCOR = 100
 SOLVERS = ('lilq',) + LS_METHODS + ('lbfgs', 'lbfgs_scipy')
 ONE_PASS = ('lbfgs', 'lbfgs_scipy')      # timed by their logged pass (the advisor's reply, 14 November 2026)
+WARMUP_IT = 5                            # an untimed short pass of the same solver before that one (``prepare``)
 HEADLINE = {'burgers': 'eL2', 'pb': 'eH2'}
 
 
@@ -159,25 +160,39 @@ class _SquaredResidual:
         return loss, loss.detach(), 0.0, loss.new_tensor(0.0)
 
 
-def solve_lbfgs(prob):
+def solve_lbfgs(prob, max_it=None):
     import torch
     from lilq.solvers import solve_lil_n
     beta, _, summary = solve_lil_n(_SquaredResidual(prob), np.zeros(prob.P), torch.device('cpu'),
-                                   max_iterations=LBFGS_MAX_IT, R_tol=0.0, verbose=False, stall_rule='f1')
+                                   max_iterations=max_it or LBFGS_MAX_IT, R_tol=0.0, verbose=False, stall_rule='f1')
     status = 'stall (f1)' if summary['optimizer_stall'] else (
-        'iteration cap' if summary['total_iterations'] >= LBFGS_MAX_IT else 'stopped')
+        'iteration cap' if summary['total_iterations'] >= (max_it or LBFGS_MAX_IT) else 'stopped')
     return beta, {'iterations': summary['total_iterations'], 'evaluations': summary['total_line_searches'],
                   'restarts': summary['lbfgs_restarts']}, status
 
 
-def solve_lbfgs_scipy(prob):
+def solve_lbfgs_scipy(prob, max_it=None):
     def fun(b):
         r = prob.residual(b)
         return 0.5 * float(r @ r), prob.jacobian(b).T @ r
     m = minimize(fun, np.zeros(prob.P), jac=True, method='L-BFGS-B',
-                 options=dict(maxiter=LBFGS_MAX_IT, maxfun=20 * LBFGS_MAX_IT, ftol=0, gtol=0,
+                 options=dict(maxiter=max_it or LBFGS_MAX_IT, maxfun=20 * (max_it or LBFGS_MAX_IT), ftol=0, gtol=0,
                               maxcor=LBFGS_SCIPY_MAXCOR))
     return m.x, {'iterations': int(m.nit), 'evaluations': int(m.nfev)}, f'{int(m.status)}: {m.message}'
+
+
+def prepare(name, prob):
+    """A solver timed by one logged pass (``ONE_PASS``) first runs WARMUP_IT iterations of itself on
+    the same problem, untimed, so that its timed pass carries no first-call cost. On Grace (the
+    jobs of 14 November 2026) the job's first PyTorch L-BFGS pass, Burgers p = 10, took 30.9 s for
+    138 iterations, against 1.4 s on the laptop and Grace's own 3 to 14 ms per iteration at the
+    other small sizes: a one-time cost of about 29 s inside its only timed pass. Returns the
+    warm-up's seconds (None for the solvers the protocol warms up itself)."""
+    if name not in ONE_PASS:
+        return None
+    t = time.perf_counter()
+    {'lbfgs': solve_lbfgs, 'lbfgs_scipy': solve_lbfgs_scipy}[name](prob, max_it=WARMUP_IT)
+    return time.perf_counter() - t
 
 
 def solver(name):
@@ -202,13 +217,15 @@ def run_dir_of(out_root, problem, p, name):
 def run(prob, name, out_root, timing=True):
     fn = solver(name)
     iterates = [np.zeros(prob.P)] if name == 'lilq' else None     # Section 2: every iterate of a LiL run
+    warmup_s = prepare(name, prob)                                 # outside the clock
     t0 = time.perf_counter()
     beta, counts, status = solve_lilq(prob, iterates.append) if iterates is not None else fn(prob)
     first_s = time.perf_counter() - t0
     out = {'problem': prob.name, 'p': prob.p, 'P': prob.P, 'solver': name, **counts, 'status': status}
     if timing and name in ONE_PASS:
-        out.update(time_s=first_s, timing_counts=[_count(counts)], timing_matches=True,
-                   timing="one logged pass (the advisor's reply to the cost check, 14 November 2026)")
+        out.update(time_s=first_s, timing_counts=[_count(counts)], timing_matches=True, warmup_s=warmup_s,
+                   timing=(f"one logged pass (the advisor's reply to the cost check, 14 November 2026), after "
+                           f"an untimed warm-up of {WARMUP_IT} iterations"))
     elif timing:
         def once():
             s = time.perf_counter()

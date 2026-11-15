@@ -17,6 +17,37 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-14 -- Package 5, item 2: the one-pass timings get an untimed warm-up; one run re-timed on Grace (`experiments/p5_2_nlls.py`, stage `p5t`)
+
+**Found at the assembly.** In Grace's timed job, Burgers p = 10 with the PyTorch L-BFGS took 30.9 s
+(224 ms per iteration); on the laptop it takes 1.4 s (10 ms per iteration). Every other Grace run of
+item 2 is 1-2x its laptop time, including the same solver at Burgers p = 14 to 30. That run was the
+job's first PyTorch L-BFGS pass, and the solvers timed by one logged pass (his answer 2: the L-BFGS
+solvers) had no warm-up, so a one-time cost of about 29 s fell inside its only timed pass.
+
+**Not the import.** The first diagnosis (PyTorch imported lazily inside the first call) was wrong:
+torch and `lilq.solvers` are loaded when the driver is imported, before any clock. What the 29 s is
+(a first-call initialization in torch or the thread pools on that node) is not known; the fix does not
+need to know it.
+
+**Decided:**
+- `prepare(name, prob)`: before the clock, each one-pass solver (the ONE_PASS names) runs the same
+  solve for 5 iterations (`WARMUP_IT`), untimed; its seconds are kept as `warmup_s` in `result.json`.
+  The timed pass is unchanged (same solver, same start, same cap) and its iterates do not depend on
+  the warm-up (tested). The timing note says "after an untimed warm-up of 5 iterations".
+- **Re-time (the user's decision):** the one run, Burgers p = 10 PyTorch L-BFGS, rerun on a whole
+  node (timed-cpu, as the timed job) in its own stage `p5t` -> `results/package5_retime`, under its
+  own commit lock (`scripts/cluster/package5/submit_p5_retime.sh`, `p5_retime.slurm`; 12 SU requested,
+  about 5 expected). The other item 2 runs are not rerun: their times sit at 1-2x the laptop's.
+- The report shows the original 30.9 s beside the re-timed value and its `warmup_s`.
+- Item 3's one-pass optimizer timings will use the same warm-up.
+
+**Affects:** item 2's `time_s` for that one run (and `warmup_s` added for the one-pass solvers in
+later runs). No iterate, error or iteration count changes.
+
+**Revisit:** if a warm-up of 5 iterations is ever comparable to the timed pass itself (it is not
+here: the cap is 2,000 iterations).
+
 ## 2026-11-14 -- Package 5, items 1, 2 and 4: the assembly (`experiments/p5_assemble.py`)
 
 As Package 4's: Grace's run folders copied as they are; the summaries rerun on them with the advisor's

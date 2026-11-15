@@ -181,18 +181,40 @@ JOBS = {
 }
 
 
-def render(name):
-    short, cls, wall, header, body = JOBS[name]
+# The re-time of one item 2 run (the user's decision, 14 November 2026): stage p5t, its own results
+# folder (results/package5_retime) under its own commit lock. In the timed job above, the job's first
+# PyTorch L-BFGS pass (Burgers p = 10) carried a one-time cost of about 29 s inside its only timed
+# pass; the driver now warms each one-pass solver up first (p5_2_nlls.prepare).
+RETIME_BODY = f'''python experiments/p4_checks.py provenance --out "$PKG" --name timed
+# Item 2, the one re-timed run: Burgers p = 10, the PyTorch L-BFGS, by one logged pass after an
+# untimed warm-up of 5 iterations (warmup_s in its result.json)
+python {NL} run --out "$PKG" --reference-dir {REF1} --points data/package4 --problem burgers --p 10 --solver lbfgs
+python scripts/cluster/package2/stage_report.py --stage p5t --results "$RESULTS"
+'''
+
+RETIME_JOBS = {
+    'p5_retime.slurm': ('retime', 'timed-cpu', '00:15:00', '''# Package 5, item 2: the PyTorch L-BFGS at Burgers p = 10 re-timed on one whole node (48 threads), as
+# the timed job of 14 November 2026 ran it, with the warm-up. Then results/package5_retime.tar.gz (the
+# job's own sacct row is added at the assembly). Laptop: a few seconds; the job, a few minutes.
+# Submit: through scripts/cluster/package5/submit_p5_retime.sh
+''', RETIME_BODY),
+}
+
+
+def render(name, jobs=JOBS, stage='p5'):
+    short, cls, wall, header, body = jobs[name]
     h, m, s = map(int, wall.split(':'))
     body = body.replace('__WALL_S__', str(3600 * h + 60 * m + s))
     return (HEAD + header + f'# lilq-resources: {cls}   (applied by scripts/cluster/sbatch.sh from the cluster profile)\n'
-            f'#SBATCH --job-name=lilq-p5-{short}\n#SBATCH --time={wall}\n' + TAIL + body)
+            f'#SBATCH --job-name=lilq-{stage}-{short}\n#SBATCH --time={wall}\n' + TAIL + body)
 
 
 def main():
     for name in JOBS:
         (HERE / name).write_bytes(render(name).encode())
-    print(f'{len(JOBS)} job scripts written in {HERE}')
+    for name in RETIME_JOBS:
+        (HERE / name).write_bytes(render(name, RETIME_JOBS, 'p5t').encode())
+    print(f'{len(JOBS) + len(RETIME_JOBS)} job scripts written in {HERE}')
 
 
 if __name__ == '__main__':

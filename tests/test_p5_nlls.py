@@ -103,3 +103,33 @@ def test_timed_uses_a_given_warmup():
     assert len(calls) == 3 and out['warmup_s'] == 3.0 and out['solves'] == [5]
     timed(once)
     assert len(calls) == 7
+
+
+def test_the_one_pass_solvers_warm_up_outside_the_clock(tmp_path, monkeypatch):
+    """On Grace the job's first PyTorch L-BFGS pass carried a one-time cost of about 29 s. ``prepare``
+    runs WARMUP_IT iterations of the same solver first; the clock covers only the logged pass."""
+    import types
+    ticks, calls = iter(range(100)), []
+    monkeypatch.setattr(m, 'time', types.SimpleNamespace(perf_counter=lambda: float(next(ticks))))
+    for name in m.ONE_PASS:
+        real = {'lbfgs': m.solve_lbfgs, 'lbfgs_scipy': m.solve_lbfgs_scipy}[name]
+
+        def spy(prob, max_it=None, real=real):
+            calls.append(max_it)
+            return real(prob, max_it=max_it or 5)
+        monkeypatch.setattr(m, 'solve_' + name, spy)
+        calls.clear()
+        r = m.run(small_burgers(), name, tmp_path)
+        assert calls == [m.WARMUP_IT, None]                     # the warm-up, then the logged pass
+        assert r['warmup_s'] == 1.0 and r['time_s'] == 1.0      # one tick each: the warm-up is outside the clock
+        assert 'warm-up of 5 iterations' in r['timing']
+
+
+def test_the_warm_up_leaves_the_pass_unchanged(tmp_path, monkeypatch):
+    monkeypatch.setattr(m, 'LBFGS_MAX_IT', 30)
+    for name in m.ONE_PASS:
+        fn = {'lbfgs': m.solve_lbfgs, 'lbfgs_scipy': m.solve_lbfgs_scipy}[name]
+        b0, c0, _ = fn(small_burgers())
+        m.prepare(name, small_burgers())
+        b1, c1, _ = fn(small_burgers())
+        assert c0 == c1 and np.array_equal(b0, b1)
