@@ -17,6 +17,27 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-15 -- Package 5, item 3: the error along a run and the wall-clock budget, in the shared L-BFGS loops (`lilq/metrics.py` `RunProbe`, `lilq/solvers.py`)
+
+Item 3 runs every method for a fixed wall-clock budget and reads off the time at which each run first reaches a common accuracy. So the network and LiL-N runs need two things they did not have: the error of the current iterate logged along the run, and a stop when the run's clock reaches the budget. Both go into the existing loops as one optional argument, `probe`. There is no copy of a loop.
+
+**What changed.**
+- `MetricsTracker` gains a pausable clock. `off_clock(fn)` runs `fn` and adds its time to `off_clock_s`. `elapsed()` and `wall_time` exclude that time. On a GPU the queued work is synchronized before and after, so the solver's own work stays on the clock and the evaluation's work does not.
+- `RunProbe(error_fn, every=10, budget_s=None)` logs a row `(iteration, evaluations, time_s, loss, error)` at iteration 0, every `every` iterations, and at the last iterate. `time_s` is the `wall_time` the run recorded for that iterate. The error is evaluated off the clock. Once the clock reaches `budget_s`, the probe says so and the loop stops after that iteration. The iteration that crosses the budget completes and is logged.
+- `_lbfgs_loop`, `solve_nil_n`, `solve_lil_n` and `solve_nil_q` take `probe=None`. NiL-Q checks the budget in its inner loop and stops its outer loop too. The summaries gain `budget_reached` (False without a probe).
+- The budget is checked after the converged test, so a run that meets its own stopping rule in the same iteration reports converged, not the budget.
+
+**What does not change.** Without a probe every loop is as before: same iterates, same records, same summaries apart from the new `budget_reached` field. With a probe the iterates are the same bit for bit (check C2 of the item 3 plan), because `error_fn` must not touch the parameters or their gradients.
+
+**Tests** (`tests/test_run_probe.py`, 10):
+- C2 on small NiL-N, NiL-Q and LiL-N problems: identical parameters and loss histories with and without a probe;
+- the cadence of the rows;
+- the error time excluded from `wall_time`, the rows' times and the budget;
+- the budget ending NiL-N and NiL-Q's outer loop;
+- `off_clock` waiting for queued GPU work (skipped without CUDA).
+
+**Revisit if** an error evaluation must see the gradients, or a method outside these loops needs the same log: LM for networks and trust-region LiL-N log from their own drivers (later batches).
+
 ## 2026-11-14 -- Package 5, item 2: the one-pass timings get an untimed warm-up; one run re-timed on Grace (`experiments/p5_2_nlls.py`, stage `p5t`)
 
 **Found at the assembly.** In Grace's timed job, Burgers p = 10 with the PyTorch L-BFGS took 30.9 s

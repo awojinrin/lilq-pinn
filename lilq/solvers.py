@@ -183,7 +183,7 @@ def _stall_fields(stall, metrics):
 
 
 def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose,
-                new_optimizer=None):
+                new_optimizer=None, probe=None):
     """The NiL-N / LiL-N loop: L-BFGS steps until the target, the iteration
     cap, the evaluation cap, or an ``optimizer_stall``. Without
     ``new_optimizer`` (``stall_rule='pytorch'``), a stall is a step that
@@ -191,8 +191,13 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
     then unchanged too, so every later step would repeat the same no-op).
     With it (``'f1'``), a step that does not lower the loss is followed by a
     step with the fresh optimizer ``new_optimizer()``, and a stall is two
-    such steps in a row. Returns ``(iterations, converged, stall, restarts)``."""
+    such steps in a row. With ``probe`` (:class:`lilq.metrics.RunProbe`,
+    Package 5 item 3) the error is logged along the run, off the clock, and
+    the run also ends when the clock reaches the probe's budget.
+    Returns ``(iterations, converged, stall, restarts)``."""
     iteration, converged, stall = 0, False, None
+    if probe is not None:
+        probe.begin(metrics, objective.n_evals, metrics.data['loss'][-1])
     restarts, restarted = 0, False
     last = objective.value()[0] if new_optimizer is not None else None   # stored: no evaluation
     while iteration < max_iterations and objective.n_evals < max_line_searches:
@@ -201,6 +206,7 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
         iteration += 1
         loss, (pde_val, ic_val, bc_val) = objective.value()
         metrics.record(iteration, objective.n_evals, loss, pde_val, ic_val, bc_val)
+        over_budget = probe is not None and probe.after(iteration, objective.n_evals, loss)
 
         if verbose and iteration % 500 == 0:
             print(f"  Iter {iteration} (evals: {objective.n_evals}): loss={loss:.6e}")
@@ -216,6 +222,8 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
             if verbose:
                 print(f"  Converged at iter {iteration} ({objective.n_evals} evals)")
             converged = True
+            break
+        if over_budget:
             break
         if new_optimizer is None:
             no_progress = torch.equal(objective.point(), x_before)
@@ -233,6 +241,8 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
             if verbose:
                 print(f"  Optimizer stalled at iter {iteration} ({objective.n_evals} evals)")
             break
+    if probe is not None:
+        probe.finish(iteration, objective.n_evals, metrics.data['loss'][-1])
     return iteration, converged, stall, restarts
 
 
@@ -256,6 +266,7 @@ def solve_nil_n(
     verbose: bool = True,
     memoize: bool = True,
     stall_rule: str = 'pytorch',
+    probe=None,
 ) -> Tuple[MLP, MetricsTracker, Dict]:
     """Standard PINN solver (NiL-N method).
 
@@ -314,7 +325,8 @@ def solve_nil_n(
     optimizer = _lbfgs(model.parameters(), stall_rule)
     iterations, converged, stall, restarts = _lbfgs_loop(
         objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose,
-        new_optimizer=(lambda: _lbfgs(model.parameters(), stall_rule)) if stall_rule == 'f1' else None)
+        new_optimizer=(lambda: _lbfgs(model.parameters(), stall_rule)) if stall_rule == 'f1' else None,
+        probe=probe)
 
     summary = {
         'method': 'NiL-N',
@@ -327,6 +339,7 @@ def solve_nil_n(
         'training_time': float(metrics.data['wall_time'][-1]),
         'n_params': int(sum(p.numel() for p in model.parameters())),
         'converged': bool(converged),
+        'budget_reached': bool(probe is not None and probe.budget_reached),
         **_stall_fields(stall, metrics),
     }
     return model, metrics, summary
@@ -354,6 +367,7 @@ def solve_nil_q(
     verbose: bool = True,
     memoize: bool = True,
     stall_rule: str = 'pytorch',
+    probe=None,
 ) -> Tuple[MLP, MetricsTracker, Dict]:
     """Quasilinear PINN solver (NiL-Q method).
 
@@ -417,6 +431,8 @@ def solve_nil_q(
     model.train()
     total_loss, pde_val, ic_val, bc_val = compute_full_loss()
     metrics.record(0, 0, total_loss.item(), pde_val, ic_val, bc_val)
+    if probe is not None:                 # Package 5 item 3: the error along the run, off the clock; the budget
+        probe.begin(metrics, 0, total_loss.item())
 
     objective = LBFGSObjective(model.parameters(), evaluate_linearized, memoize=memoize)
     optimizer = _lbfgs(model.parameters(), stall_rule)
@@ -455,10 +471,13 @@ def solve_nil_q(
             total_loss, pde_val, ic_val, bc_val = compute_full_loss()
             monitor_evals += 1
             metrics.record(total_iterations, objective.n_evals, total_loss.item(), pde_val, ic_val, bc_val)
+            over_budget = probe is not None and probe.after(total_iterations, objective.n_evals, total_loss.item())
 
             if not math.isfinite(total_loss.item()):       # diverged: stop (item 2.5 of the advisor's reply)
                 break
             if total_loss.item() < R_tol or objective.n_evals >= max_line_searches:
+                break
+            if over_budget:
                 break
             if stall_rule == 'f1':
                 inner_loss = objective.value()[0]          # the accepted point: stored
@@ -493,6 +512,10 @@ def solve_nil_q(
             if verbose:
                 print("  Max line searches reached")
             break
+        if probe is not None and probe.budget_reached:
+            if verbose:
+                print("  Wall-clock budget reached")
+            break
 
         if torch.equal(objective.point(), x_outer):
             stall = {'iteration': total_iterations, 'evaluations': objective.n_evals,
@@ -500,6 +523,8 @@ def solve_nil_q(
             if verbose:
                 print(f"  Optimizer stalled for a whole outer iteration ({quasi_iter + 1})")
             break
+    if probe is not None:
+        probe.finish(total_iterations, objective.n_evals, metrics.data['loss'][-1])
 
     summary = {
         'method': 'NiL-Q',
@@ -515,6 +540,7 @@ def solve_nil_q(
         'training_time': float(metrics.data['wall_time'][-1]),
         'n_params': int(sum(p.numel() for p in model.parameters())),
         'converged': bool(converged),
+        'budget_reached': bool(probe is not None and probe.budget_reached),
         **_stall_fields(stall, metrics),
     }
 
@@ -538,6 +564,7 @@ def solve_lil_n(
     verbose: bool = True,
     memoize: bool = True,
     stall_rule: str = 'pytorch',
+    probe=None,
 ) -> Tuple[np.ndarray, MetricsTracker, Dict]:
     """Nonlinear LiL solver (LiL-N method).
 
@@ -579,7 +606,8 @@ def solve_lil_n(
     optimizer = _lbfgs([beta], stall_rule)
     iterations, converged, stall, restarts = _lbfgs_loop(
         objective, optimizer, metrics, max_iterations, max_line_searches, R_tol, verbose,
-        new_optimizer=(lambda: _lbfgs([beta], stall_rule)) if stall_rule == 'f1' else None)
+        new_optimizer=(lambda: _lbfgs([beta], stall_rule)) if stall_rule == 'f1' else None,
+        probe=probe)
 
     summary = {
         'method': 'LiL-N',
@@ -592,6 +620,7 @@ def solve_lil_n(
         'training_time': float(metrics.data['wall_time'][-1]),
         'n_params': int(n_coefs),
         'converged': bool(converged),
+        'budget_reached': bool(probe is not None and probe.budget_reached),
         **_stall_fields(stall, metrics),
     }
 
