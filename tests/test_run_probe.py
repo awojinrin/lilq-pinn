@@ -180,6 +180,14 @@ def test_the_budget_ends_nil_q_in_its_outer_loop_too():
     assert [r['iteration'] for r in probe.rows] == [0, 1] and math.isnan(probe.rows[0]['error'])
 
 
+def test_the_iteration_stop_counts_nil_q_inner_iterations():
+    """max_iterations=11 crosses NiL-Q's inner cap of 8: the run stops inside its second linearization."""
+    _, metrics, summary, probe = _nil_q(lambda model, x, y: RunProbe(None, every=10, max_iterations=11))
+    assert summary['total_iterations'] == 11 and summary['n_quasi_iters'] == 2
+    assert probe.stopped and not summary['budget_reached'] and metrics.data['iteration'][-1] == 11
+    assert [r['iteration'] for r in probe.rows] == [0, 10, 11]
+
+
 def test_the_budget_is_on_the_clock_without_the_error_time():
     """A budget the error evaluations alone would exhaust does not end the run."""
     probe = RunProbe(lambda: time.sleep(0.05) or 0.0, every=1, budget_s=10.0)

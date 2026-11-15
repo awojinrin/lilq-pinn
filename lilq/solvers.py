@@ -206,7 +206,7 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
         iteration += 1
         loss, (pde_val, ic_val, bc_val) = objective.value()
         metrics.record(iteration, objective.n_evals, loss, pde_val, ic_val, bc_val)
-        over_budget = probe is not None and probe.after(iteration, objective.n_evals, loss)
+        probe_stop = probe is not None and probe.after(iteration, objective.n_evals, loss)
 
         if verbose and iteration % 500 == 0:
             print(f"  Iter {iteration} (evals: {objective.n_evals}): loss={loss:.6e}")
@@ -223,7 +223,7 @@ def _lbfgs_loop(objective, optimizer, metrics, max_iterations, max_line_searches
                 print(f"  Converged at iter {iteration} ({objective.n_evals} evals)")
             converged = True
             break
-        if over_budget:
+        if probe_stop:
             break
         if new_optimizer is None:
             no_progress = torch.equal(objective.point(), x_before)
@@ -471,13 +471,13 @@ def solve_nil_q(
             total_loss, pde_val, ic_val, bc_val = compute_full_loss()
             monitor_evals += 1
             metrics.record(total_iterations, objective.n_evals, total_loss.item(), pde_val, ic_val, bc_val)
-            over_budget = probe is not None and probe.after(total_iterations, objective.n_evals, total_loss.item())
+            probe_stop = probe is not None and probe.after(total_iterations, objective.n_evals, total_loss.item())
 
             if not math.isfinite(total_loss.item()):       # diverged: stop (item 2.5 of the advisor's reply)
                 break
             if total_loss.item() < R_tol or objective.n_evals >= max_line_searches:
                 break
-            if over_budget:
+            if probe_stop:
                 break
             if stall_rule == 'f1':
                 inner_loss = objective.value()[0]          # the accepted point: stored
@@ -512,9 +512,9 @@ def solve_nil_q(
             if verbose:
                 print("  Max line searches reached")
             break
-        if probe is not None and probe.budget_reached:
+        if probe is not None and probe.stopped:
             if verbose:
-                print("  Wall-clock budget reached")
+                print("  Wall-clock budget (or the probe's iteration stop) reached")
             break
 
         if torch.equal(objective.point(), x_outer):

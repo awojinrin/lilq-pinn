@@ -33,19 +33,26 @@ class RunProbe:
       excluded);
     - it returns True once the clock reaches ``budget_s`` (the loop then
       stops with ``budget_reached`` in its summary). The iteration that crosses
-      the budget completes and is logged.
+      the budget completes and is logged;
+    - it also returns True at iteration ``max_iterations`` (the short runs of
+      the warm-up and of checks C2 and C4). The count is of L-BFGS iterations
+      for every method, NiL-Q's inner iterations included, so the cap means the
+      same for all of them.
 
-    The final iterate is always logged (:meth:`finish`). ``error_fn`` must not
-    change the parameters or their gradients (check C2).
+    ``stopped`` is True once either has ended the run. The final iterate is
+    always logged (:meth:`finish`). ``error_fn`` must not change the
+    parameters or their gradients (check C2).
     """
 
-    def __init__(self, error_fn=None, every: int = 10, budget_s: float = None):
+    def __init__(self, error_fn=None, every: int = 10, budget_s: float = None, max_iterations: int = None):
         self.error_fn = error_fn
         self.every = int(every)
         self.budget_s = budget_s
+        self.max_iterations = max_iterations
         self.rows = []
         self.metrics = None
         self.budget_reached = False
+        self.stopped = False
 
     def _log(self, iteration, n_evals, loss):
         if self.rows and self.rows[-1]['iteration'] == iteration:
@@ -66,8 +73,10 @@ class RunProbe:
         if iteration % self.every == 0:
             self._log(iteration, n_evals, loss)
         if self.budget_s is not None and self.metrics.elapsed() >= self.budget_s:
-            self.budget_reached = True
-        return self.budget_reached
+            self.budget_reached = self.stopped = True
+        if self.max_iterations is not None and iteration >= self.max_iterations:
+            self.stopped = True
+        return self.stopped
 
     def finish(self, iteration, n_evals, loss):
         self._log(iteration, n_evals, loss)

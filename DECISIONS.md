@@ -17,6 +17,41 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-15 -- Package 5, item 3: the network runs to the 600 s budget (`experiments/p5_3_networks.py`)
+
+Section 6 of the instructions: NiL-N (L-BFGS), NiL-Q (L-BFGS) and NiL-N (Levenberg-Marquardt), "as in the four-method runs" and "as in P2-8", seeds 0, 1, 2; "Optimizer tolerances zero. No target loss. Each optimizer run ends at a wall-clock budget of 600 s."
+
+**The same runs, by construction** (as P2-8). The driver calls each benchmark's own `run_nil_n` / `run_nil_q` with `paper_setup`'s configuration and the seed. It replaces only the solver by a wrapper, so the network, pretraining, collocation set, data and loss weights are the Package 1 code. The wrapper sets:
+- `R_tol = 0` and `stall_rule='f1'` (tolerances 0, one restart, then `optimizer_stall`);
+- no iteration, evaluation or outer-iteration cap (10^9). The budget (`RunProbe`) is the only limit.
+- **NiL-Q keeps its inner cap per linearization** (Bratu 300/400, Burgers and BL as in `paper_setup`). It sets how many L-BFGS steps NiL-Q takes before it relinearizes, so it is part of the method. The outer cap (25 and so on) only stopped the run, so the budget replaces it. This is my reading of "ends at a wall-clock budget"; it does not need the advisor.
+
+LM is P2-8's `lm()` with target 0, no iteration cap and its wall-clock cap set to the budget. `lm()` now also returns `off_clock_s`, the time of its error log; it changes nothing else in P2-8.
+
+**The short runs** (the warm-up, checks C2 and C4) stop at a number of L-BFGS iterations through the probe (`RunProbe(max_iterations=...)`, added here). For NiL-Q that counts its inner iterations over the run, so the cap means the same for every method; the solvers' own caps stay at 10^9.
+
+**The error** is `eps_ref`, the four-method runs' relative L2 error on the test grid against the Section 6.2 reference (BL: the finite-difference reference), through P2-8's `eps_ref_function`. **One reference per problem for every method of item 3.** Bratu and Burgers: the p = 48 spectral reference and Cole-Hopf. The networks and item 1's LiL runs already share them, on the same 201 x 201 grid. BL: the stored `bl_fd_ref_viscous_nu0.1.npz` of Packages 2 and 3, which the LiL runs use. The four-method network runs computed theirs (`reference_solution`): the same physics (nu = 0.1, M = 0.5, T = 0.4), the same grid, and a relative difference of 1.5e-7, which would matter only near the 1e-6 level. The error is logged off the clock at iteration 0, every 10 L-BFGS iterations (every LM iteration), and at the last iterate. **The clock** starts at the first optimizer iteration, as `training_time`. Pretraining (`pretrain_s`) and setup (`setup_s`) are timed beside it, not on it. Whether pretraining belongs on the clock is a question for the advisor, asked once in the cost check.
+
+**Warm-up.** Each job runs every method for 5 iterations at the smallest size, untimed, before its first run. On the laptop the first of these passes in a fresh process (NiL-N, 5 iterations at Burgers P = 25) took 5 s, against 3.5 ms per iteration in the budget run that followed (2,830 iterations in 10 s). Item 2's re-time saw a one-time cost of about 29 s on Grace.
+
+**C1** (one run per problem against its v2.0.0 run, first 100 iterations).
+- **Which runs.** Package 1 (`results/package1_v2.0.0`) ran on the CPU node only at each problem's largest size (Bratu 225, Burgers 625, BL 1,024), and on the A100 at every size. C1 is NiL-N, seed 0, at that size on the CPU node. Every other run that has a Package 1 counterpart is compared too, and reported beside it.
+- **The comparison.** The loss at iterations 0 to 100, relative difference, cutoff **1e-6**. This was set before any comparison, from what separates "the same run" from "another run":
+  - A different setup changes the loss at iteration 0 by 1e-3 or more.
+  - Package 1's 54 stall-rule controls, each a separate Grace job, matched their original runs from iteration 0 with no departure over thousands of iterations, on the CPU and on the A100.
+  - On different hardware, round-off grows through L-BFGS. The laptop against Grace CPU: 1e-16 at iteration 0 and 1e-13 at iteration 10, but 1e-2 by iteration 100 (Bratu, Burgers).
+  - BL's pretraining fit amplifies round-off across hardware: Package 1's own BL P = 1,024 seed 0 starts at 23.21 on the CPU node and 22.06 on the A100, and the laptop gives 22.68. So C1 is meaningful only on the same device class, which is how it is run.
+
+**C2 and C4** (`c2_c4`): NiL-N (300 iterations) and LM (30 iterations), seed 0, at the largest size, each without and then with the error log, after the warm-up.
+- C2: the same parameters and the same loss history, bit for bit.
+- C4: the clocks within 5% (the instructions).
+
+The laptop rehearsal at Burgers P = 100 gave identical iterates for both methods. Its runs were under 1 s, too short to judge 5%, so the Grace runs are sized to tens of seconds (batch 5).
+
+**Stalls before 600 s** (what the cost depends on): Package 1's 54 controls with tolerances 0 ran to 10,000 to 20,000 iterations (100 to 950 s on Grace) and none stalled. So the cost estimate keeps every budget run at its full 600 s.
+
+**Tests:** `tests/test_p5_3_networks.py` (9) and `tests/test_run_probe.py` (11).
+
 ## 2026-11-15 -- Package 5, item 3: the error along a run and the wall-clock budget, in the shared L-BFGS loops (`lilq/metrics.py` `RunProbe`, `lilq/solvers.py`)
 
 Item 3 runs every method for a fixed wall-clock budget and reads off the time at which each run first reaches a common accuracy. So the network and LiL-N runs need two things they did not have: the error of the current iterate logged along the run, and a stop when the run's clock reaches the budget. Both go into the existing loops as one optional argument, `probe`. There is no copy of a loop.
