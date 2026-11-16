@@ -592,6 +592,7 @@ def main(argv=None):
         if name == 'run':
             s.add_argument('--only', nargs='*', help='run names (default: all 18)')
             s.add_argument('--part', nargs='*', choices=list('ABCD'), help='only these parts')
+            s.add_argument('--space', nargs='*', choices=TABLE3_SPACES + ('trig',), help='with --part: only these spaces')
             s.add_argument('--k-max', type=int, default=K_MAX)
         if name == 'summarize':
             s.add_argument('--delivered', required=True, help='P2_9_bases/bl_gravity_paper_P1024_ic of Package 2')
@@ -601,7 +602,7 @@ def main(argv=None):
     elif args.cmd == 'run':
         names = set(args.only or [])
         if args.part:
-            names |= {run_name(*r) for r in runs() if r[0] in args.part}
+            names |= {run_name(*r) for r in runs() if r[0] in args.part and (not args.space or r[1] in args.space)}
         print(json.dumps(run_some(args.out, args.reference_dir, args.item1_root, names or None, args.k_max)), flush=True)
     elif args.cmd == 'k1':
         print(json.dumps({'K1': k1_check(args.out, args.reference_dir, args.item1_root)['pass']}), flush=True)
