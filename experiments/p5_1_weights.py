@@ -136,9 +136,9 @@ class ScalarRows:
         return p216.assemble(self.rows, beta)[2]
 
 
-def bl_setup(variant, case, P, lam):
+def bl_setup(variant, case, P, lam, nu=0.1):
     p, T = int(round(math.sqrt(P))), p32.CASES[case]['T']
-    _, physics = p32.physics_for(case)
+    _, physics = p32.physics_for(case, nu)
     space = p32.TrialSpace(variant, p, T)
     grid = cf.bl_grid(P, RATIO, T)
     rows = p32.Rows(space, physics, p32.collocation_blocks(grid, lam_aux=lam))

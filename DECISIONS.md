@@ -17,6 +17,54 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-16 -- Package 5, Addendum 2, Sections 2 and 3: the 18 runs and their summary (`experiments/p5_a2_plateau.py run | k1 | summarize`)
+
+The addendum asks for 18 runs of gravity Buckley-Leverett, every one from the least-squares fit of the initial profile held constant in time, K_max = 60, the rule read from the log. Item 1's convention throughout: k_s is the rule's step and the returned iterate is k_s + 1.
+- **A:** item 1's configuration, both of its trial spaces, P = 256, 576, 1,024, weight 10^4.
+- **B:** P = 576 and 1,024 at diffusion 0.05 and 0.02.
+- **C:** P = 1,024 at weight 10.
+- **D:** the paper's run (cosine x Fourier, random tensor grid seed 42) at weights 10 and 10^4, every iterate stored.
+
+**The initial profile.** For A to C this is the guess item 1 already uses for viscous Buckley-Leverett: Package 3's `'ic'`, the initial saturation minus the lifting, fitted by `pretrain_lil`. Part D uses the delivered run's own `initial_guess='ic'`. Its iterate 0 is captured by wrapping `pretrain_lil`; every later iterate comes from the solver's `diagnostics_callback`. Check: the stored coefficients must match the log, the same count and each iterate's L2 error equal to the log's `eps_ref` within 1e-8. Otherwise the run raises.
+
+**Diffusion.** `p3_2.physics_for(case, nu)` and `p5_1.bl_setup(..., nu)` take the diffusion; 0.1 is the default, so nothing that existed changes. The references for 0.05 and 0.02 are Package 2's finite-difference refinements. **The reference error** (his rule: errors are reported only if the reference's error is below a third of the run's) is the relative difference of each reference's last refinement step: 3.4e-7, 7.3e-7 and 5.7e-7 for diffusion 0.1, 0.05 and 0.02.
+
+**The norm of X** is used only at diffusion 0.1, against item 1's fine reference (p_ref from item 1's `chosen_gravity.json`, on its quadrature, gated as item 1 is). Item 1 has no fine reference at 0.05 or 0.02, so part B reports eL2 and delta_L2 only. Section 3 asks for the error and its ratio to delta_P, which L2 gives.
+- Part D's eX is on the same quadrature, with the paper space's derivatives.
+- Its delta_P is given in L2 (the reference's grid) and in H^{2,1}, each by gelsy and by gelsd at rcond = eps, with the ranks. The cosine x Fourier space may be rank-deficient; the ranks say whether the two drivers agree.
+
+**The stretch** (Section 3): "the longest stretch of consecutive steps before the stop over which the nonlinear residual changes by less than 5% per step".
+- Steps k -> k + 1 with k + 1 <= k_s, judged on `norm_R_h`. With no stop, all 60 steps count.
+- On his own run this gives two stretches of two steps: 4..6 (the plateau) and 11..13 (the rule's approach). His plateau, k = 4 to 8, is not a single stretch, because the step 6 -> 7 changes the residual by 8.4%.
+- So `terminal.csv` reports the longest stretch (the earliest on a tie) and the number tied (`n_longest`). `stretches.csv` lists every stretch of two or more steps, so the plateau and the approach to the stop are both visible.
+- Errors are withheld wherever the one-third rule withholds them.
+
+**Threads.** Parts A to C and K1 run with item 1's 4 BLAS threads, and part D with the delivered run's 24. That way K1 and K2 compare like with like (item 1's C1 compared runs on the same configuration). This is why the script has separate steps (`run --part`, `k1`, `summarize`): the thread count is fixed when BLAS loads.
+
+**The checks.**
+- **K1:** item 1's two gravity runs at P = 1,024, weight 10^4 (zero start), rerun in the stage. It requires the same rule step, and eps_ref and eX at iterates 0..k_s + 1 within 1e-8 relative of the delivered runs.
+- **K2:** part D at weight 10 against the delivered `P2_9_bases/bl_gravity_paper_P1024_ic`: norm_R_h, norm_Rlin_h and eps_ref at every iterate within 1e-8. The largest difference up to the delivered first stall is reported too.
+- The tolerance is item 1's C1 (`p5_checks.py`). If K2 fails beyond the stall only, the memo says so: the plateau lies before it.
+
+**Tests:** `tests/test_p5_a2_plateau.py`.
+- The 18 runs; the stretches.
+- The summary on the delivered run's own first 16 iterates: rule step 13, returned iterate 14, 0.0116, the tie 4..6 and 11..13.
+- The one-third rule withholding errors; the gate on the X ratio; K2 passing on a copy and failing at the iterate that was moved.
+
+## 2026-11-16 -- Package 5, Addendum 2, Section 3a: the update histories of delivered runs (`experiments/p5_a2_plateau.py updates`, `lilq.xnorm.relative_updates`)
+
+The advisor's Addendum 2 of 15 November 2026 asks for the relative update of the function per iterate, ||u^(k+1) - u^(k)|| / ||u^(k+1)||, in L2 and in the norm of X, from the stored coefficients of 168 delivered runs: item 1 (96), the Poisson-Boltzmann runs with the Chebyshev space (Package 4 item 2a, 18; item 4a, 9), and the random-feature runs of item 4b (45). Post-processing only.
+
+**The definition** (checked against his two values before anything was built on it). Each item's own norm and quadrature:
+- item 1: H2 (Bratu) or H^{2,1} (Burgers, Buckley-Leverett) on item 1's Gauss-Legendre rule, `n_gl` from each run;
+- Poisson-Boltzmann and random features: H2 on `Norms`'s fine quadrature, the one their errors used.
+
+Row k of `updates_by_iterate.csv` is the update into iterate k (k = 1..K). For the lifted sine space the lifting is part of u: it cancels in the difference and stays in the denominator. His values agree to every figure he gives: Poisson-Boltzmann p = 22, seed 0, H2 1.0, 0.063, 2.3e-5, 1.4e-6, then 1.2e-6 (his "near 1e-6"); viscous Buckley-Leverett, tensor Chebyshev, P = 64, weight 10^4, H^{2,1} 0.99, 2.2, 0.38, 0.25, 0.15, 0.093.
+
+**Where the files go.** The 150 Package 5 runs get the file in their own run folders (on `package5-results`), as he asks. Package 4's 18 runs get it on `package5-results` too, under `P5_A2_initial_profile/updates_package4/<their Package 4 path>/`. That way the delivered `package4-results` branch stays as delivered. Our call; the note says so.
+
+**Tests:** `tests/test_p5_a2_plateau.py` (the function by hand and against a direct sum, the folder names of the Poisson-Boltzmann spaces, item 1's runs in place).
+
 ## 2026-11-15 -- Package 5, item 3: the network runs to the 600 s budget (`experiments/p5_3_networks.py`)
 
 Section 6 of the instructions: NiL-N (L-BFGS), NiL-Q (L-BFGS) and NiL-N (Levenberg-Marquardt), "as in the four-method runs" and "as in P2-8", seeds 0, 1, 2; "Optimizer tolerances zero. No target loss. Each optimizer run ends at a wall-clock budget of 600 s."

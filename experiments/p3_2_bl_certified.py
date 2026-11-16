@@ -98,10 +98,15 @@ TIMING_COLUMNS = ('t_assemble_s', 't_solve_s', 't_cum_s')
 NOTE_B2 = ("Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested")
 
 
-def physics_for(case):
+def physics_for(case, nu=0.1):
+    """``(config, physics)`` of the case at diffusion ``nu`` (D = -nu; Package 5, Addendum 2 also runs
+    0.05 and 0.02, the values of Package 2's nu-refinement)."""
+    import dataclasses
     from problems.buckley_leverett import BLConfig, BLPhysics
     config = BLConfig.with_gravity() if CASES[case]['gravity'] else BLConfig()
     assert config.T_final == CASES[case]['T'] and config.D_coef == -0.1 and (config.S_left, config.S_right) == (1.0, 0.0)
+    if nu != 0.1:
+        config = dataclasses.replace(config, D_coef=-float(nu))
     return config, BLPhysics(config)
 
 
