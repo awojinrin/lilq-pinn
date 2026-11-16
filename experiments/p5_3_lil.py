@@ -119,11 +119,14 @@ class Problem:
     Jacobian of item 2), ``error``, ``beta0``, ``torch_residual(device)``."""
 
     def __init__(self, bench, P, reference_dir, lam=LAM):
-        t0 = time.perf_counter()
+        """``setup_s``: the system and the initial coefficients (the method's setup);
+        the reference and the error evaluator are built outside it."""
         self.bench, self.P, self.p = bench, P, isqrt(P)
+        t0 = time.perf_counter()
         if bench == 'bratu':
             self.rows = p51.ScalarRows('bratu', P, lam)
             self.beta0, self.guess = np.zeros(P), 'zero'
+            self.setup_s = time.perf_counter() - t0
             self.error = p216.error_fn('bratu', self.p, p216.load_reference('bratu', reference_dir))
             self._torch = lambda dev: p216.torch_residual(self.rows.rows, dev)
             self.weight = lam
@@ -132,6 +135,7 @@ class Problem:
             space = p41.Space(self.p)
             self.rows = p41.Rows(space)
             self.beta0, self.guess = np.zeros(P), 'zero'
+            self.setup_s = time.perf_counter() - t0
             errors = p41.Errors(p41.load_reference(reference_dir))
             self.error = lambda b: errors.error(space, b)
             self._torch = self.rows.torch_residual
@@ -141,6 +145,7 @@ class Problem:
             space, physics, _, self.rows = p51.bl_setup('sine', 'viscous', P, lam)
             self.guess = p32.CASES['viscous']['guess']
             self.beta0 = p32.initial_guess(space, physics, self.guess)
+            self.setup_s = time.perf_counter() - t0
             e = p32.error_fn(space, p32.load_reference(reference_dir, 'viscous'))
             self.error = lambda b: e(b)['eps_ref']
             self._torch = self.rows.torch_residual
@@ -148,7 +153,6 @@ class Problem:
             self.space = 'lifted sine x Chebyshev on the CGL set, N/P = 10 (Package 3 split)'
         else:
             raise ValueError(bench)
-        self.setup_s = time.perf_counter() - t0
 
     def residual(self, beta):
         return self.rows.residual(beta)
@@ -242,17 +246,24 @@ def trf_pass(prob, keep=False):
     """One ``trf`` pass: a stamp (and, if ``keep``, the coefficients) at every
     Jacobian evaluation, i.e. at the start and at every accepted iterate."""
     betas = [] if keep else None
-    stamps = []
+    stamps, nfev, evals = [], [0], []
     t0 = time.perf_counter()
+
+    def fun(b):
+        nfev[0] += 1
+        return prob.residual(b)
 
     def jac(b):
         stamps.append(time.perf_counter() - t0)
         if keep:
             betas.append(np.array(b, copy=True))
+            evals.append(nfev[0])
         return prob.jacobian(b)
-    s = least_squares(prob.residual, prob.beta0, jac=jac, method='trf', xtol=TRF_TOL, ftol=TRF_TOL,
+    s = least_squares(fun, prob.beta0, jac=jac, method='trf', xtol=TRF_TOL, ftol=TRF_TOL,
                       gtol=TRF_TOL, max_nfev=TRF_MAX_NFEV)
     total = time.perf_counter() - t0
+    if keep:
+        s.evaluations_at_iterates = evals            # residual evaluations up to each accepted iterate
     return stamps, total, s, betas
 
 
@@ -273,8 +284,13 @@ def _save(d, record, rows, betas=None, beta=None):
     if beta is not None:
         np.save(d / 'beta.npy', np.asarray(beta))
     record.update(commit=current_commit(), thread_env=capture_blas_thread_env(), scipy_version=scipy.__version__)
-    (d / 'run.json').write_text(json.dumps(record, indent=2, default=str))
+    (d / 'run.json').write_text(json.dumps(record, indent=2, default=_plain))
     return record
+
+
+def _plain(o):
+    """JSON for numpy scalars (as numbers) and anything else (as text)."""
+    return o.item() if isinstance(o, np.generic) else str(o)
 
 
 def _base(prob, method, device='cpu'):
@@ -295,6 +311,7 @@ def run_lilq(prob, out_root, timing=True):
         stamps = t['stamps']
     else:
         record.update(time_s=total, timing='the logged pass only (untimed run)', timing_matches=None)
+    record['timed'] = bool(timing)
     rows = _history(betas, stamps, prob)
     record.update(final_loss=rows[-1]['loss'], final_error=rows[-1]['error'])
     return _save(run_dir_of(out_root, prob.bench, prob.P, 'lilq'), record, rows, betas, beta)
@@ -313,7 +330,8 @@ def run_trf(prob, out_root, timing=True):
         stamps = t['stamps']
     else:
         record.update(time_s=total, timing='the logged pass only (untimed run)', timing_matches=None)
-    rows = _history(betas, stamps, prob)
+    record['timed'] = bool(timing)
+    rows = _history(betas, stamps, prob, evaluations=s.evaluations_at_iterates)
     record.update(final_loss=rows[-1]['loss'], final_error=rows[-1]['error'])
     return _save(run_dir_of(out_root, prob.bench, prob.P, 'trf'), record, rows, betas, s.x)
 
@@ -324,22 +342,29 @@ def solve_lbfgs(prob, device='cpu', budget_s=BUDGET_S, max_iterations=None, log_
     import torch
     from lilq.metrics import RunProbe, _synchronize
     from lilq.solvers import solve_lil_n
-    torch.set_default_dtype(torch.float64)
-    dev = torch.device(device)
-    _synchronize()
-    t0 = time.perf_counter()
-    loss = TorchLoss(prob.torch_residual(dev))
-    _synchronize()
-    setup_s = time.perf_counter() - t0
-    logged = []
+    old_dtype = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float64)          # for this run only (restored below)
+    try:
+        dev = torch.device(device)
+        _synchronize()
+        t0 = time.perf_counter()
+        loss = TorchLoss(prob.torch_residual(dev))
+        _synchronize()
+        setup_s = time.perf_counter() - t0
+        logged = []
 
-    def error():
-        b = loss.param.detach().cpu().numpy().copy()
-        logged.append(b)
-        return float(prob.error(b))
-    probe = RunProbe(error if log_error else None, every=EVERY, budget_s=budget_s, max_iterations=max_iterations)
-    beta, metrics, summary = solve_lil_n(loss, prob.beta0.copy(), dev, max_iterations=NO_CAP, max_line_searches=NO_CAP,
-                                         R_tol=0.0, verbose=False, stall_rule='f1', probe=probe)
+        def error():
+            # loss.param is the optimizer's own parameter tensor, at the accepted point after a step
+            b = loss.param.detach().cpu().numpy().copy()
+            logged.append(b)
+            return float(prob.error(b))
+        probe = RunProbe(error if log_error else None, every=EVERY, budget_s=budget_s,
+                         max_iterations=max_iterations)
+        beta, metrics, summary = solve_lil_n(loss, prob.beta0.copy(), dev, max_iterations=NO_CAP,
+                                             max_line_searches=NO_CAP, R_tol=0.0, verbose=False,
+                                             stall_rule='f1', probe=probe)
+    finally:
+        torch.set_default_dtype(old_dtype)
     return beta, metrics, summary, probe, logged, setup_s
 
 
@@ -364,9 +389,10 @@ def run_lbfgs(prob, out_root, device='cpu', budget_s=BUDGET_S):
                   error_time_s=metrics.off_clock_s, error_every=EVERY, final_loss=summary['final_loss'],
                   stall={k: summary.get(k) for k in ('stall_iteration', 'stall_evaluations', 'stall_time_s')},
                   timing='one logged pass (Section 6), the error off the clock', torch_threads=torch.get_num_threads(),
-                  gradient='autograd through the torch residual')
+                  gradient='autograd through the torch residual', timed=True)
     rows = probe.rows
     record['final_error'] = rows[-1]['error'] if rows else None
+    record['last_logged_is_returned'] = bool(logged) and bool(np.array_equal(logged[-1], beta))
     d = run_dir_of(out_root, prob.bench, prob.P, 'lbfgs', device)
     d.mkdir(parents=True, exist_ok=True)
     metrics.to_dataframe().to_csv(d / 'metrics.csv', index=False, float_format='%.17g')
@@ -381,7 +407,10 @@ def run_square(P, out_root, reference_dir, timing=True):
     import baselines.square_chebyshev as sc
     from experiments.p2_3_classical import REF_P, TEST_AXIS
     p = SQUARE_P[P]
-    ref = np.load(Path(reference_dir) / f'bratu_ref_p{REF_P}.npz')['u']
+    with np.load(Path(reference_dir) / f'bratu_ref_p{REF_P}.npz') as z:
+        if not (np.allclose(z['x'], TEST_AXIS) and np.allclose(z['y'], TEST_AXIS)):
+            raise ValueError('the Bratu reference is not on the 201 x 201 test grid of P2-3')
+        ref = z['u'].copy()
     d = sc.newton('SQ-CGL', p, reference=(TEST_AXIS, ref))                # the logged pass (and the warm-up)
     errors = [h['err'] for h in d['history']]
 
@@ -404,6 +433,7 @@ def run_square(P, out_root, reference_dir, timing=True):
     else:
         stamps = stamps_of(d['history'])
         record.update(time_s=stamps[-1], timing='the logged pass only (untimed run)', timing_matches=None)
+    record['timed'] = bool(timing)
     rows = [{'iteration': k, 'evaluations': k, 'time_s': stamps[k] if stamps else math.nan,
              'loss': h.get('norm_R', math.nan) ** 2 if h.get('norm_R') is not None else math.nan, 'error': e}
             for k, (h, e) in enumerate(zip(d['history'], errors))]
@@ -452,11 +482,15 @@ def c3(out_root, package4):
         rec = json.loads((d / 'run.json').read_text())
         new = [float(r['error']) for r in read_csv(d / 'history.csv')]
         p4 = Path(package4) / p41.ITEMS['1a'] / f'p{p}'
+        if not (p4 / 'iterations.csv').exists():
+            rows.append({'p': p, 'P': P, 'rule_step': rec['rule_step'], 'passed': False,
+                         'reason': f'no Package 4 log at {p4}'})
+            continue
         old_rows = read_csv(p4 / 'iterations.csv')
         old = {int(r['k']): float(r['eps_ref']) for r in old_rows if r.get('eps_ref') not in ('', None)}
         p4_step = next((int(r['k']) for r in old_rows if str(r.get('stall_rule_fires')).lower() == 'true'), None)
         its = [k for k in range(len(new)) if k in old]
-        worst = max(abs(new[k] - old[k]) / abs(old[k]) for k in its)
+        worst = max((abs(new[k] - old[k]) / abs(old[k]) for k in its), default=math.inf)
         rows.append({'p': p, 'P': P, 'rule_step': rec['rule_step'], 'package4_rule_step': p4_step,
                      'iterates_compared': len(its), 'max_rel_diff_error': worst, 'rtol': C3_RTOL,
                      'passed': bool(rec['rule_step'] == p4_step and worst <= C3_RTOL)})

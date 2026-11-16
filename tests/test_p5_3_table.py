@@ -59,8 +59,9 @@ def test_the_smallest_over_the_sizes(tmp_path):
 def test_runs_without_a_time_are_flagged_and_left_out(tmp_path):
     make_run(tmp_path, 'lil', 'burgers', 36, 'trf', 'cpu', [1, 1e-3], [0, math.nan])
     make_run(tmp_path, 'lil', 'burgers', 36, 'lilq', 'cpu', [1, 1e-3], [0, 0.5], timing_matches=False)
+    make_run(tmp_path, 'lil', 'burgers', 100, 'lilq', 'cpu', [1, 1e-3], [0, 0.5], timed=False)
     rows, long_rows, flagged = t.summarize(tmp_path)
-    assert not rows and not long_rows and len(flagged) == 2
+    assert not rows and not long_rows and len(flagged) == 3
 
 
 def test_the_markdown_table(tmp_path):

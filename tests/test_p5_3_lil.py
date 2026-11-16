@@ -127,6 +127,26 @@ def test_the_budget_ends_an_lbfgs_run(ref, tmp_path):
     rows = _rows(d / 'history.csv')
     assert list(rows[0]) == list(m.HISTORY_COLUMNS)
     assert len(np.load(d / 'betas_logged.npy')) == len(rows)
+    rj = json.loads((d / 'run.json').read_text())
+    assert rec['last_logged_is_returned'] and rj['timed'] is True and isinstance(rj['iterations'], int)
+
+
+def test_the_lbfgs_run_leaves_the_default_dtype_alone(ref):
+    old = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float32)
+    try:
+        m.solve_lbfgs(m.Problem('burgers', 36, ref), 'cpu', budget_s=None, max_iterations=3)
+        assert torch.get_default_dtype() == torch.float32
+    finally:
+        torch.set_default_dtype(old)
+
+
+def test_setup_excludes_the_reference(ref, monkeypatch):
+    """setup_s covers the system and the initial coefficients, not the reference loading."""
+    import time as _time
+    real = p41.load_reference
+    monkeypatch.setattr(p41, 'load_reference', lambda d: (_time.sleep(0.3), real(d))[1])
+    assert m.Problem('burgers', 36, ref).setup_s < 0.3
 
 
 def test_lilq_logged_and_timed(ref, tmp_path):
@@ -150,8 +170,11 @@ def test_trf_logs_every_accepted_iterate(ref, tmp_path):
     betas = np.load(d / 'betas.npy')
     assert rec['final_x_is_last_logged'] and rec['njev'] == len(betas) and rec['nfev'] <= m.TRF_MAX_NFEV
     assert rec['timing_matches'] and np.array_equal(betas[0], prob.beta0)
-    losses = [float(r['loss']) for r in _rows(d / 'history.csv')]
+    hist = _rows(d / 'history.csv')
+    losses = [float(r['loss']) for r in hist]
     assert all(b <= a for a, b in zip(losses, losses[1:]))          # accepted steps lower the cost
+    evals = [int(r['evaluations']) for r in hist]                    # residual evaluations to each iterate
+    assert evals[0] == 1 and all(b > a for a, b in zip(evals, evals[1:])) and evals[-1] <= rec['nfev']
 
 
 def test_the_square_collocation(ref, tmp_path):
@@ -196,3 +219,5 @@ def test_c3(ref, tmp_path):
     assert res['passed'] and res['rows'][0]['max_rel_diff_error'] == 0.0
     write(1.0 + 1e-6)
     assert not m.c3(tmp_path, tmp_path / 'p4')['passed']
+    res = m.c3(tmp_path, tmp_path / 'nowhere')                       # no Package 4 log: a failed row, no crash
+    assert not res['passed'] and 'no Package 4 log' in res['rows'][0]['reason']

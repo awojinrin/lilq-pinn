@@ -17,6 +17,31 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-16 -- Package 5, item 3: the A100 class -- two runs side by side on a whole two-A100 node (the user's decision)
+
+The A100 set (the three network methods and LiL-N L-BFGS: 122 runs of up to 600 s) runs two at a time on a whole two-A100 node, one run per GPU: 192 SU/h for the node, 96 SU/h per run, about 2,040 SU as an upper bound; with the CPU set (about 1,070 SU) about 3,110 against the 3,177 left in the advisor's cap. The node holds only our runs, as every timed GPU run so far. The alternatives were one A100 with 8 cores on a shared node (80 SU/h, about 1,700 SU; other users' jobs on the node and 8 cores put its timings on another footing) and a whole node per run (192 SU/h, about 4,070 SU; over the cap and the account's balance).
+- **Check:** on a few runs, a paired run's time is within 5% of the same run alone on the node (batch 5 sets which runs, before any comparison).
+- **The advisor's rule 3 still holds:** the CPU set first, then the cost check tells him this class and its cost before the A100 set. The cost check's remaining question is whether pretraining belongs on the clock.
+
+## 2026-11-16 -- Package 5, item 3: review of batches 3 and 4 for implicit state and missed bugs (the user's request, before any Grace job)
+
+Fixed (each with a test):
+1. **`setup_s` counted the reference.** `Problem` timed the loading of the reference and the error evaluator with the system, so `with_setup_s` would have charged every LiL method for reading a file. It now covers the system and the initial coefficients only (for Buckley-Leverett the fit of the initial condition is part of it).
+2. **A global left behind.** `solve_lbfgs` set torch's default dtype to float64 for the rest of the process. The residuals do not depend on it (every tensor is made from float64 arrays), but later code in the same process would have. It is now set for the run and restored.
+3. **The L-BFGS coefficients were read through a side channel.** The error is read from the parameter tensor the loss was last called with (`TorchLoss.param`), which is the optimizer's own tensor at the accepted point. That holds by how `LBFGSObjective` calls the loss, so each run now records `last_logged_is_returned` (the last logged coefficients equal the returned ones).
+4. **`trf`'s `evaluations` column was the iterate index.** It now counts the residual evaluations up to each accepted iterate (rejected steps included), as the network runs' column counts evaluations.
+5. **numpy numbers became strings in `run.json`** (`default=str`). They are now written as numbers.
+6. **The square collocation assumed its reference grid.** It reads the p = 48 field and compares it on P2-3's 201 x 201 axis; it now checks that the file's axes are that grid.
+7. **C3 crashed on a missing Package 4 log.** It now writes a failed row with the reason.
+8. **An untimed LiL run could enter the table.** A `--no-timing` run has times from its logged pass. Every LiL record now says `timed`, and the table leaves out and lists a run with `timed` false.
+
+Implicit state kept, by design, and recorded:
+- **Threads.** numpy's BLAS and torch take their thread counts from `OMP_NUM_THREADS` and the other variables, which `lilq.blas_threads` sets (by `setdefault`) before numpy loads; the job script sets them explicitly. Every record carries `thread_env`, and L-BFGS also `torch_threads`.
+- **Determinism of the protocol.** A timed pass must give the logged pass's iterate count and coefficients. If gelsy with many threads ever gave a different rule step, the run is kept with no times and flagged in the table, rather than timed on another path.
+- **Output paths.** A run's folder is fixed by problem, size, method and device; two jobs that run the same combination into one results folder would overwrite each other. The job layout (batch 5) must give each combination to one job.
+- **Device names** become folder names (`lbfgs_cuda`); the jobs pass `cuda`, not `cuda:0`.
+- **Size of `betas_logged.npy`.** One vector per 10 L-BFGS iterations. A fast run that does not stall could keep tens of thousands (Burgers P = 900 on the CPU ran 35,000 iterations in 52 s before stalling: 3,500 vectors, 25 MB). It is measured in the rehearsal before deciding what goes on the results branch.
+
 ## 2026-11-16 -- Package 5, item 3: the time-to-error table (`experiments/p5_3_table.py`)
 
 Section 6's table, from every history file under `P5_3_cost/` (network and LiL runs alike), at the errors 1e-2 to 1e-6.

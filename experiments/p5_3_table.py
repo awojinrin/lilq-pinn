@@ -27,7 +27,8 @@ advisor): the same time plus the run's setup and pretraining (``setup_s``,
 Either reading is then in the table without a rerun.
 
 **Flags.** A run whose history has no time (a timed pass that did not
-reproduce the logged pass) is left out of the table and listed in
+reproduce the logged pass), or a LiL run made without the protocol
+(``--no-timing``: ``timed`` false), is left out of the table and listed in
 ``flagged.csv``; so is a run that ended in ``failure`` (non-finite loss): its
 history up to the failure still counts.
 
@@ -94,7 +95,7 @@ def per_run(out_root, levels=LEVELS):
     out, flagged = [], []
     for kind, d, rec, hist in runs(out_root):
         untimed = any(not math.isfinite(_f(r['time_s'])) for r in hist)
-        if untimed or rec.get('timing_matches') is False:
+        if untimed or rec.get('timing_matches') is False or rec.get('timed') is False:
             flagged.append({'run': str(d.relative_to(Path(out_root))), 'reason': 'no time (timed passes did not '
                             'reproduce the logged pass, or an untimed run)'})
             continue
