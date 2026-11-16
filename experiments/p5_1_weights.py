@@ -133,7 +133,7 @@ class ScalarRows:
         return A, f
 
     def residual(self, beta):
-        return p216.assemble(self.rows, beta)[2]
+        return p216.assemble(self.rows, beta, system=False)[2]
 
 
 def bl_setup(variant, case, P, lam, nu=0.1):
