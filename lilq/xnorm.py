@@ -49,6 +49,23 @@ class XNorm:
         return float(np.linalg.norm(A @ coef - b)) / self.den
 
 
+def relative_updates(weights, mats, betas, components, lift=None):
+    """``||u^(k+1) - u^(k)|| / ||u^(k+1)||`` for k = 0..K-1 in the norm of ``components`` (Package 5,
+    Addendum 2): the coefficients ``betas`` (K+1 rows, iterate 0 first), the basis matrices ``mats`` and
+    the quadrature ``weights``. For an affine space, ``lift`` (each component's lifting values) enters
+    the norm of u^(k+1) and cancels in the difference. Needs no reference."""
+    sw = np.sqrt(np.asarray(weights, float))[:, None]
+    B = np.asarray(betas, float).T                                           # P x (K+1)
+    num, den = 0.0, 0.0
+    for c in components:
+        F = mats[c] @ B                                                      # points x (K+1)
+        if lift is not None:
+            F = F + np.asarray(lift[c], float)[:, None]
+        num = num + np.sum(((F[:, 1:] - F[:, :-1]) * sw) ** 2, axis=0)
+        den = den + np.sum((F[:, 1:] * sw) ** 2, axis=0)
+    return np.sqrt(num) / np.sqrt(den)
+
+
 def gauss_legendre_2d(n, box):
     """A tensor Gauss-Legendre rule of n x n nodes on ``box = ((a, b), (c, d))``: ``(X, Y, W)``,
     the weights summing to 1 (first coordinate outer)."""

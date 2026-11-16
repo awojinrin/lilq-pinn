@@ -205,9 +205,10 @@ class Rows:
         self.B = {name: (tensor(x, y, p, dom), np.sqrt(w2)) for name, (x, y, w2) in blocks.items()}
 
 
-def assemble(rows: Rows, beta):
+def assemble(rows: Rows, beta, system=True):
     """``(A, f, R)``: the quasilinearized system at beta (A beta_new = f, weighted)
-    and the weighted nonlinear residual at beta."""
+    and the weighted nonlinear residual at beta. ``system=False``: ``(None, None, R)``,
+    the residual alone (Package 5, item 3: the timed runs evaluate it at every step)."""
     A, f, R = [], [], []
     for name, (T, w) in rows.B.items():
         val = T[(0, 0)]
@@ -216,21 +217,64 @@ def assemble(rows: Rows, beta):
             if rows.bench == 'bratu':
                 e = LAM_BRATU * np.exp(u)
                 lap = T[(2, 0)] + T[(0, 2)]
-                A.append(w[:, None] * (lap + e[:, None] * val))
-                f.append(w * e * (u - 1))
+                if system:
+                    A.append(w[:, None] * (lap + e[:, None] * val))
+                    f.append(w * e * (u - 1))
                 R.append(w * (lap @ beta + e))
             else:
                 ux = T[(1, 0)] @ beta
-                op = T[(0, 1)] + u[:, None] * T[(1, 0)] + ux[:, None] * val - NU_BURGERS * T[(2, 0)]
-                A.append(w[:, None] * op)
-                f.append(w * u * ux)
+                if system:
+                    op = T[(0, 1)] + u[:, None] * T[(1, 0)] + ux[:, None] * val - NU_BURGERS * T[(2, 0)]
+                    A.append(w[:, None] * op)
+                    f.append(w * u * ux)
                 R.append(w * (T[(0, 1)] @ beta + u * ux - NU_BURGERS * (T[(2, 0)] @ beta)))
         else:
             data = -np.sin(np.pi * rows.blocks[name][0]) if name == 'initial' else 0 * w
-            A.append(w[:, None] * val)
-            f.append(w * data)
+            if system:
+                A.append(w[:, None] * val)
+                f.append(w * data)
             R.append(w * (val @ beta - data))
+    if not system:
+        return None, None, np.concatenate(R)
     return np.vstack(A), np.concatenate(f), np.concatenate(R)
+
+
+def torch_residual(rows: Rows, device):
+    """The weighted nonlinear residual of :func:`assemble` (its ``R``) in torch on ``device``,
+    differentiable in beta: ``beta -> [(block name, residual), ...]`` in ``rows.B``'s order, so
+    the concatenation is ``R`` (Package 5, item 3: LiL-N by L-BFGS on the CPU node and the A100,
+    one code for both; its gradient is the autograd one). The matrices are those of ``rows``."""
+    import torch
+
+    def on(a):
+        return torch.as_tensor(np.ascontiguousarray(a, dtype=float), device=device)
+
+    blocks = []
+    for name, (T, w) in rows.B.items():
+        if name == 'interior':
+            if rows.bench == 'bratu':
+                blocks.append((name, 'bratu', on(T[(0, 0)]), on(T[(2, 0)] + T[(0, 2)]), on(w)))
+            else:
+                blocks.append((name, 'burgers', on(T[(0, 0)]), on(T[(1, 0)]), on(T[(0, 1)]), on(T[(2, 0)]), on(w)))
+        else:
+            data = -np.sin(np.pi * rows.blocks[name][0]) if name == 'initial' else 0 * w
+            blocks.append((name, 'line', on(T[(0, 0)]), on(data), on(w)))
+
+    def residual(beta):
+        out = []
+        for name, kind, *m in blocks:
+            if kind == 'bratu':
+                V, lap, w = m
+                out.append((name, w * (lap @ beta + LAM_BRATU * torch.exp(V @ beta))))
+            elif kind == 'burgers':
+                V, Dx, Dt, Dxx, w = m
+                u, ux = V @ beta, Dx @ beta
+                out.append((name, w * (Dt @ beta + u * ux - NU_BURGERS * (Dxx @ beta))))
+            else:
+                V, data, w = m
+                out.append((name, w * (V @ beta - data)))
+        return out
+    return residual
 
 
 def rho_r(quad: Rows, beta_k, beta_new):

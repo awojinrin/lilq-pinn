@@ -80,7 +80,7 @@ def test_runs_have_their_caps_and_inputs():
 def test_p3_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p3)   export PKG="$RESULTS/package3"' in (cluster / 'env.sh').read_text()
-    assert '|p3|p4|p5|p5t)$' in (cluster / 'sbatch.sh').read_text()
+    assert '|p3|p4|p5|p5t|p5a)$' in (cluster / 'sbatch.sh').read_text()
     assert 'LILQ_WAVE" == p3' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p3'] == 'package3'
 

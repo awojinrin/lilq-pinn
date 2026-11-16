@@ -6,8 +6,80 @@ Unified metrics tracking for all four solver methods, supporting
 dual iteration/function-evaluation counting and wall-clock timing.
 """
 
+import math
 import time
 import pandas as pd
+
+
+def _synchronize():
+    """Wait for queued GPU work (no-op without CUDA)."""
+    try:
+        import torch
+    except ImportError:
+        return
+    if torch.cuda.is_available() and torch.cuda.is_initialized():
+        torch.cuda.synchronize()
+
+
+class RunProbe:
+    """Package 5, item 3: a wall-clock budget and the error along a run.
+
+    Passed to the L-BFGS loops of :mod:`lilq.solvers` (NiL-N, NiL-Q, LiL-N)
+    as ``probe``. After every iteration the loop calls :meth:`after`:
+    - every ``every`` iterations (and at iteration 0) it evaluates
+      ``error_fn()`` off the clock (:meth:`MetricsTracker.off_clock`) and keeps
+      a row ``(iteration, evaluations, time_s, loss, error)``, ``time_s`` the
+      ``wall_time`` the run recorded for that iterate (the error evaluations
+      excluded);
+    - it returns True once the clock reaches ``budget_s`` (the loop then
+      stops with ``budget_reached`` in its summary). The iteration that crosses
+      the budget completes and is logged;
+    - it also returns True at iteration ``max_iterations`` (the short runs of
+      the warm-up and of checks C2 and C4). The count is of L-BFGS iterations
+      for every method, NiL-Q's inner iterations included, so the cap means the
+      same for all of them.
+
+    ``stopped`` is True once either has ended the run. The final iterate is
+    always logged (:meth:`finish`). ``error_fn`` must not change the
+    parameters or their gradients (check C2).
+    """
+
+    def __init__(self, error_fn=None, every: int = 10, budget_s: float = None, max_iterations: int = None):
+        self.error_fn = error_fn
+        self.every = int(every)
+        self.budget_s = budget_s
+        self.max_iterations = max_iterations
+        self.rows = []
+        self.metrics = None
+        self.budget_reached = False
+        self.stopped = False
+
+    def _log(self, iteration, n_evals, loss):
+        if self.rows and self.rows[-1]['iteration'] == iteration:
+            return
+        # the run's recorded time of this iterate (the loop records it just before calling the probe)
+        times = self.metrics.data['wall_time']
+        t = times[-1] if times else self.metrics.elapsed()
+        error = float(self.metrics.off_clock(self.error_fn)) if self.error_fn is not None else math.nan
+        self.rows.append({'iteration': int(iteration), 'evaluations': int(n_evals), 'time_s': t,
+                          'loss': float(loss), 'error': error})
+
+    def begin(self, metrics, n_evals, loss):
+        """Bind the run's clock and log iteration 0."""
+        self.metrics = metrics
+        self._log(0, n_evals, loss)
+
+    def after(self, iteration, n_evals, loss) -> bool:
+        if iteration % self.every == 0:
+            self._log(iteration, n_evals, loss)
+        if self.budget_s is not None and self.metrics.elapsed() >= self.budget_s:
+            self.budget_reached = self.stopped = True
+        if self.max_iterations is not None and iteration >= self.max_iterations:
+            self.stopped = True
+        return self.stopped
+
+    def finish(self, iteration, n_evals, loss):
+        self._log(iteration, n_evals, loss)
 
 
 class MetricsTracker:
@@ -45,16 +117,38 @@ class MetricsTracker:
             'wall_time': [],
         }
         self.start_time = None
+        self.off_clock_s = 0.0
 
     def start(self) -> None:
         """Begin the wall-clock timer."""
         self.start_time = time.perf_counter()
+        self.off_clock_s = 0.0
 
     def reset(self) -> None:
         """Clear all recorded data and restart the timer."""
         for key in self.data:
             self.data[key] = []
         self.start_time = time.perf_counter()
+        self.off_clock_s = 0.0
+
+    def elapsed(self) -> float:
+        """Seconds since ``start()``, less the time spent in :meth:`off_clock`."""
+        if not self.start_time:
+            return 0.0
+        return time.perf_counter() - self.start_time - self.off_clock_s
+
+    def off_clock(self, fn, *args, **kwargs):
+        """``fn(*args, **kwargs)``, its time excluded from ``wall_time`` and
+        :meth:`elapsed` (Package 5, item 3: the error evaluated along a run).
+        On a GPU the queued work is finished first, so the solver's own work
+        stays on the clock and the evaluation's does not."""
+        _synchronize()
+        t0 = time.perf_counter()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            _synchronize()
+            self.off_clock_s += time.perf_counter() - t0
 
     def record(
         self,
@@ -72,8 +166,7 @@ class MetricsTracker:
         self.data['pde_loss'].append(float(pde_loss))
         self.data['ic_loss'].append(float(ic_loss))
         self.data['bc_loss'].append(float(bc_loss))
-        elapsed = time.perf_counter() - self.start_time if self.start_time else 0.0
-        self.data['wall_time'].append(elapsed)
+        self.data['wall_time'].append(self.elapsed())
 
     def to_dict(self) -> dict:
         """Convert to plain dictionary for JSON serialization."""

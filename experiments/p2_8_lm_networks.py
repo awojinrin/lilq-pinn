@@ -397,7 +397,7 @@ def lm(res, theta, target, eps_ref, log_path, max_iterations=MAX_ITERATIONS, wal
     return theta, {'total_iterations': it, 'total_line_searches': n_evals, 'n_jacobian_evals': n_jac,
                    'training_time': time.perf_counter() - t0 - excluded, 'final_loss': loss,
                    'converged': reason == 'target', 'stopping_reason': reason, 'mu_final': mu,
-                   'lm_restarts': restarts, 'stall': stall}
+                   'lm_restarts': restarts, 'stall': stall, 'off_clock_s': excluded}
 
 
 # ---------------------------------------------------------------- one run

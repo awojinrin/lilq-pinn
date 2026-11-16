@@ -201,6 +201,59 @@ RETIME_JOBS = {
 }
 
 
+# Addendum 2 (16 November 2026): stage p5a, its own results folder (results/package5_a2) under its own
+# commit lock. One cpu-mem job: parts A to C and K1 at item 1's 4 threads (five processes and K1 side
+# by side), then part D at the delivered P2-9 run's 24 threads, then the summary and the tarball
+# (experiments/p5_a2_plateau.py; DECISIONS.md, Package 5, Addendum 2).
+A2 = 'experiments/p5_a2_plateau.py'
+DELIVERED = '"$RESULTS/package2_stage2/P2_9_bases/bl_gravity_paper_P1024_ic"'
+ITEM1 = '"$RESULTS/package5/P5_1_weights"'
+A2_INPUTS = ([f'{REF2}/bl_fd_ref_gravity_nu{nu}.npz' for nu in ('0.1', '0.05', '0.02')]
+             + [f'{ITEM1}/bl_reference/chosen_gravity.json']
+             + [f'{ITEM1}/bl_reference/gravity_p{p}/beta_reference.npy' for p in (P_REF, P_REF - 8)]
+             + [f'{ITEM1}/bl_{v}_gravity/P1024_lam10000/{f}' for v in ('cheb', 'sine')
+                for f in ('iterations.csv', 'errors_by_iterate.csv')]
+             + [f'{DELIVERED}/iterations.csv'])
+A2_BODY = f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END}# Every input: the finite-difference references (Package 2, stage 2), item 1's fine reference
+# and its two gravity runs at P = 1,024, weight 10^4 (K1), the delivered P2-9 run (K2)
+inputs=(__A2_INPUTS__)
+for f in "${{inputs[@]}}"; do
+    [[ -f "$f" ]] || {{ echo "MISSING INPUT: $f"; exit 1; }}
+done
+echo "inputs OK (${{#inputs[@]}} files)"
+python experiments/p4_checks.py provenance --out "$PKG" --name a2
+A2=(--out "$PKG" --reference-dir {REF2} --item1-root "$RESULTS/package5")
+{THREADS4}
+# Parts A to C (16 runs) in five processes and K1 beside them, 4 threads each (24 in all): item 1's
+# thread count, so that K1 compares like with like
+pids=()
+until_end python {A2} run --part A --space cheb "${{A2[@]}}" & pids+=($!)
+until_end python {A2} run --part A --space sine "${{A2[@]}}" & pids+=($!)
+until_end python {A2} run --part B --space cheb "${{A2[@]}}" & pids+=($!)
+until_end python {A2} run --part B --space sine "${{A2[@]}}" & pids+=($!)
+until_end python {A2} run --part C "${{A2[@]}}" & pids+=($!)
+until_end python {A2} k1 "${{A2[@]}}" & pids+=($!)
+failed=0
+for pid in "${{pids[@]}}"; do wait "$pid" || failed=1; done
+[[ $failed == 0 ]] && echo "PARTS A TO C AND K1 DONE" || echo "PARTS A TO C OR K1: A PROCESS FAILED (see above)"
+# Part D at the delivered run's 24 threads (K2 compares the repeat at weight 10 with it)
+export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24
+until_end python {A2} run --part D "${{A2[@]}}"
+python {A2} summarize "${{A2[@]}}" --delivered {DELIVERED} || echo "SUMMARY FAILED (exit $?)"
+python scripts/cluster/package2/stage_report.py --stage p5a --results "$RESULTS"
+'''.replace('__A2_INPUTS__', '\n        '.join(A2_INPUTS))
+
+A2_JOBS = {
+    'p5_a2.slurm': ('a2', 'cpu-mem', '01:00:00', '''# Package 5, Addendum 2 (Sections 2 and 3): the 18 runs of gravity Buckley-Leverett from the initial
+# profile, K1 and K2, the summary, then results/package5_a2.tar.gz. cpu-mem: six processes, each
+# about 8 GB while it builds item 1's norm of X. Laptop rehearsal at K_max = 4: 8 min; the 60
+# iterations of every run about 11 min of solves at 16 threads.
+# Submit: through scripts/cluster/package5/submit_p5_a2.sh
+''', A2_BODY),
+}
+
+
 def render(name, jobs=JOBS, stage='p5'):
     short, cls, wall, header, body = jobs[name]
     h, m, s = map(int, wall.split(':'))
@@ -214,7 +267,9 @@ def main():
         (HERE / name).write_bytes(render(name).encode())
     for name in RETIME_JOBS:
         (HERE / name).write_bytes(render(name, RETIME_JOBS, 'p5t').encode())
-    print(f'{len(JOBS) + len(RETIME_JOBS)} job scripts written in {HERE}')
+    for name in A2_JOBS:
+        (HERE / name).write_bytes(render(name, A2_JOBS, 'p5a').encode())
+    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS)} job scripts written in {HERE}')
 
 
 if __name__ == '__main__':

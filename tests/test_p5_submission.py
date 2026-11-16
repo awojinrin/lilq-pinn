@@ -16,6 +16,7 @@ REPO = Path(__file__).resolve().parents[1]
 P5 = REPO / 'scripts' / 'cluster' / 'package5'
 SUBMIT = P5 / 'submit_p5.sh'
 RETIME = P5 / 'submit_p5_retime.sh'
+A2 = P5 / 'submit_p5_a2.sh'
 CLASS = {'p5_preflight': ('cpu-mem', '00:30:00'), 'p5_ref_viscous': ('cpu-mem', '02:00:00'),
          'p5_ref_gravity': ('cpu-mem', '02:00:00'), 'p5_item1': ('cpu-mem', '01:15:00'),
          'p5_beltrami': ('cpu-mem', '03:00:00'), 'p5_timed': ('timed-cpu', '01:00:00'),
@@ -42,7 +43,7 @@ def _text(name):
 
 
 def test_job_scripts_their_classes_and_the_su_plan():
-    assert {p.stem for p in P5.glob('*.slurm')} == set(CLASS) | {'p5_retime'}
+    assert {p.stem for p in P5.glob('*.slurm')} == set(CLASS) | {'p5_retime', 'p5_a2'}
     for name, (cls, wall) in CLASS.items():
         t = _text(name)
         assert re.search(rf'^# lilq-resources: {cls} ', t, re.M), name
@@ -111,7 +112,7 @@ def test_p5_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p5)   export PKG="$RESULTS/package5"' in (cluster / 'env.sh').read_text()
     sb = (cluster / 'sbatch.sh').read_text()
-    assert '|p3|p4|p5|p5t)$' in sb
+    assert '|p3|p4|p5|p5t|p5a)$' in sb
     assert 'cpu-mem)' in sb and '--cpus-per-task=24 --mem=96G' in sb
     assert 'LILQ_WAVE" == p5' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5'] == 'package5'
@@ -271,3 +272,59 @@ def test_the_retime_submits_its_one_job(tmp_path):
     assert out.returncode == 0, out.stdout + out.stderr
     lines = log.read_text().splitlines()
     assert len(lines) == 1 and _job(lines[0]) == 'p5_retime' and '--account=000000000000' in lines[0]
+
+
+# ---------------------------------------------------------------- Addendum 2 (stage p5a)
+
+def test_the_a2_job_runs_parts_a_to_c_at_4_threads_and_d_at_24():
+    t = _text('p5_a2')
+    assert re.search(r'^# lilq-resources: cpu-mem ', t, re.M) and '#SBATCH --time=01:00:00\n' in t
+    assert '#SBATCH --job-name=lilq-p5a-a2\n' in t
+    body = t.split('source scripts/cluster/env.sh\nset -euo pipefail\n', 1)[1]
+    four, d = body.index('export OMP_NUM_THREADS=4 '), body.index('export OMP_NUM_THREADS=24 ')
+    a2 = 'python experiments/p5_a2_plateau.py '
+    before = [l for l in body[four:d].splitlines() if a2 in l]
+    assert len(before) == 6 and all(l.endswith('& pids+=($!)') for l in before)
+    parts = [re.search(r'run --part ([A-D])(?: --space (\w+))?', l) for l in before[:5]]
+    assert [(m.group(1), m.group(2)) for m in parts] == [('A', 'cheb'), ('A', 'sine'), ('B', 'cheb'), ('B', 'sine'), ('C', None)]
+    assert a2 + 'k1 ' in before[5]
+    after = [l for l in body[d:].splitlines() if l.startswith(('until_end python', 'python'))]
+    assert after[0] == 'until_end ' + a2 + 'run --part D "${A2[@]}"'
+    assert after[1].startswith(a2 + 'summarize ') and 'P2_9_bases/bl_gravity_paper_P1024_ic' in after[1]
+    assert after[2] == 'python scripts/cluster/package2/stage_report.py --stage p5a --results "$RESULTS"'
+    # every input is checked before anything runs
+    for f in ('bl_fd_ref_gravity_nu0.05.npz', 'bl_fd_ref_gravity_nu0.02.npz', 'chosen_gravity.json',
+              'gravity_p88/beta_reference.npy', 'bl_sine_gravity/P1024_lam10000/errors_by_iterate.csv'):
+        assert f in body[:four], f
+    assert 24 * _hours('01:00:00') == 24 and '24 SU requested' in A2.read_text()
+    cluster = REPO / 'scripts' / 'cluster'
+    assert 'p5a)  export PKG="$RESULTS/package5_a2"' in (cluster / 'env.sh').read_text()
+    assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5a'] == 'package5_a2'
+    assert 'LILQ_WAVE" == p5a' in (cluster / 'submit_lib.sh').read_text()
+
+
+def test_the_a2_job_covers_the_18_runs():
+    import experiments.p5_a2_plateau as a2
+    groups = [('A', 'cheb'), ('A', 'sine'), ('B', 'cheb'), ('B', 'sine'), ('C', None), ('D', None)]
+    covered = [a2.run_name(*r) for r in a2.runs() for p, s in groups if r[0] == p and (s is None or r[1] == s)]
+    assert sorted(covered) == sorted(a2.run_name(*r) for r in a2.runs())
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_a2_dry_run_checks_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(A2)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    assert 'results/package5_a2' in out.stdout and '24 SU requested' in out.stdout
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5_a2'
+    assert '--cpus-per-task=24 --mem=96G' in lines[0] and '--test-only' in lines[0]
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_a2_submits_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(A2)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5_a2' and '--account=000000000000' in lines[0]

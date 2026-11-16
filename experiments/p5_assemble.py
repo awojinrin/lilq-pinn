@@ -36,6 +36,12 @@ the report job. The helpers every package's assembly shares are in
   ``P5_2_nlls/retime.csv`` sets the two times side by side. Grace's own
   tables keep the timed job's time.
 
+- **Addendum 2** (``--a2``, stage p5a): the 18 plateau runs, K1 and K2, copied
+  as Grace wrote it to ``package5_a2/``; its summary rerun on Grace's stored
+  iterates (Grace's kept; delta_P's round-off in
+  ``package5_a2_rerun_differences.json``); K1 and K2 join the exit code.
+  Section 3a's update histories of the delivered runs are written here too.
+
 Refuses a Grace tree whose commit is not an ancestor of this checkout's HEAD.
 Can be run again: it rewrites what it writes.
 
@@ -44,7 +50,7 @@ Usage::
     python experiments/p5_assemble.py --grace <extracted>/package5 --out ../package5_results \\
         --reference-dir <package2_stage2>/reference --package2 <package2_stage2> --package3 <package3> \\
         --package4 <package4> --advisor <folder of the advisor's expected_*.json> [--sacct-extra <file>] \\
-        [--retime <extracted>/package5_retime]
+        [--retime <extracted>/package5_retime] [--a2 <extracted>/package5_a2 [--a2-logs <job logs>]]
 """
 
 import argparse
@@ -77,6 +83,11 @@ RECORD = 'table_rerun_differences.json'
 RETIME = 'package5_retime'                       # stage p5t: one item 2 run re-timed (DECISIONS, 14 November 2026)
 RETIMED = 'P5_2_nlls/burgers_p10/lbfgs'
 RETIME_TABLE = 'P5_2_nlls/retime.csv'
+A2 = 'package5_a2'                               # stage p5a: Addendum 2's plateau runs (DECISIONS, 16 November 2026)
+A2_RUN_FILES = ('run.json', 'iterations.csv', 'betas.npy', 'errors_by_iterate.csv', 'updates_by_iterate.csv')
+A2_JSON = ('trig_delta_P.json', 'item1_references.json', 'checks.json')   # what the summary writes besides its CSVs
+A2_RECORD = 'package5_a2_rerun_differences.json'
+A2_DELIVERED = 'P2_9_bases/bl_gravity_paper_P1024_ic'                     # K2's delivered run, in Package 2 stage 2
 # references.json's round-off quantities: the Burgers PDE check's residual is about 1e-12 (5e-13 of the
 # equation's terms, against the check's 1e-8), so it differs between machines in its first digits. Its
 # values are recorded; its verdict (``passed``) and everything else must be Grace's.
@@ -240,11 +251,80 @@ def add_retime(out, retime, log):
     return row, job
 
 
+def add_a2(out, a2, reference_dir, package2, package4, log, a2_logs=()):
+    """Addendum 2 (stage p5a), as Grace wrote it: its runs, summary and checks to ``P5_A2_initial_profile/``
+    (the advisor's Section 6 path), the stage's own records (``COMMIT``, ``provenance/``, ``slurm_logs/``,
+    ``sacct.txt``, ...) to ``A2``, with ``a2_logs`` (job logs the tarball lacks: it is written before its
+    own job ends) added to its ``slurm_logs``. Every run of ``p5_a2_plateau.runs()`` must have its files
+    (else this stops). Section 3a's update histories of the delivered runs are written here
+    (post-processing, into the item 1 run folders and ``P5_A2_initial_profile/updates_package4``). The
+    summary is rerun on Grace's stored iterates: its tables and JSON files must equal Grace's within
+    ``TABLE_RTOL``, but delta_P's (round-off, recorded in ``A2_RECORD``); Grace's are kept.
+    Returns ({'K1', 'K2'}: Grace's verdicts) and the job's record."""
+    import experiments.p5_a2_plateau as a2m
+    out, a2 = Path(out), Path(a2)
+    runs, _ = runs_and_head(a2)
+    item, dest = out / a2m.ITEM, out / A2
+    for d in (item, dest):
+        if d.exists():
+            shutil.rmtree(d)
+    shutil.copytree(a2 / a2m.ITEM, item)
+    shutil.copytree(a2, dest, ignore=lambda folder, names: [a2m.ITEM] if Path(folder) == a2 else [])
+    log.append(f"copied {a2m.ITEM}/ and the stage's records to {A2}/ (Addendum 2, commit {runs['commit'][:7]})")
+    for f in a2_logs:
+        (dest / 'slurm_logs').mkdir(exist_ok=True)
+        shutil.copy2(f, dest / 'slurm_logs' / Path(f).name)
+        log.append(f'{A2}/slurm_logs/{Path(f).name}: added (the tarball was written before its job ended)')
+    names = [a2m.run_name(*r) for r in a2m.runs()]
+    missing = [f'{n}/{f}' for n in names for f in A2_RUN_FILES if not (item / n / f).exists()]
+    if missing:
+        sys.exit(f'{a2m.ITEM}: {len(missing)} run files missing, e.g. {missing[:3]}')
+    before = tables(out, [a2m.ITEM])
+    counts = a2m.all_updates(out, package4)
+    log.append(f'Section 3a, the update histories of delivered runs (updates_by_iterate.csv): {counts}')
+    grace_json = {name: (item / name).read_bytes() for name in A2_JSON}
+    a2m.summarize(out, reference_dir, out, Path(package2) / A2_DELIVERED)
+    _, recorded = compare_tables(before, log, TABLE_RTOL, ROUNDOFF_COLUMNS, A2_RECORD)
+    worst, worst_at = 0.0, None
+    for name, grace_bytes in grace_json.items():
+        old, new = dict(_flat(json.loads(grace_bytes))), dict(_flat(json.loads((item / name).read_text())))
+        (item / name).write_bytes(grace_bytes)
+        if set(old) != set(new):
+            sys.exit(f"{a2m.ITEM}/{name}: the rerun's keys differ from Grace's: {sorted(set(old) ^ set(new))[:5]}")
+        for k in old:
+            d = cell_diff(str(old[k]), str(new[k]))
+            if ROUNDOFF_COLUMNS(k):
+                recorded[(name, k)] = max(recorded.get((name, k), 0.0), d)
+            elif d > worst:
+                worst, worst_at = d, f'{name} {k}'
+    if worst > TABLE_RTOL:
+        sys.exit(f"{a2m.ITEM}: the rerun summary differs from Grace's by {worst:.1e} relative ({worst_at})")
+    log.append(f"{a2m.ITEM}: the summary rerun on Grace's iterates; terminal.csv, stretches.csv and the JSON files within "
+               f"{worst:.0e} relative of Grace's but delta_P's (up to {max(recorded.values(), default=0.0):.1e}, "
+               f"{A2_RECORD}); Grace's kept")
+    write_lf(out / A2_RECORD, json.dumps({
+        'note': ("Addendum 2's summary rerun at the assembly on Grace's stored iterates. delta_P (a least-squares "
+                 "projection) is recomputed on this machine and differs by the round-off below; every other number "
+                 f"equals Grace's to {TABLE_RTOL:g} relative. The files are Grace's."),
+        'largest_relative_difference_grace_vs_assembly': {f'{t} {c}': d for (t, c), d in sorted(recorded.items())}},
+        indent=2) + '\n')
+    checks = json.loads(grace_json['checks.json'])
+    verdict = {k: checks[k]['pass'] for k in ('K1', 'K2')}
+    log.append(f"{a2m.ITEM}: K1 {'passed' if verdict['K1'] else 'FAILED'}, K2 {'passed' if verdict['K2'] else 'FAILED'} "
+               '(Grace\'s checks.json)')
+    captured = read_json(dest / 'provenance' / 'a2' / 'hardware.json')
+    s = captured['scheduler']
+    job = {'job': s['SLURM_JOB_ID'], 'name': s['SLURM_JOB_NAME'], 'node': captured['cpu']['hostname'],
+           'partition': s['SLURM_JOB_PARTITION'], 'commit': runs['commit'], 'record': f'{A2}/provenance/a2/hardware.json'}
+    return verdict, job
+
+
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def assemble(grace, out, reference_dir, package2, package3, package4, advisor, sacct_extra=None, retime=None):
+def assemble(grace, out, reference_dir, package2, package3, package4, advisor, sacct_extra=None, retime=None,
+             a2=None, a2_logs=()):
     grace, out = Path(grace), Path(out)
     runs, head = runs_and_head(grace)
     out.mkdir(parents=True, exist_ok=True)
@@ -257,6 +337,17 @@ def assemble(grace, out, reference_dir, package2, package3, package4, advisor, s
         _, retime_job = add_retime(out, retime, log)
     elif (out / RETIME).exists():
         shutil.rmtree(out / RETIME)
+    a2_job = None
+    if a2:
+        a2_verdict, a2_job = add_a2(out, a2, reference_dir, package2, package4, log, a2_logs)
+        summary.update(a2_verdict)
+    else:
+        import experiments.p5_a2_plateau as a2m
+        for name in (A2, a2m.ITEM, A2_RECORD):          # Addendum 2's folder and Section 3a's output, if any
+            if (out / name).is_dir():
+                shutil.rmtree(out / name)
+            elif (out / name).exists():
+                (out / name).unlink()
     rows, total, cols = su_rows(out, sacct_extra)
     write_su(out, rows, cols)
     log.append(f"su.csv: {len(rows)} jobs, {total:.1f} SU charged at Grace's rates"
@@ -264,9 +355,13 @@ def assemble(grace, out, reference_dir, package2, package3, package4, advisor, s
                                          'pass its sacct line with --sacct-extra)'))
     if retime_job and retime_job['job'] not in {r['job_id'] for r in rows}:
         log.append(f"su.csv: the re-time job {retime_job['job']} is not in it (pass its sacct line with --sacct-extra)")
+    if a2_job and a2_job['job'] not in {r['job_id'] for r in rows}:
+        log.append(f"su.csv: the Addendum 2 job {a2_job['job']} is not in it (pass its sacct line with --sacct-extra)")
     hw = hardware(out, extra_rows(out, rows))
     if retime_job:
         hw['retime'] = retime_job
+    if a2_job:
+        hw['addendum2'] = a2_job
     write_lf(out / 'hardware.json', json.dumps(hw, indent=2) + '\n')
     write_lf(out / 'environment.txt', environment(out, runs['commit']))
     write_lf(out / 'DECISIONS_package5.md', decisions(5))
@@ -275,9 +370,15 @@ def assemble(grace, out, reference_dir, package2, package3, package4, advisor, s
         "with the delivered Beltrami rows, and checks.json (C1 to C3, against Packages 2, 3 and 4 as delivered), "
         "are written at the assembly on Grace's files."
         + (f" {RETIME}/ is the re-time of one item 2 run (stage p5t, its own commit lock), as Grace wrote it; "
-           f"{RETIME_TABLE} sets its time beside the timed job's." if retime_job else '')), log,
+           f"{RETIME_TABLE} sets its time beside the timed job's." if retime_job else '')
+        + (f" P5_A2_initial_profile/ holds Addendum 2's plateau runs as Grace wrote them (stage p5a, its "
+           f"own commit lock; the stage's records in {A2}/); its summary was rerun at the assembly on Grace's "
+           f"iterates ({A2_RECORD}). Section 3a's update histories "
+           "(updates_by_iterate.csv in the delivered run folders, P5_A2_initial_profile/updates_package4/) are "
+           "written at the assembly from the stored coefficients." if a2_job else '')), log,
         advisor_files={name: sha256(Path(advisor) / name) for name in ADVISOR_FILES},
-        **({'retime': {'commit': retime_job['commit'], 'job': retime_job['job']}} if retime_job else {}))
+        **({'retime': {'commit': retime_job['commit'], 'job': retime_job['job']}} if retime_job else {}),
+        **({'addendum2': {'commit': a2_job['commit'], 'job': a2_job['job']}} if a2_job else {}))
     write_lf(out / 'assembly_log.txt', '\n'.join(log) + '\n')
     print('\n'.join(log))
     return summary, total
@@ -294,9 +395,11 @@ def main(argv=None):
     ap.add_argument('--advisor', required=True, help="the folder of the advisor's expected_*.json")
     ap.add_argument('--sacct-extra', default=None, help='sacct -X -P -n lines of jobs the tarball lacks')
     ap.add_argument('--retime', default=None, help='the extracted package5_retime/ folder (stage p5t)')
+    ap.add_argument('--a2', default=None, help="the extracted package5_a2/ folder (stage p5a, Addendum 2)")
+    ap.add_argument('--a2-logs', nargs='*', default=(), help="Addendum 2's job logs its tarball lacks")
     a = ap.parse_args(argv)
     summary, _ = assemble(a.grace, a.out, a.reference_dir, a.package2, a.package3, a.package4, a.advisor,
-                          a.sacct_extra, a.retime)
+                          a.sacct_extra, a.retime, a.a2, a.a2_logs)
     return 0 if all(v is not False for v in summary.values()) else 1
 
 

@@ -98,10 +98,15 @@ TIMING_COLUMNS = ('t_assemble_s', 't_solve_s', 't_cum_s')
 NOTE_B2 = ("Package 1's convention (DECISIONS.md, B2 in real runs): the identity is judged at k = 1; near convergence R is a small difference of O(1) quantities and cancellation dominates the relative difference, so the run maximum is reported, not tested")
 
 
-def physics_for(case):
+def physics_for(case, nu=0.1):
+    """``(config, physics)`` of the case at diffusion ``nu`` (D = -nu; Package 5, Addendum 2 also runs
+    0.05 and 0.02, the values of Package 2's nu-refinement)."""
+    import dataclasses
     from problems.buckley_leverett import BLConfig, BLPhysics
     config = BLConfig.with_gravity() if CASES[case]['gravity'] else BLConfig()
     assert config.T_final == CASES[case]['T'] and config.D_coef == -0.1 and (config.S_left, config.S_right) == (1.0, 0.0)
+    if nu != 0.1:
+        config = dataclasses.replace(config, D_coef=-float(nu))
     return config, BLPhysics(config)
 
 
@@ -213,6 +218,40 @@ class Rows:
             else:
                 R.append(B['s'] * (B['L'] + B['val'] @ beta - B['data']))
         return np.concatenate(R)
+
+    def torch_residual(self, device):
+        """:meth:`residual` in torch on ``device``, differentiable in beta:
+        ``beta -> [(block name, residual), ...]`` in :meth:`residual`'s order (Package 5,
+        item 3: LiL-N by L-BFGS on the CPU node and the A100, one code for both). f'(S) is
+        the physics' ``flux_derivative_differentiable``, so the gradient carries the
+        f''(S) S_x term (the detached ``flux_derivative`` drops it; DECISIONS.md). Without
+        a graph (beta not requiring grad) the detached form gives the same values."""
+        def on(a):
+            return torch.as_tensor(np.ascontiguousarray(a, dtype=float), device=device)
+        blocks = []
+        for name, B in self.blocks.items():
+            if name == 'interior':
+                blocks.append((name, {k: on(B[k]) for k in ('s', 'val', 'dx', 'dt', 'dxx', 'L', 'Lx', 'Lxx')}))
+            else:
+                blocks.append((name, {k: on(B[k]) for k in ('s', 'val', 'L', 'data')}))
+        physics, D = self.physics, self.physics.D
+
+        def residual(beta):
+            out = []
+            for name, B in blocks:
+                if name == 'interior':
+                    S = B['L'] + B['val'] @ beta
+                    Sx = B['Lx'] + B['dx'] @ beta
+                    if S.requires_grad:
+                        fp = physics.flux_derivative_differentiable(S)
+                    else:
+                        with torch.enable_grad():          # its own autograd, also under no_grad
+                            fp = physics.flux_derivative(S)
+                    out.append((name, B['s'] * (B['dt'] @ beta + fp * Sx + D * (B['Lxx'] + B['dxx'] @ beta))))
+                else:
+                    out.append((name, B['s'] * (B['L'] + B['val'] @ beta - B['data'])))
+            return out
+        return residual
 
 
 def collocation_blocks(grid, lam_aux=LAM_AUX):

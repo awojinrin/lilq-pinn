@@ -176,6 +176,25 @@ class Rows:
         U, Ux, Ut, Uxx = self._fields(beta)
         return np.concatenate([(Ut + U * Ux - NU * Uxx).ravel() * self.W, self.A_ic @ beta - self.f_ic])
 
+    def torch_residual(self, device):
+        """:meth:`residual` in torch on ``device``, differentiable in beta:
+        ``beta -> [('interior', ...), ('initial', ...)]``, whose concatenation is
+        :meth:`residual` (Package 5, item 3: LiL-N by L-BFGS on the CPU node and
+        the A100, one code for both). The matrices are this object's."""
+        import torch
+
+        def on(a):
+            return torch.as_tensor(np.ascontiguousarray(a, dtype=float), device=device)
+        (S0, S1, S2), (T0, T1) = [on(m) for m in self.S], [on(m) for m in self.T]
+        W, A_ic, f_ic, p = on(self.W), on(self.A_ic), on(self.f_ic), self.space.p
+
+        def residual(beta):
+            B = beta.reshape(p, p)
+            U, Ux = S0 @ B @ T0.T, S1 @ B @ T0.T
+            Ut, Uxx = S0 @ B @ T1.T, S2 @ B @ T0.T
+            return [('interior', (Ut + U * Ux - NU * Uxx).reshape(-1) * W), ('initial', A_ic @ beta - f_ic)]
+        return residual
+
 
 def embed(beta, p, p_new):
     """The coefficients of the same function in the space with p_new > p."""
