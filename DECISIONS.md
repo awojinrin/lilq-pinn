@@ -17,6 +17,36 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-16 -- Package 5, Addendum 2: the Grace run, a lost hour, and the assembly (`experiments/p5_assemble.py --a2`)
+
+**The first job (20549881, node c224, 11:27-12:28) produced nothing.** All six processes were stopped by
+the 55-minute guard (exit 124) and none created its run folder. The job used 26 s of CPU in all, and
+2.2 GB at most for the six. So they were idle right after starting, not computing. The same start takes
+8 s on the laptop with Grace's own item 1 files (7.8 GiB peak). It ran on the day Grace's Slurm was
+timing out. A login-node check after the outage read the five input files in 80 s wall-clock for
+3.6 s of CPU, and in 7.7 s at the next try. **Reading: a stall of the scratch filesystem, not the
+code.** It cost 24.5 SU (the full hour). The second job (20553982, node c119, the same bundle and
+lock) ran in 954 s: every part done, K1 and K2 pass with zero difference.
+- Weakness found: the summary and the tarball steps of the job script have no time guard, so a stall
+  there also ends without a tarball. Item 3's jobs get one; the Addendum 2 script is not changed (its
+  rerun used the bundle as is).
+
+**The assembly** (`--a2 <extracted>/package5_a2 [--a2-logs <job log>]`), as items 1, 2 and 4:
+- The 18 runs, `terminal.csv`, `stretches.csv`, the checks and K1's runs go to `P5_A2_initial_profile/`,
+  the advisor's Section 6 path. The stage's own records (`COMMIT`, `provenance/a2`, `slurm_logs`,
+  `sacct.txt`, `su_per_job.csv`) go to `package5_a2/`. The second job's log is added there: the
+  tarball is written before its own job ends.
+- Every run must have `run.json`, `iterations.csv`, `betas.npy`, `errors_by_iterate.csv` and
+  `updates_by_iterate.csv`, or the assembly stops.
+- The summary is rerun on Grace's stored iterates. Its tables and JSON files must equal Grace's within
+  1e-8 relative but delta_P's (round-off, recorded in `package5_a2_rerun_differences.json`), or the
+  assembly stops. Grace's are kept. K1 and K2 (Grace's verdicts) join the exit code.
+- Section 3a's update histories are written at the assembly (they are post-processing of delivered
+  coefficients). They match the advisor's two hand values to the figures he quoted.
+- Both Addendum 2 jobs go into `su.csv` through `--sacct-extra`, the lost hour included.
+
+---
+
 ## 2026-11-16 -- Package 5, item 3: the A100 class -- two runs side by side on a whole two-A100 node (the user's decision)
 
 The A100 set (the three network methods and LiL-N L-BFGS: 122 runs of up to 600 s) runs two at a time on a whole two-A100 node, one run per GPU: 192 SU/h for the node, 96 SU/h per run, about 2,040 SU as an upper bound; with the CPU set (about 1,070 SU) about 3,110 against the 3,177 left in the advisor's cap. The node holds only our runs, as every timed GPU run so far. The alternatives were one A100 with 8 cores on a shared node (80 SU/h, about 1,700 SU; other users' jobs on the node and 8 cores put its timings on another footing) and a whole node per run (192 SU/h, about 4,070 SU; over the cap and the account's balance).

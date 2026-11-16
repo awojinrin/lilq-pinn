@@ -233,3 +233,115 @@ def test_a_retime_of_a_different_run_stops_the_assembly(tmp_path, stand_ins, cha
     r = _fake_retime(tmp_path, g, _git('rev-parse', 'HEAD~1'), change)
     with pytest.raises(SystemExit, match='the timed job had'):
         m.assemble(g, tmp_path / 'out', tmp_path, tmp_path, tmp_path, tmp_path, adv, extra, r)
+
+
+# ---------------------------------------------------------------- Addendum 2 (stage p5a)
+
+A2_TERMINAL = 'run,rule_step,eL2,delta_L2,eL2_over_delta\r\nA_cheb_P256_nu0.1_lam10000,7,0.0202,0.0114,1.77\r\n'
+
+
+def _fake_a2(root, commit, k2=True):
+    """Addendum 2's tree: every run's files, its summary and checks, its job's record."""
+    import experiments.p5_a2_plateau as a2m
+    a = root / 'package5_a2'
+    item = a / a2m.ITEM
+    for r in a2m.runs():
+        d = item / a2m.run_name(*r)
+        d.mkdir(parents=True)
+        for f in m.A2_RUN_FILES:
+            (d / f).write_text('x')
+    (item / 'terminal.csv').write_bytes(A2_TERMINAL.encode())
+    (item / 'stretches.csv').write_bytes(b'run,first,last,steps\r\nA_cheb_P256_nu0.1_lam10000,4,7,3\r\n')
+    (item / 'trig_delta_P.json').write_text(json.dumps({'P': 1024, 'gelsy': {'delta_L2': 0.000897, 'rank_L2': 1024}}))
+    (item / 'item1_references.json').write_text(json.dumps({'p_ref': 88, 'n_gl': 176, 'h21_diff_neighbour': 0.0130}))
+    (item / 'checks.json').write_text(json.dumps({'K1': {'pass': True, 'rows': []}, 'K2': {'pass': k2, 'iterates': 61}}))
+    (a / 'COMMIT').write_text(json.dumps({'commit': commit, 'tree_hash': 'a2', 'source': 'bundle', 'locked_at_utc': 'x'}))
+    (a / 'provenance' / 'a2').mkdir(parents=True)
+    (a / 'provenance' / 'a2' / 'hardware.json').write_text(json.dumps({
+        'cpu': {'hostname': 'c119'}, 'scheduler': {'SLURM_JOB_ID': '45', 'SLURM_JOB_NAME': 'lilq-p5a-a2',
+                                                   'SLURM_JOB_PARTITION': 'medium'}}))
+    (a / 'slurm_logs').mkdir()
+    (a / 'slurm_logs' / 'lilq-p5a-a2.40.out').write_text('the job that timed out\n')
+    log = root / 'lilq-p5a-a2.45.out'
+    log.write_text('PARTS A TO C AND K1 DONE\n')
+    return a, log
+
+
+@pytest.fixture
+def a2_stand_ins(monkeypatch):
+    """The summary rewrites terminal.csv (delta_L2 by round-off; ``state['change']`` moves another cell) and
+    the JSON files (trig delta_P by round-off; ``state['refs']`` moves the H^{2,1} gate); 3a writes one folder."""
+    import experiments.p5_a2_plateau as a2m
+    state = {'change': None, 'refs': None, 'seen': {}}
+
+    def summarize(out_root, reference_dir, item1_root, delivered):
+        item = Path(out_root) / a2m.ITEM
+        t = A2_TERMINAL.replace(',0.0114,', ',0.011400000000001,')
+        if state['change']:
+            t = t.replace(*state['change'])
+        (item / 'terminal.csv').write_bytes(t.encode())
+        (item / 'trig_delta_P.json').write_text(json.dumps({'P': 1024, 'gelsy': {'delta_L2': 0.000897000000001,
+                                                                                  'rank_L2': 1024}}))
+        (item / 'item1_references.json').write_text(json.dumps(
+            {'p_ref': 88, 'n_gl': 176, 'h21_diff_neighbour': state['refs'] or 0.0130}))
+        state['seen'] = {'item1_root': Path(item1_root), 'delivered': Path(delivered)}
+
+    def all_updates(package5, package4):
+        (Path(package5) / a2m.ITEM / 'updates_package4').mkdir(parents=True, exist_ok=True)
+        return {'item1': 96}
+
+    monkeypatch.setattr(a2m, 'summarize', summarize)
+    monkeypatch.setattr(a2m, 'all_updates', all_updates)
+    return state
+
+
+@needs_git
+def test_addendum_2_is_copied_checked_and_counted(tmp_path, stand_ins, a2_stand_ins):
+    g, adv, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
+    a, joblog = _fake_a2(tmp_path, _git('rev-parse', 'HEAD~1'))
+    extra.write_text(extra.read_text() + '40|lilq-p5a-a2|billing=24,cpu=24,mem=96G,node=1|3671|TIMEOUT\n'
+                                         '45|lilq-p5a-a2|billing=24,cpu=24,mem=96G,node=1|954|COMPLETED\n')
+    out = tmp_path / 'out'
+    summary, total = m.assemble(g, out, tmp_path, tmp_path / 'p2', tmp_path, tmp_path, adv, extra, a2=a,
+                                a2_logs=[joblog])
+    assert summary == {'C1': True, 'C2': True, 'C3': True, 'K1': True, 'K2': True}
+    assert total == pytest.approx(4.4 + 28.0 + 1.0 + 24 * (3671 + 954) / 3600, abs=0.1)   # each job's SU to 0.1
+    item = out / 'P5_A2_initial_profile'
+    for name in ('terminal.csv', 'trig_delta_P.json', 'item1_references.json'):          # Grace's kept
+        assert (item / name).read_bytes() == (a / 'P5_A2_initial_profile' / name).read_bytes()
+    assert (out / m.A2 / 'slurm_logs' / 'lilq-p5a-a2.45.out').exists() and (out / m.A2 / 'COMMIT').exists()
+    assert not (out / m.A2 / 'P5_A2_initial_profile').exists()                         # the runs: Section 6's path
+    assert (out / 'P5_A2_initial_profile' / 'updates_package4').is_dir()                  # Section 3a, in out
+    assert a2_stand_ins['seen'] == {'item1_root': out, 'delivered': tmp_path / 'p2' / m.A2_DELIVERED}
+    rec = json.loads((out / m.A2_RECORD).read_text())['largest_relative_difference_grace_vs_assembly']
+    assert rec['P5_A2_initial_profile/terminal.csv delta_L2'] == pytest.approx(8.8e-14, rel=0.05)
+    assert rec['trig_delta_P.json /gelsy/delta_L2'] == pytest.approx(1.1e-12, rel=0.05)
+    assert json.loads((out / 'hardware.json').read_text())['addendum2']['node'] == 'c119'
+    assert json.loads((out / 'provenance.json').read_text())['addendum2']['job'] == '45'
+    m.assemble(g, out, tmp_path, tmp_path / 'p2', tmp_path, tmp_path, adv, extra)      # without it: its folders go
+    assert not (out / m.A2).exists() and not (out / 'P5_A2_initial_profile').exists()
+    assert not (out / m.A2_RECORD).exists()
+
+
+@needs_git
+@pytest.mark.parametrize('change, refs, match', [
+    ((',7,', ',8,'), None, "differ from Grace's"),                                       # the rule step
+    (None, 0.0131, 'h21_diff_neighbour'),                                                # the gate, in JSON
+])
+def test_an_addendum_2_summary_that_differs_stops_the_assembly(tmp_path, stand_ins, a2_stand_ins, change, refs, match):
+    g, adv, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
+    a, _ = _fake_a2(tmp_path, _git('rev-parse', 'HEAD~1'))
+    a2_stand_ins['change'], a2_stand_ins['refs'] = change, refs
+    with pytest.raises(SystemExit, match=match):
+        m.assemble(g, tmp_path / 'out', tmp_path, tmp_path, tmp_path, tmp_path, adv, extra, a2=a)
+
+
+@needs_git
+def test_a_failed_k2_is_the_exit_code_and_a_missing_run_stops(tmp_path, stand_ins, a2_stand_ins):
+    g, adv, extra = _fake_grace(tmp_path, _git('rev-parse', 'HEAD~1'))
+    a, _ = _fake_a2(tmp_path, _git('rev-parse', 'HEAD~1'), k2=False)
+    summary, _ = m.assemble(g, tmp_path / 'out', tmp_path, tmp_path, tmp_path, tmp_path, adv, extra, a2=a)
+    assert summary['K2'] is False
+    (a / 'P5_A2_initial_profile' / 'D_trig_P1024_nu0.1_lam10' / 'betas.npy').unlink()
+    with pytest.raises(SystemExit, match='1 run files missing'):
+        m.assemble(g, tmp_path / 'out2', tmp_path, tmp_path, tmp_path, tmp_path, adv, extra, a2=a)
