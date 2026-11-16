@@ -249,7 +249,7 @@ def write_history(path, rows):
         w = csv.DictWriter(fh, fieldnames=HISTORY_COLUMNS)
         w.writeheader()
         for r in rows:
-            w.writerow({k: (repr(r[k]) if isinstance(r[k], float) else r[k]) for k in HISTORY_COLUMNS})
+            w.writerow({k: (repr(float(r[k])) if isinstance(r[k], float) else r[k]) for k in HISTORY_COLUMNS})
 
 
 def run(bench, P, method, seed, reference_dir, out_root, device='cpu', budget_s=BUDGET_S):

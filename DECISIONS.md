@@ -17,6 +17,16 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-16 -- Package 5, item 3: the time-to-error table (`experiments/p5_3_table.py`)
+
+Section 6's table, from every history file under `P5_3_cost/` (network and LiL runs alike), at the errors 1e-2 to 1e-6.
+- **Per run:** the clock time of the first logged iterate whose error is at most the level ("at" counts). L-BFGS logs every 10 iterations, so its time has that resolution; LM, `trf`, LiL-Q and the square collocation log every iterate.
+- **Per size:** the median over the seeds, a seed that never reaches the level counting as infinitely late. So the median exists only when two of three seeds reach it (the plan's reading 7). The LiL methods have one run per size.
+- **Per method, problem, device and level:** the smallest over the sizes, with the size that gives it; a dash where none reaches the level.
+- **Setup and pretraining beside the clock** (`with_setup_s`): the same time plus the run's `setup_s` and `pretrain_s`, taken through the same median and minimum (which may then pick another size). The question of what the clock covers goes to the advisor; either answer is then in the table without a rerun.
+- **Left out and listed in `flagged.csv`:** a run with no time in its history (a timed pass that did not reproduce the logged pass). A run that ended in `failure` is listed too, but its history up to the failure counts.
+- **Fixed on the way:** the square collocation's timestamps were numpy floats, which numpy 2 writes as `np.float64(...)` in `history.csv`; they are now plain floats, and `write_history` converts any float to a plain one.
+
 ## 2026-11-16 -- Package 5, item 3: the LiL runs (`experiments/p5_3_lil.py`; torch residuals in `p2_16_certified`, `p4_1_burgers_gauss`, `p3_2_bl_certified`)
 
 **The methods on LiL-Q's trial space** (Section 6): LiL-Q, LiL-N by `trf`, LiL-N by L-BFGS, and, for Bratu, the square collocation of P2-3. **The systems** are item 1's at the weight 10^4 (the advisor's reply of 15 November 2026, answer 1): Bratu P2-16 tensor Chebyshev on the CGL set, N/P = 10, P = 25, 100, 225; viscous Buckley-Leverett, the lifted sine x Chebyshev of Package 3 (its split), P = 64 to 1,024. Burgers is Package 4's sine x Chebyshev on the Gauss-Legendre set, p = 6 to 30, its weight 10 on the initial rows (his answer: "as in Package 4"). **The error** is the network runs' (one reference per problem, the entry of 15 November below).
@@ -38,7 +48,7 @@ v3-dev three-way comparison run.
 
 **C3** (LiL-Q values of Burgers equal Package 4): at every p, the same rule step as Package 4's item 1a log, and the error of every iterate up to the returned one within 1e-8 relative of that log's `eps_ref` (the cutoff of Addendum 2's K1, set before the runs).
 
-**First laptop look (untimed, smallest sizes).** LiL-N L-BFGS stalls at the minimum within a fraction of a second (Bratu P = 25: 20 iterations; Burgers P = 36: 47; Buckley-Leverett P = 64: 113 on the CPU, 114 on CUDA), and `trf` and L-BFGS end at the same error (Buckley-Leverett P = 64: 1.510e-2; LiL-Q returns 1.396e-2 by its rule). Whether the 14 L-BFGS runs reach the 600 s budget at the larger sizes decides part of the cost; it is measured before the cost check.
+**First laptop look (untimed, smallest sizes).** LiL-N L-BFGS stalls at the minimum within a fraction of a second (Bratu P = 25: 20 iterations; Burgers P = 36: 47; Buckley-Leverett P = 64: 113 on the CPU, 114 on CUDA), and `trf` and L-BFGS end at the same error (Buckley-Leverett P = 64: 1.510e-2; LiL-Q returns 1.396e-2 by its rule). **At the largest sizes** (laptop, logged passes untimed, L-BFGS to a 120 s budget): LiL-Q 0.18 s (Bratu 225), 2.8 s (Burgers 900), 4.6 s (Buckley-Leverett 1,024); `trf` 0.44 s, 5.0 s, 14.7 s (19 evaluations), at LiL-Q's error to 4 figures; L-BFGS on the CPU stalls at 2.7 s and 52 s on Bratu and Burgers and reaches the budget on Buckley-Leverett (4.85e-5 against `trf`'s 4.844e-5); on the laptop GPU it stalls at 72 s on Bratu (8,361 iterations against the CPU's 1,347: another round-off path) and reaches the budget on Burgers and Buckley-Leverett. So the 14 L-BFGS runs per device are costed at 600 s as an upper bound that the larger sizes reach, and the protocol runs of LiL-Q and `trf` are a few minutes in all.
 
 ## 2026-11-16 -- Package 5, Addendum 2, Sections 2 and 3: the 18 runs and their summary (`experiments/p5_a2_plateau.py run | k1 | summarize`)
 

@@ -387,7 +387,7 @@ def run_square(P, out_root, reference_dir, timing=True):
 
     def stamps_of(history):
         steps = [h for h in history if h.get('t_solve_s') is not None]
-        return [0.0] + list(np.cumsum([h['t_assemble_s'] + h['t_solve_s'] for h in steps]))
+        return [0.0] + [float(t) for t in np.cumsum([h['t_assemble_s'] + h['t_solve_s'] for h in steps])]
 
     record = {'benchmark': 'bratu', 'P': P, 'p': p, 'method': LABELS['square'], 'method_key': 'square',
               'device': 'cpu', 'free_coefficients': d['free_coeff'], 'P_trial': d['P_trial'], 'N': d['N'],

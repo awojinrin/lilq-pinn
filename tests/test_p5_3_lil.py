@@ -160,6 +160,8 @@ def test_the_square_collocation(ref, tmp_path):
     assert rec['p'] == 7 and rec['free_coefficients'] == 25 and rec['stopping_reason'] == 'tolerance'
     assert len(rows) == rec['k_stop'] + 1 and rec['timing_matches']
     assert all(math.isfinite(float(r['error'])) for r in rows)
+    times = [float(r['time_s']) for r in rows]                      # plain floats in the file
+    assert times[0] == 0 and all(b > a for a, b in zip(times, times[1:]))
 
 
 def test_methods_per_device():
