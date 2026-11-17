@@ -312,6 +312,16 @@ def assert_torch_version(required: str = REQUIRED_TORCH_VERSION) -> str:
     return version
 
 
+def job_dir(path) -> Path:
+    """``path``, or ``path`` + ``_job<SLURM_JOB_ID>`` if a job already recorded its
+    provenance there: a resubmitted job keeps the first job's record (the node its
+    finished runs ran on) and writes its own beside it."""
+    path = Path(path)
+    if not (path / "hardware.json").exists():
+        return path
+    return path.with_name(f"{path.name}_job{os.environ.get('SLURM_JOB_ID') or os.getpid()}")
+
+
 def save_provenance(output_dir: Path, repo_root: Optional[Path] = None) -> None:
     """Write ``hardware.json`` and ``environment.txt`` into ``output_dir``.
 

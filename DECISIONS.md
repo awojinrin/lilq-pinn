@@ -102,6 +102,42 @@ size, CPU and CUDA). The error log is off the clock but not off the walltime:
   float64 for the whole process, as P2-8 and the four-method runs do; every run in it wants float64.
 - Checked: the table reads `networks/*_P*/*/run.json`, so the solo runs under `checks/` never enter it.
 
+**The third review: implicit state in everything the CPU set touches** (the user's request, "I don't have
+SUs to waste"). Read: the job scripts, `env.sh`, the resource classes, `lilq/blas_threads.py`, both
+drivers, P2-8's `setup` and `lm`, the four-method runners and the solver path.
+- Fixed, the costliest: **a resubmitted job ran every run again.** Nothing looked at what `$PKG`
+  already held, so a job resubmitted after a node failure 4 h in would have repeated 4 h of runs
+  (about 190 SU on a whole CPU node). Each driver now skips a run whose `run.json` is from this commit
+  with the same settings (`finished()`: the networks' budget; LiL-N L-BFGS's budget; the protocol runs'
+  timed/untimed). It skips the warm-up when nothing is left. A run stopped part way has no `run.json`,
+  because it is written last, so it runs again from the start. C2 and C4 skip a `result.json` of this
+  commit. This is the rule `experiments/component_a.py` already uses.
+- Fixed: a resubmitted job overwrote the first job's `hardware.json`, the record of the node its
+  finished runs ran on. `lilq.provenance.job_dir` now writes a second job's record beside the first
+  (`<name>_job<SLURM_JOB_ID>`), in both drivers and in `p4_checks.py provenance`. Every `run.json` and
+  C2/C4 result records its `slurm_job_id`, so each run points to its node.
+- Fixed, wording: the item 3 jobs' `until_end` comment said a stop keeps every iterate. That is true of
+  items 1 and 2's drivers, but not of these, which write a run's files when it ends. The item 3 jobs now
+  say that a stop keeps only the finished runs. The scripts of items 1, 2 and Addendum 2, which have
+  run, are unchanged.
+- Checked, by design: threads. `env.sh` sets OMP/OPENBLAS/MKL to `SLURM_CPUS_PER_TASK` (48 on a
+  timed-cpu node) before Python starts. `lilq.utils` sets torch's threads to the same count, and every
+  `run.json` records both (`thread_env`, `torch_threads`).
+- Checked, by design: the budget is training time with the error log off the clock, in both L-BFGS
+  (`RunProbe`) and LM (`lm`'s `excluded`). LM checks it after each iteration and inside the rejected
+  steps. One LM iteration at the largest sizes took 0.06 to 0.25 s on the laptop, so a run overshoots
+  600 s by well under the walltime model's 30 s fixed allowance.
+- Checked, by design: no file is written outside `$PKG`. The warm-up's scratch log is under `$PKG`,
+  named per tag, and deleted afterwards. The four-method runners and the solver path write nothing.
+  Matplotlib is not used.
+- Checked, by design: C2 compares bit for bit. Grace has reproduced runs bit for bit across jobs before
+  (entry of 2026-10-05, Package 2 Stage 2, check C8). A failure is reported, never
+  rerun.
+- Checked: the preflight (class `cpu`, 24 cores, 32 GB) ran Package 4's suite in 10 min 33 s. The suite
+  takes 10.5 min on the laptop now, inside the 30 min walltime.
+- To resubmit one job after a failure: `LILQ_WAVE=p5c bash scripts/cluster/sbatch.sh <job>.slurm`, then the
+  report job again. The commit lock refuses a different bundle.
+
 ---
 
 ## 2026-11-16 -- Package 5, Addendum 2: the Grace run, a lost hour, and the assembly (`experiments/p5_assemble.py --a2`)

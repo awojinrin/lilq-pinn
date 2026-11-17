@@ -115,8 +115,8 @@ def main(argv=None):
     if a.stage == 'provenance':
         if not a.name:
             ap.error('--name is required for provenance')
-        from lilq.provenance import save_provenance
-        out = Path(a.out) / 'provenance' / a.name
+        from lilq.provenance import job_dir, save_provenance
+        out = job_dir(Path(a.out) / 'provenance' / a.name)
         out.mkdir(parents=True, exist_ok=True)
         save_provenance(out)
         print(out)

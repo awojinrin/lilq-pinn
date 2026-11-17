@@ -230,3 +230,69 @@ def test_the_solo_run_goes_to_its_own_folder(ref, tmp_path, monkeypatch):
     d = n3.solo_dir_of(tmp_path, 'burgers', 25, 'nil_n', 0, 'cpu')
     assert json.loads((d / 'run.json').read_text())['tag'] == 'solo' and (d / 'history.csv').exists()
     assert not n3.run_dir_of(tmp_path, 'burgers', 25, 'nil_n', 0, 'cpu').exists()
+
+
+def test_a_resubmitted_job_skips_the_runs_it_finished(ref, tmp_path, monkeypatch, capsys):
+    """A run.json of this commit and budget: not rerun, and no warm-up when nothing is left.
+    One of another budget or commit, or a run stopped before its run.json: run again."""
+    monkeypatch.setattr(n3, 'save_provenance', lambda d: (d.mkdir(parents=True, exist_ok=True),
+                                                          (d / 'hardware.json').write_text('{}')))
+    argv = ['run', '--bench', 'burgers', '--out', str(tmp_path), '--reference-dir', str(ref), '--P', '25',
+            '--methods', 'nil_n', '--seeds', '0', '1', '--budget', '0.2', '--tag', 'cpu-burgers-a']
+    monkeypatch.setenv('SLURM_JOB_ID', '1')
+    n3.main(argv)
+    d0, d1 = (n3.run_dir_of(tmp_path, 'burgers', 25, 'nil_n', s, 'cpu') for s in (0, 1))
+    first = (d0 / 'run.json').read_text()
+    (d1 / 'run.json').unlink()                                     # seed 1 stopped part way
+    warmed = []
+    real = n3.warm_up
+    monkeypatch.setattr(n3, 'warm_up', lambda *a, **k: warmed.append(a[3]) or real(*a, **k))
+    capsys.readouterr()
+    monkeypatch.setenv('SLURM_JOB_ID', '2')
+    n3.main(argv)
+    assert '1 of 2 runs already done here' in capsys.readouterr().out
+    assert (d0 / 'run.json').read_text() == first and (d1 / 'run.json').exists() and warmed == [['nil_n']]
+    monkeypatch.setenv('SLURM_JOB_ID', '3')
+    n3.main(argv)                                                  # everything held: no warm-up
+    assert len(warmed) == 1
+    rec = json.loads((d0 / 'run.json').read_text())
+    assert n3.finished(d0, budget_s=0.2) == rec and n3.finished(d0, budget_s=600.0) is None
+    (d0 / 'run.json').write_text(json.dumps(dict(rec, commit='another')))
+    assert n3.finished(d0, budget_s=0.2) is None
+    root = tmp_path / n3.ITEM / 'networks'
+    prov = sorted(p.name for p in (root / 'provenance').iterdir())
+    assert prov == ['burgers_cpu_cpu-burgers-a', 'burgers_cpu_cpu-burgers-a_job2', 'burgers_cpu_cpu-burgers-a_job3']
+    assert json.loads((d1 / 'run.json').read_text())['slurm_job_id'] == '2'
+
+
+def test_c2_and_c4_are_not_repeated_by_a_resubmitted_job(ref, tmp_path, monkeypatch):
+    monkeypatch.setattr(n3, 'save_provenance', lambda d: d.mkdir(parents=True, exist_ok=True))
+    ran = []
+    monkeypatch.setattr(n3, 'warm_up', lambda *a, **k: None)
+    monkeypatch.setattr(n3, 'c2_c4', lambda bench, P, method, *a, **k: ran.append(method) or {})
+    d = n3.c2_c4_dir(tmp_path, 'burgers', 25, 'nil_n', 'cpu')
+    d.mkdir(parents=True)
+    (d / 'result.json').write_text(json.dumps({'commit': n3.current_commit()}))
+    argv = ['checks', '--bench', 'burgers', '--P', '25', '--out', str(tmp_path), '--reference-dir', str(ref)]
+    n3.main(argv)
+    assert ran == ['lm']
+    (d / 'result.json').write_text(json.dumps({'commit': 'another'}))
+    n3.main(argv)
+    assert ran == ['lm', 'nil_n', 'lm']
+
+
+def test_a_c2_c4_result_records_its_commit(ref, tmp_path):
+    res = n3.c2_c4('burgers', 25, 'nil_n', ref, tmp_path, iterations=3)
+    assert res['commit'] == n3.current_commit()
+    assert n3.c2_c4_done(tmp_path, 'burgers', 25, 'nil_n', 'cpu')['commit'] == res['commit']
+
+
+def test_job_dir_keeps_the_first_jobs_record(tmp_path, monkeypatch):
+    from lilq.provenance import job_dir
+    monkeypatch.setenv('SLURM_JOB_ID', '4242')
+    d = tmp_path / 'provenance' / 'cpu-bratu'
+    assert job_dir(d) == d
+    d.mkdir(parents=True)
+    assert job_dir(d) == d                                         # an empty folder: no record yet
+    (d / 'hardware.json').write_text('{}')
+    assert job_dir(d) == d.with_name('cpu-bratu_job4242')

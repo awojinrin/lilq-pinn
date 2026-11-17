@@ -12,7 +12,8 @@ source scripts/cluster/env.sh
 set -euo pipefail
 LILQ_WALL_S=18900   # the walltime, in seconds
 # until_end <command...>: the command, stopped 5 min before the walltime if still running. It
-# keeps every iterate it wrote (the drivers write after each one); the job goes on.
+# keeps the runs that finished: a run writes its records when it ends, so the one in progress is
+# lost (a resubmitted job runs it again and skips the finished ones). The job goes on.
 # With no time left it skips the command and says so (timeout 0 would mean no limit).
 until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))
     (( left > 0 )) || { echo "NOT RUN, NO TIME LEFT: $*"; return 0; }

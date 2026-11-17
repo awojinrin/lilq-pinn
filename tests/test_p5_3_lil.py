@@ -200,13 +200,34 @@ def test_the_warm_up(ref):
 
 def test_a_tag_names_the_process_records_and_is_kept_in_each_run(ref, tmp_path, monkeypatch):
     monkeypatch.setattr(m, 'save_provenance', lambda d: d.mkdir(parents=True, exist_ok=True))
-    for tag in ('cpu-lil', 'cpu-bratu'):
+    for tag, method in (('cpu-lil', 'lilq'), ('cpu-bratu', 'trf')):
         m.main(['run', '--bench', 'bratu', '--out', str(tmp_path), '--reference-dir', str(ref), '--P', '25',
-                '--methods', 'lilq', '--no-timing', '--tag', tag])
+                '--methods', method, '--no-timing', '--tag', tag])
     root = tmp_path / m.ITEM / 'lil'
     assert sorted(p.name for p in (root / 'warmup').iterdir()) == ['bratu_cpu_cpu-bratu.json', 'bratu_cpu_cpu-lil.json']
     assert sorted(p.name for p in (root / 'provenance').iterdir()) == ['bratu_cpu_cpu-bratu', 'bratu_cpu_cpu-lil']
-    assert json.loads((m.run_dir_of(tmp_path, 'bratu', 25, 'lilq') / 'run.json').read_text())['tag'] == 'cpu-bratu'
+    assert json.loads((m.run_dir_of(tmp_path, 'bratu', 25, 'lilq') / 'run.json').read_text())['tag'] == 'cpu-lil'
+    assert json.loads((m.run_dir_of(tmp_path, 'bratu', 25, 'trf') / 'run.json').read_text())['tag'] == 'cpu-bratu'
+
+
+def test_a_resubmitted_job_skips_the_runs_it_finished(ref, tmp_path, monkeypatch, capsys):
+    """Held: a run.json of this commit, timed as asked (L-BFGS: with this budget)."""
+    monkeypatch.setattr(m, 'save_provenance', lambda d: d.mkdir(parents=True, exist_ok=True))
+    argv = ['run', '--bench', 'bratu', '--out', str(tmp_path), '--reference-dir', str(ref), '--P', '25',
+            '--methods', 'lilq', 'lbfgs', '--budget', '0.2', '--no-timing']
+    m.main(argv)
+    lil, lb = m.run_dir_of(tmp_path, 'bratu', 25, 'lilq'), m.run_dir_of(tmp_path, 'bratu', 25, 'lbfgs')
+    first = (lil / 'run.json').read_text()
+    (lb / 'run.json').unlink()
+    warmed = []
+    real = m.warm_up
+    monkeypatch.setattr(m, 'warm_up', lambda *a, **k: warmed.append(a[3]) or real(*a, **k))
+    capsys.readouterr()
+    m.main(argv)
+    assert '1 of 2 runs already done here' in capsys.readouterr().out
+    assert (lil / 'run.json').read_text() == first and (lb / 'run.json').exists() and warmed == [['lbfgs']]
+    m.main(argv[:-1])                                              # timed now: the untimed LiL-Q run is redone
+    assert warmed[-1] == ['lilq'] and json.loads((lil / 'run.json').read_text())['timed'] is True
 
 
 def test_c3(ref, tmp_path):

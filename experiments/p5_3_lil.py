@@ -90,8 +90,8 @@ from experiments import p3_2_bl_certified as p32
 from experiments import p4_1_burgers_gauss as p41
 from experiments import p5_1_weights as p51
 from experiments.p4_common import N_S, REPEATS, SHORT_REPEATS, SHORT_RUN_S, iterate_to_rule, read_csv, write_csv
-from experiments.p5_3_networks import BUDGET_S, HISTORY_COLUMNS, ITEM, NO_CAP, write_history
-from lilq.provenance import capture_blas_thread_env, save_provenance
+from experiments.p5_3_networks import BUDGET_S, HISTORY_COLUMNS, ITEM, NO_CAP, finished, write_history
+from lilq.provenance import capture_blas_thread_env, job_dir, save_provenance
 from lilq.source_lock import current_commit
 
 LAM = 1e4                                          # the advisor's reply of 15 November 2026, answer 1
@@ -286,7 +286,7 @@ def _save(d, record, rows, betas=None, beta=None, tag=''):
     if beta is not None:
         np.save(d / 'beta.npy', np.asarray(beta))
     record.update(commit=current_commit(), thread_env=capture_blas_thread_env(), scipy_version=scipy.__version__,
-                  tag=tag)
+                  tag=tag, slurm_job_id=os.environ.get('SLURM_JOB_ID'))
     (d / 'run.json').write_text(json.dumps(record, indent=2, default=_plain))
     return record
 
@@ -548,18 +548,28 @@ def main(argv=None):
         return
     root = Path(args.out) / ITEM / 'lil'
     name = f'{args.bench}_{args.device}' + (f'_{args.tag}' if args.tag else '')
-    save_provenance(root / 'provenance' / name)
+    prov = job_dir(root / 'provenance' / name)      # a resubmitted job writes beside the first's
+    save_provenance(prov)
+    name = prov.name
     methods = methods_for(args.bench, args.device, args.methods)
-    w = warm_up(args.bench, args.device, args.reference_dir, methods)
+    todo = [(P, m) for P in args.P or SIZES[args.bench] for m in methods]
+    done = [(P, m) for P, m in todo if finished(
+        run_dir_of(args.out, args.bench, P, m, args.device),
+        **({'timed': True, 'budget_s': args.budget} if m == 'lbfgs' else {'timed': not args.no_timing}))]
+    if done:
+        print(f'{len(done)} of {len(todo)} runs already done here (run.json of this commit): not rerun', flush=True)
+        todo = [t for t in todo if t not in done]
+    if not todo:
+        return
+    w = warm_up(args.bench, args.device, args.reference_dir, [m for m in methods if any(m == t[1] for t in todo)])
     (root / 'warmup').mkdir(parents=True, exist_ok=True)
     (root / 'warmup' / f'{name}.json').write_text(json.dumps(
         {'seconds': w, 'P': SIZES[args.bench][0], 'lbfgs_iterations': WARMUP_ITERATIONS}, indent=2))
-    for P in args.P or SIZES[args.bench]:
-        for method in methods:
-            rec = run_one(args.bench, P, method, args.out, args.reference_dir, args.device, args.budget,
-                          not args.no_timing, args.tag)
-            print(f"{args.bench} P={P} {rec['method']} {args.device}: {rec['stopping_reason']}, "
-                  f"{rec['time_s']:.3g} s, error {rec['final_error']:.3e}", flush=True)
+    for P, method in todo:
+        rec = run_one(args.bench, P, method, args.out, args.reference_dir, args.device, args.budget,
+                      not args.no_timing, args.tag)
+        print(f"{args.bench} P={P} {rec['method']} {args.device}: {rec['stopping_reason']}, "
+              f"{rec['time_s']:.3g} s, error {rec['final_error']:.3e}", flush=True)
 
 
 if __name__ == '__main__':

@@ -29,6 +29,12 @@ UNTIL_END = ("# until_end <command...>: the command, stopped 5 min before the wa
              'until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))\n'
              '    (( left > 0 )) || { echo "NOT RUN, NO TIME LEFT: $*"; return 0; }\n'
              '    timeout "${left}s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }\n')
+# Item 3: a run writes its records when it ends, so a stop keeps only the finished runs
+UNTIL_END3 = UNTIL_END.replace(
+    "# keeps every iterate it wrote (the drivers write after each one); the job goes on.\n",
+    "# keeps the runs that finished: a run writes its records when it ends, so the one in progress is\n"
+    "# lost (a resubmitted job runs it again and skips the finished ones). The job goes on.\n")
+assert UNTIL_END3 != UNTIL_END
 WAIT_ALL = '''failed=0
 for pid in "${{pids[@]}}"; do wait "$pid" || failed=1; done
 [[ $failed == 0 ]] || {{ echo "{what}: A PROCESS FAILED (see above)"; exit 1; }}
@@ -343,7 +349,7 @@ echo "PREFLIGHT OK"
 ''')
 
 C_PROTOCOL_BODY = f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
-{UNTIL_END}python experiments/p4_checks.py provenance --out "$PKG" --name protocol
+{UNTIL_END3}python experiments/p4_checks.py provenance --out "$PKG" --name protocol
 # LiL-Q, trf and (Bratu) the square collocation by the usual protocol: one logged pass, then three
 # timed passes (the clock per iterate, the median of the timestamps)
 for bench in {' '.join(BENCHES)}; do
@@ -362,7 +368,7 @@ def cpu_budget_body(job):
     bench, p, lil = CPU_SPLIT[job]
     tag = f'cpu-{job}'
     return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
-{UNTIL_END}python experiments/p4_checks.py provenance --out "$PKG" --name {tag}
+{UNTIL_END3}python experiments/p4_checks.py provenance --out "$PKG" --name {tag}
 # The network runs (part {p} of NiL-N, NiL-Q and LM over the sizes and seeds), each to the 600 s budget,
 # one at a time, then LiL-N L-BFGS at P = {', '.join(map(str, lil))}
 until_end python {N3} run --bench {bench} --part {p} --device cpu --out "$PKG" --reference-dir {REF2} --tag {tag}
@@ -458,7 +464,7 @@ def gpu_pair_body(bench):
                   f'  until_end python {N3} run --bench {bench} --part {i}/2 --tag {tag} "${{NET[@]}}"\n'
                   f'  until_end python {L3} run --bench {bench} --methods lbfgs --P {lil} --tag {tag} "${{NET[@]}}" ) & pids+=($!)\n')
     return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
-{UNTIL_END}gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
+{UNTIL_END3}gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
 [[ "$gpus" == 2 ]] || {{ echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }}
 {THREADS24}   # each process's share of the 48 cores (hardware.json records it)
 python experiments/p4_checks.py provenance --out "$PKG" --name gpu-{bench}

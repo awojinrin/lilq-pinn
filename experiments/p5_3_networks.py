@@ -82,7 +82,7 @@ import torch
 
 from experiments import p2_8_lm_networks as p28
 from lilq.metrics import RunProbe, _synchronize
-from lilq.provenance import capture_blas_thread_env, save_provenance
+from lilq.provenance import capture_blas_thread_env, job_dir, save_provenance
 from lilq.source_lock import current_commit
 
 ITEM = 'P5_3_cost'
@@ -124,6 +124,20 @@ def reference(bench, config, reference_dir):
 
 def run_dir_of(out_root, bench, P, method, seed, device):
     return Path(out_root) / ITEM / 'networks' / f'{bench}_P{P}' / f'{method}_s{seed}_{device}'
+
+
+def finished(run_dir, **expected):
+    """The record of a run this package already holds, or None. Held: its ``run.json``
+    exists, written by this commit, with ``expected``'s values (e.g. ``budget_s=600.0``).
+    A resubmitted job skips the runs it finished; a run stopped part way has no
+    ``run.json`` (it is written last) and is run again from the start."""
+    rj = Path(run_dir) / 'run.json'
+    if not rj.exists():
+        return None
+    rec = json.loads(rj.read_text())
+    if rec.get('commit') != current_commit() or any(rec.get(k) != v for k, v in expected.items()):
+        return None
+    return rec
 
 
 # ---------------------------------------------------------------- one run
@@ -278,7 +292,7 @@ def run(bench, P, method, seed, reference_dir, out_root, device='cpu', budget_s=
     from lilq.saved_models import save_network
     mod, config, opt = p28.setup(bench, P)
     save_network(d, model, dataclasses.replace(config, init_seed=seed), opt)
-    record.update(commit=current_commit(), tag=tag)
+    record.update(commit=current_commit(), tag=tag, slurm_job_id=os.environ.get('SLURM_JOB_ID'))
     (d / 'run.json').write_text(json.dumps(record, indent=2, default=str))
     return record
 
@@ -330,13 +344,27 @@ def c1(run_dir, package1):
             'max_rel_diff': worst, 'rtol': C1_RTOL, 'passed': bool(worst <= C1_RTOL), 'package1_history': str(ref)}
 
 
+def c2_c4_dir(out_root, bench, P, method, device):
+    return Path(out_root) / ITEM / 'networks' / 'checks' / f'c2_c4_{bench}_P{P}_{method}_{device}'
+
+
+def c2_c4_done(out_root, bench, P, method, device):
+    """The result of C2 and C4 this package already holds (written by this commit), or None:
+    a resubmitted job does not repeat them."""
+    f = c2_c4_dir(out_root, bench, P, method, device) / 'result.json'
+    if not f.exists():
+        return None
+    res = json.loads(f.read_text())
+    return res if res.get('commit') == current_commit() else None
+
+
 def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=None, seconds=C2C4_SECONDS):
     """C2 and C4 on one run of a fixed length (no budget), with and without the
     error log: the same iterates (C2, bit for bit) and the same clock (C4,
     within C4_RTOL). The run without the log goes first. The length: ``iterations``,
     or the count that takes about ``seconds`` at the rate of an untimed pilot
     (``C2C4_PILOT`` iterations, no error log) on this node."""
-    d = Path(out_root) / ITEM / 'networks' / 'checks' / f'c2_c4_{bench}_P{P}_{method}_{device}'
+    d = c2_c4_dir(out_root, bench, P, method, device)
     d.mkdir(parents=True, exist_ok=True)
     pilot = None
     if iterations is None:
@@ -360,7 +388,8 @@ def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=No
     result = {'benchmark': bench, 'P': P, 'method': LABELS[method], 'device': device, 'iterations': n, 'pilot': pilot,
               'c2_same_parameters': bool(torch.equal(p0, p1)), 'c2_same_losses': l0 == l1,
               'time_without_s': t0, 'time_with_s': t1, 'error_time_s': r1['error_time_s'],
-              'time_rel_diff': abs(t1 - t0) / t0, 'c4_rtol': C4_RTOL}
+              'time_rel_diff': abs(t1 - t0) / t0, 'c4_rtol': C4_RTOL, 'commit': current_commit(),
+              'slurm_job_id': os.environ.get('SLURM_JOB_ID')}
     result['c2_passed'] = result['c2_same_parameters'] and result['c2_same_losses']
     result['c4_passed'] = result['time_rel_diff'] <= C4_RTOL
     (d / 'result.json').write_text(json.dumps(result, indent=2, default=str))
@@ -474,10 +503,19 @@ def main(argv=None):
         return
     tag = getattr(args, 'tag', '')
     name = f'{args.bench}_{args.device}{_suffix(tag)}'
-    save_provenance(root / 'provenance' / name)
+    prov = job_dir(root / 'provenance' / name)      # a resubmitted job writes beside the first's
+    save_provenance(prov)
+    name = prov.name
     if args.cmd == 'run':
         methods = args.methods
         todo = part_of([(P, m, s) for P in args.P or sizes(args.bench) for m in methods for s in args.seeds], args.part)
+        done = [t for t in todo if finished(run_dir_of(args.out, args.bench, t[0], t[1], t[2], args.device),
+                                            budget_s=args.budget)]
+        if done:
+            print(f'{len(done)} of {len(todo)} runs already done here (run.json of this commit): not rerun', flush=True)
+            todo = [t for t in todo if t not in done]
+        if not todo:
+            return
         w = warm_up(args.bench, args.device, args.reference_dir, sorted({m for _, m, _ in todo}), scratch=root, tag=tag)
         (root / 'warmup').mkdir(parents=True, exist_ok=True)
         (root / 'warmup' / f'{name}.json').write_text(json.dumps(
@@ -494,9 +532,14 @@ def main(argv=None):
         print(f"solo {args.bench} P={args.P} {rec['method']} s{args.seed} {args.device}: {rec['iterations']} it in "
               f"{rec['training_time_s']:.1f} s", flush=True)
     else:
-        warm_up(args.bench, args.device, args.reference_dir, ('nil_n', 'lm'), scratch=root, tag=tag)
         P = args.P or sizes(args.bench)[-1]
-        for method in ('nil_n', 'lm'):
+        todo = [m for m in ('nil_n', 'lm') if c2_c4_done(args.out, args.bench, P, m, args.device) is None]
+        if len(todo) < 2:
+            print(f'C2 and C4 already done here for {sorted({"nil_n", "lm"} - set(todo))}: not repeated', flush=True)
+        if not todo:
+            return
+        warm_up(args.bench, args.device, args.reference_dir, todo, scratch=root, tag=tag)
+        for method in todo:
             res = c2_c4(args.bench, P, method, args.reference_dir, args.out, args.device)
             print(json.dumps(res, indent=2), flush=True)
 
