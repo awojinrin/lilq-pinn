@@ -137,6 +137,43 @@ drivers, P2-8's `setup` and `lm`, the four-method runners and the solver path.
   takes 10.5 min on the laptop now, inside the 30 min walltime.
 - To resubmit one job after a failure: `LILQ_WAVE=p5c bash scripts/cluster/sbatch.sh <job>.slurm`, then the
   report job again. The commit lock refuses a different bundle.
+- The CPU set was submitted on 17 November 2026 from bundle 0f74bdf (jobs 20564295-20564302).
+
+**The pairing gate (the user's decision, 16 November 2026).** Before, the paired-against-solo check
+ran only in the report, after all three A100 jobs. A failure would have been found after about
+2,220 SU, with every A100 time in the table biased. Now each pair job checks first:
+- **How.** After the solo check, the same run (NiL-N, seed 0, largest size, 60 s) runs on both GPUs at
+  once (`solo --gate 0` and `--gate 1`). `p5_3_networks.py gate` compares the run on the solo's GPU with
+  the solo by `compare_clocks`, which the report's `pairing` now shares: the clock at the last
+  iteration both logged, within 5% either way. The cutoff is the plan's (`PAIR_RTOL`), not a new one.
+- **The job goes on only if `passed` is True.** It stops before any budget run (exit 1) if the clock
+  is off by more than 5%, or if there is no verdict: a gate run that did not finish (the run on the
+  other GPU is the load, so it must finish too), or a record from an earlier job (each record's
+  `slurm_job_id` must be this job's). The report still runs (afterany) and packs what there is.
+- **Recorded:** `checks/gate_<bench>.json` with both clocks, the evaluation counts and
+  `overlap_fraction`. That is the share of the judged run's solve during which the other GPU was
+  solving too, from the solve windows (`solver_window_epoch_s`, now in every network `run.json`). It
+  is recorded, not judged.
+- **Cost:** `GATE_EXTRA_S` = 300 s per job in the walltime model. Bratu's walltime goes from 3:15 to
+  3:30; the other two are unchanged after rounding. The A100 set is now 2,583 SU requested and about
+  2,270 expected, up from 2,535 and 2,220. The model counts 5 min per job; the gate itself should take
+  about 2 (warm-up, pretraining, 60 s). If the gate fails, a job costs about 5 min (about 16 SU)
+  instead of 3 to 5 h.
+- **Rehearsal** (laptop, `rehearse_item3_v2.sh`; solo and gate at their 60 s, budget runs at 5 s):
+  - With the gate as written, `p5g_bl` stopped before its budget runs, rc 1. On one GPU the two gate
+    runs share it, so the clock was +107%, with an overlap of 0.999: the stop works.
+  - With the stop made non-fatal, all three pair jobs and the report ended with rc 0.
+  - The CPU stage, rehearsed on bundle 0f74bdf itself, ended with rc 0 in every job. A resubmitted
+    `p5c_bl_a` took 9 s and `p5c_protocol` 22 s, every run and C2/C4 result skipped as held.
+- **Scan after the rehearsal:**
+  - The gate and solo folders are under `networks/checks/`, which the table's glob
+    (`networks/*_P*/*/run.json`) and `pairing`'s (`checks/solo_*`) do not reach.
+  - Both gate processes exit before the pair starts, so their GPU memory is free.
+  - `until_end` hides a gate run's failure, but the missing record then gives no verdict, and the job
+    stops.
+  - The gate command has its own 5 min `timeout`.
+  - On a resubmission the solo and gate runs are redone on the new node; the job-id check refuses
+    the old records.
 
 ---
 
