@@ -23,7 +23,7 @@ for bench in bratu burgers bl; do
     until_end python experiments/p5_3_lil.py run --bench "$bench" --methods lilq trf square --device cpu --out "$PKG" \
         --reference-dir "$RESULTS/package2_stage2/reference" --tag cpu-protocol
 done
-# Checks C2 and C4: NiL-N and LM at the largest size, about 30 s each (C2C4_ITERATIONS), without and
+# Checks C2 and C4: NiL-N and LM at the largest size, about 30 s each (sized by a pilot), without and
 # with the error log
 for bench in bratu burgers bl; do
     until_end python experiments/p5_3_networks.py checks --bench "$bench" --device cpu --out "$PKG" --reference-dir "$RESULTS/package2_stage2/reference" --tag cpu-checks

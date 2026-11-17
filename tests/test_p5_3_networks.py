@@ -97,8 +97,18 @@ def test_lm_logs_the_error_every_iteration_and_stops_at_the_budget(ref, tmp_path
 
 def test_c2_and_c4_runs(ref, tmp_path):
     res = n3.c2_c4('burgers', 25, 'nil_n', ref, tmp_path, iterations=20)
-    assert res['c2_passed'] and res['iterations'] == 20 and res['error_time_s'] > 0
+    assert res['c2_passed'] and res['iterations'] == 20 and res['error_time_s'] > 0 and res['pilot'] is None
     assert set(res) >= {'time_with_s', 'time_without_s', 'time_rel_diff', 'c4_passed'}
+
+
+@pytest.mark.parametrize('method', ['nil_n', 'lm'])
+def test_c2_and_c4_size_their_runs_from_a_pilot(ref, tmp_path, method):
+    res = n3.c2_c4('bratu', 25, method, ref, tmp_path, seconds=0.5)
+    pilot = res['pilot']
+    assert pilot['iterations'] == n3.C2C4_PILOT[method] and pilot['target_s'] == 0.5
+    rate = pilot['training_time_s'] / pilot['iterations']
+    assert res['iterations'] == max(n3.C2C4_PILOT[method], math.ceil(0.5 / rate))
+    assert res['c2_passed']
 
 
 def test_c1_against_a_package1_history(ref, tmp_path):
@@ -211,9 +221,6 @@ def test_pairing_survives_a_solo_run_cut_before_its_records(tmp_path):
     assert res['passed'] is False
 
 
-def test_c2_c4_lengths_cover_every_problem():
-    for method in ('nil_n', 'lm'):
-        assert set(n3.C2C4_ITERATIONS[method]) == set(n3.p28.BENCHMARKS)
 
 
 def test_the_solo_run_goes_to_its_own_folder(ref, tmp_path, monkeypatch):

@@ -350,7 +350,7 @@ for bench in {' '.join(BENCHES)}; do
     until_end python {L3} run --bench "$bench" --methods lilq trf square --device cpu --out "$PKG" \\
         --reference-dir {REF2} --tag cpu-protocol
 done
-# Checks C2 and C4: NiL-N and LM at the largest size, about 30 s each (C2C4_ITERATIONS), without and
+# Checks C2 and C4: NiL-N and LM at the largest size, about 30 s each (sized by a pilot), without and
 # with the error log
 for bench in {' '.join(BENCHES)}; do
     until_end python {N3} checks --bench "$bench" --device cpu --out "$PKG" --reference-dir {REF2} --tag cpu-checks

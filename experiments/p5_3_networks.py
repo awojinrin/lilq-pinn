@@ -97,11 +97,11 @@ WARMUP_ITERATIONS = 5                  # per method, smallest size, untimed, bef
 C1_ITERATIONS = 100                    # the instructions: "over the first 100 iterations"
 C1_RTOL = 1e-6                         # set before any comparison (DECISIONS.md, 2026-11-15)
 C4_RTOL = 0.05                         # the instructions: "within 5%"
-# C2 and C4: long enough for a clock that can be judged to 5% -- about 30 s each at the laptop's rates
-# at the largest size (16 November 2026: NiL-N 1,710 / 900 / 960 and LM 550 / 280 / 120 iterations
-# in 30 s on Bratu / Burgers / BL), set before any C4 comparison
-C2C4_ITERATIONS = {'nil_n': {'bratu': 1000, 'burgers': 1000, 'bl': 1000},
-                   'lm': {'bratu': 500, 'burgers': 250, 'bl': 100}}
+# C2 and C4: both runs have the same number of iterations, sized on the node to about C2C4_SECONDS
+# (long enough to judge 5%) from an untimed pilot of C2C4_PILOT iterations. Set before any C4
+# comparison; fixed counts gave 5 to 30 s depending on the machine (laptop rehearsal, 16 November).
+C2C4_SECONDS = 30.0
+C2C4_PILOT = {'nil_n': 100, 'lm': 10}
 SOLO_BUDGET_S = 60.0                   # the solo check's run: long enough for a stable clock, cheap
 PAIR_RTOL = 0.05                       # the plan (16 November 2026): a paired run within 5% of the same run alone
 
@@ -330,13 +330,23 @@ def c1(run_dir, package1):
             'max_rel_diff': worst, 'rtol': C1_RTOL, 'passed': bool(worst <= C1_RTOL), 'package1_history': str(ref)}
 
 
-def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=None):
+def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=None, seconds=C2C4_SECONDS):
     """C2 and C4 on one run of a fixed length (no budget), with and without the
     error log: the same iterates (C2, bit for bit) and the same clock (C4,
-    within C4_RTOL). The run without the log goes first."""
-    n = iterations or C2C4_ITERATIONS[method][bench]
+    within C4_RTOL). The run without the log goes first. The length: ``iterations``,
+    or the count that takes about ``seconds`` at the rate of an untimed pilot
+    (``C2C4_PILOT`` iterations, no error log) on this node."""
     d = Path(out_root) / ITEM / 'networks' / 'checks' / f'c2_c4_{bench}_P{P}_{method}_{device}'
     d.mkdir(parents=True, exist_ok=True)
+    pilot = None
+    if iterations is None:
+        _, prec, _, _ = solve(bench, P, method, 0, reference_dir, device, budget_s=None,
+                              max_iterations=C2C4_PILOT[method], log_error=False, log_path=d / 'log_pilot.csv')
+        per_iteration = prec['training_time_s'] / max(prec['iterations'], 1)
+        n = max(C2C4_PILOT[method], math.ceil(seconds / per_iteration))
+        pilot = {'iterations': prec['iterations'], 'training_time_s': prec['training_time_s'], 'target_s': seconds}
+    else:
+        n = iterations
     out = {}
     for logged in (False, True):
         model, rec, rows, metrics = solve(bench, P, method, 0, reference_dir, device, budget_s=None,
@@ -347,7 +357,7 @@ def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=No
         out[logged] = (_flat(model).cpu(), loss, rec)
     (p0, l0, r0), (p1, l1, r1) = out[False], out[True]
     t0, t1 = r0['training_time_s'], r1['training_time_s']
-    result = {'benchmark': bench, 'P': P, 'method': LABELS[method], 'device': device, 'iterations': n,
+    result = {'benchmark': bench, 'P': P, 'method': LABELS[method], 'device': device, 'iterations': n, 'pilot': pilot,
               'c2_same_parameters': bool(torch.equal(p0, p1)), 'c2_same_losses': l0 == l1,
               'time_without_s': t0, 'time_with_s': t1, 'error_time_s': r1['error_time_s'],
               'time_rel_diff': abs(t1 - t0) / t0, 'c4_rtol': C4_RTOL}
