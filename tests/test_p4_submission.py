@@ -91,7 +91,7 @@ def test_item2f_runs_the_seeds_side_by_side_with_p30_last():
 def test_p4_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p4)   export PKG="$RESULTS/package4"' in (cluster / 'env.sh').read_text()
-    assert '|p3|p4|p5|p5t|p5a|p5c|p5g)$' in (cluster / 'sbatch.sh').read_text()
+    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o)$' in (cluster / 'sbatch.sh').read_text()
     assert 'LILQ_WAVE" == p4' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p4'] == 'package4'
 

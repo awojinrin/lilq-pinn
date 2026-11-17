@@ -48,7 +48,7 @@ Each job first warms up every method on its device, untimed (``warm_up``).
 - ``checks/solo_<bench>_P<P>_<method>_s<seed>_<device>/`` and ``checks/pairing.json``: the
   A100 set's paired-against-solo check (``solo``, ``pairing``).
 
-Checks: C1 (``c1``) against the Package 1 (v2.0.0) histories; C2 and C4
+Checks: C1 (``c1``; every run: ``c1_all``, the ``c1`` command at the assembly) against the Package 1 (v2.0.0) histories; C2 and C4
 (``c2_c4``): one run of a fixed length with and without the error log.
 
 Usage::
@@ -345,6 +345,23 @@ def c1(run_dir, package1):
             'max_rel_diff': worst, 'rtol': C1_RTOL, 'passed': bool(worst <= C1_RTOL), 'package1_history': str(ref)}
 
 
+def c1_all(out_root, package1):
+    """C1 on every L-BFGS network run that has a Package 1 run of the same benchmark, size,
+    method, seed and device (Package 1 kept the largest size): at the assembly, since
+    Package 1 is not on Grace. Writes ``checks/c1.json``; returns its record."""
+    rows = []
+    for rj in sorted((Path(out_root) / ITEM / 'networks').glob('*_P*/*/run.json')):
+        row = c1(rj.parent, package1)
+        if row is not None:
+            rows.append(row | {'run': f'{rj.parent.parent.name}/{rj.parent.name}'})
+    out = Path(out_root) / ITEM / 'networks' / 'checks'
+    out.mkdir(parents=True, exist_ok=True)
+    result = {'check': f'C1: the loss over iterations 0..{C1_ITERATIONS} equals Package 1 (v2.0.0)', 'rows': rows,
+              'passed': bool(rows) and all(r['passed'] for r in rows)}
+    (out / 'c1.json').write_text(json.dumps(result, indent=2))
+    return result
+
+
 def c2_c4_dir(out_root, bench, P, method, device):
     return Path(out_root) / ITEM / 'networks' / 'checks' / f'c2_c4_{bench}_P{P}_{method}_{device}'
 
@@ -545,6 +562,9 @@ def main(argv=None):
     ga.add_argument('--seed', type=int, default=0)
     ga.add_argument('--device', default='cuda')
     ga.add_argument('--gpu', type=int, required=True, choices=(0, 1))
+    c1p = sub.add_parser('c1', help='C1 against Package 1, at the assembly')
+    c1p.add_argument('--out', required=True)
+    c1p.add_argument('--package1', required=True)
     pa = sub.add_parser('pairing', help='compare the solo checks with their paired runs')
     pa.add_argument('--out', required=True)
     c = sub.add_parser('checks')
@@ -557,6 +577,10 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = Path(args.out) / ITEM / 'networks'
+    if args.cmd == 'c1':
+        res = c1_all(args.out, args.package1)
+        print(json.dumps({k: res[k] for k in ('check', 'passed')} | {'runs': len(res['rows'])}, indent=2), flush=True)
+        return
     if args.cmd == 'pairing':
         print(json.dumps(pairing(args.out), indent=2), flush=True)
         return

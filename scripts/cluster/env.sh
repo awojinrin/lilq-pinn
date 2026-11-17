@@ -58,6 +58,7 @@ case "$LILQ_WAVE" in
     p5a)  export PKG="$RESULTS/package5_a2" ;;            # Package 5, Addendum 2: the plateau runs (16 November 2026)
     p5c)  export PKG="$RESULTS/package5_item3_cpu" ;;     # Package 5, item 3: the CPU set (16 November 2026)
     p5g)  export PKG="$RESULTS/package5_item3_gpu" ;;     # Package 5, item 3: the A100 set, two runs per two-A100 node
+    p5o)  export PKG="$RESULTS/package5_item3_openmp" ;;  # Package 5, item 3: the OpenMP library diagnostic (17 November 2026)
     *)    export PKG="$RESULTS/wave$LILQ_WAVE" ;;
 esac
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"

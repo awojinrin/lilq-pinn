@@ -520,6 +520,41 @@ def render(name, jobs=JOBS, stage='p5'):
             f'#SBATCH --job-name=lilq-{stage}-{short}\n#SBATCH --time={wall}\n' + TAIL + body)
 
 
+# The OpenMP library diagnostic (the user's decision, 17 November 2026): stage p5o, its own results folder
+# (results/package5_item3_openmp) under its own commit lock. The CPU set's network processes loaded the
+# PyTorch wheel's OpenMP library (torch imported first), Package 1's the GCC module's (numpy first), and
+# C1 failed on 15 of 18 runs. Three rounds on one whole node, the order of the two libraries
+# alternating; each process imports one package first (experiments/p5_3_openmp.py).
+OMP = 'experiments/p5_3_openmp.py'
+OPENMP_ROUNDS = (('numpy', 'torch'), ('torch', 'numpy'), ('numpy', 'torch'))
+UNTIL_END_OMP = UNTIL_END.replace(
+    "# keeps every iterate it wrote (the drivers write after each one); the job goes on.\n",
+    "# keeps what the processes before it wrote; the job goes on.\n")
+assert UNTIL_END_OMP != UNTIL_END
+
+
+def openmp_body():
+    runs = ''.join(f'until_end python {OMP} --first {first} --round {r} --require-library --out "$PKG" '
+                   f'--reference-dir {REF2}\n' for r, pair in enumerate(OPENMP_ROUNDS) for first in pair)
+    return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END_OMP}python experiments/p4_checks.py provenance --out "$PKG" --name openmp
+# Three rounds, the two orders alternating. Each process: its OpenMP library (it stops if that is not the
+# one its first import should give), the warm-up, in round 0 the C1 runs (NiL-N seed 0 at each problem's
+# largest size, 110 iterations), then NiL-N and LM at Bratu P = 225 and BL P = 1,024, 30 s each
+{runs}timeout 15m python scripts/cluster/package2/stage_report.py --stage p5o --results "$RESULTS" \\
+    || echo "REPORT FAILED OR STOPPED (exit $?)"
+'''
+
+
+OPENMP_JOBS = {
+    'p5o_openmp.slurm': ('openmp', 'timed-cpu', '00:30:00', '''# Package 5, item 3: the OpenMP library diagnostic, on one whole CPU node (48 threads), as the CPU set
+# ran. Six processes of about 3 min (three rounds, numpy first and torch first alternating), then
+# results/package5_item3_openmp.tar.gz (the job's own sacct row is added at the assembly).
+# Submit: through scripts/cluster/package5/submit_p5_item3_openmp.sh
+''', openmp_body()),
+}
+
+
 def main():
     for name in JOBS:
         (HERE / name).write_bytes(render(name).encode())
@@ -531,7 +566,10 @@ def main():
     for jobs, stage in item3:
         for name in jobs:
             (HERE / name).write_bytes(render(name, jobs, stage).encode())
-    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS) + sum(len(j) for j, _ in item3)} job scripts written in {HERE}')
+    for name in OPENMP_JOBS:
+        (HERE / name).write_bytes(render(name, OPENMP_JOBS, 'p5o').encode())
+    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS) + sum(len(j) for j, _ in item3) + len(OPENMP_JOBS)} '
+          f'job scripts written in {HERE}')
 
 
 if __name__ == '__main__':

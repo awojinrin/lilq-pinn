@@ -17,6 +17,56 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-17 -- Package 5, item 3: the CPU set's checks, C1's failure, and the OpenMP library diagnostic (stage p5o)
+
+**The CPU set** (bundle 0f74bdf, jobs 20564295-20564302). All seven compute jobs completed, about
+938 SU used against about 1,110 expected. There are 108 network runs, 14 LiL-N L-BFGS budget runs
+and 31 protocol runs, all with `timing_matches`. No job was stopped early.
+- C2: 6 of 6 pass.
+- C3 (LiL-Q on Burgers against Package 4): 7 of 7 pass, to 1e-11 or better, with every rule step equal.
+- C4: 5 of 6 pass. BL NiL-N failed at 5.9%: the run *with* the error log was the faster one, which the
+  log cannot cause. It is reported and not rerun.
+- **C1 failed on 15 of the 18 runs it compares** (cutoff 1e-6, fixed on 15 November and not moved).
+  - The losses agree to round-off at first (about 1e-16 at iterations 0 to 10). The gap then grows
+    about tenfold every few iterations: about 1e-12 by iteration 20, 1e-8 by 50, and 1e-4 to 0.66 by
+    100.
+  - BL differs by 2e-9 already at iteration 0, through its pretraining.
+  - This is the same algorithm from the same start, with arithmetic that differs in the last digit
+    from the first step.
+- `p5_3_networks.py c1` (`c1_all`) now runs C1 on every run that has a Package 1 counterpart; it was
+  added at this assembly.
+
+**The likely cause, missed by the three implicit-state reviews: which OpenMP library a process loads.**
+- `p5_3_networks.py` imports torch before numpy, so its processes loaded the PyTorch wheel's own
+  OpenMP library (`torch/lib/libgomp.so.1`).
+- Package 1's four-method runs (`four_method_tables.py`, numpy first) loaded the GCC module's
+  (`GCCcore/13.3.0/lib64/libgomp.so.1.0.0`). So did every Grace job recorded since, including the LiL
+  driver of this item, which imports numpy first.
+- The thread counts were the same (48, one pool). The reviews checked counts, not libraries.
+- If the two libraries also differ in speed, the network times are not on Package 1's footing, nor
+  on the LiL runs'.
+
+**The diagnostic** (the user's decision, 17 November 2026): stage p5o, `results/package5_item3_openmp`
+under its own commit lock. It is one timed-cpu job, 30 min, 24 SU requested and about 16 expected.
+- Six processes of `experiments/p5_3_openmp.py`, three rounds, alternating which package is imported
+  first.
+- Each process checks which library it loaded and stops if it is not the expected one
+  (`--require-library`).
+- In round 0, the C1 runs: NiL-N, seed 0, at each problem's largest size, 110 iterations.
+- In every round, NiL-N and LM at Bratu P = 225 and BL P = 1,024, 30 s each, without the error log.
+
+**Decided before the job:**
+- The library is the cause if the numpy-first C1 runs pass C1 against Package 1 and the torch-first
+  ones reproduce the CPU set's own runs (C1's comparison, against those runs).
+- The library changes a method's timing on a problem if the medians over the rounds of the time per
+  iteration differ by more than 5% (C4's and the pairing cutoff) and the two orders' rounds do not
+  overlap.
+- What follows from each outcome (keep the CPU set or rerun its network jobs; the import order of the
+  A100 set) is the user's decision, with these numbers. The A100 set and the cost-check memo wait
+  for it.
+
+---
+
 ## 2026-11-16 -- Package 5, item 3: the job layout (batch 5; stages p5c and p5g)
 
 **Two stages**, each with its own results folder under its own commit lock: `p5c`, the CPU set

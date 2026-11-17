@@ -133,6 +133,10 @@ def test_c1_against_a_package1_history(ref, tmp_path):
     write(1.0 + 1e-5)
     assert not n3.c1(d, tmp_path / 'p1')['passed']
     assert n3.c1(d, tmp_path / 'nowhere') is None
+    res = n3.c1_all(tmp_path / 'out', tmp_path / 'p1')                 # every run with a Package 1 run
+    assert [r['run'] for r in res['rows']] == ['burgers_P25/nil_n_s0_cpu'] and res['passed'] is False
+    assert (tmp_path / 'out' / n3.ITEM / 'networks' / 'checks' / 'c1.json').exists()
+    assert n3.c1_all(tmp_path / 'out', tmp_path / 'nowhere')['passed'] is False   # nothing compared
 
 
 def test_bl_uses_the_stored_reference_of_the_lil_runs(tmp_path):
