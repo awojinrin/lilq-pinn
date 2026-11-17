@@ -350,8 +350,8 @@ for bench in {' '.join(BENCHES)}; do
     until_end python {L3} run --bench "$bench" --methods lilq trf square --device cpu --out "$PKG" \\
         --reference-dir {REF2} --tag cpu-protocol
 done
-# Checks C2 and C4: NiL-N (300 iterations) and LM (30) at the largest size, without and with the
-# error log
+# Checks C2 and C4: NiL-N and LM at the largest size, about 30 s each (C2C4_ITERATIONS), without and
+# with the error log
 for bench in {' '.join(BENCHES)}; do
     until_end python {N3} checks --bench "$bench" --device cpu --out "$PKG" --reference-dir {REF2} --tag cpu-checks
 done
@@ -460,8 +460,8 @@ def gpu_pair_body(bench):
     return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
 {UNTIL_END}gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
 [[ "$gpus" == 2 ]] || {{ echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }}
+{THREADS24}   # each process's share of the 48 cores (hardware.json records it)
 python experiments/p4_checks.py provenance --out "$PKG" --name gpu-{bench}
-{THREADS24}
 NET=(--device cuda --out "$PKG" --reference-dir {REF2})
 # The solo check: NiL-N, P = {P}, seed {seed}, alone on GPU {g} (the one its paired run uses) for 60 s
 ( export CUDA_VISIBLE_DEVICES={g}

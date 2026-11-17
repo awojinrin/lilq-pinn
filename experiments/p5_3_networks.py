@@ -97,7 +97,11 @@ WARMUP_ITERATIONS = 5                  # per method, smallest size, untimed, bef
 C1_ITERATIONS = 100                    # the instructions: "over the first 100 iterations"
 C1_RTOL = 1e-6                         # set before any comparison (DECISIONS.md, 2026-11-15)
 C4_RTOL = 0.05                         # the instructions: "within 5%"
-C2C4_ITERATIONS = {'nil_n': 300, 'lm': 30}
+# C2 and C4: long enough for a clock that can be judged to 5% -- about 30 s each at the laptop's rates
+# at the largest size (16 November 2026: NiL-N 1,710 / 900 / 960 and LM 550 / 280 / 120 iterations
+# in 30 s on Bratu / Burgers / BL), set before any C4 comparison
+C2C4_ITERATIONS = {'nil_n': {'bratu': 1000, 'burgers': 1000, 'bl': 1000},
+                   'lm': {'bratu': 500, 'burgers': 250, 'bl': 100}}
 SOLO_BUDGET_S = 60.0                   # the solo check's run: long enough for a stable clock, cheap
 PAIR_RTOL = 0.05                       # the plan (16 November 2026): a paired run within 5% of the same run alone
 
@@ -330,7 +334,7 @@ def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=No
     """C2 and C4 on one run of a fixed length (no budget), with and without the
     error log: the same iterates (C2, bit for bit) and the same clock (C4,
     within C4_RTOL). The run without the log goes first."""
-    n = iterations or C2C4_ITERATIONS[method]
+    n = iterations or C2C4_ITERATIONS[method][bench]
     d = Path(out_root) / ITEM / 'networks' / 'checks' / f'c2_c4_{bench}_P{P}_{method}_{device}'
     d.mkdir(parents=True, exist_ok=True)
     out = {}
@@ -370,12 +374,15 @@ def pairing(out_root):
     PAIR_RTOL. Writes ``checks/pairing.json``; returns its record."""
     rows = []
     for d in sorted((Path(out_root) / ITEM / 'networks' / 'checks').glob('solo_*')):
+        if not all((d / f).exists() for f in ('run.json', 'history.csv')):
+            rows.append({'solo': d.name, 'passed': None, 'reason': 'the solo run did not finish (no run.json or history.csv)'})
+            continue
         solo = json.loads((d / 'run.json').read_text())
         paired = run_dir_of(out_root, solo['benchmark'], solo['P'], solo['method_key'], solo['seed'], solo['device'])
-        row = {'benchmark': solo['benchmark'], 'P': solo['P'], 'method': solo['method'], 'seed': solo['seed'],
-               'device': solo['device'], 'solo_tag': solo.get('tag')}
-        if not (paired / 'history.csv').exists():
-            rows.append(row | {'passed': None, 'reason': f'no paired run at {paired.name}'})
+        row = {'solo': d.name, 'benchmark': solo['benchmark'], 'P': solo['P'], 'method': solo['method'],
+               'seed': solo['seed'], 'device': solo['device'], 'solo_tag': solo.get('tag')}
+        if not all((paired / f).exists() for f in ('run.json', 'history.csv')):
+            rows.append(row | {'passed': None, 'reason': f'no finished paired run at {paired.name}'})
             continue
         a, b = (_times(x / 'history.csv') for x in (d, paired))
         common = sorted(set(a) & set(b) - {0})
@@ -383,9 +390,11 @@ def pairing(out_root):
             rows.append(row | {'passed': None, 'reason': 'no logged iteration in common'})
             continue
         k = common[-1]
-        ratio = b[k] / a[k] - 1.0
-        rows.append(row | {'iteration': k, 'time_solo_s': a[k], 'time_paired_s': b[k], 'paired_over_solo_minus_1': ratio,
-                           'rtol': PAIR_RTOL, 'paired_tag': json.loads((paired / 'run.json').read_text()).get('tag'),
+        ratio = b[k][0] / a[k][0] - 1.0
+        rows.append(row | {'iteration': k, 'time_solo_s': a[k][0], 'time_paired_s': b[k][0],
+                           'evaluations_solo': a[k][1], 'evaluations_paired': b[k][1],   # a different path shows here
+                           'paired_over_solo_minus_1': ratio, 'rtol': PAIR_RTOL,
+                           'paired_tag': json.loads((paired / 'run.json').read_text()).get('tag'),
                            'passed': bool(abs(ratio) <= PAIR_RTOL)})
     out = Path(out_root) / ITEM / 'networks' / 'checks'
     out.mkdir(parents=True, exist_ok=True)
@@ -397,8 +406,9 @@ def pairing(out_root):
 
 
 def _times(path):
+    """``{iteration: (time_s, evaluations)}`` of a history file."""
     with open(path) as fh:
-        return {int(r['iteration']): float(r['time_s']) for r in csv.DictReader(fh)}
+        return {int(r['iteration']): (float(r['time_s']), int(r['evaluations'])) for r in csv.DictReader(fh)}
 
 
 def part_of(runs, part):

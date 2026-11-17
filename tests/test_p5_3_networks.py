@@ -187,6 +187,7 @@ def test_pairing_compares_the_clock_at_the_last_common_iteration(tmp_path):
     (row,) = res['rows']
     assert row['iteration'] == 30 and row['paired_over_solo_minus_1'] == pytest.approx(1 / 30)
     assert row['passed'] and res['passed'] and (tmp_path / n3.ITEM / 'networks' / 'checks' / 'pairing.json').exists()
+    assert row['evaluations_solo'] == row['evaluations_paired'] == 3                  # the same path
     _history(n3.run_dir_of(tmp_path, 'burgers', 625, 'nil_n', 0, 'cuda'), [0.0, 11.0, 22.0, 33.0], 'pair')
     assert n3.pairing(tmp_path)['passed'] is False                                     # 10% slower when paired
 
@@ -195,6 +196,24 @@ def test_pairing_without_its_paired_run_has_no_verdict(tmp_path):
     _history(n3.solo_dir_of(tmp_path, 'bratu', 225, 'nil_n', 0, 'cuda'), [0.0, 1.0], 'solo')
     res = n3.pairing(tmp_path)
     assert res['rows'][0]['passed'] is None and res['passed'] is False
+    (n3.run_dir_of(tmp_path, 'burgers', 625, 'nil_n', 0, 'cuda')).mkdir(parents=True)
+    n3.write_history(n3.run_dir_of(tmp_path, 'burgers', 625, 'nil_n', 0, 'cuda') / 'history.csv', [])
+    assert n3.pairing(tmp_path)['rows'][0]['passed'] is None                           # cut before its run.json
+
+
+def test_pairing_survives_a_solo_run_cut_before_its_records(tmp_path):
+    d = n3.solo_dir_of(tmp_path, 'bl', 1024, 'nil_n', 0, 'cuda')
+    d.mkdir(parents=True)
+    (d / 'log.csv').write_text('iteration\n')                                          # until_end stopped it
+    res = n3.pairing(tmp_path)
+    assert res['rows'] == [{'solo': d.name, 'passed': None,
+                            'reason': 'the solo run did not finish (no run.json or history.csv)'}]
+    assert res['passed'] is False
+
+
+def test_c2_c4_lengths_cover_every_problem():
+    for method in ('nil_n', 'lm'):
+        assert set(n3.C2C4_ITERATIONS[method]) == set(n3.p28.BENCHMARKS)
 
 
 def test_the_solo_run_goes_to_its_own_folder(ref, tmp_path, monkeypatch):

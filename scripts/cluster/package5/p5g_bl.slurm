@@ -19,8 +19,8 @@ until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))
     timeout "${left}s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
 gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
 [[ "$gpus" == 2 ]] || { echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }
+export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24   # each process's share of the 48 cores (hardware.json records it)
 python experiments/p4_checks.py provenance --out "$PKG" --name gpu-bl
-export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24
 NET=(--device cuda --out "$PKG" --reference-dir "$RESULTS/package2_stage2/reference")
 # The solo check: NiL-N, P = 1024, seed 0, alone on GPU 1 (the one its paired run uses) for 60 s
 ( export CUDA_VISIBLE_DEVICES=1
