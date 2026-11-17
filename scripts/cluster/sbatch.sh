@@ -17,7 +17,9 @@
 #               p = 88 reference, about 38 GB; Beltrami B2, about 18 GB). 96 GB is under 24
 #               cores' share of a node (360 GB / 48 x 24 = 180 GB), so it is billed as 24 cores:
 #               Package 5's preflight checks the billing before the other jobs run.
-# LILQ_WAVE (1, 2, 3 or 4, Package 2's stages p2s1 and p2s2, or p3, p4, p5, p5t, p5a) must be set: it picks the results folder,
+#   gpu-pair    both A100s of a node and all of its cores and memory (192 SU/h, as `timed`): two
+#               runs side by side, one per GPU (Package 5, item 3; the user's decision, 16 November 2026)
+# LILQ_WAVE (1, 2, 3 or 4, Package 2's stages p2s1 and p2s2, or p3, p4, p5, p5t, p5a, p5c, p5g) must be set: it picks the results folder,
 # results/wave<N>, each locked to one commit (env.sh). Use this for
 # resubmissions too (e.g. LILQ_WAVE=1 bash scripts/cluster/sbatch.sh job.slurm --array=2).
 set -euo pipefail
@@ -25,8 +27,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER="${CLUSTER:-grace}"
 source "$here/profiles/$CLUSTER.sh"
 [[ -n "$ACCOUNT" ]] || { echo "set LILQ_ACCOUNT to your HPRC allocation account (myproject -l)" >&2; exit 1; }
-: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t or p5a (the wave or stage this job belongs to)}"
-[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3|p4|p5|p5t|p5a)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t or p5a, not '$LILQ_WAVE'" >&2; exit 1; }
+: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t, p5a, p5c or p5g (the wave or stage this job belongs to)}"
+[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3|p4|p5|p5t|p5a|p5c|p5g)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t, p5a, p5c or p5g, not '$LILQ_WAVE'" >&2; exit 1; }
 export CLUSTER LILQ_MODULES LILQ_WAVE
 
 script="$1"; shift
@@ -37,6 +39,9 @@ case "$class" in
     timed-cpu)  [[ -n "$CPU_PARTITION" && -n "${CPU_NODE_CORES:-}" && -n "${CPU_NODE_MEM:-}" ]] || { echo "profile needs CPU_PARTITION, CPU_NODE_CORES and CPU_NODE_MEM" >&2; exit 1; }
                 res=(--partition="$CPU_PARTITION" --exclusive --ntasks=1
                      --cpus-per-task="$CPU_NODE_CORES" --mem="$CPU_NODE_MEM") ;;
+    gpu-pair)   [[ -n "${GPU_PAIR_GRES:-}" ]] || { echo "profile needs GPU_PAIR_GRES (both GPUs of a node)" >&2; exit 1; }
+                res=(--partition="$GPU_PARTITION" --gres="$GPU_PAIR_GRES" --ntasks=1
+                     --cpus-per-task="$NODE_CORES" --mem="$NODE_MEM") ;;
     shared-gpu) res=(--partition="$GPU_PARTITION" --gres="$GPU_GRES" --ntasks=1 --cpus-per-task=8 --mem=32G) ;;
     cpu)        [[ -n "$CPU_PARTITION" ]] || { echo "set CPU_PARTITION (see sinfo -s)" >&2; exit 1; }
                 res=(--partition="$CPU_PARTITION" --ntasks=1 --cpus-per-task=24 --mem=32G) ;;

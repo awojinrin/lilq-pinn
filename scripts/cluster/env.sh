@@ -56,6 +56,8 @@ case "$LILQ_WAVE" in
     p5)   export PKG="$RESULTS/package5" ;;               # Package 5 (13 November 2026), items 1, 2 and 4
     p5t)  export PKG="$RESULTS/package5_retime" ;;        # Package 5, item 2: one run re-timed (14 November 2026)
     p5a)  export PKG="$RESULTS/package5_a2" ;;            # Package 5, Addendum 2: the plateau runs (16 November 2026)
+    p5c)  export PKG="$RESULTS/package5_item3_cpu" ;;     # Package 5, item 3: the CPU set (16 November 2026)
+    p5g)  export PKG="$RESULTS/package5_item3_gpu" ;;     # Package 5, item 3: the A100 set, two runs per two-A100 node
     *)    export PKG="$RESULTS/wave$LILQ_WAVE" ;;
 esac
 export A="$PKG/A_calibration" B="$PKG/B_instrumentation" C="$PKG/C_oversampling"

@@ -1,0 +1,39 @@
+#!/bin/bash
+# Package 5, item 3, the A100 set, bl: one whole two-A100 node, two processes side by side, one per
+# GPU, 24 threads each (20 and 20 budget runs of 600 s), after the solo check. Expected
+# 3.71 h (the longer process, each run with its error log, pretraining and setup); the walltime x 1.1.
+# Submit: through scripts/cluster/package5/submit_p5_item3_gpu.sh
+# lilq-resources: gpu-pair   (applied by scripts/cluster/sbatch.sh from the cluster profile)
+#SBATCH --job-name=lilq-p5g-bl
+#SBATCH --time=04:15:00
+#SBATCH --output=logs/%x.%j.out
+
+source scripts/cluster/env.sh
+set -euo pipefail
+LILQ_WALL_S=15300   # the walltime, in seconds
+# until_end <command...>: the command, stopped 5 min before the walltime if still running. It
+# keeps every iterate it wrote (the drivers write after each one); the job goes on.
+# With no time left it skips the command and says so (timeout 0 would mean no limit).
+until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))
+    (( left > 0 )) || { echo "NOT RUN, NO TIME LEFT: $*"; return 0; }
+    timeout "${left}s" "$@" || echo "STOPPED OR FAILED (exit $?): $*"; }
+gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
+[[ "$gpus" == 2 ]] || { echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }
+python experiments/p4_checks.py provenance --out "$PKG" --name gpu-bl
+export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24
+NET=(--device cuda --out "$PKG" --reference-dir "$RESULTS/package2_stage2/reference")
+# The solo check: NiL-N, P = 1024, seed 0, alone on GPU 1 (the one its paired run uses) for 60 s
+( export CUDA_VISIBLE_DEVICES=1
+  until_end python experiments/p5_3_networks.py solo --bench bl --P 1024 --method nil_n --seed 0 --tag gpu-bl-solo "${NET[@]}" )
+# The pair: process i on GPU i, network part i/2, then its LiL-N L-BFGS sizes
+pids=()
+( export CUDA_VISIBLE_DEVICES=0
+  until_end python experiments/p5_3_networks.py run --bench bl --part 0/2 --tag gpu-bl-0 "${NET[@]}"
+  until_end python experiments/p5_3_lil.py run --bench bl --methods lbfgs --P 64 576 --tag gpu-bl-0 "${NET[@]}" ) & pids+=($!)
+( export CUDA_VISIBLE_DEVICES=1
+  until_end python experiments/p5_3_networks.py run --bench bl --part 1/2 --tag gpu-bl-1 "${NET[@]}"
+  until_end python experiments/p5_3_lil.py run --bench bl --methods lbfgs --P 256 1024 --tag gpu-bl-1 "${NET[@]}" ) & pids+=($!)
+failed=0
+for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+[[ $failed == 0 ]] || { echo "THE BL PAIR: A PROCESS FAILED (see above)"; exit 1; }
+echo "THE BL PAIR DONE"

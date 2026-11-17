@@ -59,7 +59,7 @@ Usage::
     python experiments/p5_3_networks.py solo --bench burgers --P 625 --method nil_n --out <root> \\
         --reference-dir <dir> [--device cuda] [--budget 60]
     python experiments/p5_3_networks.py pairing --out <root>
-    python experiments/p5_3_networks.py checks --bench burgers --out <root> --reference-dir <dir> [--device cpu]
+    python experiments/p5_3_networks.py checks --bench burgers --out <root> --reference-dir <dir> [--device cpu] [--tag cpu-checks]
 """
 
 import argparse
@@ -445,6 +445,7 @@ def main(argv=None):
     c.add_argument('--reference-dir', required=True)
     c.add_argument('--P', type=int)
     c.add_argument('--device', default='cpu')
+    c.add_argument('--tag', default='')
     args = ap.parse_args(argv)
 
     root = Path(args.out) / ITEM / 'networks'

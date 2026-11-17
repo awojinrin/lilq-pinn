@@ -254,6 +254,246 @@ A2_JOBS = {
 }
 
 
+# Item 3 (Section 6: cost at a common accuracy). Two stages, each with its own results folder and
+# commit lock: p5c, the CPU set (results/package5_item3_cpu), then p5g, the A100 set
+# (results/package5_item3_gpu), which waits for the cost check (the advisor's rule 3). Every
+# budget run is timed on a node that holds only our runs: one run at a time on a whole CPU node,
+# two at a time on a whole two-A100 node, one per GPU (the user's decision, 16 November 2026).
+# DECISIONS.md, Package 5, item 3: the job layout.
+N3 = 'experiments/p5_3_networks.py'
+L3 = 'experiments/p5_3_lil.py'
+T3 = 'experiments/p5_3_table.py'
+BENCHES = ('bratu', 'burgers', 'bl')
+NET_SIZES = {'bratu': (25, 100, 225), 'burgers': (25, 100, 225, 400, 625), 'bl': (64, 256, 576, 1024)}
+LIL_SIZES = {'bratu': (25, 100, 225), 'burgers': (36, 100, 196, 324, 484, 676, 900), 'bl': (64, 256, 576, 1024)}
+NET_METHODS = ('nil_n', 'nil_q', 'lm')
+NET_SEEDS = (0, 1, 2)
+ITEM3_INPUTS = [f'{REF2}/{f}' for f in ('bratu_ref_p48.npz', 'burgers_cole_hopf.npz', 'bl_fd_ref_viscous_nu0.1.npz')]
+# A budget run's wall-clock: the 600 s on its clock, plus its error log (off the clock) and a fixed
+# part (start, pretraining, setup, saving). The error log's share of the budget, from the laptop
+# probe (16 November 2026; 30 s budgets at the largest sizes, CPU and CUDA, the larger of the two,
+# rounded up): LM logs at every iteration, the L-BFGS methods every 10. LiL-N L-BFGS is costed as
+# a full budget run (the larger sizes reach it).
+BUDGET_S = 600
+LOG_SHARE = {'lm': {'bratu': 0.22, 'burgers': 0.13, 'bl': 0.08}, 'lbfgs': 0.02}
+FIXED_S = 30
+MARGIN = 1.10                      # walltime over the expected time
+THREADS24 = 'export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24'
+
+
+def net_runs(bench):
+    """The network runs of a benchmark in the drivers' order (``p5_3_networks.main``)."""
+    return [(P, m, s) for P in NET_SIZES[bench] for m in NET_METHODS for s in NET_SEEDS]
+
+
+def part(runs, i, n):
+    return runs[i::n]                                   # p5_3_networks.part_of
+
+
+def run_wall_s(bench, method):
+    """One budget run's expected wall-clock (method: a network method, or 'lbfgs' for LiL-N)."""
+    share = LOG_SHARE['lm'][bench] if method == 'lm' else LOG_SHARE['lbfgs']
+    return BUDGET_S * (1 + share) + FIXED_S
+
+
+def process_s(bench, nets, lil):
+    """A process's expected wall-clock: its network runs, then its LiL-N L-BFGS sizes."""
+    return sum(run_wall_s(bench, m) for _, m, _ in nets) + len(lil) * run_wall_s(bench, 'lbfgs')
+
+
+def walltime(expected_s):
+    """hh:mm:00: the expected seconds times MARGIN, rounded up to 15 min."""
+    s = expected_s * MARGIN
+    m = -(-int(s) // 900) * 15
+    return f'{m // 60:02d}:{m % 60:02d}:00'
+
+
+def _inputs_check(inputs):
+    return ('inputs=(' + '\n        '.join(inputs) + ')\nfor f in "${inputs[@]}"; do\n'
+            '    [[ -f "$f" ]] || { echo "MISSING INPUT: $f"; exit 1; }\ndone\necho "inputs OK (${#inputs[@]} files)"\n')
+
+
+# ---- p5c, the CPU set
+# One whole CPU node per job (timed-cpu, 48 threads), one run at a time. The 122 budget runs (108
+# network, 14 LiL-N L-BFGS) in five jobs of about the same length; LiL-Q, trf and the square
+# collocation (the usual protocol) and checks C2 and C4 in a sixth.
+CPU_SPLIT = {   # job: (bench, network part 'i/n', LiL-N L-BFGS sizes)
+    'bratu': ('bratu', '0/1', LIL_SIZES['bratu']),
+    'burgers-a': ('burgers', '0/2', (36, 196, 484)),
+    'burgers-b': ('burgers', '1/2', (100, 324, 676, 900)),
+    'bl-a': ('bl', '0/2', (64, 576)),
+    'bl-b': ('bl', '1/2', (256, 1024)),
+}
+
+
+def cpu_runs(job):
+    bench, p, lil = CPU_SPLIT[job]
+    i, n = map(int, p.split('/'))
+    return part(net_runs(bench), i, n), lil
+
+
+def cpu_expected_s(job):
+    return process_s(CPU_SPLIT[job][0], *cpu_runs(job))
+
+
+C_PREFLIGHT_BODY = ('''python -c "import numpy, scipy, torch; print('numpy', numpy.__version__, 'scipy', scipy.__version__, 'torch', torch.__version__)"
+# Every input the jobs read (fail now, not later), then the test suite
+''' + _inputs_check(ITEM3_INPUTS) + '''python -m pytest tests/ -q $(printf -- '--ignore=%s ' $LILQ_COMPONENT_A_TESTS)
+echo "PREFLIGHT OK"
+''')
+
+C_PROTOCOL_BODY = f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END}python experiments/p4_checks.py provenance --out "$PKG" --name protocol
+# LiL-Q, trf and (Bratu) the square collocation by the usual protocol: one logged pass, then three
+# timed passes (the clock per iterate, the median of the timestamps)
+for bench in {' '.join(BENCHES)}; do
+    until_end python {L3} run --bench "$bench" --methods lilq trf square --device cpu --out "$PKG" \\
+        --reference-dir {REF2} --tag cpu-protocol
+done
+# Checks C2 and C4: NiL-N (300 iterations) and LM (30) at the largest size, without and with the
+# error log
+for bench in {' '.join(BENCHES)}; do
+    until_end python {N3} checks --bench "$bench" --device cpu --out "$PKG" --reference-dir {REF2} --tag cpu-checks
+done
+'''
+
+
+def cpu_budget_body(job):
+    bench, p, lil = CPU_SPLIT[job]
+    tag = f'cpu-{job}'
+    return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END}python experiments/p4_checks.py provenance --out "$PKG" --name {tag}
+# The network runs (part {p} of NiL-N, NiL-Q and LM over the sizes and seeds), each to the 600 s budget,
+# one at a time, then LiL-N L-BFGS at P = {', '.join(map(str, lil))}
+until_end python {N3} run --bench {bench} --part {p} --device cpu --out "$PKG" --reference-dir {REF2} --tag {tag}
+until_end python {L3} run --bench {bench} --methods lbfgs --P {' '.join(map(str, lil))} --device cpu --out "$PKG" \\
+    --reference-dir {REF2} --tag {tag}
+'''
+
+
+def report_body(stage, pairing=False):
+    pre = f'timeout 5m python {N3} pairing --out "$PKG" || echo "PAIRING FAILED OR STOPPED (exit $?)"\n' if pairing else ''
+    return (f'''# Each step under its own time limit, so that a stall cannot cost the tarball (the lesson of
+# Addendum 2's first job)
+{pre}timeout 10m python {T3} --out "$PKG" || echo "TABLE FAILED OR STOPPED (exit $?)"
+timeout 15m python scripts/cluster/package2/stage_report.py --stage {stage} --results "$RESULTS" \\
+    || echo "REPORT FAILED OR STOPPED (exit $?)"
+''')
+
+
+PROTOCOL_EXTRA_S = 1800            # the LiL protocol runs (a few minutes on the laptop) and C2/C4 at the largest sizes
+
+
+def cpu_jobs():
+    jobs = {
+        'p5c_preflight.slurm': ('preflight', 'cpu', '00:30:00', '''# Package 5, item 3, the CPU set: the preflight. The first job of stage p5c: env.sh locks
+# results/package5_item3_cpu to this commit here. Every input the jobs read, the test suite.
+# Every other job of the stage waits for it.
+# Submit: through scripts/cluster/package5/submit_p5_item3_cpu.sh
+''', C_PREFLIGHT_BODY),
+        'p5c_protocol.slurm': ('protocol', 'timed-cpu', walltime(PROTOCOL_EXTRA_S), '''# Package 5, item 3, the CPU set, on one whole node (48 threads): LiL-Q, trf and the square
+# collocation by the usual protocol on the three problems, then checks C2 and C4.
+# Submit: through scripts/cluster/package5/submit_p5_item3_cpu.sh
+''', C_PROTOCOL_BODY),
+    }
+    for job in CPU_SPLIT:
+        nets, lil = cpu_runs(job)
+        n, e = len(nets) + len(lil), cpu_expected_s(job)
+        jobs[f'p5c_{job.replace("-", "_")}.slurm'] = (job, 'timed-cpu', walltime(e), f'''# Package 5, item 3, the CPU set, on one whole node (48 threads): {n} budget runs of 600 s, one at a
+# time ({CPU_SPLIT[job][0]}: network part {CPU_SPLIT[job][1]}, then LiL-N L-BFGS). Expected {e / 3600:.2f} h (each run with
+# its error log, pretraining and setup); the walltime x {MARGIN}.
+# Submit: through scripts/cluster/package5/submit_p5_item3_cpu.sh
+''', cpu_budget_body(job))
+    jobs['p5c_report.slurm'] = ('report', 'cpu', '00:30:00', '''# Package 5, item 3, the CPU set: after the jobs (afterany). The time-to-error table, then sacct,
+# su_per_job.csv and results/package5_item3_cpu.tar.gz. C1 (against Package 1) and C3 (against
+# Package 4) need files that are not on Grace: they run at the assembly on the laptop.
+# Submit: through scripts/cluster/package5/submit_p5_item3_cpu.sh
+''', report_body('p5c'))
+    return jobs
+
+
+# ---- p5g, the A100 set
+# One whole two-A100 node per problem (gpu-pair: both A100s, 48 cores, 192 SU/h), two processes
+# side by side, one per GPU, 24 threads each. First the solo check: one run alone on its GPU, the
+# other idle, for 60 s; the report compares it with the same run in the pair (within 5%).
+GPU_SPLIT = {   # bench: (LiL-N L-BFGS sizes of process 0, of process 1)
+    'bratu': ((225,), (25, 100)),
+    'burgers': ((36, 196, 484), (100, 324, 676, 900)),
+    'bl': ((64, 576), (256, 1024)),
+}
+SOLO = {b: (NET_SIZES[b][-1], 'nil_n', 0) for b in BENCHES}   # the largest size, NiL-N, seed 0
+
+
+def gpu_slots(bench, i):
+    return len(part(net_runs(bench), i, 2)) + len(GPU_SPLIT[bench][i])
+
+
+def gpu_expected_s(bench):
+    """The pair job's expected wall-clock: the solo check, then the longer of its two processes."""
+    return SOLO_EXTRA_S + max(process_s(bench, part(net_runs(bench), i, 2), GPU_SPLIT[bench][i]) for i in (0, 1))
+
+
+def solo_gpu(bench):
+    """The GPU (process) that runs the solo check's run in the pair: the solo runs on the same one."""
+    k = net_runs(bench).index(SOLO[bench])
+    return k % 2
+
+
+G_PREFLIGHT_BODY = ('''nvidia-smi
+python -c "import torch; assert torch.cuda.is_available(), 'no CUDA'; print('torch', torch.__version__, torch.cuda.get_device_name(0))"
+''' + _inputs_check(ITEM3_INPUTS) + '''# The item 3 tests with the A100 visible (the torch residuals and the off-clock timer on CUDA)
+python -m pytest tests/test_p5_3_lil.py tests/test_p5_3_networks.py tests/test_run_probe.py tests/test_p5_3_table.py -q
+echo "PREFLIGHT OK"
+''')
+
+
+def gpu_pair_body(bench):
+    P, method, seed = SOLO[bench]
+    g = solo_gpu(bench)
+    procs = ''
+    for i in (0, 1):
+        tag = f'gpu-{bench}-{i}'
+        lil = ' '.join(map(str, GPU_SPLIT[bench][i]))
+        procs += (f'( export CUDA_VISIBLE_DEVICES={i}\n'
+                  f'  until_end python {N3} run --bench {bench} --part {i}/2 --tag {tag} "${{NET[@]}}"\n'
+                  f'  until_end python {L3} run --bench {bench} --methods lbfgs --P {lil} --tag {tag} "${{NET[@]}}" ) & pids+=($!)\n')
+    return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END}gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
+[[ "$gpus" == 2 ]] || {{ echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }}
+python experiments/p4_checks.py provenance --out "$PKG" --name gpu-{bench}
+{THREADS24}
+NET=(--device cuda --out "$PKG" --reference-dir {REF2})
+# The solo check: NiL-N, P = {P}, seed {seed}, alone on GPU {g} (the one its paired run uses) for 60 s
+( export CUDA_VISIBLE_DEVICES={g}
+  until_end python {N3} solo --bench {bench} --P {P} --method {method} --seed {seed} --tag gpu-{bench}-solo "${{NET[@]}}" )
+# The pair: process i on GPU i, network part i/2, then its LiL-N L-BFGS sizes
+pids=()
+{procs}''' + WAIT_ALL.format(what=f'THE {bench.upper()} PAIR')
+
+
+SOLO_EXTRA_S = 300                 # the solo check: warm-up, pretraining, 60 s
+
+
+def gpu_jobs():
+    jobs = {'p5g_preflight.slurm': ('preflight', 'shared-gpu', '00:20:00', '''# Package 5, item 3, the A100 set: the preflight, on one A100 (shared-gpu: 8 cores). The first job of
+# stage p5g: env.sh locks results/package5_item3_gpu to this commit here. The inputs and the item 3
+# tests with CUDA visible. Every other job of the stage waits for it.
+# Submit: through scripts/cluster/package5/submit_p5_item3_gpu.sh
+''', G_PREFLIGHT_BODY)}
+    for bench in BENCHES:
+        e = gpu_expected_s(bench)
+        jobs[f'p5g_{bench}.slurm'] = (bench, 'gpu-pair', walltime(e), f'''# Package 5, item 3, the A100 set, {bench}: one whole two-A100 node, two processes side by side, one per
+# GPU, 24 threads each ({gpu_slots(bench, 0)} and {gpu_slots(bench, 1)} budget runs of 600 s), after the solo check. Expected
+# {e / 3600:.2f} h (the longer process, each run with its error log, pretraining and setup); the walltime x {MARGIN}.
+# Submit: through scripts/cluster/package5/submit_p5_item3_gpu.sh
+''', gpu_pair_body(bench))
+    jobs['p5g_report.slurm'] = ('report', 'cpu', '00:30:00', '''# Package 5, item 3, the A100 set: after the jobs (afterany). The paired-against-solo check, the
+# time-to-error table, then sacct, su_per_job.csv and results/package5_item3_gpu.tar.gz.
+# Submit: through scripts/cluster/package5/submit_p5_item3_gpu.sh
+''', report_body('p5g', pairing=True))
+    return jobs
+
+
 def render(name, jobs=JOBS, stage='p5'):
     short, cls, wall, header, body = jobs[name]
     h, m, s = map(int, wall.split(':'))
@@ -269,7 +509,11 @@ def main():
         (HERE / name).write_bytes(render(name, RETIME_JOBS, 'p5t').encode())
     for name in A2_JOBS:
         (HERE / name).write_bytes(render(name, A2_JOBS, 'p5a').encode())
-    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS)} job scripts written in {HERE}')
+    item3 = [(cpu_jobs(), 'p5c'), (gpu_jobs(), 'p5g')]
+    for jobs, stage in item3:
+        for name in jobs:
+            (HERE / name).write_bytes(render(name, jobs, stage).encode())
+    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS) + sum(len(j) for j, _ in item3)} job scripts written in {HERE}')
 
 
 if __name__ == '__main__':
