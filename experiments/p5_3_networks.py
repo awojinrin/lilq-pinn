@@ -43,7 +43,10 @@ Each job first warms up every method on its device, untimed (``warm_up``).
   (``iteration, evaluations, time_s, loss, error``: the history file of the
   instructions); the loss at every iteration (``metrics.csv``, L-BFGS, or LM's
   ``log.csv``); ``network.pt``;
-- ``warmup/<bench>_<device>.json`` and ``provenance/<bench>_<device>/``.
+- ``warmup/`` and ``provenance/``: one record per process, ``<bench>_<device>[_<tag>]``
+  (``--tag``: two processes of a job, or two jobs, never write the same record);
+- ``checks/solo_<bench>_P<P>_<method>_s<seed>_<device>/`` and ``checks/pairing.json``: the
+  A100 set's paired-against-solo check (``solo``, ``pairing``).
 
 Checks: C1 (``c1``) against the Package 1 (v2.0.0) histories; C2 and C4
 (``c2_c4``): one run of a fixed length with and without the error log.
@@ -51,7 +54,11 @@ Checks: C1 (``c1``) against the Package 1 (v2.0.0) histories; C2 and C4
 Usage::
 
     python experiments/p5_3_networks.py run --bench burgers --out <root> --reference-dir <dir> \\
-        [--P 25 100] [--methods nil_n nil_q lm] [--seeds 0 1 2] [--device cpu] [--budget 600]
+        [--P 25 100] [--methods nil_n nil_q lm] [--seeds 0 1 2] [--device cpu] [--budget 600] \\
+        [--part 0/2] [--tag gpu-burgers-0]
+    python experiments/p5_3_networks.py solo --bench burgers --P 625 --method nil_n --out <root> \\
+        --reference-dir <dir> [--device cuda] [--budget 60]
+    python experiments/p5_3_networks.py pairing --out <root>
     python experiments/p5_3_networks.py checks --bench burgers --out <root> --reference-dir <dir> [--device cpu]
 """
 
@@ -91,6 +98,8 @@ C1_ITERATIONS = 100                    # the instructions: "over the first 100 i
 C1_RTOL = 1e-6                         # set before any comparison (DECISIONS.md, 2026-11-15)
 C4_RTOL = 0.05                         # the instructions: "within 5%"
 C2C4_ITERATIONS = {'nil_n': 300, 'lm': 30}
+SOLO_BUDGET_S = 60.0                   # the solo check's run: long enough for a stable clock, cheap
+PAIR_RTOL = 0.05                       # the plan (16 November 2026): a paired run within 5% of the same run alone
 
 
 def sizes(bench):
@@ -252,8 +261,10 @@ def write_history(path, rows):
             w.writerow({k: (repr(float(r[k])) if isinstance(r[k], float) else r[k]) for k in HISTORY_COLUMNS})
 
 
-def run(bench, P, method, seed, reference_dir, out_root, device='cpu', budget_s=BUDGET_S):
-    d = run_dir_of(out_root, bench, P, method, seed, device)
+def run(bench, P, method, seed, reference_dir, out_root, device='cpu', budget_s=BUDGET_S, tag='', run_dir=None):
+    """One run into its folder (``run_dir_of``, or ``run_dir``: the solo check's). ``tag`` names the
+    process in its job and is kept in run.json."""
+    d = Path(run_dir) if run_dir is not None else run_dir_of(out_root, bench, P, method, seed, device)
     d.mkdir(parents=True, exist_ok=True)
     model, record, rows, metrics = solve(bench, P, method, seed, reference_dir, device, budget_s,
                                          log_path=d / 'log.csv')
@@ -263,21 +274,21 @@ def run(bench, P, method, seed, reference_dir, out_root, device='cpu', budget_s=
     from lilq.saved_models import save_network
     mod, config, opt = p28.setup(bench, P)
     save_network(d, model, dataclasses.replace(config, init_seed=seed), opt)
-    record['commit'] = current_commit()
+    record.update(commit=current_commit(), tag=tag)
     (d / 'run.json').write_text(json.dumps(record, indent=2, default=str))
     return record
 
 
 # ---------------------------------------------------------------- the warm-up
 
-def warm_up(bench, device, reference_dir, methods=METHODS, scratch=None):
+def warm_up(bench, device, reference_dir, methods=METHODS, scratch=None, tag=''):
     """Every method on the device, untimed, before a job's first run: WARMUP_ITERATIONS
     iterations at the smallest size, error logging on (the PyTorch and CUDA first-call
     costs, BLAS thread start-up; the lesson of item 2's re-time). Returns the seconds."""
     out = {}
     for method in methods:
         t = time.perf_counter()
-        log = Path(scratch or '.') / f'.warmup_{bench}_{method}_{device}.csv'
+        log = Path(scratch or '.') / f'.warmup_{bench}_{method}_{device}{_suffix(tag)}.csv'
         solve(bench, sizes(bench)[0], method, 0, reference_dir, device, budget_s=None,
               max_iterations=WARMUP_ITERATIONS, log_path=log)
         if log.exists():
@@ -342,6 +353,63 @@ def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=No
     return result
 
 
+# ---------------------------------------------------------------- paired against solo (the A100 set)
+
+def _suffix(tag):
+    return f'_{tag}' if tag else ''
+
+
+def solo_dir_of(out_root, bench, P, method, seed, device):
+    return Path(out_root) / ITEM / 'networks' / 'checks' / f'solo_{bench}_P{P}_{method}_s{seed}_{device}'
+
+
+def pairing(out_root):
+    """The A100 set runs two at a time on a two-A100 node (the user's decision, 16 November 2026).
+    Each solo check (``solo``: the same run, the node's other GPU idle, for SOLO_BUDGET_S) against
+    its paired run: the clock at the last iteration both logged, paired / solo - 1, within
+    PAIR_RTOL. Writes ``checks/pairing.json``; returns its record."""
+    rows = []
+    for d in sorted((Path(out_root) / ITEM / 'networks' / 'checks').glob('solo_*')):
+        solo = json.loads((d / 'run.json').read_text())
+        paired = run_dir_of(out_root, solo['benchmark'], solo['P'], solo['method_key'], solo['seed'], solo['device'])
+        row = {'benchmark': solo['benchmark'], 'P': solo['P'], 'method': solo['method'], 'seed': solo['seed'],
+               'device': solo['device'], 'solo_tag': solo.get('tag')}
+        if not (paired / 'history.csv').exists():
+            rows.append(row | {'passed': None, 'reason': f'no paired run at {paired.name}'})
+            continue
+        a, b = (_times(x / 'history.csv') for x in (d, paired))
+        common = sorted(set(a) & set(b) - {0})
+        if not common:
+            rows.append(row | {'passed': None, 'reason': 'no logged iteration in common'})
+            continue
+        k = common[-1]
+        ratio = b[k] / a[k] - 1.0
+        rows.append(row | {'iteration': k, 'time_solo_s': a[k], 'time_paired_s': b[k], 'paired_over_solo_minus_1': ratio,
+                           'rtol': PAIR_RTOL, 'paired_tag': json.loads((paired / 'run.json').read_text()).get('tag'),
+                           'passed': bool(abs(ratio) <= PAIR_RTOL)})
+    out = Path(out_root) / ITEM / 'networks' / 'checks'
+    out.mkdir(parents=True, exist_ok=True)
+    verdicts = [r['passed'] for r in rows]
+    result = {'check': 'a paired A100 run against the same run alone', 'rows': rows,
+              'passed': (all(v is True for v in verdicts) if verdicts else None)}
+    (out / 'pairing.json').write_text(json.dumps(result, indent=2))
+    return result
+
+
+def _times(path):
+    with open(path) as fh:
+        return {int(r['iteration']): float(r['time_s']) for r in csv.DictReader(fh)}
+
+
+def part_of(runs, part):
+    """``part`` 'i/n': every n-th of ``runs`` from the i-th (round robin, so that two processes of a
+    job get about the same number of runs of each size)."""
+    i, n = (int(x) for x in part.split('/'))
+    if not 0 <= i < n:
+        raise ValueError(f'--part {part}: need 0 <= i < n')
+    return runs[i::n]
+
+
 # ---------------------------------------------------------------- CLI
 
 def main(argv=None):
@@ -356,6 +424,21 @@ def main(argv=None):
     r.add_argument('--seeds', type=int, nargs='*', default=list(SEEDS))
     r.add_argument('--device', default='cpu')
     r.add_argument('--budget', type=float, default=BUDGET_S)
+    r.add_argument('--part', default='0/1', help="'i/n': this process's share of the runs (round robin)")
+    r.add_argument('--tag', default='', help='this process in its job: names its warm-up and provenance '
+                   'records and is kept in each run.json')
+    so = sub.add_parser('solo', help='the paired-against-solo check: one run, the other GPU idle')
+    so.add_argument('--bench', required=True, choices=p28.BENCHMARKS)
+    so.add_argument('--out', required=True)
+    so.add_argument('--reference-dir', required=True)
+    so.add_argument('--P', type=int, required=True)
+    so.add_argument('--method', required=True, choices=METHODS)
+    so.add_argument('--seed', type=int, default=0)
+    so.add_argument('--device', default='cuda')
+    so.add_argument('--budget', type=float, default=SOLO_BUDGET_S)
+    so.add_argument('--tag', default='')
+    pa = sub.add_parser('pairing', help='compare the solo checks with their paired runs')
+    pa.add_argument('--out', required=True)
     c = sub.add_parser('checks')
     c.add_argument('--bench', required=True, choices=p28.BENCHMARKS)
     c.add_argument('--out', required=True)
@@ -365,22 +448,32 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = Path(args.out) / ITEM / 'networks'
-    save_provenance(root / 'provenance' / f'{args.bench}_{args.device}')
+    if args.cmd == 'pairing':
+        print(json.dumps(pairing(args.out), indent=2), flush=True)
+        return
+    tag = getattr(args, 'tag', '')
+    name = f'{args.bench}_{args.device}{_suffix(tag)}'
+    save_provenance(root / 'provenance' / name)
     if args.cmd == 'run':
         methods = args.methods
-        w = warm_up(args.bench, args.device, args.reference_dir, methods, scratch=root)
+        todo = part_of([(P, m, s) for P in args.P or sizes(args.bench) for m in methods for s in args.seeds], args.part)
+        w = warm_up(args.bench, args.device, args.reference_dir, sorted({m for _, m, _ in todo}), scratch=root, tag=tag)
         (root / 'warmup').mkdir(parents=True, exist_ok=True)
-        (root / 'warmup' / f'{args.bench}_{args.device}.json').write_text(json.dumps(
-            {'seconds': w, 'iterations': WARMUP_ITERATIONS, 'P': sizes(args.bench)[0]}, indent=2))
-        for P in args.P or sizes(args.bench):
-            for method in methods:
-                for seed in args.seeds:
-                    rec = run(args.bench, P, method, seed, args.reference_dir, args.out, args.device, args.budget)
-                    print(f"{args.bench} P={P} {rec['method']} s{seed} {args.device}: {rec['iterations']} it, "
-                          f"{rec['training_time_s']:.1f} s, {rec['stopping_reason']}, loss {rec['final_loss']:.3e}, "
-                          f"error {rec['final_error']:.3e}", flush=True)
+        (root / 'warmup' / f'{name}.json').write_text(json.dumps(
+            {'seconds': w, 'iterations': WARMUP_ITERATIONS, 'P': sizes(args.bench)[0], 'part': args.part}, indent=2))
+        for P, method, seed in todo:
+            rec = run(args.bench, P, method, seed, args.reference_dir, args.out, args.device, args.budget, tag)
+            print(f"{args.bench} P={P} {rec['method']} s{seed} {args.device}: {rec['iterations']} it, "
+                  f"{rec['training_time_s']:.1f} s, {rec['stopping_reason']}, loss {rec['final_loss']:.3e}, "
+                  f"error {rec['final_error']:.3e}", flush=True)
+    elif args.cmd == 'solo':
+        warm_up(args.bench, args.device, args.reference_dir, (args.method,), scratch=root, tag=tag)
+        rec = run(args.bench, args.P, args.method, args.seed, args.reference_dir, args.out, args.device, args.budget,
+                  tag, run_dir=solo_dir_of(args.out, args.bench, args.P, args.method, args.seed, args.device))
+        print(f"solo {args.bench} P={args.P} {rec['method']} s{args.seed} {args.device}: {rec['iterations']} it in "
+              f"{rec['training_time_s']:.1f} s", flush=True)
     else:
-        warm_up(args.bench, args.device, args.reference_dir, ('nil_n', 'lm'), scratch=root)
+        warm_up(args.bench, args.device, args.reference_dir, ('nil_n', 'lm'), scratch=root, tag=tag)
         P = args.P or sizes(args.bench)[-1]
         for method in ('nil_n', 'lm'):
             res = c2_c4(args.bench, P, method, args.reference_dir, args.out, args.device)

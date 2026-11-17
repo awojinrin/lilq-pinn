@@ -139,3 +139,68 @@ def test_the_warm_up_runs_every_method(ref, tmp_path):
     w = n3.warm_up('burgers', 'cpu', ref, scratch=tmp_path)
     assert set(w) == set(n3.METHODS) and all(s > 0 for s in w.values())
     assert not list(tmp_path.glob('.warmup_*'))
+
+
+# ---------------------------------------------------------------- Batch 5: the jobs' processes
+
+def test_parts_split_the_runs_round_robin():
+    runs = [(P, m, s) for P in (25, 100, 225) for m in n3.METHODS for s in n3.SEEDS]
+    a, b = n3.part_of(runs, '0/2'), n3.part_of(runs, '1/2')
+    assert sorted(a + b) == sorted(runs) and not set(a) & set(b) and abs(len(a) - len(b)) <= 1
+    assert {P for P, _, _ in a} == {P for P, _, _ in b} == {25, 100, 225}      # every size in each part
+    assert n3.part_of(runs, '0/1') == runs
+    with pytest.raises(ValueError):
+        n3.part_of(runs, '2/2')
+
+
+def test_two_processes_of_a_job_write_their_own_records(ref, tmp_path, monkeypatch):
+    """Two tags on one problem and device: separate warm-up and provenance records, each run's tag kept."""
+    monkeypatch.setattr(n3, 'BUDGET_S', 0.2)
+    monkeypatch.setattr(n3, 'save_provenance', lambda d: (d.mkdir(parents=True, exist_ok=True),
+                                                          (d / 'hardware.json').write_text('{}')))
+    for part, tag in (('0/2', 'gpu-burgers-0'), ('1/2', 'gpu-burgers-1')):
+        n3.main(['run', '--bench', 'burgers', '--out', str(tmp_path), '--reference-dir', str(ref), '--P', '25',
+                 '--methods', 'nil_n', '--seeds', '0', '1', '--budget', '0.2', '--part', part, '--tag', tag])
+    root = tmp_path / n3.ITEM / 'networks'
+    assert sorted(p.name for p in (root / 'warmup').iterdir()) == ['burgers_cpu_gpu-burgers-0.json',
+                                                                   'burgers_cpu_gpu-burgers-1.json']
+    assert sorted(p.name for p in (root / 'provenance').iterdir()) == ['burgers_cpu_gpu-burgers-0',
+                                                                       'burgers_cpu_gpu-burgers-1']
+    tags = {s: json.loads((n3.run_dir_of(tmp_path, 'burgers', 25, 'nil_n', s, 'cpu') / 'run.json').read_text())['tag']
+            for s in (0, 1)}
+    assert tags == {0: 'gpu-burgers-0', 1: 'gpu-burgers-1'}
+    assert not list(root.glob('.warmup_*'))
+
+
+def _history(d, times, tag):
+    d.mkdir(parents=True, exist_ok=True)
+    n3.write_history(d / 'history.csv', [{'iteration': 10 * i, 'evaluations': i, 'time_s': t, 'loss': 1.0,
+                                          'error': 1.0} for i, t in enumerate(times)])
+    (d / 'run.json').write_text(json.dumps({'benchmark': 'burgers', 'P': 625, 'method': 'NiL-N (L-BFGS)',
+                                            'method_key': 'nil_n', 'seed': 0, 'device': 'cuda', 'tag': tag}))
+
+
+def test_pairing_compares_the_clock_at_the_last_common_iteration(tmp_path):
+    _history(n3.solo_dir_of(tmp_path, 'burgers', 625, 'nil_n', 0, 'cuda'), [0.0, 10.0, 20.0, 30.0], 'solo')
+    _history(n3.run_dir_of(tmp_path, 'burgers', 625, 'nil_n', 0, 'cuda'), [0.0, 10.2, 20.5, 31.0, 41.0, 52.0], 'pair')
+    res = n3.pairing(tmp_path)
+    (row,) = res['rows']
+    assert row['iteration'] == 30 and row['paired_over_solo_minus_1'] == pytest.approx(1 / 30)
+    assert row['passed'] and res['passed'] and (tmp_path / n3.ITEM / 'networks' / 'checks' / 'pairing.json').exists()
+    _history(n3.run_dir_of(tmp_path, 'burgers', 625, 'nil_n', 0, 'cuda'), [0.0, 11.0, 22.0, 33.0], 'pair')
+    assert n3.pairing(tmp_path)['passed'] is False                                     # 10% slower when paired
+
+
+def test_pairing_without_its_paired_run_has_no_verdict(tmp_path):
+    _history(n3.solo_dir_of(tmp_path, 'bratu', 225, 'nil_n', 0, 'cuda'), [0.0, 1.0], 'solo')
+    res = n3.pairing(tmp_path)
+    assert res['rows'][0]['passed'] is None and res['passed'] is False
+
+
+def test_the_solo_run_goes_to_its_own_folder(ref, tmp_path, monkeypatch):
+    monkeypatch.setattr(n3, 'save_provenance', lambda d: d.mkdir(parents=True, exist_ok=True))
+    n3.main(['solo', '--bench', 'burgers', '--P', '25', '--method', 'nil_n', '--out', str(tmp_path),
+             '--reference-dir', str(ref), '--device', 'cpu', '--budget', '0.2', '--tag', 'solo'])
+    d = n3.solo_dir_of(tmp_path, 'burgers', 25, 'nil_n', 0, 'cpu')
+    assert json.loads((d / 'run.json').read_text())['tag'] == 'solo' and (d / 'history.csv').exists()
+    assert not n3.run_dir_of(tmp_path, 'burgers', 25, 'nil_n', 0, 'cpu').exists()

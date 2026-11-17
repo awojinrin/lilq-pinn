@@ -198,6 +198,17 @@ def test_the_warm_up(ref):
     assert set(w) == set(m.METHODS) and all(s > 0 for s in w.values())
 
 
+def test_a_tag_names_the_process_records_and_is_kept_in_each_run(ref, tmp_path, monkeypatch):
+    monkeypatch.setattr(m, 'save_provenance', lambda d: d.mkdir(parents=True, exist_ok=True))
+    for tag in ('cpu-lil', 'cpu-bratu'):
+        m.main(['run', '--bench', 'bratu', '--out', str(tmp_path), '--reference-dir', str(ref), '--P', '25',
+                '--methods', 'lilq', '--no-timing', '--tag', tag])
+    root = tmp_path / m.ITEM / 'lil'
+    assert sorted(p.name for p in (root / 'warmup').iterdir()) == ['bratu_cpu_cpu-bratu.json', 'bratu_cpu_cpu-lil.json']
+    assert sorted(p.name for p in (root / 'provenance').iterdir()) == ['bratu_cpu_cpu-bratu', 'bratu_cpu_cpu-lil']
+    assert json.loads((m.run_dir_of(tmp_path, 'bratu', 25, 'lilq') / 'run.json').read_text())['tag'] == 'cpu-bratu'
+
+
 def test_c3(ref, tmp_path):
     """C3 against a stand-in Package 4 folder written from the run itself, then perturbed."""
     m.run_lilq(m.Problem('burgers', 36, ref), tmp_path, timing=False)
