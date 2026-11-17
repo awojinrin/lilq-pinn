@@ -114,6 +114,27 @@ repeats on Buckley-Leverett NiL-N only; the checks loops expanded per job).
   overlapped, so the criterion says no change, as it should.
 - Repo suite 1,037 passed; no-git 1,006; WSL bash tests 37 of 37 in each of three modes.
 
+**The scan after the rehearsal** (the user's rule: before Grace, again after the rehearsals), over the
+code changed since bundle 03bd5ab:
+- **Found and fixed:** `component_a.py` had been saved with CRLF line endings by an edit (the repo is
+  LF), so the bundle carried a whole-file rewrite for a 16-line change. Python reads both the same;
+  converted back, and the diff against 03bd5ab is the 16 lines again. Earlier in this round (before the
+  rehearsal): p5k's provenance was written before `pin_torch` (now after); the summary had no thread
+  check (now both runs' and Package 1's); a missing Package 1 reference crashed the summary (now
+  reported).
+- **Implicit state looked at, none acting:** the C4 repeats build a fresh seed-0 network each time
+  (C2 shows the solves are deterministic); they run after the first pair, so warmer, which affects only
+  the spread beside the fixed verdict; an interrupted checks job leaves no `result.json` and reruns the
+  pair whole. The default `repeats=1` path is the old code, so the budget jobs of p5r and p5g are
+  unchanged. In p5k each process imports in its own order before anything else, then
+  `component_a` (`pin_torch`: OMP_NUM_THREADS, 48 on a whole node, as Package 1); F1 sets its dtype
+  per run and F2 sets float64 after F1 has run; each run seeds itself; F2 runs second in its process
+  (in Package 1 it ran first in its own), the same for both orders, so it does not bias the
+  comparison. A process that fails its check is caught by `until_end`, the job goes on, and the
+  summary says "not measured" for that order (p5o's design).
+- **Native libraries:** every Grace process checks its OpenMP library itself (p5r, p5g: 'module';
+  p5k: the one its first import should give).
+
 ---
 
 ## 2026-11-17 -- Package 5, item 3: the diagnostic's result; numpy first, the OpenMP library check, and the CPU network runs again (stage p5r)
