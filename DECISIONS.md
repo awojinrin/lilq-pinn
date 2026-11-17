@@ -98,6 +98,22 @@ repeats on Buckley-Leverett NiL-N only; the checks loops expanded per job).
   (`F1_MAX_LBFGS_CALLS`, None on Grace; `f1_train`'s test cap) under a 300 s budget, so its rows no
   longer depend on the load; 3 of 3 passes with the rehearsal running.
 
+**The laptop rehearsal** (bundle at decae59; the check run with 'torch' in p5r_checks, as before):
+- p5r_checks rc 0 (513 s). C2 6 of 6. The Buckley-Leverett NiL-N pair three times: C4 1.2%, the
+  timings -1.2%, +0.04%, -1.3% (spread 1.4%).
+- **C4 5 of 6: Buckley-Leverett LM at 7.9% (with the log 32.0 s, without 29.7 s).** Cause shown, not
+  assumed: the same pair three times on the laptop at this commit (`c2_c4(..., repeats=3)`) gave
+  -0.7%, +0.6%, -0.4%, every run 28.9 to 29.8 s. The 32.0 s run was a slow stretch of the laptop;
+  the log puts no time on the clock (its 1.5 to 1.7 s are off it). On Grace the CPU set's pair was
+  +2.5%.
+- p5k as written, rc 0 (745 s): the three numpy-first processes stopped at the check (Windows loads
+  the wheel's library in either order), the three torch-first ones ran (16 threads on the laptop;
+  Package 1's runs: 48); their losses match Package 1's Grace runs within 1.6e-8 (F2) and 1.5e-12
+  (F1); the tarball written. An earlier run without the check (bundle de4df64): all six processes;
+  with one library on both sides the medians differed by 7 to 8% (laptop noise) but the rounds
+  overlapped, so the criterion says no change, as it should.
+- Repo suite 1,037 passed; no-git 1,006; WSL bash tests 37 of 37 in each of three modes.
+
 ---
 
 ## 2026-11-17 -- Package 5, item 3: the diagnostic's result; numpy first, the OpenMP library check, and the CPU network runs again (stage p5r)
