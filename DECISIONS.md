@@ -17,6 +17,64 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-17 -- Package 5, item 3: the diagnostic's result; numpy first, the OpenMP library check, and the CPU network runs again (stage p5r)
+
+**The diagnostic** (job on 17 November, about 18 min, about 15 SU; tarball sha256 5aa68002...). Every
+process loaded the library its first import should give. Judged by the criteria fixed before the job
+(the entry below):
+- **The library is the cause of C1's failure.** With numpy first, the three C1 runs (NiL-N, seed 0, each
+  problem's largest size) equal Package 1's losses over iterations 0 to 100 exactly (difference 0.0).
+  With torch first, they equal the CPU set's runs exactly.
+- **It changes the timing on Buckley-Leverett, not on Bratu.** The median time per iteration over the
+  three rounds, wheel's library against the module's: Bratu P = 225, NiL-N +3.9% and LM +1.0% (under
+  the 5% cutoff); Buckley-Leverett P = 1,024, NiL-N +73.5% and LM +60.6% (over it; the rounds do not
+  overlap). Burgers was not in the diagnostic.
+
+**Decided (the user, 17 November 2026):** the network runs import numpy first, every Grace job checks
+the library, and the CPU set's five network jobs run again, with checks C2 and C4 for the networks:
+about 925 SU expected (the CPU set's own SU less its LiL runs), 1,128 requested. The A100 set gets the
+same order and check. Both wait for the advisor's approval in the item 3 cost check
+(`Post-JCP/Package5_item3_cost_check.md`): item 3 then costs about 4,150 SU against the 3,146 left in
+his cap.
+- **The CPU set stays as it ran** (`results/package5_item3_cpu`, its scripts unchanged). Its LiL runs
+  loaded the module's library (`p5_3_lil.py` imports numpy first) and are kept; its network runs and
+  their C2/C4 are replaced by stage p5r's at the assembly.
+- **Not chosen:** rerunning only Buckley-Leverett (Burgers was not measured), or keeping Bratu (within
+  5%, saves about 220 SU, but its C1 stays failed and the table would mix two libraries). The second is
+  offered to the advisor as the cheaper alternative.
+
+**The code.**
+- `p5_3_networks.py` imports numpy before torch, as Package 1's `four_method_tables.py` and `p5_3_lil.py`.
+- `lilq.provenance`: `openmp_libraries`, `openmp_library_kind` ('torch' if the wheel's library is
+  loaded, 'module' if only another), `require_openmp(kind)`, which stops the process (SystemExit,
+  "OPENMP LIBRARY CHECK FAILED") otherwise. `p5_3_openmp.py` uses them instead of its own copies.
+- `--require-openmp {module,torch}` on `p5_3_networks.py run | solo | checks` and `p5_3_lil.py run`:
+  the check before any run or record.
+- In the job scripts of p5r and p5g (`OPENMP_CHECK`, `_generate_jobs.py`): before the first run of every
+  job, each driver is imported in a fresh process and `require_openmp('module')` must pass, or the job
+  ends (`set -e`). In the preflights this stops the whole stage (afterok). Every driver call also
+  carries `--require-openmp module`. The check runs in each process because the library is chosen
+  per process, by its first import.
+- On the laptop (Windows) both orders load the wheel's library (numpy's wheel brings no OpenMP), so the
+  laptop rehearsal runs the check with 'torch' in place of 'module'.
+
+**Stage p5r** (`results/package5_item3_cpu_rerun`, its own commit lock; `submit_p5_item3_rerun.sh`):
+the preflight (cpu: the library, the inputs, the test suite); then on whole CPU nodes the checks job
+(C2/C4 for NiL-N and LM) and the five budget jobs in the CPU set's parts, network runs only; then the
+report (afterany). Walltimes from the same model as p5c.
+
+**Tests:** `tests/test_p5_3_openmp.py` (the classification; `require_openmp` on each library; a driver
+with `--require-openmp` stops before any record; in a fresh process, numpy is loaded before torch by
+every item 3 entry point: the two drivers, the table, `p4_checks.py`, `lilq.provenance`; with the old
+order the networks case fails); `tests/test_p5_submission.py` (p5r's runs, records, classes,
+walltimes, SU requested, dry run and chain; the check in every p5r and p5g job before its first run;
+p5c's scripts without it).
+
+**The scans before each hand-off** now also diff the OpenMP and BLAS libraries in the rehearsal's
+`hardware.json` against the reference package's.
+
+---
+
 ## 2026-11-17 -- Package 5, item 3: the CPU set's checks, C1's failure, and the OpenMP library diagnostic (stage p5o)
 
 **The CPU set** (bundle 0f74bdf, jobs 20564295-20564302). All seven compute jobs completed, about

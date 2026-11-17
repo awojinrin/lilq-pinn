@@ -225,6 +225,44 @@ def capture_thread_info() -> dict:
     return info
 
 
+# Which OpenMP runtime a process loaded. PyTorch's wheel ships its own (torch/lib/libgomp.so.1 on Linux);
+# numpy's and scipy's BLAS bring the GCC module's on Grace. Whichever package is imported first decides,
+# for the whole process. Package 1's runs loaded the module's; the item 3 CPU set's network processes
+# loaded the wheel's, and that changed their arithmetic and their speed (DECISIONS.md, 17 November 2026).
+OPENMP_KINDS = ('module', 'torch')
+
+
+def openmp_libraries() -> list:
+    """The file paths of the OpenMP runtimes loaded in this process (threadpoolctl)."""
+    from threadpoolctl import threadpool_info
+    return [p['filepath'] for p in threadpool_info() if p.get('internal_api') == 'openmp']
+
+
+def openmp_library_kind(paths) -> Optional[str]:
+    """'torch' if the PyTorch wheel's OpenMP library is among ``paths``, 'module' if only another one,
+    None if there is none."""
+    if not paths:
+        return None
+    return 'torch' if any('site-packages' in p and 'torch' in p for p in paths) else 'module'
+
+
+def require_openmp(kind: str) -> list:
+    """Stop the process (SystemExit) unless the OpenMP library it loaded is of ``kind`` (OPENMP_KINDS).
+
+    numpy and torch are both loaded by this module's own imports, numpy first, so the check sees what the
+    process will compute with: if neither was loaded before, the order is Package 1's; if torch was, the
+    check reports the wheel's library. Returns the library paths."""
+    if kind not in OPENMP_KINDS:
+        raise ValueError(f'kind must be one of {OPENMP_KINDS}, not {kind!r}')
+    libs = openmp_libraries()
+    found = openmp_library_kind(libs)
+    if found != kind:
+        raise SystemExit(f'OPENMP LIBRARY CHECK FAILED: this process loaded the {found} OpenMP library '
+                         f'({libs}), not the {kind} one: stopping before any run')
+    print(f'OpenMP library: {kind} ({", ".join(libs)})', flush=True)
+    return libs
+
+
 def capture_gpu_info() -> dict:
     """GPU name, driver version, and total memory via nvidia-smi.
 

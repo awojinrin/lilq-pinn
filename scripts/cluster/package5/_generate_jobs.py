@@ -418,6 +418,85 @@ def cpu_jobs():
     return jobs
 
 
+# The OpenMP library (DECISIONS.md, 17 November 2026). Each driver is imported as its runs import it
+# and must have loaded the GCC module's OpenMP library, as Package 1 and the LiL runs did; the job stops
+# here otherwise (set -e), before any run. Each driver call also carries --require-openmp, so that a
+# process that loaded another library stops before its first run.
+OPENMP_REQUIRED = 'module'
+OPENMP_CHECK = ('''# The OpenMP library each driver loads: the GCC module's, as Package 1's runs (DECISIONS.md, 17 November 2026)
+for m in p5_3_networks p5_3_lil; do
+    python -c "import sys; sys.path.insert(0, '.'); import experiments.$m; from lilq.provenance import require_openmp; require_openmp('__KIND__')"
+done
+'''.replace('__KIND__', OPENMP_REQUIRED))
+REQ = f'--require-openmp {OPENMP_REQUIRED}'
+
+
+# ---- p5r, the CPU set's network runs again (the user's decision, 17 November 2026; the advisor's
+# approval in the item 3 cost check). The CPU set's network processes loaded the PyTorch wheel's
+# OpenMP library (torch imported first); Package 1's and the LiL runs' loaded the module's. The
+# Buckley-Leverett network runs were 60 to 75% slower per iteration with it, and C1 failed on 15 of
+# 18 runs. Its own results folder (results/package5_item3_cpu_rerun) under its own commit lock: the
+# CPU set stays as it ran. The same five jobs and parts as p5c, network runs only (its LiL-N L-BFGS
+# runs loaded the module's library and are kept), and C2/C4 for the networks. The assembly takes the
+# network runs from here and the LiL runs from p5c.
+R_PREFLIGHT_BODY = ('''python -c "import numpy, scipy, torch; print('numpy', numpy.__version__, 'scipy', scipy.__version__, 'torch', torch.__version__)"
+''' + OPENMP_CHECK + '''# Every input the jobs read (fail now, not later), then the test suite
+''' + _inputs_check(ITEM3_INPUTS) + '''python -m pytest tests/ -q $(printf -- '--ignore=%s ' $LILQ_COMPONENT_A_TESTS)
+echo "PREFLIGHT OK"
+''')
+
+R_CHECKS_BODY = f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END3}{OPENMP_CHECK}python experiments/p4_checks.py provenance --out "$PKG" --name checks
+# Checks C2 and C4: NiL-N and LM at the largest size, about 30 s each (sized by a pilot), without and
+# with the error log
+for bench in {' '.join(BENCHES)}; do
+    until_end python {N3} checks --bench "$bench" --device cpu --out "$PKG" --reference-dir {REF2} --tag cpu-checks {REQ}
+done
+'''
+
+
+def rerun_body(job):
+    bench, p, _ = CPU_SPLIT[job]
+    tag = f'cpu-{job}'
+    return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END3}{OPENMP_CHECK}python experiments/p4_checks.py provenance --out "$PKG" --name {tag}
+# The network runs (part {p} of NiL-N, NiL-Q and LM over the sizes and seeds), each to the 600 s budget,
+# one at a time
+until_end python {N3} run --bench {bench} --part {p} --device cpu --out "$PKG" --reference-dir {REF2} --tag {tag} {REQ}
+'''
+
+
+CHECKS_EXTRA_S = 1200              # C2/C4 at the largest sizes (the CPU set's protocol job, with the LiL runs: 15 min)
+
+
+def rerun_jobs():
+    jobs = {
+        'p5r_preflight.slurm': ('preflight', 'cpu', '00:30:00', '''# Package 5, item 3, the CPU network runs again: the preflight. The first job of stage p5r: env.sh
+# locks results/package5_item3_cpu_rerun to this commit here. The OpenMP library each driver loads,
+# every input the jobs read, the test suite. Every other job of the stage waits for it.
+# Submit: through scripts/cluster/package5/submit_p5_item3_rerun.sh
+''', R_PREFLIGHT_BODY),
+        'p5r_checks.slurm': ('checks', 'timed-cpu', walltime(CHECKS_EXTRA_S), '''# Package 5, item 3, the CPU network runs again, on one whole node (48 threads): checks C2 and C4 for
+# NiL-N and LM on the three problems.
+# Submit: through scripts/cluster/package5/submit_p5_item3_rerun.sh
+''', R_CHECKS_BODY),
+    }
+    for job in CPU_SPLIT:
+        nets, _ = cpu_runs(job)
+        e = process_s(CPU_SPLIT[job][0], nets, ())
+        jobs[f'p5r_{job.replace("-", "_")}.slurm'] = (job, 'timed-cpu', walltime(e), f'''# Package 5, item 3, the CPU network runs again, on one whole node (48 threads): {len(nets)} budget runs of
+# 600 s, one at a time ({CPU_SPLIT[job][0]}: network part {CPU_SPLIT[job][1]}, as p5c). Expected {e / 3600:.2f} h (each run with its
+# error log, pretraining and setup); the walltime x {MARGIN}.
+# Submit: through scripts/cluster/package5/submit_p5_item3_rerun.sh
+''', rerun_body(job))
+    jobs['p5r_report.slurm'] = ('report', 'cpu', '00:30:00', '''# Package 5, item 3, the CPU network runs again: after the jobs (afterany). The time-to-error table of
+# these runs, then sacct, su_per_job.csv and results/package5_item3_cpu_rerun.tar.gz. C1 runs at the
+# assembly on the laptop (Package 1's files are not on Grace).
+# Submit: through scripts/cluster/package5/submit_p5_item3_rerun.sh
+''', report_body('p5r'))
+    return jobs
+
+
 # ---- p5g, the A100 set
 # One whole two-A100 node per problem (gpu-pair: both A100s, 48 cores, 192 SU/h), two processes
 # side by side, one per GPU, 24 threads each. First the solo check: one run alone on its GPU, the
@@ -447,7 +526,7 @@ def solo_gpu(bench):
 
 G_PREFLIGHT_BODY = ('''nvidia-smi
 python -c "import torch; assert torch.cuda.is_available(), 'no CUDA'; print('torch', torch.__version__, torch.cuda.get_device_name(0))"
-''' + _inputs_check(ITEM3_INPUTS) + '''# The item 3 tests with the A100 visible (the torch residuals and the off-clock timer on CUDA)
+''' + OPENMP_CHECK + _inputs_check(ITEM3_INPUTS) + '''# The item 3 tests with the A100 visible (the torch residuals and the off-clock timer on CUDA)
 python -m pytest tests/test_p5_3_lil.py tests/test_p5_3_networks.py tests/test_run_probe.py tests/test_p5_3_table.py -q
 echo "PREFLIGHT OK"
 ''')
@@ -467,8 +546,8 @@ def gpu_pair_body(bench):
 {UNTIL_END3}gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
 [[ "$gpus" == 2 ]] || {{ echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }}
 {THREADS24}   # each process's share of the 48 cores (hardware.json records it)
-python experiments/p4_checks.py provenance --out "$PKG" --name gpu-{bench}
-NET=(--device cuda --out "$PKG" --reference-dir {REF2})
+{OPENMP_CHECK}python experiments/p4_checks.py provenance --out "$PKG" --name gpu-{bench}
+NET=(--device cuda --out "$PKG" --reference-dir {REF2} {REQ})
 # The solo check: NiL-N, P = {P}, seed {seed}, alone on GPU {g} (the one its paired run uses) for 60 s
 ( export CUDA_VISIBLE_DEVICES={g}
   until_end python {N3} solo --bench {bench} --P {P} --method {method} --seed {seed} --tag gpu-{bench}-solo "${{NET[@]}}" )
@@ -562,7 +641,7 @@ def main():
         (HERE / name).write_bytes(render(name, RETIME_JOBS, 'p5t').encode())
     for name in A2_JOBS:
         (HERE / name).write_bytes(render(name, A2_JOBS, 'p5a').encode())
-    item3 = [(cpu_jobs(), 'p5c'), (gpu_jobs(), 'p5g')]
+    item3 = [(cpu_jobs(), 'p5c'), (gpu_jobs(), 'p5g'), (rerun_jobs(), 'p5r')]
     for jobs, stage in item3:
         for name in jobs:
             (HERE / name).write_bytes(render(name, jobs, stage).encode())

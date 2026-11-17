@@ -19,7 +19,7 @@
 #               Package 5's preflight checks the billing before the other jobs run.
 #   gpu-pair    both A100s of a node and all of its cores and memory (192 SU/h, as `timed`): two
 #               runs side by side, one per GPU (Package 5, item 3; the user's decision, 16 November 2026)
-# LILQ_WAVE (1, 2, 3 or 4, Package 2's stages p2s1 and p2s2, or p3, p4, p5, p5t, p5a, p5c, p5g, p5o) must be set: it picks the results folder,
+# LILQ_WAVE (1, 2, 3 or 4, Package 2's stages p2s1 and p2s2, or p3, p4, p5, p5t, p5a, p5c, p5g, p5o, p5r) must be set: it picks the results folder,
 # results/wave<N>, each locked to one commit (env.sh). Use this for
 # resubmissions too (e.g. LILQ_WAVE=1 bash scripts/cluster/sbatch.sh job.slurm --array=2).
 set -euo pipefail
@@ -27,8 +27,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 CLUSTER="${CLUSTER:-grace}"
 source "$here/profiles/$CLUSTER.sh"
 [[ -n "$ACCOUNT" ]] || { echo "set LILQ_ACCOUNT to your HPRC allocation account (myproject -l)" >&2; exit 1; }
-: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t, p5a, p5c, p5g or p5o (the wave or stage this job belongs to)}"
-[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3|p4|p5|p5t|p5a|p5c|p5g|p5o)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t, p5a, p5c, p5g or p5o, not '$LILQ_WAVE'" >&2; exit 1; }
+: "${LILQ_WAVE:?set LILQ_WAVE to 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t, p5a, p5c, p5g, p5o or p5r (the wave or stage this job belongs to)}"
+[[ "$LILQ_WAVE" =~ ^([1234]|p2s[12]|p2s2g|p3|p4|p5|p5t|p5a|p5c|p5g|p5o|p5r)$ ]] || { echo "LILQ_WAVE must be 1, 2, 3, 4, p2s1, p2s2, p2s2g, p3, p4, p5, p5t, p5a, p5c, p5g, p5o or p5r, not '$LILQ_WAVE'" >&2; exit 1; }
 export CLUSTER LILQ_MODULES LILQ_WAVE
 
 script="$1"; shift

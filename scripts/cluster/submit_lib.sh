@@ -42,6 +42,9 @@ confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave
     if [[ "$LILQ_WAVE" == p5c ]]; then   # Package 5, item 3, the CPU set (16 November 2026): results/package5_item3_cpu
         what="Package 5, item 3, the CPU set"
         echo "Package 5, item 3, the CPU set (results/package5_item3_cpu), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5r ]]; then   # Package 5, item 3: the CPU network runs again, numpy first (17 November 2026)
+        what="Package 5, item 3, the CPU network runs again"
+        echo "Package 5, item 3, the CPU network runs again (results/package5_item3_cpu_rerun), code at $(code_commit)."
     elif [[ "$LILQ_WAVE" == p5o ]]; then   # Package 5, item 3: the OpenMP library diagnostic (17 November 2026)
         what="Package 5, item 3, the OpenMP library diagnostic"
         echo "Package 5, item 3, the OpenMP library diagnostic (results/package5_item3_openmp), code at $(code_commit)."

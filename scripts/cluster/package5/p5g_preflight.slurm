@@ -12,6 +12,10 @@ source scripts/cluster/env.sh
 set -euo pipefail
 nvidia-smi
 python -c "import torch; assert torch.cuda.is_available(), 'no CUDA'; print('torch', torch.__version__, torch.cuda.get_device_name(0))"
+# The OpenMP library each driver loads: the GCC module's, as Package 1's runs (DECISIONS.md, 17 November 2026)
+for m in p5_3_networks p5_3_lil; do
+    python -c "import sys; sys.path.insert(0, '.'); import experiments.$m; from lilq.provenance import require_openmp; require_openmp('module')"
+done
 inputs=("$RESULTS/package2_stage2/reference"/bratu_ref_p48.npz
         "$RESULTS/package2_stage2/reference"/burgers_cole_hopf.npz
         "$RESULTS/package2_stage2/reference"/bl_fd_ref_viscous_nu0.1.npz)

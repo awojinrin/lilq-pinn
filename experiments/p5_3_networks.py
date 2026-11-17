@@ -78,11 +78,12 @@ if _proj not in sys.path:
     sys.path.insert(0, _proj)
 
 import lilq.blas_threads  # noqa: F401  (must import before numpy)
+import numpy  # noqa: F401  (before torch, as Package 1: the GCC module's OpenMP library, not the torch wheel's)
 import torch
 
 from experiments import p2_8_lm_networks as p28
 from lilq.metrics import RunProbe, _synchronize
-from lilq.provenance import capture_blas_thread_env, job_dir, save_provenance
+from lilq.provenance import OPENMP_KINDS, capture_blas_thread_env, job_dir, require_openmp, save_provenance
 from lilq.source_lock import current_commit
 
 ITEM = 'P5_3_cost'
@@ -527,6 +528,11 @@ def part_of(runs, part):
 
 # ---------------------------------------------------------------- CLI
 
+def _require_openmp_arg(parser):
+    parser.add_argument('--require-openmp', choices=OPENMP_KINDS,
+                        help="stop before any run unless the process loaded this OpenMP library ('module' on Grace)")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[1])
     sub = ap.add_subparsers(dest='cmd', required=True)
@@ -542,6 +548,7 @@ def main(argv=None):
     r.add_argument('--part', default='0/1', help="'i/n': this process's share of the runs (round robin)")
     r.add_argument('--tag', default='', help='this process in its job: names its warm-up and provenance '
                    'records and is kept in each run.json')
+    _require_openmp_arg(r)
     so = sub.add_parser('solo', help='the paired-against-solo check: one run, the other GPU idle')
     so.add_argument('--bench', required=True, choices=p28.BENCHMARKS)
     so.add_argument('--out', required=True)
@@ -554,6 +561,7 @@ def main(argv=None):
     so.add_argument('--tag', default='')
     so.add_argument('--gate', type=int, choices=(0, 1), help='the pairing gate: this run on GPU i, into '
                     'its gate folder (both GPUs run it at once)')
+    _require_openmp_arg(so)
     ga = sub.add_parser('gate', help='the pairing gate: exit 1 unless the gate run on --gpu is within 5%% of the solo')
     ga.add_argument('--bench', required=True, choices=p28.BENCHMARKS)
     ga.add_argument('--out', required=True)
@@ -574,6 +582,7 @@ def main(argv=None):
     c.add_argument('--P', type=int)
     c.add_argument('--device', default='cpu')
     c.add_argument('--tag', default='')
+    _require_openmp_arg(c)
     args = ap.parse_args(argv)
 
     root = Path(args.out) / ITEM / 'networks'
@@ -590,6 +599,8 @@ def main(argv=None):
         if res['passed'] is not True:
             raise SystemExit(1)
         return
+    if args.require_openmp:
+        require_openmp(args.require_openmp)       # before any run or record
     tag = getattr(args, 'tag', '')
     name = f'{args.bench}_{args.device}{_suffix(tag)}'
     prov = job_dir(root / 'provenance' / name)      # a resubmitted job writes beside the first's

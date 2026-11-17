@@ -22,8 +22,12 @@ until_end() { local left=$((LILQ_WALL_S - SECONDS - 300))
 gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
 [[ "$gpus" == 2 ]] || { echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }
 export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24   # each process's share of the 48 cores (hardware.json records it)
+# The OpenMP library each driver loads: the GCC module's, as Package 1's runs (DECISIONS.md, 17 November 2026)
+for m in p5_3_networks p5_3_lil; do
+    python -c "import sys; sys.path.insert(0, '.'); import experiments.$m; from lilq.provenance import require_openmp; require_openmp('module')"
+done
 python experiments/p4_checks.py provenance --out "$PKG" --name gpu-bratu
-NET=(--device cuda --out "$PKG" --reference-dir "$RESULTS/package2_stage2/reference")
+NET=(--device cuda --out "$PKG" --reference-dir "$RESULTS/package2_stage2/reference" --require-openmp module)
 # The solo check: NiL-N, P = 225, seed 0, alone on GPU 0 (the one its paired run uses) for 60 s
 ( export CUDA_VISIBLE_DEVICES=0
   until_end python experiments/p5_3_networks.py solo --bench bratu --P 225 --method nil_n --seed 0 --tag gpu-bratu-solo "${NET[@]}" )

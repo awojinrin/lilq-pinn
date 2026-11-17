@@ -30,7 +30,7 @@ import tarfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-STAGES = {'p2s1': 'package2_stage1', 'p2s2': 'package2_stage2', 'p2s2g': 'package2_stage2_gpu', 'p3': 'package3', 'p4': 'package4', 'p5': 'package5', 'p5t': 'package5_retime', 'p5a': 'package5_a2', 'p5c': 'package5_item3_cpu', 'p5g': 'package5_item3_gpu', 'p5o': 'package5_item3_openmp'}
+STAGES = {'p2s1': 'package2_stage1', 'p2s2': 'package2_stage2', 'p2s2g': 'package2_stage2_gpu', 'p3': 'package3', 'p4': 'package4', 'p5': 'package5', 'p5t': 'package5_retime', 'p5a': 'package5_a2', 'p5c': 'package5_item3_cpu', 'p5g': 'package5_item3_gpu', 'p5o': 'package5_item3_openmp', 'p5r': 'package5_item3_cpu_rerun'}
 
 
 def _wave_report():

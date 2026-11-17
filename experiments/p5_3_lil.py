@@ -91,7 +91,7 @@ from experiments import p4_1_burgers_gauss as p41
 from experiments import p5_1_weights as p51
 from experiments.p4_common import N_S, REPEATS, SHORT_REPEATS, SHORT_RUN_S, iterate_to_rule, read_csv, write_csv
 from experiments.p5_3_networks import BUDGET_S, HISTORY_COLUMNS, ITEM, NO_CAP, finished, write_history
-from lilq.provenance import capture_blas_thread_env, job_dir, save_provenance
+from lilq.provenance import OPENMP_KINDS, capture_blas_thread_env, job_dir, require_openmp, save_provenance
 from lilq.source_lock import current_commit
 
 LAM = 1e4                                          # the advisor's reply of 15 November 2026, answer 1
@@ -537,6 +537,8 @@ def main(argv=None):
     r.add_argument('--no-timing', action='store_true', help='the logged pass only (laptop rehearsal)')
     r.add_argument('--tag', default='', help='this process in its job (e.g. cpu-bratu): names its warm-up and '
                    'provenance records and is kept in each run.json')
+    r.add_argument('--require-openmp', choices=OPENMP_KINDS,
+                   help="stop before any run unless the process loaded this OpenMP library ('module' on Grace)")
     c = sub.add_parser('c3')
     c.add_argument('--out', required=True)
     c.add_argument('--package4', required=True)
@@ -546,6 +548,8 @@ def main(argv=None):
         res = c3(args.out, args.package4)
         print(json.dumps(res, indent=2))
         return
+    if args.require_openmp:
+        require_openmp(args.require_openmp)       # before any run or record
     root = Path(args.out) / ITEM / 'lil'
     name = f'{args.bench}_{args.device}' + (f'_{args.tag}' if args.tag else '')
     prov = job_dir(root / 'provenance' / name)      # a resubmitted job writes beside the first's

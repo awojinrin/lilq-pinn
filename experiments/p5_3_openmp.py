@@ -57,18 +57,6 @@ TIMING_COLUMNS = ['first', 'round', 'library', 'benchmark', 'P', 'method', 'iter
                   's_per_iteration', 'stopping_reason']
 
 
-def library_kind(paths):
-    """'torch' if the PyTorch wheel's OpenMP library is loaded, 'module' if only another one, None if none."""
-    if not paths:
-        return None
-    return 'torch' if any('site-packages' in p and 'torch' in p for p in paths) else 'module'
-
-
-def openmp_libraries():
-    from threadpoolctl import threadpool_info
-    return [p['filepath'] for p in threadpool_info() if p.get('internal_api') == 'openmp']
-
-
 def _parse(argv):
     ap = argparse.ArgumentParser(description='Package 5, item 3: the OpenMP library of a network process')
     ap.add_argument('--first', required=True, choices=('numpy', 'torch'), help='the package this process imports first')
@@ -89,11 +77,11 @@ def main(argv=None):
     import torch  # noqa: F401
     import numpy  # noqa: F401,F811
     from experiments import p5_3_networks as n3
-    from lilq.provenance import job_dir, save_provenance
+    from lilq.provenance import job_dir, openmp_libraries, openmp_library_kind, save_provenance
     from lilq.source_lock import current_commit
 
     libs = openmp_libraries()
-    kind = library_kind(libs)
+    kind = openmp_library_kind(libs)
     want = 'torch' if args.first == 'torch' else 'module'
     root = Path(args.out) / n3.ITEM / 'openmp'
     d = root / f'{args.first}-first'

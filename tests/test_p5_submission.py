@@ -112,7 +112,7 @@ def test_p5_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p5)   export PKG="$RESULTS/package5"' in (cluster / 'env.sh').read_text()
     sb = (cluster / 'sbatch.sh').read_text()
-    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o)$' in sb
+    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o|p5r)$' in sb
     assert 'cpu-mem)' in sb and '--cpus-per-task=24 --mem=96G' in sb
     assert 'LILQ_WAVE" == p5' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5'] == 'package5'
@@ -337,6 +337,10 @@ GPU3 = P5 / 'submit_p5_item3_gpu.sh'
 CPU3_JOBS = {'p5c_preflight', 'p5c_protocol', 'p5c_bratu', 'p5c_burgers_a', 'p5c_burgers_b', 'p5c_bl_a', 'p5c_bl_b',
              'p5c_report'}
 GPU3_JOBS = {'p5g_preflight', 'p5g_bratu', 'p5g_burgers', 'p5g_bl', 'p5g_report'}
+RERUN3 = P5 / 'submit_p5_item3_rerun.sh'
+RERUN3_JOBS = {'p5r_preflight', 'p5r_checks', 'p5r_bratu', 'p5r_burgers_a', 'p5r_burgers_b', 'p5r_bl_a', 'p5r_bl_b',
+               'p5r_report'}
+STAGE3 = {'p5c': (CPU3, CPU3_JOBS), 'p5g': (GPU3, GPU3_JOBS), 'p5r': (RERUN3, RERUN3_JOBS)}
 RATE3 = {'cpu': 24, 'timed-cpu': 48, 'shared-gpu': 80, 'gpu-pair': 192}    # SU per hour on Grace
 
 
@@ -387,13 +391,13 @@ def test_the_generator_has_the_drivers_sizes_methods_and_seeds():
     assert gen.NET_METHODS == net.METHODS and gen.NET_SEEDS == net.SEEDS
 
 
-@pytest.mark.parametrize('stage', ['p5c', 'p5g'])
+@pytest.mark.parametrize('stage', ['p5c', 'p5g', 'p5r'])
 def test_every_budget_run_is_in_one_job_and_every_process_has_its_own_records(stage):
     import experiments.p5_3_networks as net
     gen = _gen()
     jobs = sorted(p.stem for p in P5.glob(f'{stage}_*.slurm'))
-    assert set(jobs) == (CPU3_JOBS if stage == 'p5c' else GPU3_JOBS)
-    device = 'cpu' if stage == 'p5c' else 'cuda'
+    assert set(jobs) == STAGE3[stage][1]
+    device = 'cuda' if stage == 'p5g' else 'cpu'
     nets, lils = {b: [] for b in gen.BENCHES}, {b: [] for b in gen.BENCHES}
     records = {'networks': [], 'lil': []}        # (bench, tag): one warm-up and provenance record each
     for job in jobs:
@@ -414,7 +418,8 @@ def test_every_budget_run_is_in_one_job_and_every_process_has_its_own_records(st
                 assert stage == 'p5c' and _arg(args, '--methods') == ['lilq', 'trf', 'square']
     for bench in gen.BENCHES:
         assert sorted(nets[bench]) == sorted(gen.net_runs(bench)), bench          # each run once
-        assert sorted(lils[bench]) == sorted(gen.LIL_SIZES[bench]), bench
+        # p5r reruns the network runs only: the CPU set's LiL runs loaded the module's OpenMP library
+        assert sorted(lils[bench]) == ([] if stage == 'p5r' else sorted(gen.LIL_SIZES[bench])), bench
     # the protocol and checks loops call each driver once per problem ("$bench")
     for driver, rec in records.items():
         expanded = [(b2, t) for b, t in rec for b2 in (gen.BENCHES if b == '"$bench"' else (b,))]
@@ -430,6 +435,40 @@ def test_the_protocol_job_runs_the_lil_methods_and_c2_c4_on_the_three_problems()
     checks = _calls('p5c_protocol', 'experiments/p5_3_networks.py')
     assert len(checks) == 1 and checks[0][0].startswith('checks ') and '--device cpu' in checks[0][0]
     assert _body('p5c_protocol').count('for bench in bratu burgers bl; do') == 2
+
+
+def test_the_rerun_checks_job_runs_c2_c4_for_the_networks_only():
+    assert _calls('p5r_checks', 'experiments/p5_3_lil.py') == []
+    checks = _calls('p5r_checks', 'experiments/p5_3_networks.py')
+    assert len(checks) == 1 and checks[0][0].startswith('checks ') and '--device cpu' in checks[0][0]
+    assert _body('p5r_checks').count('for bench in bratu burgers bl; do') == 1
+
+
+@pytest.mark.parametrize('stage', ['p5g', 'p5r'])
+def test_every_job_checks_the_openmp_library_before_it_runs_anything(stage):
+    """Each driver, imported as its runs import it, must have the GCC module's OpenMP library (as Package 1);
+    every driver call stops before its first run otherwise (DECISIONS.md, 17 November 2026)."""
+    gen = _gen()
+    check = gen.OPENMP_CHECK
+    assert "require_openmp('module')" in check and 'for m in p5_3_networks p5_3_lil; do' in check
+    for job in sorted(STAGE3[stage][1] - {f'{stage}_report'}):
+        body = _body(job)
+        assert check in body, job
+        first_python = min(i for i in (body.find('python experiments/'), body.find('python -m pytest')) if i >= 0)
+        assert body.index(check) < first_python or job.endswith('preflight'), job
+        for driver in ('experiments/p5_3_networks.py', 'experiments/p5_3_lil.py'):
+            for args, _ in _calls(job, driver):
+                if args.startswith(('pairing ', 'gate ')):
+                    continue
+                assert '--require-openmp module' in args or '"${NET[@]}"' in args, (job, args)
+    if stage == 'p5g':
+        assert all('--require-openmp module)' in _body(f'p5g_{b}') for b in gen.BENCHES)   # in NET=(...)
+
+
+def test_the_cpu_set_scripts_stay_as_they_ran():
+    """p5c ran at 0f74bdf; its scripts are its record and get no library check."""
+    for job in CPU3_JOBS:
+        assert 'require_openmp' not in _text(job) and '--require-openmp' not in _text(job), job
 
 
 def test_the_pair_runs_one_process_per_gpu_and_the_solo_check_on_its_runs_gpu():
@@ -471,7 +510,8 @@ def test_the_pair_runs_one_process_per_gpu_and_the_solo_check_on_its_runs_gpu():
 
 def test_item3_classes_walltimes_and_the_su_requested():
     gen = _gen()
-    for jobs, stage, script in ((gen.cpu_jobs(), 'p5c', CPU3), (gen.gpu_jobs(), 'p5g', GPU3)):
+    for jobs, stage, script in ((gen.cpu_jobs(), 'p5c', CPU3), (gen.gpu_jobs(), 'p5g', GPU3),
+                                (gen.rerun_jobs(), 'p5r', RERUN3)):
         requested = 0
         for name, (short, cls, wall, _, _) in jobs.items():
             t = (P5 / name).read_text()
@@ -487,6 +527,10 @@ def test_item3_classes_walltimes_and_the_su_requested():
         nets, lil = gen.cpu_runs(job)
         floor = sum(gen.run_wall_s(gen.CPU_SPLIT[job][0], m) for _, m, _ in nets) + len(lil) * (600 * 1.02 + gen.FIXED_S)
         assert _hours(wall) * 3600 >= floor * gen.MARGIN
+    for job in gen.CPU_SPLIT:
+        wall = gen.rerun_jobs()[f'p5r_{job.replace("-", "_")}.slurm'][2]
+        nets, _ = gen.cpu_runs(job)
+        assert _hours(wall) * 3600 >= sum(gen.run_wall_s(gen.CPU_SPLIT[job][0], m) for _, m, _ in nets) * gen.MARGIN
     for bench in gen.BENCHES:
         wall = gen.gpu_jobs()[f'p5g_{bench}.slurm'][2]
         n = max(gen.gpu_slots(bench, 0), gen.gpu_slots(bench, 1))
@@ -494,7 +538,7 @@ def test_item3_classes_walltimes_and_the_su_requested():
 
 
 def test_item3_reports_guard_each_step_and_pack_the_stage():
-    for stage in ('p5c', 'p5g'):
+    for stage in ('p5c', 'p5g', 'p5r'):
         body = _body(f'{stage}_report')
         steps = [l for l in body.splitlines() if 'python ' in l]
         assert steps and all(l.startswith('timeout ') for l in steps), steps
@@ -506,22 +550,23 @@ def test_item3_reports_guard_each_step_and_pack_the_stage():
     assert 'p5c)  export PKG="$RESULTS/package5_item3_cpu"' in env and 'p5g)  export PKG="$RESULTS/package5_item3_gpu"' in env
     stages = _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES
     assert stages['p5c'] == 'package5_item3_cpu' and stages['p5g'] == 'package5_item3_gpu'
+    assert 'p5r)  export PKG="$RESULTS/package5_item3_cpu_rerun"' in env and stages['p5r'] == 'package5_item3_cpu_rerun'
     lib = (cluster / 'submit_lib.sh').read_text()
-    assert 'LILQ_WAVE" == p5c' in lib and 'LILQ_WAVE" == p5g' in lib
+    assert 'LILQ_WAVE" == p5c' in lib and 'LILQ_WAVE" == p5g' in lib and 'LILQ_WAVE" == p5r' in lib
     assert 'GPU_PAIR_GRES=gpu:a100:2' in (cluster / 'profiles' / 'grace.sh').read_text()
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
-@pytest.mark.parametrize('which', ['cpu', 'gpu'])
+@pytest.mark.parametrize('which', ['p5c', 'p5g', 'p5r'])
 def test_item3_dry_run_checks_every_job_with_its_resources(tmp_path, which):
-    script, jobs = (CPU3, CPU3_JOBS) if which == 'cpu' else (GPU3, GPU3_JOBS)
+    script, jobs = STAGE3[which]
     env, log = _fake_cluster(tmp_path, True)
     out = subprocess.run(['bash', str(script)], env=env, capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
     lines = log.read_text().splitlines()
     assert sorted(_job(l) for l in lines) == sorted(jobs) and not any('--dependency' in l for l in lines)
     gen = _gen()
-    classes = {Path(n).stem: c for n, (_, c, _, _, _) in {**gen.cpu_jobs(), **gen.gpu_jobs()}.items()}
+    classes = {Path(n).stem: c for n, (_, c, _, _, _) in {**gen.cpu_jobs(), **gen.gpu_jobs(), **gen.rerun_jobs()}.items()}
     for l in lines:
         cls = classes[_job(l)]
         assert ('--exclusive' in l) == (cls == 'timed-cpu'), l
@@ -532,9 +577,9 @@ def test_item3_dry_run_checks_every_job_with_its_resources(tmp_path, which):
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
-@pytest.mark.parametrize('which', ['cpu', 'gpu'])
+@pytest.mark.parametrize('which', ['p5c', 'p5g', 'p5r'])
 def test_item3_submission_chains_the_jobs(tmp_path, which):
-    script, jobs = (CPU3, CPU3_JOBS) if which == 'cpu' else (GPU3, GPU3_JOBS)
+    script, jobs = STAGE3[which]
     env, log = _fake_cluster(tmp_path, False)
     out = subprocess.run(['bash', str(script)], env=env, capture_output=True, text=True)
     assert out.returncode == 0, out.stdout + out.stderr
