@@ -45,6 +45,18 @@ lock) ran in 954 s: every part done, K1 and K2 pass with zero difference.
   coefficients). They match the advisor's two hand values to the figures he quoted.
 - Both Addendum 2 jobs go into `su.csv` through `--sacct-extra`, the lost hour included.
 
+**The delivered packages the assembly reads (found at this assembly).** The 14 November assembly was
+given Grace's raw trees for Packages 2, 3 and 4 (`.../grace/...`). This one is given the delivered
+folders (`package2_results`, `package3_results`, `package4_results`). Every Grace table, `checks.json`
+and C1 to C3 come out the same either way. One file differs:
+`P3_1_beltrami_certified/beside_delivered.csv`, whose ratios use the delivered delta_P of each field.
+Package 3's delivered pressure delta_P is the value re-evaluated after the advisor's reply of
+10 October (`delta_P_reevaluated.json`, 1e-4 to 2e-4 below Grace's first value). Grace's raw tree has
+the first value. **Decided:** the delivered folders, as the column's name says. The p and combined
+ratios move by at most 2e-4 relative. One figure printed in the 14 November memo changes: B2 at weight
+10^3, p (pin gauge) / delta_P, 169 -> 170. The memo as sent stays as it is; the next memo says so in
+one line.
+
 ---
 
 ## 2026-11-16 -- Package 5, item 3: the A100 class -- two runs side by side on a whole two-A100 node (the user's decision)
