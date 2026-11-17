@@ -190,7 +190,7 @@ def solve(bench, P, method, seed, reference_dir, device='cpu', budget_s=BUDGET_S
 
     def lbfgs(real):
         def wrapped(*args, **kwargs):
-            got['solver_start'] = time.perf_counter()
+            got.update(solver_start=time.perf_counter(), solver_start_epoch=time.time())
             model = args[2] if method == 'nil_n' else args[3]      # (pde, bc, model, ...) / (pde, lin, bc, model, ...)
             probe = RunProbe(error_fn_of(model), every=EVERY[method], budget_s=budget_s,
                              max_iterations=max_iterations)  # a short run's cap: L-BFGS iterations, NiL-Q's inner ones
@@ -201,12 +201,12 @@ def solve(bench, P, method, seed, reference_dir, device='cpu', budget_s=BUDGET_S
                 kwargs.update(max_iterations=NO_CAP)
             got['inner_iters'] = kwargs.get('max_inner_iters')
             out = real(*args, **kwargs)
-            got.update(probe=probe, solver_end=time.perf_counter())
+            got.update(probe=probe, solver_end=time.perf_counter(), solver_end_epoch=time.time())
             return out
         return wrapped
 
     def lm_solver(pde_fn, bc_fn, model, x_pde, y_pde, bc_data, lambda_pde=1.0, lambda_bc=10.0, lambda_ic=10.0, **_):
-        got['solver_start'] = time.perf_counter()
+        got.update(solver_start=time.perf_counter(), solver_start_epoch=time.time())
         net = p28.Net(model)
         X = torch.cat([x_pde.reshape(-1, 1), y_pde.reshape(-1, 1)], 1).detach()
         res = p28.Residual(net, p28.pde_function(bench, config), X, p28.boundary_blocks(bench, bc_data),
@@ -218,7 +218,7 @@ def solve(bench, P, method, seed, reference_dir, device='cpu', budget_s=BUDGET_S
             torch.nn.utils.vector_to_parameters(theta, model.parameters())
         summary['budget_reached'] = summary['stopping_reason'] == 'wall_time_cap'
         summary['optimizer_stall'] = summary['stopping_reason'] == 'optimizer_stall'
-        got['solver_end'] = time.perf_counter()
+        got.update(solver_end=time.perf_counter(), solver_end_epoch=time.time())
         return model, None, summary
 
     record = {}
@@ -254,6 +254,7 @@ def solve(bench, P, method, seed, reference_dir, device='cpu', budget_s=BUDGET_S
         'training_time_s': training,
         'error_time_s': off_clock,
         'solver_wall_s': got['solver_end'] - got['solver_start'],
+        'solver_window_epoch_s': [got['solver_start_epoch'], got['solver_end_epoch']],   # when (the pairing gate's overlap)
         'setup_s': got['solver_start'] - t0 - record.get('pretrain_s', 0.0),
         'wall_total_s': wall_total,
         'final_loss': float(summary['final_loss']),
@@ -423,18 +424,7 @@ def pairing(out_root):
         if not all((paired / f).exists() for f in ('run.json', 'history.csv')):
             rows.append(row | {'passed': None, 'reason': f'no finished paired run at {paired.name}'})
             continue
-        a, b = (_times(x / 'history.csv') for x in (d, paired))
-        common = sorted(set(a) & set(b) - {0})
-        if not common:
-            rows.append(row | {'passed': None, 'reason': 'no logged iteration in common'})
-            continue
-        k = common[-1]
-        ratio = b[k][0] / a[k][0] - 1.0
-        rows.append(row | {'iteration': k, 'time_solo_s': a[k][0], 'time_paired_s': b[k][0],
-                           'evaluations_solo': a[k][1], 'evaluations_paired': b[k][1],   # a different path shows here
-                           'paired_over_solo_minus_1': ratio, 'rtol': PAIR_RTOL,
-                           'paired_tag': json.loads((paired / 'run.json').read_text()).get('tag'),
-                           'passed': bool(abs(ratio) <= PAIR_RTOL)})
+        rows.append(row | compare_clocks(d, paired))
     out = Path(out_root) / ITEM / 'networks' / 'checks'
     out.mkdir(parents=True, exist_ok=True)
     verdicts = [r['passed'] for r in rows]
@@ -442,6 +432,65 @@ def pairing(out_root):
               'passed': (all(v is True for v in verdicts) if verdicts else None)}
     (out / 'pairing.json').write_text(json.dumps(result, indent=2))
     return result
+
+
+def compare_clocks(solo_dir, paired_dir):
+    """A paired run's clock against the solo run's, both finished: at the last iteration both
+    logged, ``paired / solo - 1``, within PAIR_RTOL either way. No verdict if they share no
+    logged iteration."""
+    a, b = (_times(Path(x) / 'history.csv') for x in (solo_dir, paired_dir))
+    jobs = {k: json.loads((Path(x) / 'run.json').read_text()).get('slurm_job_id')
+            for k, x in (('slurm_job_id_solo', solo_dir), ('slurm_job_id_paired', paired_dir))}
+    common = sorted(set(a) & set(b) - {0})
+    if not common:
+        return jobs | {'passed': None, 'reason': 'no logged iteration in common'}
+    k = common[-1]
+    ratio = b[k][0] / a[k][0] - 1.0
+    return jobs | {'iteration': k, 'time_solo_s': a[k][0], 'time_paired_s': b[k][0],
+            'evaluations_solo': a[k][1], 'evaluations_paired': b[k][1],   # a different path shows here
+            'paired_over_solo_minus_1': ratio, 'rtol': PAIR_RTOL,
+            'paired_tag': json.loads((Path(paired_dir) / 'run.json').read_text()).get('tag'),
+            'passed': bool(abs(ratio) <= PAIR_RTOL)}
+
+
+def gate_dir_of(out_root, bench, P, method, seed, device, gpu):
+    return Path(out_root) / ITEM / 'networks' / 'checks' / f'gate_{bench}_P{P}_{method}_s{seed}_{device}_gpu{gpu}'
+
+
+def _finished_run(d):
+    return all((Path(d) / f).exists() for f in ('run.json', 'history.csv'))
+
+
+def gate(out_root, bench, P, method, seed, device, gpu):
+    """The pairing gate (the user's decision, 16 November 2026), before a pair job's budget runs:
+    the solo check's run once more on both GPUs at once (``solo --gate 0`` and ``--gate 1``), and the
+    one on GPU ``gpu`` (the solo's) against the solo by ``compare_clocks`` -- the check ``pairing``
+    makes on the budget run after the job. Both gate runs must have finished: the one on the other
+    GPU is the load. Writes ``checks/gate_<bench>.json``; returns its record. A job goes on only
+    if ``passed`` is True."""
+    solo = solo_dir_of(out_root, bench, P, method, seed, device)
+    mine, other = (gate_dir_of(out_root, bench, P, method, seed, device, g) for g in (gpu, 1 - gpu))
+    row = {'check': 'the pairing gate: the solo run again with both GPUs busy, before the budget runs',
+           'benchmark': bench, 'P': P, 'method_key': method, 'seed': seed, 'device': device, 'gpu': gpu,
+           'solo': solo.name, 'gate': mine.name, 'other_gpu': other.name}
+    missing = [d.name for d in (solo, mine, other) if not _finished_run(d)]
+    job = os.environ.get('SLURM_JOB_ID')
+    stale = [d.name for d in (solo, mine, other) if d.name not in missing
+             and json.loads((d / 'run.json').read_text()).get('slurm_job_id') != job]
+    if missing:
+        row.update(passed=None, reason=f'did not finish (no run.json or history.csv): {", ".join(missing)}')
+    elif stale:                                      # an earlier job's record: not this node's measurement
+        row.update(passed=None, reason=f'from another job than this one ({job}): {", ".join(stale)}')
+    else:
+        row.update(compare_clocks(solo, mine))
+        w = [json.loads((d / 'run.json').read_text()).get('solver_window_epoch_s') for d in (mine, other)]
+        if all(w):          # the share of the judged run's solve during which the other GPU was solving too
+            row['overlap_fraction'] = max(0.0, min(w[0][1], w[1][1]) - max(w[0][0], w[1][0])) / (w[0][1] - w[0][0])
+    row.update(commit=current_commit(), slurm_job_id=os.environ.get('SLURM_JOB_ID'))
+    out = Path(out_root) / ITEM / 'networks' / 'checks'
+    out.mkdir(parents=True, exist_ok=True)
+    (out / f'gate_{bench}.json').write_text(json.dumps(row, indent=2))
+    return row
 
 
 def _times(path):
@@ -486,6 +535,16 @@ def main(argv=None):
     so.add_argument('--device', default='cuda')
     so.add_argument('--budget', type=float, default=SOLO_BUDGET_S)
     so.add_argument('--tag', default='')
+    so.add_argument('--gate', type=int, choices=(0, 1), help='the pairing gate: this run on GPU i, into '
+                    'its gate folder (both GPUs run it at once)')
+    ga = sub.add_parser('gate', help='the pairing gate: exit 1 unless the gate run on --gpu is within 5%% of the solo')
+    ga.add_argument('--bench', required=True, choices=p28.BENCHMARKS)
+    ga.add_argument('--out', required=True)
+    ga.add_argument('--P', type=int, required=True)
+    ga.add_argument('--method', required=True, choices=METHODS)
+    ga.add_argument('--seed', type=int, default=0)
+    ga.add_argument('--device', default='cuda')
+    ga.add_argument('--gpu', type=int, required=True, choices=(0, 1))
     pa = sub.add_parser('pairing', help='compare the solo checks with their paired runs')
     pa.add_argument('--out', required=True)
     c = sub.add_parser('checks')
@@ -500,6 +559,12 @@ def main(argv=None):
     root = Path(args.out) / ITEM / 'networks'
     if args.cmd == 'pairing':
         print(json.dumps(pairing(args.out), indent=2), flush=True)
+        return
+    if args.cmd == 'gate':
+        res = gate(args.out, args.bench, args.P, args.method, args.seed, args.device, args.gpu)
+        print(json.dumps(res, indent=2), flush=True)
+        if res['passed'] is not True:
+            raise SystemExit(1)
         return
     tag = getattr(args, 'tag', '')
     name = f'{args.bench}_{args.device}{_suffix(tag)}'
@@ -527,9 +592,11 @@ def main(argv=None):
                   f"error {rec['final_error']:.3e}", flush=True)
     elif args.cmd == 'solo':
         warm_up(args.bench, args.device, args.reference_dir, (args.method,), scratch=root, tag=tag)
+        where = (solo_dir_of(args.out, args.bench, args.P, args.method, args.seed, args.device) if args.gate is None
+                 else gate_dir_of(args.out, args.bench, args.P, args.method, args.seed, args.device, args.gate))
         rec = run(args.bench, args.P, args.method, args.seed, args.reference_dir, args.out, args.device, args.budget,
-                  tag, run_dir=solo_dir_of(args.out, args.bench, args.P, args.method, args.seed, args.device))
-        print(f"solo {args.bench} P={args.P} {rec['method']} s{args.seed} {args.device}: {rec['iterations']} it in "
+                  tag, run_dir=where)
+        print(f"{'solo' if args.gate is None else f'gate (GPU {args.gate})'} {args.bench} P={args.P} {rec['method']} s{args.seed} {args.device}: {rec['iterations']} it in "
               f"{rec['training_time_s']:.1f} s", flush=True)
     else:
         P = args.P or sizes(args.bench)[-1]

@@ -398,8 +398,8 @@ def test_every_budget_run_is_in_one_job_and_every_process_has_its_own_records(st
     records = {'networks': [], 'lil': []}        # (bench, tag): one warm-up and provenance record each
     for job in jobs:
         for args, _ in _calls(job, 'experiments/p5_3_networks.py'):
-            if args.startswith('pairing '):
-                continue                                  # the report's: writes checks/pairing.json only
+            if args.startswith(('pairing ', 'gate ')):
+                continue                                  # the comparisons: write checks/*.json only
             bench = _arg(args, '--bench')[0]
             assert f'--device {device}' in args or '"${NET[@]}"' in args
             records['networks'].append((bench, _arg(args, '--tag')[0]))
@@ -441,13 +441,27 @@ def test_the_pair_runs_one_process_per_gpu_and_the_solo_check_on_its_runs_gpu():
         assert 'export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24' in body
         assert '[[ "$gpus" == 2 ]]' in body
         calls = _calls(name, 'experiments/p5_3_networks.py')
-        solo = [(a, d) for a, d in calls if a.startswith('solo ')]
+        solo = [(a, d) for a, d in calls if a.startswith('solo ') and '--gate' not in a]
+        gates = [(a, d) for a, d in calls if a.startswith('solo ') and '--gate' in a]
+        decide = [a for a, _ in calls if a.startswith('gate ')]
         runs = [(a, d) for a, d in calls if a.startswith('run ')]
-        assert len(solo) == 1 and len(runs) == 2
+        assert len(solo) == 1 and len(runs) == 2 and len(gates) == 2 and len(decide) == 1
         assert body.index('solo --bench') < body.index('pids=()')                    # alone, before the pair
         args, gpu = solo[0]
         key = (int(_arg(args, '--P')[0]), _arg(args, '--method')[0], int(_arg(args, '--seed')[0]))
         assert key == (gen.NET_SIZES[bench][-1], 'nil_n', 0)
+        # the pairing gate: the solo's run on both GPUs at once, judged on the solo's GPU, before the pair
+        for a, d in gates:
+            assert (int(_arg(a, '--P')[0]), _arg(a, '--method')[0], int(_arg(a, '--seed')[0])) == key
+            assert _arg(a, '--gate') == [str(d)] and _arg(a, '--tag') == [f'gpu-{bench}-gate{d}']
+        assert sorted(d for _, d in gates) == [0, 1]
+        g = decide[0]
+        assert (int(_arg(g, '--P')[0]), _arg(g, '--method')[0], int(_arg(g, '--seed')[0])) == key
+        assert _arg(g, '--gpu') == [str(gpu)] and '--device cuda' in g
+        lines = body.splitlines()
+        stop = next(i for i, l in enumerate(lines) if 'STOPPING BEFORE THE BUDGET RUNS' in l)
+        assert lines[stop].lstrip().startswith('|| {') and 'exit 1' in lines[stop]
+        assert body.index('--gate 1') < body.index(' gate --bench') < body.index('run --bench')
         paired = [d for a, d in runs if key in net.part_of(gen.net_runs(bench), _arg(a, '--part')[0])]
         assert paired == [gpu]
         assert {d for _, d in runs} == {0, 1} and all(_arg(a, '--part')[0] == f'{d}/2' for a, d in runs)
@@ -476,7 +490,7 @@ def test_item3_classes_walltimes_and_the_su_requested():
     for bench in gen.BENCHES:
         wall = gen.gpu_jobs()[f'p5g_{bench}.slurm'][2]
         n = max(gen.gpu_slots(bench, 0), gen.gpu_slots(bench, 1))
-        assert _hours(wall) * 3600 >= (n * (600 * 1.02 + gen.FIXED_S) + gen.SOLO_EXTRA_S) * gen.MARGIN
+        assert _hours(wall) * 3600 >= (n * (600 * 1.02 + gen.FIXED_S) + gen.SOLO_EXTRA_S + gen.GATE_EXTRA_S) * gen.MARGIN
 
 
 def test_item3_reports_guard_each_step_and_pack_the_stage():

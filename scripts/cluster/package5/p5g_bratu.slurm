@@ -1,16 +1,17 @@
 #!/bin/bash
 # Package 5, item 3, the A100 set, bratu: one whole two-A100 node, two processes side by side, one per
-# GPU, 24 threads each (15 and 15 budget runs of 600 s), after the solo check. Expected
-# 2.92 h (the longer process, each run with its error log, pretraining and setup); the walltime x 1.1.
+# GPU, 24 threads each (15 and 15 budget runs of 600 s), after the solo check and the
+# pairing gate. Expected 3.01 h (the longer process, each run with its error log, pretraining and
+# setup); the walltime x 1.1.
 # Submit: through scripts/cluster/package5/submit_p5_item3_gpu.sh
 # lilq-resources: gpu-pair   (applied by scripts/cluster/sbatch.sh from the cluster profile)
 #SBATCH --job-name=lilq-p5g-bratu
-#SBATCH --time=03:15:00
+#SBATCH --time=03:30:00
 #SBATCH --output=logs/%x.%j.out
 
 source scripts/cluster/env.sh
 set -euo pipefail
-LILQ_WALL_S=11700   # the walltime, in seconds
+LILQ_WALL_S=12600   # the walltime, in seconds
 # until_end <command...>: the command, stopped 5 min before the walltime if still running. It
 # keeps the runs that finished: a run writes its records when it ends, so the one in progress is
 # lost (a resubmitted job runs it again and skips the finished ones). The job goes on.
@@ -26,6 +27,16 @@ NET=(--device cuda --out "$PKG" --reference-dir "$RESULTS/package2_stage2/refere
 # The solo check: NiL-N, P = 225, seed 0, alone on GPU 0 (the one its paired run uses) for 60 s
 ( export CUDA_VISIBLE_DEVICES=0
   until_end python experiments/p5_3_networks.py solo --bench bratu --P 225 --method nil_n --seed 0 --tag gpu-bratu-solo "${NET[@]}" )
+# The pairing gate: the same run on both GPUs at once for 60 s. The job stops here, before any budget
+# run, unless the one on GPU 0 is within 5% of its solo clock (the report's pairing check, made first)
+pids=()
+( export CUDA_VISIBLE_DEVICES=0
+  until_end python experiments/p5_3_networks.py solo --bench bratu --P 225 --method nil_n --seed 0 --gate 0 --tag gpu-bratu-gate0 "${NET[@]}" ) & pids+=($!)
+( export CUDA_VISIBLE_DEVICES=1
+  until_end python experiments/p5_3_networks.py solo --bench bratu --P 225 --method nil_n --seed 0 --gate 1 --tag gpu-bratu-gate1 "${NET[@]}" ) & pids+=($!)
+for pid in "${pids[@]}"; do wait "$pid" || true; done
+timeout 5m python experiments/p5_3_networks.py gate --bench bratu --P 225 --method nil_n --seed 0 --gpu 0 --device cuda --out "$PKG" \
+    || { echo "THE PAIRING GATE DID NOT PASS (see above): STOPPING BEFORE THE BUDGET RUNS"; exit 1; }
 # The pair: process i on GPU i, network part i/2, then its LiL-N L-BFGS sizes
 pids=()
 ( export CUDA_VISIBLE_DEVICES=0

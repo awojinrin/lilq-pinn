@@ -296,3 +296,62 @@ def test_job_dir_keeps_the_first_jobs_record(tmp_path, monkeypatch):
     assert job_dir(d) == d                                         # an empty folder: no record yet
     (d / 'hardware.json').write_text('{}')
     assert job_dir(d) == d.with_name('cpu-bratu_job4242')
+
+
+def _gate_run(d, times, job=None):
+    _history(d, times, 'gate')
+    rec = json.loads((d / 'run.json').read_text())
+    (d / 'run.json').write_text(json.dumps(dict(rec, slurm_job_id=job)))
+
+
+def test_the_pairing_gate_passes_fails_and_stops_without_a_verdict(tmp_path, monkeypatch):
+    monkeypatch.delenv('SLURM_JOB_ID', raising=False)
+    key = (tmp_path, 'burgers', 625, 'nil_n', 0, 'cuda')
+    _gate_run(n3.solo_dir_of(*key), [0.0, 10.0, 20.0, 30.0])
+    _gate_run(n3.gate_dir_of(*key, 0), [0.0, 10.1, 20.3, 30.6])        # the solo's GPU, the other one busy
+    _gate_run(n3.gate_dir_of(*key, 1), [0.0, 12.0, 24.0, 36.0])        # the load: not judged
+    res = n3.gate(*key, 0)
+    assert res['passed'] is True and res['paired_over_solo_minus_1'] == pytest.approx(0.02)
+    assert 'overlap_fraction' not in res                                # no solve windows in these records
+    for g, w in ((0, [100.0, 160.0]), (1, [110.0, 170.0])):
+        r = json.loads((n3.gate_dir_of(*key, g) / 'run.json').read_text())
+        (n3.gate_dir_of(*key, g) / 'run.json').write_text(json.dumps(dict(r, solver_window_epoch_s=w)))
+    assert n3.gate(*key, 0)['overlap_fraction'] == pytest.approx(50 / 60)
+    assert json.loads((tmp_path / n3.ITEM / 'networks' / 'checks' / 'gate_burgers.json').read_text())['passed']
+    assert n3.gate(*key, 1)['passed'] is False                          # judged on GPU 1: 20% slower
+    _gate_run(n3.gate_dir_of(*key, 0), [0.0, 11.0, 22.0, 33.0])
+    assert n3.gate(*key, 0)['passed'] is False                          # 10% slower: the job stops
+    (n3.gate_dir_of(*key, 1) / 'run.json').unlink()                     # the load did not finish
+    res = n3.gate(*key, 0)
+    assert res['passed'] is None and 'gpu1' in res['reason']
+    _gate_run(n3.gate_dir_of(*key, 1), [0.0, 10.0, 20.0, 30.0])
+    _gate_run(n3.gate_dir_of(*key, 0), [0.0, 10.0, 20.0, 30.0])
+    monkeypatch.setenv('SLURM_JOB_ID', '77')                            # records of an earlier job
+    res = n3.gate(*key, 0)
+    assert res['passed'] is None and 'another job' in res['reason']
+    for d in (n3.solo_dir_of(*key), n3.gate_dir_of(*key, 0), n3.gate_dir_of(*key, 1)):
+        _gate_run(d, [0.0, 10.0, 20.0, 30.0], job='77')
+    assert n3.gate(*key, 0)['passed'] is True
+
+
+def test_the_gate_command_exits_1_unless_it_passes(tmp_path, monkeypatch):
+    monkeypatch.delenv('SLURM_JOB_ID', raising=False)
+    key = (tmp_path, 'bl', 1024, 'nil_n', 0, 'cuda')
+    argv = ['gate', '--bench', 'bl', '--P', '1024', '--method', 'nil_n', '--gpu', '0', '--out', str(tmp_path)]
+    with pytest.raises(SystemExit) as e:
+        n3.main(argv)                                                   # nothing ran: no verdict
+    assert e.value.code == 1
+    for d in (n3.solo_dir_of(*key), n3.gate_dir_of(*key, 0), n3.gate_dir_of(*key, 1)):
+        _gate_run(d, [0.0, 10.0, 20.0])
+    assert n3.main(argv) is None
+
+
+def test_a_gate_run_goes_to_its_own_folder(ref, tmp_path, monkeypatch):
+    monkeypatch.setattr(n3, 'save_provenance', lambda d: d.mkdir(parents=True, exist_ok=True))
+    n3.main(['solo', '--bench', 'burgers', '--P', '25', '--method', 'nil_n', '--out', str(tmp_path),
+             '--reference-dir', str(ref), '--device', 'cpu', '--budget', '0.2', '--gate', '1', '--tag', 'gate1'])
+    d = n3.gate_dir_of(tmp_path, 'burgers', 25, 'nil_n', 0, 'cpu', 1)
+    rec = json.loads((d / 'run.json').read_text())
+    assert rec['tag'] == 'gate1' and rec['solver_window_epoch_s'][0] < rec['solver_window_epoch_s'][1]
+    assert not n3.solo_dir_of(tmp_path, 'burgers', 25, 'nil_n', 0, 'cpu').exists()
+    assert n3.pairing(tmp_path)['rows'] == []                          # the report's check ignores gate runs

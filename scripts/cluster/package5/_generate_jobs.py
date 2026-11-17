@@ -435,8 +435,8 @@ def gpu_slots(bench, i):
 
 
 def gpu_expected_s(bench):
-    """The pair job's expected wall-clock: the solo check, then the longer of its two processes."""
-    return SOLO_EXTRA_S + max(process_s(bench, part(net_runs(bench), i, 2), GPU_SPLIT[bench][i]) for i in (0, 1))
+    """The pair job's expected wall-clock: the solo check, the pairing gate, then the longer of its two processes."""
+    return SOLO_EXTRA_S + GATE_EXTRA_S + max(process_s(bench, part(net_runs(bench), i, 2), GPU_SPLIT[bench][i]) for i in (0, 1))
 
 
 def solo_gpu(bench):
@@ -472,12 +472,23 @@ NET=(--device cuda --out "$PKG" --reference-dir {REF2})
 # The solo check: NiL-N, P = {P}, seed {seed}, alone on GPU {g} (the one its paired run uses) for 60 s
 ( export CUDA_VISIBLE_DEVICES={g}
   until_end python {N3} solo --bench {bench} --P {P} --method {method} --seed {seed} --tag gpu-{bench}-solo "${{NET[@]}}" )
+# The pairing gate: the same run on both GPUs at once for 60 s. The job stops here, before any budget
+# run, unless the one on GPU {g} is within 5% of its solo clock (the report's pairing check, made first)
+pids=()
+( export CUDA_VISIBLE_DEVICES=0
+  until_end python {N3} solo --bench {bench} --P {P} --method {method} --seed {seed} --gate 0 --tag gpu-{bench}-gate0 "${{NET[@]}}" ) & pids+=($!)
+( export CUDA_VISIBLE_DEVICES=1
+  until_end python {N3} solo --bench {bench} --P {P} --method {method} --seed {seed} --gate 1 --tag gpu-{bench}-gate1 "${{NET[@]}}" ) & pids+=($!)
+for pid in "${{pids[@]}}"; do wait "$pid" || true; done
+timeout 5m python {N3} gate --bench {bench} --P {P} --method {method} --seed {seed} --gpu {g} --device cuda --out "$PKG" \\
+    || {{ echo "THE PAIRING GATE DID NOT PASS (see above): STOPPING BEFORE THE BUDGET RUNS"; exit 1; }}
 # The pair: process i on GPU i, network part i/2, then its LiL-N L-BFGS sizes
 pids=()
 {procs}''' + WAIT_ALL.format(what=f'THE {bench.upper()} PAIR')
 
 
 SOLO_EXTRA_S = 300                 # the solo check: warm-up, pretraining, 60 s
+GATE_EXTRA_S = 300                 # the pairing gate: the same, on both GPUs at once, and the comparison
 
 
 def gpu_jobs():
@@ -489,8 +500,9 @@ def gpu_jobs():
     for bench in BENCHES:
         e = gpu_expected_s(bench)
         jobs[f'p5g_{bench}.slurm'] = (bench, 'gpu-pair', walltime(e), f'''# Package 5, item 3, the A100 set, {bench}: one whole two-A100 node, two processes side by side, one per
-# GPU, 24 threads each ({gpu_slots(bench, 0)} and {gpu_slots(bench, 1)} budget runs of 600 s), after the solo check. Expected
-# {e / 3600:.2f} h (the longer process, each run with its error log, pretraining and setup); the walltime x {MARGIN}.
+# GPU, 24 threads each ({gpu_slots(bench, 0)} and {gpu_slots(bench, 1)} budget runs of 600 s), after the solo check and the
+# pairing gate. Expected {e / 3600:.2f} h (the longer process, each run with its error log, pretraining and
+# setup); the walltime x {MARGIN}.
 # Submit: through scripts/cluster/package5/submit_p5_item3_gpu.sh
 ''', gpu_pair_body(bench))
     jobs['p5g_report.slurm'] = ('report', 'cpu', '00:30:00', '''# Package 5, item 3, the A100 set: after the jobs (afterany). The paired-against-solo check, the
