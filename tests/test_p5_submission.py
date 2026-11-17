@@ -112,7 +112,7 @@ def test_p5_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p5)   export PKG="$RESULTS/package5"' in (cluster / 'env.sh').read_text()
     sb = (cluster / 'sbatch.sh').read_text()
-    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o|p5r)$' in sb
+    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o|p5r|p5k)$' in sb
     assert 'cpu-mem)' in sb and '--cpus-per-task=24 --mem=96G' in sb
     assert 'LILQ_WAVE" == p5' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5'] == 'package5'
@@ -637,3 +637,48 @@ def test_the_openmp_diagnostic_submits_its_one_job(tmp_path):
     assert out.returncode == 0, out.stdout + out.stderr
     lines = log.read_text().splitlines()
     assert len(lines) == 1 and _job(lines[0]) == 'p5o_openmp' and '--account=000000000000' in lines[0]
+
+
+# ---------------------------------------------- the OpenMP library of Component A's baselines (stage p5k)
+
+OPENMP_K = P5 / 'submit_p5_item3_openmp_kovasznay.sh'
+
+
+def test_the_component_a_job_alternates_the_two_orders_on_a_whole_node():
+    t = _text('p5k_openmp_kovasznay')
+    assert re.search(r'^# lilq-resources: timed-cpu ', t, re.M) and '#SBATCH --time=00:40:00\n' in t
+    assert '#SBATCH --job-name=lilq-p5k-openmp-kovasznay\n' in t
+    runs = [(a, d) for a, d in _calls('p5k_openmp_kovasznay', 'experiments/p5_3_openmp_kovasznay.py')]
+    order = [(int(_arg(a, '--round')[0]), _arg(a, '--first')[0]) for a, _ in runs]
+    assert order == [(0, 'numpy'), (0, 'torch'), (1, 'torch'), (1, 'numpy'), (2, 'numpy'), (2, 'torch')]
+    assert all('--require-library' in a and a.startswith('run --first') for a, _ in runs)
+    body = _body('p5k_openmp_kovasznay')
+    assert all(l.startswith('until_end python experiments/p5_3_openmp_kovasznay.py run ') for l in body.splitlines()
+               if 'p5_3_openmp_kovasznay.py' in l and not l.startswith('#'))
+    assert 'stage_report.py --stage p5k --results "$RESULTS"' in body
+    assert 48 * _hours('00:40:00') == 32 and '32 SU requested' in OPENMP_K.read_text()
+    cluster = REPO / 'scripts' / 'cluster'
+    assert 'p5k)  export PKG="$RESULTS/package5_item3_openmp_kovasznay"' in (cluster / 'env.sh').read_text()
+    assert (_module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5k']
+            == 'package5_item3_openmp_kovasznay')
+    assert 'LILQ_WAVE" == p5k' in (cluster / 'submit_lib.sh').read_text()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_component_a_dry_run_checks_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(OPENMP_K)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    assert 'results/package5_item3_openmp_kovasznay' in out.stdout and '32 SU requested' in out.stdout
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5k_openmp_kovasznay'
+    assert '--exclusive' in lines[0] and '--test-only' in lines[0] and '--dependency' not in lines[0]
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_component_a_diagnostic_submits_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(OPENMP_K)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5k_openmp_kovasznay' and '--account=000000000000' in lines[0]

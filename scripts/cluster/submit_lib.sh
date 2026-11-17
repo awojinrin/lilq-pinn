@@ -48,6 +48,9 @@ confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave
     elif [[ "$LILQ_WAVE" == p5o ]]; then   # Package 5, item 3: the OpenMP library diagnostic (17 November 2026)
         what="Package 5, item 3, the OpenMP library diagnostic"
         echo "Package 5, item 3, the OpenMP library diagnostic (results/package5_item3_openmp), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5k ]]; then   # Package 5, item 3: the OpenMP library of Package 1's Component A baselines (17 November 2026)
+        what="Package 5, item 3, the OpenMP library of Component A's baselines"
+        echo "Package 5, item 3, the OpenMP library of Component A's baselines (results/package5_item3_openmp_kovasznay), code at $(code_commit)."
     elif [[ "$LILQ_WAVE" == p5g ]]; then   # Package 5, item 3, the A100 set: results/package5_item3_gpu
         what="Package 5, item 3, the A100 set"
         echo "Package 5, item 3, the A100 set (results/package5_item3_gpu), code at $(code_commit)."

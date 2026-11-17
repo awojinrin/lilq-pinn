@@ -124,6 +124,16 @@ def load_configs(root, family):
     return json.loads((Path(root) / 'search' / f'{family}_configs.json').read_text())['configs']
 
 
+def lm_args(config, seed, budget_s, out_dir, device, test_every=1):
+    """The arguments of ``lm_kovasznay.lm_train`` for one F2 configuration (also used by
+    ``experiments/p5_3_openmp_kovasznay.py``)."""
+    return argparse.Namespace(width=config['width'], depth=config['depth'], m=config['m'],
+                              sigma_ff=config['sigma_ff'], n_int=config['n_int'], w_int=1.0, w_pin=1.0,
+                              mu0=1e-3, diag_floor=1e-12, budget_s=budget_s, max_steps=0,
+                              max_params=20000, chunk=256, test_every=test_every, seed=seed,
+                              device=device, out=str(out_dir))
+
+
 def run_one(root, stage, family, config, seed, budget_s, out_dir, device, precision='float64', test_every=1):
     """Train one configuration unless its run.json exists; returns run.json's content."""
     out_dir = Path(out_dir)
@@ -139,11 +149,7 @@ def run_one(root, stage, family, config, seed, budget_s, out_dir, device, precis
                        end_reason='failure', final_loss=None, traceback=traceback.format_exc())
             (out_dir / 'run.json').write_text(json.dumps(run, indent=2, default=str))
     else:
-        args = argparse.Namespace(width=config['width'], depth=config['depth'], m=config['m'],
-                                  sigma_ff=config['sigma_ff'], n_int=config['n_int'], w_int=1.0, w_pin=1.0,
-                                  mu0=1e-3, diag_floor=1e-12, budget_s=budget_s, max_steps=0,
-                                  max_params=20000, chunk=256, test_every=test_every, seed=seed,
-                                  device=device, out=str(out_dir))
+        args = lm_args(config, seed, budget_s, out_dir, device, test_every)
         try:
             run = lm.lm_train(args)
         except Exception:

@@ -634,6 +634,36 @@ OPENMP_JOBS = {
 }
 
 
+# The OpenMP library of Package 1's Component A baselines on the CPU (the user's decision, 17 November
+# 2026): stage p5k, its own results folder (results/package5_item3_openmp_kovasznay). Package 1's
+# Component A processes (Kovasznay, F1 and F2) imported torch first and loaded the wheel's library;
+# their CPU runs are timed against LiL-Q's, which loaded the module's. The same rounds as p5o
+# (experiments/p5_3_openmp_kovasznay.py); the comparison with Package 1's runs is made at the assembly.
+OMPK = 'experiments/p5_3_openmp_kovasznay.py'
+
+
+def openmp_kovasznay_body():
+    runs = ''.join(f'until_end python {OMPK} run --first {first} --round {r} --require-library --out "$PKG"\n'
+                   for r, pair in enumerate(OPENMP_ROUNDS) for first in pair)
+    return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END_OMP}python experiments/p4_checks.py provenance --out "$PKG" --name openmp_kovasznay
+# Three rounds, the two orders alternating. Each process: its OpenMP library (it stops if that is not the
+# one its first import should give), then Package 1's representatives on the CPU, seed 0: F1_18 (201 Adam
+# iterations, then L-BFGS; 140 s) and F2_05 (90 s)
+{runs}timeout 15m python scripts/cluster/package2/stage_report.py --stage p5k --results "$RESULTS" \\
+    || echo "REPORT FAILED OR STOPPED (exit $?)"
+'''
+
+
+OPENMP_KOVASZNAY_JOBS = {
+    'p5k_openmp_kovasznay.slurm': ('openmp-kovasznay', 'timed-cpu', '00:40:00', '''# Package 5, item 3: the OpenMP library of Package 1's Component A baselines (Kovasznay, F1 and F2) on
+# one whole CPU node (48 threads), as Package 1's CPU runs ran. Six processes of about 4 min (three
+# rounds, numpy first and torch first alternating), then results/package5_item3_openmp_kovasznay.tar.gz.
+# Submit: through scripts/cluster/package5/submit_p5_item3_openmp_kovasznay.sh
+''', openmp_kovasznay_body()),
+}
+
+
 def main():
     for name in JOBS:
         (HERE / name).write_bytes(render(name).encode())
@@ -647,7 +677,9 @@ def main():
             (HERE / name).write_bytes(render(name, jobs, stage).encode())
     for name in OPENMP_JOBS:
         (HERE / name).write_bytes(render(name, OPENMP_JOBS, 'p5o').encode())
-    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS) + sum(len(j) for j, _ in item3) + len(OPENMP_JOBS)} '
+    for name in OPENMP_KOVASZNAY_JOBS:
+        (HERE / name).write_bytes(render(name, OPENMP_KOVASZNAY_JOBS, 'p5k').encode())
+    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS) + sum(len(j) for j, _ in item3) + len(OPENMP_JOBS) + len(OPENMP_KOVASZNAY_JOBS)} '
           f'job scripts written in {HERE}')
 
 

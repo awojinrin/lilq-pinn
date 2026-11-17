@@ -69,29 +69,41 @@ def _parse(argv):
     return ap.parse_args(argv)
 
 
-def main(argv=None):
-    args = _parse(argv)
+def start_process(first, round_, d, require_library):
+    """This process's imports in the order ``first`` gives ('numpy': numpy's BLAS brings the GCC module's
+    OpenMP library; 'torch': the PyTorch wheel's), then its OpenMP library: recorded in
+    ``d/process_r<round>.json`` and printed. With ``require_library`` it stops unless the library is the one
+    ``first`` should give. Returns the record. Shared by this driver and ``p5_3_openmp_kovasznay``."""
     import lilq.blas_threads  # noqa: F401  (must import before numpy)
-    if args.first == 'numpy':
+    if first == 'numpy':
         import numpy  # noqa: F401  (first: its BLAS brings the module's OpenMP library)
     import torch  # noqa: F401
     import numpy  # noqa: F401,F811
-    from experiments import p5_3_networks as n3
-    from lilq.provenance import job_dir, openmp_libraries, openmp_library_kind, save_provenance
+    from lilq.provenance import openmp_libraries, openmp_library_kind
     from lilq.source_lock import current_commit
 
     libs = openmp_libraries()
     kind = openmp_library_kind(libs)
-    want = 'torch' if args.first == 'torch' else 'module'
-    root = Path(args.out) / n3.ITEM / 'openmp'
-    d = root / f'{args.first}-first'
+    want = 'torch' if first == 'torch' else 'module'
     d.mkdir(parents=True, exist_ok=True)
-    proc = {'first': args.first, 'round': args.round, 'openmp_libraries': libs, 'library': kind,
+    proc = {'first': first, 'round': round_, 'openmp_libraries': libs, 'library': kind,
             'expected_library': want, 'slurm_job_id': os.environ.get('SLURM_JOB_ID'), 'commit': current_commit()}
-    (d / f'process_r{args.round}.json').write_text(json.dumps(proc, indent=2))
+    (d / f'process_r{round_}.json').write_text(json.dumps(proc, indent=2))
     print(json.dumps(proc), flush=True)
-    if args.require_library and kind != want:
-        raise SystemExit(f'--first {args.first} loaded the {kind} OpenMP library ({libs}), not the {want} one')
+    if require_library and kind != want:
+        raise SystemExit(f'--first {first} loaded the {kind} OpenMP library ({libs}), not the {want} one')
+    return proc
+
+
+def main(argv=None):
+    args = _parse(argv)
+    root = Path(args.out) / 'P5_3_cost' / 'openmp'      # p5_3_networks.ITEM: not imported before the order is set
+    d = root / f'{args.first}-first'
+    proc = start_process(args.first, args.round, d, args.require_library)
+    kind = proc['library']
+    from experiments import p5_3_networks as n3
+    from lilq.provenance import job_dir, save_provenance
+    assert root.parent.name == n3.ITEM
     save_provenance(job_dir(root / 'provenance' / f'{args.first}-first_r{args.round}'))
 
     ref = args.reference_dir
