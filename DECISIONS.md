@@ -73,6 +73,32 @@ p5c's scripts without it).
 **The scans before each hand-off** now also diff the OpenMP and BLAS libraries in the rehearsal's
 `hardware.json` against the reference package's.
 
+**The laptop rehearsal** (bundle at 710f49c; 5 s budgets, one GPU; the check run with 'torch', since
+the laptop loads the wheel's library in either order):
+- p5r: every job rc 0; 108 network runs; the resubmitted job skipped its 18 runs; the tarball written.
+- p5g: the pair jobs rc 0 (108 network and 14 LiL runs); the gate stopped the BL job as written (one
+  GPU); the tarball written.
+- Run as written (with 'module'), the check stopped p5r_bl_b and the p5g preflight before any run
+  ("OPENMP LIBRARY CHECK FAILED").
+- C2 6 of 6. **C4 5 of 6: Bratu NiL-N at 5.4%.** Cause shown, not assumed: the same pair repeated three
+  times on the laptop at this commit gave +3.3%, -2.5% and +2.4%. Both signs, and the run without the
+  log alone ranged 33.9 to 34.8 s, against 35.9 s in the rehearsal. So it is the laptop's clock spread
+  during a slow stretch. On Grace the same pair gave 1.6% (CPU set).
+- Repo suite 1,028 passed; no-git 997; WSL bash tests 35 of 35 in each of three modes.
+
+**The first such diff, over every Grace record** (`hardware.json`, grouped by loaded libraries and
+versions):
+- Every record has the same BLAS (FlexiBLAS 3.4.4 over OpenBLAS 0.3.27, the GCC 13.3.0 modules) and the
+  same numpy 1.26.4, scipy 1.13.1 and torch 2.10.0+cu126. Only the OpenMP library differs.
+- Package 1: Parts B (the four-method runs among them) and C loaded the module's library (313 records).
+  **Component A, the Kovasznay calibration, loaded the torch wheel's (116 records: screening 48, full
+  45, full_cpu 20, float32 2, checks 1).** These are the tuned network baselines, timed against LiL-Q;
+  the 20 `full_cpu` records are CPU runs. How much the library changed their CPU times is not known
+  (in item 3 it was +1 to +4% on Bratu and +61 to +74% on Buckley-Leverett). Open; put to the user.
+- Packages 2 to 5 on Grace: the module's library in every record. The only others are laptop previews
+  (Windows) and laptop assembly records with no OpenMP library.
+- The CPU set: the LiL processes loaded the module's library, the network processes the wheel's.
+
 ---
 
 ## 2026-11-17 -- Package 5, item 3: the CPU set's checks, C1's failure, and the OpenMP library diagnostic (stage p5o)
