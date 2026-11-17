@@ -24,6 +24,9 @@ done
 python experiments/p4_checks.py provenance --out "$PKG" --name checks
 # Checks C2 and C4: NiL-N and LM at the largest size, about 30 s each (sized by a pilot), without and
 # with the error log
-for bench in bratu burgers bl; do
+for bench in bratu burgers; do
     until_end python experiments/p5_3_networks.py checks --bench "$bench" --device cpu --out "$PKG" --reference-dir "$RESULTS/package2_stage2/reference" --tag cpu-checks --require-openmp module
 done
+# Buckley-Leverett: the NiL-N pair timed three times (C4 was outside 5% in the CPU set; the advisor's reply of
+# 17 November 2026 asks for the spread of three timings). C2's and C4's verdicts are the first pair's.
+until_end python experiments/p5_3_networks.py checks --bench bl --device cpu --out "$PKG" --reference-dir "$RESULTS/package2_stage2/reference" --tag cpu-checks --require-openmp module --c4-repeats nil_n=3

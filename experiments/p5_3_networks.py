@@ -377,12 +377,19 @@ def c2_c4_done(out_root, bench, P, method, device):
     return res if res.get('commit') == current_commit() else None
 
 
-def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=None, seconds=C2C4_SECONDS):
+def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=None, seconds=C2C4_SECONDS,
+          repeats=1):
     """C2 and C4 on one run of a fixed length (no budget), with and without the
     error log: the same iterates (C2, bit for bit) and the same clock (C4,
     within C4_RTOL). The run without the log goes first. The length: ``iterations``,
     or the count that takes about ``seconds`` at the rate of an untimed pilot
-    (``C2C4_PILOT`` iterations, no error log) on this node."""
+    (``C2C4_PILOT`` iterations, no error log) on this node.
+
+    ``repeats`` > 1: the pair is timed ``repeats`` times in all, the same length each time, and
+    every timing is recorded (``timings``: the times and the signed relative difference, with the log
+    against without) with their spread. The verdicts stay those of the first pair, as fixed before
+    the runs (the advisor's reply of 17 November 2026 asks for the spread of three timings beside
+    them)."""
     d = c2_c4_dir(out_root, bench, P, method, device)
     d.mkdir(parents=True, exist_ok=True)
     pilot = None
@@ -411,6 +418,21 @@ def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=No
               'slurm_job_id': os.environ.get('SLURM_JOB_ID')}
     result['c2_passed'] = result['c2_same_parameters'] and result['c2_same_losses']
     result['c4_passed'] = result['time_rel_diff'] <= C4_RTOL
+    if repeats > 1:
+        timings = [(t0, t1)]
+        for k in range(1, repeats):
+            pair = []
+            for logged in (False, True):
+                _, rec, _, _ = solve(bench, P, method, 0, reference_dir, device, budget_s=None, max_iterations=n,
+                                     log_error=logged,
+                                     log_path=d / f'log_{"with" if logged else "without"}_repeat{k}.csv')
+                pair.append(rec['training_time_s'])
+            timings.append(tuple(pair))
+        signed = [(b - a) / a for a, b in timings]
+        result['timings'] = [{'time_without_s': a, 'time_with_s': b, 'rel_diff_with_vs_without': s}
+                             for (a, b), s in zip(timings, signed)]
+        result['timings_spread'] = max(signed) - min(signed)
+        result['timings_outside_rtol'] = sum(abs(s) > C4_RTOL for s in signed)
     (d / 'result.json').write_text(json.dumps(result, indent=2, default=str))
     return result
 
@@ -582,6 +604,8 @@ def main(argv=None):
     c.add_argument('--P', type=int)
     c.add_argument('--device', default='cpu')
     c.add_argument('--tag', default='')
+    c.add_argument('--c4-repeats', nargs='+', default=[], metavar='METHOD=N',
+                   help="time that method's pair N times in all (e.g. nil_n=3); the verdicts are the first pair's")
     _require_openmp_arg(c)
     args = ap.parse_args(argv)
 
@@ -635,6 +659,12 @@ def main(argv=None):
               f"{rec['training_time_s']:.1f} s", flush=True)
     else:
         P = args.P or sizes(args.bench)[-1]
+        repeats = {}
+        for spec in args.c4_repeats:
+            m, _, k = spec.partition('=')
+            if m not in ('nil_n', 'lm') or not k.isdigit() or int(k) < 1:
+                raise SystemExit(f'--c4-repeats takes METHOD=N with METHOD nil_n or lm and N >= 1, not {spec!r}')
+            repeats[m] = int(k)
         todo = [m for m in ('nil_n', 'lm') if c2_c4_done(args.out, args.bench, P, m, args.device) is None]
         if len(todo) < 2:
             print(f'C2 and C4 already done here for {sorted({"nil_n", "lm"} - set(todo))}: not repeated', flush=True)
@@ -642,7 +672,8 @@ def main(argv=None):
             return
         warm_up(args.bench, args.device, args.reference_dir, todo, scratch=root, tag=tag)
         for method in todo:
-            res = c2_c4(args.bench, P, method, args.reference_dir, args.out, args.device)
+            res = c2_c4(args.bench, P, method, args.reference_dir, args.out, args.device,
+                        repeats=repeats.get(method, 1))
             print(json.dumps(res, indent=2), flush=True)
 
 

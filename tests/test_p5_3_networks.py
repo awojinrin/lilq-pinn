@@ -101,6 +101,36 @@ def test_c2_and_c4_runs(ref, tmp_path):
     assert set(res) >= {'time_with_s', 'time_without_s', 'time_rel_diff', 'c4_passed'}
 
 
+def test_c4_repeats_time_the_pair_again_and_keep_the_first_pairs_verdicts(ref, tmp_path, monkeypatch):
+    times = iter([10.0, 10.2, 10.0, 9.4, 10.0, 10.7])          # without, with; three pairs
+    real = n3.solve
+
+    def timed(*a, **k):
+        model, rec, rows, metrics = real(*a, **k)
+        return model, rec | {'training_time_s': next(times)}, rows, metrics
+    monkeypatch.setattr(n3, 'solve', timed)
+    res = n3.c2_c4('burgers', 25, 'nil_n', ref, tmp_path, iterations=5, repeats=3)
+    assert res['time_rel_diff'] == pytest.approx(0.02) and res['c4_passed'] and res['c2_passed']
+    assert [t['rel_diff_with_vs_without'] for t in res['timings']] == pytest.approx([0.02, -0.06, 0.07])
+    assert res['timings_spread'] == pytest.approx(0.13) and res['timings_outside_rtol'] == 2
+    assert next(times, None) is None                                 # six timed solves, no more
+    monkeypatch.setattr(n3, 'solve', real)
+    assert 'timings' not in n3.c2_c4('burgers', 25, 'lm', ref, tmp_path, iterations=3)
+
+
+def test_the_checks_command_passes_the_repeats_to_its_method_only(ref, tmp_path, monkeypatch):
+    got = {}
+    monkeypatch.setattr(n3, 'warm_up', lambda *a, **k: None)
+    monkeypatch.setattr(n3, 'c2_c4', lambda bench, P, method, *a, repeats=1, **k: got.setdefault(method, repeats) and {})
+    n3.main(['checks', '--bench', 'burgers', '--P', '25', '--out', str(tmp_path), '--reference-dir', str(ref),
+             '--c4-repeats', 'nil_n=3'])
+    assert got == {'nil_n': 3, 'lm': 1}
+    for bad in ('nil_q=3', 'nil_n=0', 'nil_n'):
+        with pytest.raises(SystemExit, match='--c4-repeats takes'):
+            n3.main(['checks', '--bench', 'burgers', '--P', '25', '--out', str(tmp_path), '--reference-dir', str(ref),
+                     '--c4-repeats', bad])
+
+
 @pytest.mark.parametrize('method', ['nil_n', 'lm'])
 def test_c2_and_c4_size_their_runs_from_a_pilot(ref, tmp_path, method):
     res = n3.c2_c4('bratu', 25, method, ref, tmp_path, seconds=0.5)

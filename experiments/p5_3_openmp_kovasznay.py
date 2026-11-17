@@ -67,6 +67,7 @@ SEED = 0
 F1_ADAM_ITERATIONS = 201       # Adam log rows at 0, 100 and 200 (a row every 100 iterations)
 F1_BUDGET_S = 140.0            # about 65 s of Adam, the rest L-BFGS (Package 1: about 0.32 s per iteration each)
 F2_BUDGET_S = 90.0             # about 7 LM steps (Package 1: about 11 s per step)
+F1_MAX_LBFGS_CALLS = None      # no cap (the tests cap it, so that the budget never ends the run)
 RTOL = 1e-6                    # C1's tolerance
 CUTOFF = 0.05                  # C4's and the pairing check's cutoff
 MEASURES = ('F1_adam_s_per_iteration', 'F1_lbfgs_s_per_iteration', 'F2_s_per_evaluation')
@@ -103,12 +104,12 @@ def run(args):
     root = Path(args.out) / ITEM / SUB
     d = root / f'{args.first}-first'
     proc = om.start_process(args.first, args.round, d, args.require_library)
-    from lilq.provenance import job_dir, save_provenance
-    save_provenance(job_dir(root / 'provenance' / f'{args.first}-first_r{args.round}'))
     from experiments import component_a as ca   # after the order is set; pin_torch() at its import, as in Package 1
+    from lilq.provenance import job_dir, save_provenance
+    save_provenance(job_dir(root / 'provenance' / f'{args.first}-first_r{args.round}'))   # after pin_torch
     out = d / f'r{args.round}'
     f1_run = ca.f1.f1_train(CONFIGS['F1'], SEED, F1_BUDGET_S, str(out / 'F1'), device='cpu', test_every=1,
-                            max_adam_iters=F1_ADAM_ITERATIONS)
+                            max_adam_iters=F1_ADAM_ITERATIONS, max_lbfgs_calls=F1_MAX_LBFGS_CALLS)
     print(f"F1: {f1_run.get('adam_iters')} Adam + {f1_run.get('lbfgs_iters')} L-BFGS iterations, "
           f"end {f1_run.get('end_reason')}", flush=True)
     f2_run = ca.lm.lm_train(ca.lm_args(CONFIGS['F2'], SEED, F2_BUDGET_S, out / 'F2', 'cpu'))
@@ -152,11 +153,16 @@ def summary(args):
             libraries.setdefault(r['first'], set()).add(r['library'])
             if r['value']:
                 values[r['measure']][r['first']].append(float(r['value']))
+    threads = set()
     for first in ('numpy', 'torch'):
         for rd in sorted((root / f'{first}-first').glob('r*')):
             for f in CONFIGS:
                 if (rd / f / 'log.csv').exists():
-                    repro[f'{first}-first/{rd.name}/{f}'] = reproduction(rd / f / 'log.csv', refs[f], f)
+                    repro[f'{first}-first/{rd.name}/{f}'] = (
+                        reproduction(rd / f / 'log.csv', refs[f], f) if refs[f].exists() else
+                        {'rows': 0, 'max_rel_diff': None, 'within_rtol': False, 'note': f'no reference {refs[f]}'})
+                if (rd / f / 'run.json').exists():
+                    threads.add(json.loads((rd / f / 'run.json').read_text()).get('threads'))
     effect = {}
     for m, v in values.items():
         if not (v['numpy'] and v['torch']):
@@ -179,6 +185,9 @@ def summary(args):
                     p1[m].append(v)
     package1 = {m: {'values': v, 'median': statistics.median(v) if v else None} for m, v in p1.items()}
     out = {'libraries': {k: sorted(v) for k, v in libraries.items()},
+           'threads': sorted(threads, key=str),          # Package 1's CPU runs: 48
+           'package1_threads': sorted({json.loads(p.read_text()).get('threads') for f in CONFIGS for p in
+                                       (a / 'full_cpu').glob(f"{CONFIGS[f]['id']}_s*/run.json")}, key=str),
            'torch_first_reproduces_package1': bool(torch_runs) and all(r['within_rtol'] for r in torch_runs),
            'reproduction': repro, 'effect': effect, 'package1_full_cpu': package1, 'rtol': RTOL, 'cutoff': CUTOFF}
     (root / 'summary.json').write_text(json.dumps(out, indent=2))

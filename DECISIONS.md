@@ -17,6 +17,89 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-17 -- Package 5, item 3: the advisor's reply to the cost check; C4's three timings; Component A's OpenMP library (stage p5k)
+
+**The advisor's reply** (17 November 2026; `Post-JCP/Computational Package 5/Package5_Reply_to_item3_cost_check.md`):
+- The rerun of all five CPU network jobs, then the A100 set. The cap of Package 5 is now 4,400 SU. If
+  the rerun uses more than 1,000 SU, or a job fails, stop and tell him before the A100 set; otherwise go
+  on without asking. The LiL runs, the protocol runs and their checks stay as they ran.
+- Pretraining on the clock, for every method: the time to an error is from the starting data to the
+  iterate, including what computes the starting point (a network's pretraining; the LiL methods'
+  least-squares fit of the initial profile on Buckley-Leverett), excluding what is paid once per
+  session (imports, device start-up, compilation, the warm-up run). Both columns kept.
+- C4 on Buckley-Leverett NiL-N: rerun the pair; if again outside 5% either way, report both times and
+  the spread of the three timings.
+- For the release: the library check and the import order go in `REPRODUCE.md`, with the names and
+  versions of the two OpenMP libraries.
+
+**Pretraining on the clock: no code or runs needed.** `p5_3_table.py` already writes both columns:
+`time_s` (the optimizer's clock) and `with_setup_s` (that plus `setup_s` and `pretrain_s`). Every
+record's `setup_s` is per solve, measured after the warm-up, imports and device start-up (the drivers'
+clocks start at the solve), so `with_setup_s` is his rule. For the LiL methods on Buckley-Leverett,
+`setup_s` holds the system's construction and the initial-profile fit together (`p5_3_lil.Problem`),
+not split: the report says so. CPU set values: up to 0.39 s at P = 1,024, against LiL-Q's 4.6 s
+solve. The networks' `pretrain_s` is under 1 s everywhere. The assembly makes `with_setup_s` the
+headline column.
+
+**C4's three timings (the user's decision, 17 November 2026: three timings always).**
+`p5_3_networks.c2_c4(..., repeats=N)` times the pair N times in all, the same length each time, and
+records every timing (`timings`: both times and the signed difference, with the log against without),
+their spread and how many fall outside 5%. The verdicts stay the first pair's, as fixed before.
+`checks --c4-repeats nil_n=3`. In `p5r_checks` only Buckley-Leverett carries it. About 2 min more,
+inside the job's walltime. Not chosen: repeating only after a failure (that reruns on a failure);
+three timings for all six pairs (about 10 SU, more than asked).
+
+**Component A's OpenMP library (the user's decision, 17 November 2026: measure it).** Package 1's
+Component A processes imported torch first and loaded the wheel's library. Their CPU runs
+(`A_calibration/full_cpu/`, the representatives F1_18 and F2_05, seeds 0-4, 3,600 s each) are timed
+against LiL-Q's CPU runs, which loaded the module's (`kovasznay_comparison.py`). A budget run that is
+slower per iteration reaches less in its hour, so the library could make the baselines look worse.
+- `experiments/p5_3_openmp_kovasznay.py`, as p5o: three rounds, the two orders alternating, each
+  process checking its library (`p5_3_openmp.start_process`, now shared by both drivers). Each process
+  runs F1_18 (seed 0; 201 Adam iterations, then L-BFGS, 140 s) and F2_05 (seed 0; 90 s), on the CPU,
+  as `component_a.run_one` runs them (`pin_torch` at `component_a`'s import; float64; `test_every=1`,
+  test errors off the clock; `component_a.lm_args`, factored out of `run_one`).
+- Measures: F1's seconds per Adam iteration (log rows 100 to 200), per L-BFGS iteration (second to last
+  L-BFGS row), F2's seconds per evaluation (second to last row). The first row of each phase carries
+  set-up and is left out.
+- **Criteria, fixed before the job:** the library changes a measure if the medians over the rounds
+  differ by more than 5% and the two orders' rounds do not overlap (p5o's). The torch-first runs
+  reproduce Package 1's seed-0 run if the loss on every shared log row agrees within 1e-6 (C1's
+  tolerance; F1 compares only its three Adam rows, F2 every LM step, so this checks the setting more
+  weakly than C1 did: on the laptop the F1 rows agree with Grace's to 7.5e-13 even with another machine
+  and library). The summary also gives Package 1's own values of the three measures (all five seeds,
+  whole logs: Adam 0.327 s, L-BFGS 0.353 s per iteration, F2 5.86 s per evaluation, medians) and the
+  thread counts (Package 1: 48).
+- **What follows is not decided here.** If the library changes a measure, the effect on the Kovasznay
+  CPU comparison is estimated from these numbers and put to the user before anything else. Rerunning
+  the ten CPU runs would cost about 10 node-hours, about 480 SU: more than the cap leaves (below).
+- Stage p5k (`results/package5_item3_openmp_kovasznay`; `p5k_openmp_kovasznay.slurm`, timed-cpu, 40
+  min; `submit_p5_item3_openmp_kovasznay.sh`): 32 SU requested, about 22 expected. It runs beside the
+  rerun. It is not part of the rerun's 1,000 SU line.
+
+**The cap.** Used: 153.5 (items 1, 2, 4 and Addendum 2) + 938.3 (the CPU set) + about 15 (p5o) =
+about 1,107. Left of 4,400: about 3,293. Expected: the rerun about 925, p5k about 22, the A100 set
+about 2,270 = about 3,217, which leaves about 76.
+
+**The Grace steps** (`Post-JCP/Grace_steps_item3_rerun_and_gpu.md`): p5r and p5k first; dry runs of
+all three stages before; then the check of his stop rule (the rerun's `report_log.txt` total, the logs'
+failure lines, every job `COMPLETED`); only then p5g.
+
+**Tests:** `tests/test_p5_3_openmp_kovasznay.py` (the measures; a whole process with small networks;
+the check stops before any run; the summary's criteria, reproduction, Package 1 values and threads; a
+missing order or reference); `tests/test_p5_3_networks.py` (the repeats keep the first pair's verdicts
+and record six timed solves; `--c4-repeats` reaches its method only and rejects bad values);
+`tests/test_p5_submission.py` (p5k's job, wiring, dry run and submission; p5r's checks job with the
+repeats on Buckley-Leverett NiL-N only; the checks loops expanded per job).
+- One failure in 13 runs of the new tests, explained before going on: the whole-process test gave F1 an
+  8 s budget; with the rehearsal loading the laptop, Adam ran at 0.038 s per iteration instead of
+  0.022, so its 201 iterations used 7.7 s and L-BFGS logged too few rows to measure (the failing
+  assertion: the L-BFGS value empty). The test now ends F1 by one L-BFGS call
+  (`F1_MAX_LBFGS_CALLS`, None on Grace; `f1_train`'s test cap) under a 300 s budget, so its rows no
+  longer depend on the load; 3 of 3 passes with the rehearsal running.
+
+---
+
 ## 2026-11-17 -- Package 5, item 3: the diagnostic's result; numpy first, the OpenMP library check, and the CPU network runs again (stage p5r)
 
 **The diagnostic** (job on 17 November, about 18 min, about 15 SU; tarball sha256 5aa68002...). Every

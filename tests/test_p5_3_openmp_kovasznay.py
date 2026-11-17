@@ -42,10 +42,13 @@ def test_the_f2_measure_is_seconds_per_evaluation_from_the_second_row(tmp_path):
 
 @pytest.fixture
 def tiny(monkeypatch):
-    """Small networks and budgets: the whole process in a few seconds."""
+    """Small networks: the whole process in about 20 s. F1 ends after its first L-BFGS call, not by its
+    budget, so its Adam and L-BFGS rows do not depend on the machine's load (with an 8 s budget, a loaded
+    laptop once left L-BFGS too few rows to measure)."""
     monkeypatch.setitem(k.CONFIGS, 'F1', k.CONFIGS['F1'] | {'width': 8, 'depth': 2, 'm': 4, 'n_int': 64})
     monkeypatch.setitem(k.CONFIGS, 'F2', k.CONFIGS['F2'] | {'width': 8, 'depth': 2, 'm': 4, 'n_int': 64})
-    monkeypatch.setattr(k, 'F1_BUDGET_S', 8.0)
+    monkeypatch.setattr(k, 'F1_BUDGET_S', 300.0)
+    monkeypatch.setattr(k, 'F1_MAX_LBFGS_CALLS', 1)
     monkeypatch.setattr(k, 'F2_BUDGET_S', 2.0)
 
 
@@ -56,7 +59,8 @@ def test_a_process_records_its_library_runs_both_families_and_writes_its_timing(
     proc = json.loads((root / 'numpy-first' / 'process_r0.json').read_text())
     assert proc['first'] == 'numpy' and proc['expected_library'] == 'module' and 'openmp_libraries' in proc
     f1 = json.loads((root / 'numpy-first' / 'r0' / 'F1' / 'run.json').read_text())
-    assert f1['adam_iters'] == k.F1_ADAM_ITERATIONS and f1['lbfgs_iters'] > 0 and f1['device'] == 'cpu'
+    assert f1['adam_iters'] == k.F1_ADAM_ITERATIONS and f1['lbfgs_calls'] == 1 and f1['lbfgs_iters'] >= 30
+    assert f1['wall_s'] < k.F1_BUDGET_S / 2 and f1['device'] == 'cpu'   # ended by the call cap, not the budget
     f2 = json.loads((root / 'numpy-first' / 'r0' / 'F2' / 'run.json').read_text())
     assert f2['end_reason'] == 'budget' and f2['n_evals'] > 0
     with open(root / 'timing_numpy-first_r0.csv') as fh:
@@ -65,6 +69,8 @@ def test_a_process_records_its_library_runs_both_families_and_writes_its_timing(
     assert rows[0]['value'] and rows[1]['value'] and int(rows[1]['intervals']) >= 1
     assert all(r['library'] == proc['library'] for r in rows)
     assert (root / 'provenance').is_dir()
+    s = k.main(['summary', '--out', str(out), '--package1', str(tmp_path / 'none')])
+    assert s['threads'] == [f1['threads']] and f1['threads'] == f2['threads']
 
 
 def test_require_library_stops_before_any_run(tmp_path, monkeypatch):
@@ -113,6 +119,7 @@ def test_the_summary_applies_the_cutoff_and_the_overlap_and_compares_with_packag
     assert r['torch-first/r0/F2']['rows'] == 2                     # every LM row Package 1 has too
     assert s['torch_first_reproduces_package1'] is True
     assert s['libraries'] == {'numpy': ['module'], 'torch': ['torch']}
+    assert s['threads'] == [] and s['package1_threads'] == []           # no run.json in these synthetic runs
     p1 = s['package1_full_cpu']
     assert p1['F1_adam_s_per_iteration']['values'] == pytest.approx([0.40, 0.44])
     assert p1['F1_lbfgs_s_per_iteration']['median'] == pytest.approx(0.3)

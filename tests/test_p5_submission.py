@@ -401,17 +401,19 @@ def test_every_budget_run_is_in_one_job_and_every_process_has_its_own_records(st
     nets, lils = {b: [] for b in gen.BENCHES}, {b: [] for b in gen.BENCHES}
     records = {'networks': [], 'lil': []}        # (bench, tag): one warm-up and provenance record each
     for job in jobs:
+        loop = re.search(r'^for bench in ([a-z ]+); do$', _body(job), re.M)     # what "$bench" runs over
+        over = tuple(loop.group(1).split()) if loop else ()
         for args, _ in _calls(job, 'experiments/p5_3_networks.py'):
             if args.startswith(('pairing ', 'gate ')):
                 continue                                  # the comparisons: write checks/*.json only
             bench = _arg(args, '--bench')[0]
             assert f'--device {device}' in args or '"${NET[@]}"' in args
-            records['networks'].append((bench, _arg(args, '--tag')[0]))
+            records['networks'].append((over if bench == '"$bench"' else (bench,), _arg(args, '--tag')[0]))
             if args.startswith('run '):
                 nets[bench] += net.part_of(gen.net_runs(bench), _arg(args, '--part')[0])
         for args, _ in _calls(job, 'experiments/p5_3_lil.py'):
             bench = _arg(args, '--bench')[0]
-            records['lil'].append((bench, _arg(args, '--tag')[0]))
+            records['lil'].append((over if bench == '"$bench"' else (bench,), _arg(args, '--tag')[0]))
             if _arg(args, '--methods') == ['lbfgs']:
                 lils[bench] += [int(p) for p in _arg(args, '--P')]
             else:
@@ -420,10 +422,12 @@ def test_every_budget_run_is_in_one_job_and_every_process_has_its_own_records(st
         assert sorted(nets[bench]) == sorted(gen.net_runs(bench)), bench          # each run once
         # p5r reruns the network runs only: the CPU set's LiL runs loaded the module's OpenMP library
         assert sorted(lils[bench]) == ([] if stage == 'p5r' else sorted(gen.LIL_SIZES[bench])), bench
-    # the protocol and checks loops call each driver once per problem ("$bench")
+    # the protocol and checks loops call each driver once per problem ("$bench", over the job's loop)
     for driver, rec in records.items():
-        expanded = [(b2, t) for b, t in rec for b2 in (gen.BENCHES if b == '"$bench"' else (b,))]
-        assert len(expanded) == len(set(expanded)), (driver, expanded)
+        expanded = [(b2, t) for bs, t in rec for b2 in bs]
+        assert all(bs for bs, _ in rec) and len(expanded) == len(set(expanded)), (driver, expanded)
+    checked = {b for bs, t in records['networks'] if t == 'cpu-checks' for b in bs}
+    assert checked == (set(gen.BENCHES) if stage != 'p5g' else set()), checked     # C2/C4 on every problem
     names = [re.search(r'provenance --out "\$PKG" --name (\S+)', _text(j)) for j in jobs]
     names = [m.group(1) for m in names if m]
     assert len(names) == len(set(names))
@@ -440,8 +444,12 @@ def test_the_protocol_job_runs_the_lil_methods_and_c2_c4_on_the_three_problems()
 def test_the_rerun_checks_job_runs_c2_c4_for_the_networks_only():
     assert _calls('p5r_checks', 'experiments/p5_3_lil.py') == []
     checks = _calls('p5r_checks', 'experiments/p5_3_networks.py')
-    assert len(checks) == 1 and checks[0][0].startswith('checks ') and '--device cpu' in checks[0][0]
-    assert _body('p5r_checks').count('for bench in bratu burgers bl; do') == 1
+    assert len(checks) == 2 and all(a.startswith('checks ') and '--device cpu' in a for a, _ in checks)
+    body = _body('p5r_checks')
+    assert body.count('for bench in bratu burgers; do') == 1
+    # Buckley-Leverett NiL-N's pair three times (the advisor's reply of 17 November 2026), and only there
+    assert '--bench bl ' in checks[1][0] and _arg(checks[1][0], '--c4-repeats') == ['nil_n=3']
+    assert '--c4-repeats' not in checks[0][0] and body.count('--c4-repeats') == 1
 
 
 @pytest.mark.parametrize('stage', ['p5g', 'p5r'])
