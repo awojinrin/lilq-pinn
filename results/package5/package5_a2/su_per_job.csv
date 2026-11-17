@@ -1,0 +1,2 @@
+job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
+20549881,lilq-p5a-a2,"billing=24,cpu=24,mem=96G,node=1",1.0197,TIMEOUT,24,24.5,

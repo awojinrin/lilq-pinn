@@ -1,0 +1,6 @@
+p5a report, 2026-11-16T22:17:16.412689+00:00
+
+jobs: 20549881
+
+SUs by job (Grace's rates; su_per_job.csv): 24 in all
+  20549881 lilq-p5a-a2: 24.5 (1.02 h at 24/h), TIMEOUT

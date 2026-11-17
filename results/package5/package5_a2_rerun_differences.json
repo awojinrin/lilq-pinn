@@ -1,0 +1,13 @@
+{
+  "note": "Addendum 2's summary rerun at the assembly on Grace's stored iterates. delta_P (a least-squares projection) is recomputed on this machine and differs by the round-off below; every other number equals Grace's to 1e-08 relative. The files are Grace's.",
+  "largest_relative_difference_grace_vs_assembly": {
+    "P5_A2_initial_profile/terminal.csv delta_L2": 1.2886003851183312e-10,
+    "P5_A2_initial_profile/terminal.csv delta_X": 7.58108081748194e-10,
+    "P5_A2_initial_profile/terminal.csv eL2_over_delta": 1.2886008883403771e-10,
+    "P5_A2_initial_profile/terminal.csv eX_over_delta": 7.581080933699019e-10,
+    "trig_delta_P.json /gelsd/delta_L2": 1.0091467936991665e-09,
+    "trig_delta_P.json /gelsd/delta_X": 1.7528381618146829e-09,
+    "trig_delta_P.json /gelsy/delta_L2": 1.2886003851183312e-10,
+    "trig_delta_P.json /gelsy/delta_X": 7.58108081748194e-10
+  }
+}

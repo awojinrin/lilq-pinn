@@ -1,6 +1,232 @@
 # DECISIONS.md: the Package 5 entries
 
-Copied from the repository's `DECISIONS.md` at the assembly's commit (57ba02a), newest first.
+Copied from the repository's `DECISIONS.md` at the assembly's commit (4417866), newest first.
+
+---
+
+## 2026-11-16 -- Package 5, Addendum 2: the Grace run, a lost hour, and the assembly (`experiments/p5_assemble.py --a2`)
+
+**The first job (20549881, node c224, 11:27-12:28) produced nothing.** All six processes were stopped by
+the 55-minute guard (exit 124) and none created its run folder. The job used 26 s of CPU in all, and
+2.2 GB at most for the six. So they were idle right after starting, not computing. The same start takes
+8 s on the laptop with Grace's own item 1 files (7.8 GiB peak). It ran on the day Grace's Slurm was
+timing out. A login-node check after the outage read the five input files in 80 s wall-clock for
+3.6 s of CPU, and in 7.7 s at the next try. **Reading: a stall of the scratch filesystem, not the
+code.** It cost 24.5 SU (the full hour). The second job (20553982, node c119, the same bundle and
+lock) ran in 954 s: every part done, K1 and K2 pass with zero difference.
+- Weakness found: the summary and the tarball steps of the job script have no time guard, so a stall
+  there also ends without a tarball. Item 3's jobs get one; the Addendum 2 script is not changed (its
+  rerun used the bundle as is).
+
+**The assembly** (`--a2 <extracted>/package5_a2 [--a2-logs <job log>]`), as items 1, 2 and 4:
+- The 18 runs, `terminal.csv`, `stretches.csv`, the checks and K1's runs go to `P5_A2_initial_profile/`,
+  the advisor's Section 6 path. The stage's own records (`COMMIT`, `provenance/a2`, `slurm_logs`,
+  `sacct.txt`, `su_per_job.csv`) go to `package5_a2/`. The second job's log is added there: the
+  tarball is written before its own job ends.
+- Every run must have `run.json`, `iterations.csv`, `betas.npy`, `errors_by_iterate.csv` and
+  `updates_by_iterate.csv`, or the assembly stops.
+- The summary is rerun on Grace's stored iterates. Its tables and JSON files must equal Grace's within
+  1e-8 relative but delta_P's (round-off, recorded in `package5_a2_rerun_differences.json`), or the
+  assembly stops. Grace's are kept. K1 and K2 (Grace's verdicts) join the exit code.
+- Section 3a's update histories are written at the assembly (they are post-processing of delivered
+  coefficients). They match the advisor's two hand values to the figures he quoted.
+- Both Addendum 2 jobs go into `su.csv` through `--sacct-extra`, the lost hour included.
+
+**The delivered packages the assembly reads (found at this assembly).** The 14 November assembly was
+given Grace's raw trees for Packages 2, 3 and 4 (`.../grace/...`). This one is given the delivered
+folders (`package2_results`, `package3_results`, `package4_results`). Every Grace table, `checks.json`
+and C1 to C3 come out the same either way. One file differs:
+`P3_1_beltrami_certified/beside_delivered.csv`, whose ratios use the delivered delta_P of each field.
+Package 3's delivered pressure delta_P is the value re-evaluated after the advisor's reply of
+10 October (`delta_P_reevaluated.json`, 1e-4 to 2e-4 below Grace's first value). Grace's raw tree has
+the first value. **Decided:** the delivered folders, as the column's name says. The p and combined
+ratios move by at most 2e-4 relative. One figure printed in the 14 November memo changes: B2 at weight
+10^3, p (pin gauge) / delta_P, 169 -> 170. The memo as sent stays as it is; the next memo says so in
+one line.
+
+---
+
+## 2026-11-16 -- Package 5, item 3: the A100 class -- two runs side by side on a whole two-A100 node (the user's decision)
+
+The A100 set (the three network methods and LiL-N L-BFGS: 122 runs of up to 600 s) runs two at a time on a whole two-A100 node, one run per GPU: 192 SU/h for the node, 96 SU/h per run, about 2,040 SU as an upper bound; with the CPU set (about 1,070 SU) about 3,110 against the 3,177 left in the advisor's cap. The node holds only our runs, as every timed GPU run so far. The alternatives were one A100 with 8 cores on a shared node (80 SU/h, about 1,700 SU; other users' jobs on the node and 8 cores put its timings on another footing) and a whole node per run (192 SU/h, about 4,070 SU; over the cap and the account's balance).
+- **Check:** on a few runs, a paired run's time is within 5% of the same run alone on the node (batch 5 sets which runs, before any comparison).
+- **The advisor's rule 3 still holds:** the CPU set first, then the cost check tells him this class and its cost before the A100 set. The cost check's remaining question is whether pretraining belongs on the clock.
+
+---
+
+## 2026-11-16 -- Package 5, item 3: review of batches 3 and 4 for implicit state and missed bugs (the user's request, before any Grace job)
+
+Fixed (each with a test):
+1. **`setup_s` counted the reference.** `Problem` timed the loading of the reference and the error evaluator with the system, so `with_setup_s` would have charged every LiL method for reading a file. It now covers the system and the initial coefficients only (for Buckley-Leverett the fit of the initial condition is part of it).
+2. **A global left behind.** `solve_lbfgs` set torch's default dtype to float64 for the rest of the process. The residuals do not depend on it (every tensor is made from float64 arrays), but later code in the same process would have. It is now set for the run and restored.
+3. **The L-BFGS coefficients were read through a side channel.** The error is read from the parameter tensor the loss was last called with (`TorchLoss.param`), which is the optimizer's own tensor at the accepted point. That holds by how `LBFGSObjective` calls the loss, so each run now records `last_logged_is_returned` (the last logged coefficients equal the returned ones).
+4. **`trf`'s `evaluations` column was the iterate index.** It now counts the residual evaluations up to each accepted iterate (rejected steps included), as the network runs' column counts evaluations.
+5. **numpy numbers became strings in `run.json`** (`default=str`). They are now written as numbers.
+6. **The square collocation assumed its reference grid.** It reads the p = 48 field and compares it on P2-3's 201 x 201 axis; it now checks that the file's axes are that grid.
+7. **C3 crashed on a missing Package 4 log.** It now writes a failed row with the reason.
+8. **An untimed LiL run could enter the table.** A `--no-timing` run has times from its logged pass. Every LiL record now says `timed`, and the table leaves out and lists a run with `timed` false.
+
+Implicit state kept, by design, and recorded:
+- **Threads.** numpy's BLAS and torch take their thread counts from `OMP_NUM_THREADS` and the other variables, which `lilq.blas_threads` sets (by `setdefault`) before numpy loads; the job script sets them explicitly. Every record carries `thread_env`, and L-BFGS also `torch_threads`.
+- **Determinism of the protocol.** A timed pass must give the logged pass's iterate count and coefficients. If gelsy with many threads ever gave a different rule step, the run is kept with no times and flagged in the table, rather than timed on another path.
+- **Output paths.** A run's folder is fixed by problem, size, method and device; two jobs that run the same combination into one results folder would overwrite each other. The job layout (batch 5) must give each combination to one job.
+- **Device names** become folder names (`lbfgs_cuda`); the jobs pass `cuda`, not `cuda:0`.
+- **Size of `betas_logged.npy`.** One vector per 10 L-BFGS iterations. A fast run that does not stall could keep tens of thousands (Burgers P = 900 on the CPU ran 35,000 iterations in 52 s before stalling: 3,500 vectors, 25 MB). It is measured in the rehearsal before deciding what goes on the results branch.
+
+---
+
+## 2026-11-16 -- Package 5, item 3: the time-to-error table (`experiments/p5_3_table.py`)
+
+Section 6's table, from every history file under `P5_3_cost/` (network and LiL runs alike), at the errors 1e-2 to 1e-6.
+- **Per run:** the clock time of the first logged iterate whose error is at most the level ("at" counts). L-BFGS logs every 10 iterations, so its time has that resolution; LM, `trf`, LiL-Q and the square collocation log every iterate.
+- **Per size:** the median over the seeds, a seed that never reaches the level counting as infinitely late. So the median exists only when two of three seeds reach it (the plan's reading 7). The LiL methods have one run per size.
+- **Per method, problem, device and level:** the smallest over the sizes, with the size that gives it; a dash where none reaches the level.
+- **Setup and pretraining beside the clock** (`with_setup_s`): the same time plus the run's `setup_s` and `pretrain_s`, taken through the same median and minimum (which may then pick another size). The question of what the clock covers goes to the advisor; either answer is then in the table without a rerun.
+- **Left out and listed in `flagged.csv`:** a run with no time in its history (a timed pass that did not reproduce the logged pass). A run that ended in `failure` is listed too, but its history up to the failure counts.
+- **Fixed on the way:** the square collocation's timestamps were numpy floats, which numpy 2 writes as `np.float64(...)` in `history.csv`; they are now plain floats, and `write_history` converts any float to a plain one.
+
+---
+
+## 2026-11-16 -- Package 5, item 3: the LiL runs (`experiments/p5_3_lil.py`; torch residuals in `p2_16_certified`, `p4_1_burgers_gauss`, `p3_2_bl_certified`)
+
+**The methods on LiL-Q's trial space** (Section 6): LiL-Q, LiL-N by `trf`, LiL-N by L-BFGS, and, for Bratu, the square collocation of P2-3. **The systems** are item 1's at the weight 10^4 (the advisor's reply of 15 November 2026, answer 1): Bratu P2-16 tensor Chebyshev on the CGL set, N/P = 10, P = 25, 100, 225; viscous Buckley-Leverett, the lifted sine x Chebyshev of Package 3 (its split), P = 64 to 1,024. Burgers is Package 4's sine x Chebyshev on the Gauss-Legendre set, p = 6 to 30, its weight 10 on the initial rows (his answer: "as in Package 4"). **The error** is the network runs' (one reference per problem, the entry of 15 November below).
+
+**LiL-N by L-BFGS on the A100: one torch residual per system, the same code on both devices** (the user's decision, 16 November 2026). Item 2's LiL-N evaluates N(beta) and 2 A^T N in numpy, which runs on the processor only; on the A100 the GPU would sit idle. Each system's `Rows` now has a torch form (`torch_residual(device)`; for P2-16 the module function `torch_residual(rows, device)`): the same matrices, moved to the device once, and the same pointwise nonlinearity. The gradient is autograd's. The alternatives were torch on the A100 with item 2's numpy on the CPU (the two devices' times would then mix code and hardware, and the numpy path forms the M x P Jacobian at every evaluation) and the numpy path inside the A100 job (the run would be labelled A100 without using it). For Buckley-Leverett, f'(S) is the physics' `flux_derivative_differentiable`, so the gradient carries the f''(S) S_x term; the detached `flux_derivative` drops it (the entry on LiL-N's plateau). Without a graph the detached form is used, under `enable_grad`, for the same values.
+- **Checks** (cutoffs set before any comparison): the torch residual and the autograd gradient of ||N||^2 against numpy's N and 2 A(beta)^T N, at beta0 plus a perturbation, on the CPU and CUDA, within 1e-10 relative: measured 1e-16 to 8e-16 for all three systems.
+- **The run check, changed after it failed (the user's decision, 16 November 2026).** The planned check, the first 100 L-BFGS losses against item 2's numpy path on Burgers p = 10 within 1e-6, failed at 2.2e-5. Two numpy runs agree exactly. The torch and numpy runs agree within 3e-12 through iteration 30, while the loss falls from 5 to 2.3e-3. Near the minimum (1.0464e-3) L-BFGS amplifies the 1e-16 difference of the gradients: 1e-8 at iteration 40, 2.2e-6 at 50, then back to 1e-12 by iteration 100. Both stop by the stall rule (at 106 and 132 iterations) at the same minimum, final losses 4e-14 apart. A window short enough to pass would be chosen from this answer, so the check is now what does not depend on the path: both runs stop by the stall rule, and their final losses agree within 1e-8 relative.
+
+**Starting point.** LiL-N (`trf` and L-BFGS) starts where LiL-Q starts, since it minimizes the same objective: zero for Bratu and Burgers, Package 3's fit of the initial condition for Buckley-Leverett (`p3_2_bl_certified.initial_guess(..., 'ic')`).
+
+**`trf` as in item 2:** tolerances 1e-12, at most 200 evaluations, the analytic Jacobian. Section 6 says the trust-region runs "end by their own criteria", and scipy refuses tolerances that are all zero. Its iterates are logged at the Jacobian's evaluations, which scipy 1.13 makes at the start and at every accepted iterate; the final `x` is the last logged one (checked per run, `final_x_is_last_logged`).
+
+**The clocks start at the solver.** For every method the collocation set, the basis matrices and, for L-BFGS, their move to the device are built before the clock and timed beside it (`setup_s`), as item 2's clocks. Package 4's LiL-Q timings included the construction of the matrices; C3 compares values (errors and the rule step), not times.
+- **LiL-Q, `trf`, square collocation: "the usual protocol", per iterate.** One logged pass keeps every iterate and serves as the warm-up (as item 2's protocol runs). Then three timed passes record a timestamp at every iterate and nothing else, each the median of five if a pass is under 1 s (Package 4's protocol). An iterate's time is the median of its timestamps. Every timed pass must give the logged pass's iterate count and final coefficients within 1e-10 relative (`timing_matches`); the laptop runs give a difference of 0. The square collocation keeps P2-3's measure: the assembly and solve times summed over the Newton steps before the iterate, its settings (K_max 20, tolerance 1e-9) unchanged, SQ-CGL at p = 7, 12, 17 ((p - 2)^2 = 25, 100, 225 free coefficients).
+- **LiL-N by L-BFGS:** one logged pass carries the timing (Section 6), the error every 10 iterations off the clock (`RunProbe`), the 600 s budget, tolerances 0 (`stall_rule='f1'`), no target, no cap.
+- **The Bratu residual alone.** `p2_16_certified.assemble(rows, beta, system=False)` returns the residual without building A and f. Item 1's `ScalarRows.residual` built the whole system to return it; on a timed run that would put an unneeded matrix on LiL-Q's and `trf`'s clocks. The arithmetic of R is unchanged (the same expressions; tested equal to the full assembly's within 1e-14).
+
+**Stored coefficients.** LiL-Q and `trf`: every iterate (`betas.npy`), as Section 2 asks of the LiL runs. L-BFGS: the coefficients at every logged iterate (`betas_logged.npy`, the ones its errors come from) and the last. Every iterate of a 600 s L-BFGS run would be up to some 10^5 vectors.
+
+**C3** (LiL-Q values of Burgers equal Package 4): at every p, the same rule step as Package 4's item 1a log, and the error of every iterate up to the returned one within 1e-8 relative of that log's `eps_ref` (the cutoff of Addendum 2's K1, set before the runs).
+
+**First laptop look (untimed, smallest sizes).** LiL-N L-BFGS stalls at the minimum within a fraction of a second (Bratu P = 25: 20 iterations; Burgers P = 36: 47; Buckley-Leverett P = 64: 113 on the CPU, 114 on CUDA), and `trf` and L-BFGS end at the same error (Buckley-Leverett P = 64: 1.510e-2; LiL-Q returns 1.396e-2 by its rule). **At the largest sizes** (laptop, logged passes untimed, L-BFGS to a 120 s budget): LiL-Q 0.18 s (Bratu 225), 2.8 s (Burgers 900), 4.6 s (Buckley-Leverett 1,024); `trf` 0.44 s, 5.0 s, 14.7 s (19 evaluations), at LiL-Q's error to 4 figures; L-BFGS on the CPU stalls at 2.7 s and 52 s on Bratu and Burgers and reaches the budget on Buckley-Leverett (4.85e-5 against `trf`'s 4.844e-5); on the laptop GPU it stalls at 72 s on Bratu (8,361 iterations against the CPU's 1,347: another round-off path) and reaches the budget on Burgers and Buckley-Leverett. So the 14 L-BFGS runs per device are costed at 600 s as an upper bound that the larger sizes reach, and the protocol runs of LiL-Q and `trf` are a few minutes in all.
+
+---
+
+## 2026-11-16 -- Package 5, Addendum 2, Sections 2 and 3: the 18 runs and their summary (`experiments/p5_a2_plateau.py run | k1 | summarize`)
+
+The addendum asks for 18 runs of gravity Buckley-Leverett, every one from the least-squares fit of the initial profile held constant in time, K_max = 60, the rule read from the log. Item 1's convention throughout: k_s is the rule's step and the returned iterate is k_s + 1.
+- **A:** item 1's configuration, both of its trial spaces, P = 256, 576, 1,024, weight 10^4.
+- **B:** P = 576 and 1,024 at diffusion 0.05 and 0.02.
+- **C:** P = 1,024 at weight 10.
+- **D:** the paper's run (cosine x Fourier, random tensor grid seed 42) at weights 10 and 10^4, every iterate stored.
+
+**The initial profile.** For A to C this is the guess item 1 already uses for viscous Buckley-Leverett: Package 3's `'ic'`, the initial saturation minus the lifting, fitted by `pretrain_lil`. Part D uses the delivered run's own `initial_guess='ic'`. Its iterate 0 is captured by wrapping `pretrain_lil`; every later iterate comes from the solver's `diagnostics_callback`. Check: the stored coefficients must match the log, the same count and each iterate's L2 error equal to the log's `eps_ref` within 1e-8. Otherwise the run raises.
+
+**Diffusion.** `p3_2.physics_for(case, nu)` and `p5_1.bl_setup(..., nu)` take the diffusion; 0.1 is the default, so nothing that existed changes. The references for 0.05 and 0.02 are Package 2's finite-difference refinements. **The reference error** (his rule: errors are reported only if the reference's error is below a third of the run's) is the relative difference of each reference's last refinement step: 3.4e-7, 7.3e-7 and 5.7e-7 for diffusion 0.1, 0.05 and 0.02.
+
+**The norm of X** is used only at diffusion 0.1, against item 1's fine reference (p_ref from item 1's `chosen_gravity.json`, on its quadrature, gated as item 1 is). Item 1 has no fine reference at 0.05 or 0.02, so part B reports eL2 and delta_L2 only. Section 3 asks for the error and its ratio to delta_P, which L2 gives.
+- Part D's eX is on the same quadrature, with the paper space's derivatives.
+- Its delta_P is given in L2 (the reference's grid) and in H^{2,1}, each by gelsy and by gelsd at rcond = eps, with the ranks. The cosine x Fourier space may be rank-deficient; the ranks say whether the two drivers agree.
+
+**The stretch** (Section 3): "the longest stretch of consecutive steps before the stop over which the nonlinear residual changes by less than 5% per step".
+- Steps k -> k + 1 with k + 1 <= k_s, judged on `norm_R_h`. With no stop, all 60 steps count.
+- On his own run this gives two stretches of two steps: 4..6 (the plateau) and 11..13 (the rule's approach). His plateau, k = 4 to 8, is not a single stretch, because the step 6 -> 7 changes the residual by 8.4%.
+- So `terminal.csv` reports the longest stretch (the earliest on a tie) and the number tied (`n_longest`). `stretches.csv` lists every stretch of two or more steps, so the plateau and the approach to the stop are both visible.
+- Errors are withheld wherever the one-third rule withholds them.
+
+**Threads.** Parts A to C and K1 run with item 1's 4 BLAS threads, and part D with the delivered run's 24. That way K1 and K2 compare like with like (item 1's C1 compared runs on the same configuration). This is why the script has separate steps (`run --part`, `k1`, `summarize`): the thread count is fixed when BLAS loads.
+
+**The Grace stage** is `p5a` (`results/package5_a2`, its own commit lock): one cpu-mem job, 1 h, 24 SU requested and about 10 expected (`scripts/cluster/package5/p5_a2.slurm`, generated by `_generate_jobs.py`; submitted by `submit_p5_a2.sh`).
+- Every input is checked first.
+- Then five processes (A and B by trial space, C) and K1 run side by side at 4 threads each; each process holds about 8 GB while it builds item 1's norm of X (measured).
+- Then part D runs at 24 threads, followed by the summary and the tarball.
+- A failed process does not stop part D, the summary or the tarball.
+
+**The checks.**
+- **K1:** item 1's two gravity runs at P = 1,024, weight 10^4 (zero start), rerun in the stage. It requires the same rule step, and eps_ref and eX at iterates 0..k_s + 1 within 1e-8 relative of the delivered runs.
+- **K2:** part D at weight 10 against the delivered `P2_9_bases/bl_gravity_paper_P1024_ic`: norm_R_h, norm_Rlin_h and eps_ref at every iterate within 1e-8. The largest difference up to the delivered first stall is reported too.
+- The tolerance is item 1's C1 (`p5_checks.py`). If K2 fails beyond the stall only, the memo says so: the plateau lies before it.
+
+**Tests:** `tests/test_p5_a2_plateau.py`.
+- The 18 runs; the stretches.
+- The summary on the delivered run's own first 16 iterates: rule step 13, returned iterate 14, 0.0116, the tie 4..6 and 11..13.
+- The one-third rule withholding errors; the gate on the X ratio; K2 passing on a copy and failing at the iterate that was moved.
+
+---
+
+## 2026-11-16 -- Package 5, Addendum 2, Section 3a: the update histories of delivered runs (`experiments/p5_a2_plateau.py updates`, `lilq.xnorm.relative_updates`)
+
+The advisor's Addendum 2 of 15 November 2026 asks for the relative update of the function per iterate, ||u^(k+1) - u^(k)|| / ||u^(k+1)||, in L2 and in the norm of X, from the stored coefficients of 168 delivered runs: item 1 (96), the Poisson-Boltzmann runs with the Chebyshev space (Package 4 item 2a, 18; item 4a, 9), and the random-feature runs of item 4b (45). Post-processing only.
+
+**The definition** (checked against his two values before anything was built on it). Each item's own norm and quadrature:
+- item 1: H2 (Bratu) or H^{2,1} (Burgers, Buckley-Leverett) on item 1's Gauss-Legendre rule, `n_gl` from each run;
+- Poisson-Boltzmann and random features: H2 on `Norms`'s fine quadrature, the one their errors used.
+
+Row k of `updates_by_iterate.csv` is the update into iterate k (k = 1..K). For the lifted sine space the lifting is part of u: it cancels in the difference and stays in the denominator. His values agree to every figure he gives: Poisson-Boltzmann p = 22, seed 0, H2 1.0, 0.063, 2.3e-5, 1.4e-6, then 1.2e-6 (his "near 1e-6"); viscous Buckley-Leverett, tensor Chebyshev, P = 64, weight 10^4, H^{2,1} 0.99, 2.2, 0.38, 0.25, 0.15, 0.093.
+
+**Where the files go.** The 150 Package 5 runs get the file in their own run folders (on `package5-results`), as he asks. Package 4's 18 runs get it on `package5-results` too, under `P5_A2_initial_profile/updates_package4/<their Package 4 path>/`. That way the delivered `package4-results` branch stays as delivered. Our call; the note says so.
+
+**Tests:** `tests/test_p5_a2_plateau.py` (the function by hand and against a direct sum, the folder names of the Poisson-Boltzmann spaces, item 1's runs in place).
+
+---
+
+## 2026-11-15 -- Package 5, item 3: the network runs to the 600 s budget (`experiments/p5_3_networks.py`)
+
+Section 6 of the instructions: NiL-N (L-BFGS), NiL-Q (L-BFGS) and NiL-N (Levenberg-Marquardt), "as in the four-method runs" and "as in P2-8", seeds 0, 1, 2; "Optimizer tolerances zero. No target loss. Each optimizer run ends at a wall-clock budget of 600 s."
+
+**The same runs, by construction** (as P2-8). The driver calls each benchmark's own `run_nil_n` / `run_nil_q` with `paper_setup`'s configuration and the seed. It replaces only the solver by a wrapper, so the network, pretraining, collocation set, data and loss weights are the Package 1 code. The wrapper sets:
+- `R_tol = 0` and `stall_rule='f1'` (tolerances 0, one restart, then `optimizer_stall`);
+- no iteration, evaluation or outer-iteration cap (10^9). The budget (`RunProbe`) is the only limit.
+- **NiL-Q keeps its inner cap per linearization** (Bratu 300/400, Burgers and BL as in `paper_setup`). It sets how many L-BFGS steps NiL-Q takes before it relinearizes, so it is part of the method. The outer cap (25 and so on) only stopped the run, so the budget replaces it. This is my reading of "ends at a wall-clock budget"; it does not need the advisor.
+
+LM is P2-8's `lm()` with target 0, no iteration cap and its wall-clock cap set to the budget. `lm()` now also returns `off_clock_s`, the time of its error log; it changes nothing else in P2-8.
+
+**The short runs** (the warm-up, checks C2 and C4) stop at a number of L-BFGS iterations through the probe (`RunProbe(max_iterations=...)`, added here). For NiL-Q that counts its inner iterations over the run, so the cap means the same for every method; the solvers' own caps stay at 10^9.
+
+**The error** is `eps_ref`, the four-method runs' relative L2 error on the test grid against the Section 6.2 reference (BL: the finite-difference reference), through P2-8's `eps_ref_function`. **One reference per problem for every method of item 3.** Bratu and Burgers: the p = 48 spectral reference and Cole-Hopf. The networks and item 1's LiL runs already share them, on the same 201 x 201 grid. BL: the stored `bl_fd_ref_viscous_nu0.1.npz` of Packages 2 and 3, which the LiL runs use. The four-method network runs computed theirs (`reference_solution`): the same physics (nu = 0.1, M = 0.5, T = 0.4), the same grid, and a relative difference of 1.5e-7, which would matter only near the 1e-6 level. The error is logged off the clock at iteration 0, every 10 L-BFGS iterations (every LM iteration), and at the last iterate. **The clock** starts at the first optimizer iteration, as `training_time`. Pretraining (`pretrain_s`) and setup (`setup_s`) are timed beside it, not on it. Whether pretraining belongs on the clock is a question for the advisor, asked once in the cost check.
+
+**Warm-up.** Each job runs every method for 5 iterations at the smallest size, untimed, before its first run. On the laptop the first of these passes in a fresh process (NiL-N, 5 iterations at Burgers P = 25) took 5 s, against 3.5 ms per iteration in the budget run that followed (2,830 iterations in 10 s). Item 2's re-time saw a one-time cost of about 29 s on Grace.
+
+**C1** (one run per problem against its v2.0.0 run, first 100 iterations).
+- **Which runs.** Package 1 (`results/package1_v2.0.0`) ran on the CPU node only at each problem's largest size (Bratu 225, Burgers 625, BL 1,024), and on the A100 at every size. C1 is NiL-N, seed 0, at that size on the CPU node. Every other run that has a Package 1 counterpart is compared too, and reported beside it.
+- **The comparison.** The loss at iterations 0 to 100, relative difference, cutoff **1e-6**. This was set before any comparison, from what separates "the same run" from "another run":
+  - A different setup changes the loss at iteration 0 by 1e-3 or more.
+  - Package 1's 54 stall-rule controls, each a separate Grace job, matched their original runs from iteration 0 with no departure over thousands of iterations, on the CPU and on the A100.
+  - On different hardware, round-off grows through L-BFGS. The laptop against Grace CPU: 1e-16 at iteration 0 and 1e-13 at iteration 10, but 1e-2 by iteration 100 (Bratu, Burgers).
+  - BL's pretraining fit amplifies round-off across hardware: Package 1's own BL P = 1,024 seed 0 starts at 23.21 on the CPU node and 22.06 on the A100, and the laptop gives 22.68. So C1 is meaningful only on the same device class, which is how it is run.
+
+**C2 and C4** (`c2_c4`): NiL-N (300 iterations) and LM (30 iterations), seed 0, at the largest size, each without and then with the error log, after the warm-up.
+- C2: the same parameters and the same loss history, bit for bit.
+- C4: the clocks within 5% (the instructions).
+
+The laptop rehearsal at Burgers P = 100 gave identical iterates for both methods. Its runs were under 1 s, too short to judge 5%, so the Grace runs are sized to tens of seconds (batch 5).
+
+**Stalls before 600 s** (what the cost depends on): Package 1's 54 controls with tolerances 0 ran to 10,000 to 20,000 iterations (100 to 950 s on Grace) and none stalled. So the cost estimate keeps every budget run at its full 600 s.
+
+**Tests:** `tests/test_p5_3_networks.py` (9) and `tests/test_run_probe.py` (11).
+
+---
+
+## 2026-11-15 -- Package 5, item 3: the error along a run and the wall-clock budget, in the shared L-BFGS loops (`lilq/metrics.py` `RunProbe`, `lilq/solvers.py`)
+
+Item 3 runs every method for a fixed wall-clock budget and reads off the time at which each run first reaches a common accuracy. So the network and LiL-N runs need two things they did not have: the error of the current iterate logged along the run, and a stop when the run's clock reaches the budget. Both go into the existing loops as one optional argument, `probe`. There is no copy of a loop.
+
+**What changed.**
+- `MetricsTracker` gains a pausable clock. `off_clock(fn)` runs `fn` and adds its time to `off_clock_s`. `elapsed()` and `wall_time` exclude that time. On a GPU the queued work is synchronized before and after, so the solver's own work stays on the clock and the evaluation's work does not.
+- `RunProbe(error_fn, every=10, budget_s=None)` logs a row `(iteration, evaluations, time_s, loss, error)` at iteration 0, every `every` iterations, and at the last iterate. `time_s` is the `wall_time` the run recorded for that iterate. The error is evaluated off the clock. Once the clock reaches `budget_s`, the probe says so and the loop stops after that iteration. The iteration that crosses the budget completes and is logged.
+- `_lbfgs_loop`, `solve_nil_n`, `solve_lil_n` and `solve_nil_q` take `probe=None`. NiL-Q checks the budget in its inner loop and stops its outer loop too. The summaries gain `budget_reached` (False without a probe).
+- The budget is checked after the converged test, so a run that meets its own stopping rule in the same iteration reports converged, not the budget.
+
+**What does not change.** Without a probe every loop is as before: same iterates, same records, same summaries apart from the new `budget_reached` field. With a probe the iterates are the same bit for bit (check C2 of the item 3 plan), because `error_fn` must not touch the parameters or their gradients.
+
+**Tests** (`tests/test_run_probe.py`, 10):
+- C2 on small NiL-N, NiL-Q and LiL-N problems: identical parameters and loss histories with and without a probe;
+- the cadence of the rows;
+- the error time excluded from `wall_time`, the rows' times and the budget;
+- the budget ending NiL-N and NiL-Q's outer loop;
+- `off_clock` waiting for queued GPU work (skipped without CUDA).
+
+**Revisit if** an error evaluation must see the gradients, or a method outside these loops needs the same log: LM for networks and trust-region LiL-N log from their own drivers (later batches).
 
 ---
 

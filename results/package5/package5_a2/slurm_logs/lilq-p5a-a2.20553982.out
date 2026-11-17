@@ -1,0 +1,51 @@
+provenance lock OK: commit 765996180bdf, tree 8422e18e947f
+job 20553982 on c119: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+inputs OK (11 files)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_a2/provenance/a2
+A_cheb_P256_nu0.1_lam10000: done
+A_sine_P256_nu0.1_lam10000: done
+B_cheb_P576_nu0.05_lam10000: done
+B_sine_P576_nu0.05_lam10000: done
+A_sine_P576_nu0.1_lam10000: done
+A_cheb_P576_nu0.1_lam10000: done
+B_cheb_P576_nu0.02_lam10000: done
+B_sine_P576_nu0.02_lam10000: done
+C_cheb_P1024_nu0.1_lam10: done
+A_cheb_P1024_nu0.1_lam10000: done
+["A_cheb_P256_nu0.1_lam10000", "A_cheb_P576_nu0.1_lam10000", "A_cheb_P1024_nu0.1_lam10000"]
+A_sine_P1024_nu0.1_lam10000: done
+["A_sine_P256_nu0.1_lam10000", "A_sine_P576_nu0.1_lam10000", "A_sine_P1024_nu0.1_lam10000"]
+B_cheb_P1024_nu0.05_lam10000: done
+B_sine_P1024_nu0.05_lam10000: done
+{"K1": true}
+C_sine_P1024_nu0.1_lam10: done
+["C_cheb_P1024_nu0.1_lam10", "C_sine_P1024_nu0.1_lam10"]
+B_cheb_P1024_nu0.02_lam10000: done
+["B_cheb_P576_nu0.05_lam10000", "B_cheb_P576_nu0.02_lam10000", "B_cheb_P1024_nu0.05_lam10000", "B_cheb_P1024_nu0.02_lam10000"]
+B_sine_P1024_nu0.02_lam10000: done
+["B_sine_P576_nu0.05_lam10000", "B_sine_P576_nu0.02_lam10000", "B_sine_P1024_nu0.05_lam10000", "B_sine_P1024_nu0.02_lam10000"]
+PARTS A TO C AND K1 DONE
+D_trig_P1024_nu0.1_lam10: done
+D_trig_P1024_nu0.1_lam10000: done
+["D_trig_P1024_nu0.1_lam10", "D_trig_P1024_nu0.1_lam10000"]
+A_cheb_P256_nu0.1_lam10000: rule step 7, eL2 0.020245562333509458, delta_L2 0.0114, longest stretch 3 steps
+A_cheb_P576_nu0.1_lam10000: rule step 10, eL2 0.011790007171657924, delta_L2 0.00536, longest stretch 4 steps
+A_cheb_P1024_nu0.1_lam10000: rule step 11, eL2 0.004866924457977735, delta_L2 0.00251, longest stretch 0 steps
+A_sine_P256_nu0.1_lam10000: rule step 9, eL2 0.00738628075921789, delta_L2 0.00466, longest stretch 3 steps
+A_sine_P576_nu0.1_lam10000: rule step 6, eL2 0.0024855069894373343, delta_L2 0.00175, longest stretch 1 steps
+A_sine_P1024_nu0.1_lam10000: rule step 7, eL2 0.0009325200429649155, delta_L2 0.00072, longest stretch 1 steps
+B_cheb_P576_nu0.05_lam10000: rule step 13, eL2 0.019110600685230794, delta_L2 0.00836, longest stretch 7 steps
+B_cheb_P576_nu0.02_lam10000: rule step 12, eL2 0.05114545889742457, delta_L2 0.0202, longest stretch 6 steps
+B_cheb_P1024_nu0.05_lam10000: rule step 18, eL2 0.02772132720117819, delta_L2 0.00391, longest stretch 2 steps
+B_cheb_P1024_nu0.02_lam10000: rule step 17, eL2 0.0671592097021257, delta_L2 0.0121, longest stretch 2 steps
+B_sine_P576_nu0.05_lam10000: rule step 22, eL2 0.006878180149859279, delta_L2 0.0026, longest stretch 8 steps
+B_sine_P576_nu0.02_lam10000: rule step 30, eL2 0.042098146244236336, delta_L2 0.00937, longest stretch 18 steps
+B_sine_P1024_nu0.05_lam10000: rule step 32, eL2 0.004656949956677065, delta_L2 0.00104, longest stretch 10 steps
+B_sine_P1024_nu0.02_lam10000: rule step 50, eL2 0.02959771532175541, delta_L2 0.0048, longest stretch 46 steps
+C_cheb_P1024_nu0.1_lam10: rule step 16, eL2 0.06010357971912763, delta_L2 0.00251, longest stretch 0 steps
+C_sine_P1024_nu0.1_lam10: rule step 24, eL2 0.01906094248067074, delta_L2 0.00072, longest stretch 9 steps
+D_trig_P1024_nu0.1_lam10: rule step 13, eL2 0.011552961363604348, delta_L2 0.000897, longest stretch 2 steps
+D_trig_P1024_nu0.1_lam10000: rule step 6, eL2 0.0285012578265421, delta_L2 0.000897, longest stretch 1 steps
+{"K1": true, "K2": true}
+Wrote $SCRATCH/lilq-run/lilq-pinn/results/package5_a2.tar.gz (6.7 MB; 1 job logs)

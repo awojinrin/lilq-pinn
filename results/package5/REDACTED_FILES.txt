@@ -1,3 +1,7 @@
+package5_a2/provenance/a2/environment.txt
+package5_a2/provenance/a2/hardware.json
+package5_a2/slurm_logs/lilq-p5a-a2.20549881.out
+package5_a2/slurm_logs/lilq-p5a-a2.20553982.out
 package5_retime/provenance/timed/environment.txt
 package5_retime/provenance/timed/hardware.json
 provenance/timed/environment.txt

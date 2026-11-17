@@ -1,0 +1,55 @@
+{
+  "N_total": 2560,
+  "N_composition": {
+    "interior": 2304,
+    "initial": 128,
+    "left": 64,
+    "right": 64
+  },
+  "P_total": 256,
+  "P_composition": {
+    "u": 256
+  },
+  "row_weights": "Clenshaw-Curtis; boundary and initial lines lambda = 10000 x 1D weights x |e|/|dOmega|",
+  "collocation_construction": {
+    "method": "CGL tensor grid with Clenshaw-Curtis weights (P2-16 / P3-2)",
+    "ratio_target": 10
+  },
+  "basis_description": {
+    "family": "tensor Chebyshev",
+    "modes_per_direction": 16
+  },
+  "initial_coefficients": "ic: least-squares fit of the initial saturation profile held constant in time",
+  "solver_driver": "gelsy",
+  "rcond": 2.220446049250313e-16,
+  "stopping_rule": {
+    "type": "none: K_max iterations; the termination rule is read from the log"
+  },
+  "K_max": 60,
+  "stopping_reason": "iteration_cap",
+  "first_stall_iteration": 6,
+  "device": "cpu",
+  "thread_count": 4,
+  "b2_check": {
+    "k": 1,
+    "rel_err": 5.1740749881020985e-15,
+    "max_rel_err_over_run": 9.19607428425539e-15
+  },
+  "kappa_qr_raw_ratio": null,
+  "gpu_qr": null,
+  "package5": {
+    "item": "addendum 2",
+    "part": "A",
+    "space": "cheb",
+    "P": 256,
+    "nu": 0.1,
+    "lam": 10000.0,
+    "case": "gravity",
+    "rule_fires_at_step": 7,
+    "identity_scaled_max": 1.8864768314261945e-16,
+    "n_gl": 176,
+    "reference": "bl_fd_ref_gravity_nu0.1.npz",
+    "reference_error": 3.3670109407709566e-07
+  },
+  "commit": "765996180bdf30c4b86ca0cf279ef570ca9daaba"
+}

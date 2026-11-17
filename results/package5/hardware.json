@@ -97,5 +97,13 @@
     "whole_node": true,
     "commit": "16b128bd2a58db39be2d6ba15f2e9014b0042440",
     "record": "package5_retime/provenance/timed/hardware.json"
+  },
+  "addendum2": {
+    "job": "20553982",
+    "name": "lilq-p5a-a2",
+    "node": "c119",
+    "partition": "medium",
+    "commit": "765996180bdf30c4b86ca0cf279ef570ca9daaba",
+    "record": "package5_a2/provenance/a2/hardware.json"
   }
 }

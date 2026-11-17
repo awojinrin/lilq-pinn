@@ -6,10 +6,19 @@
     "locked_at_utc": "2026-11-14T19:29:35.739441+00:00"
   },
   "assembly": {
-    "commit": "57ba02a6402313cfc13bd9c515e79e7e393f4bcc",
+    "commit": "44178666911dd36b13f5725399e362c14981534a",
     "branch": "v3-dev"
   },
   "commits_between": [
+    "4417866 DECISIONS: the assembly reads the delivered packages; one Beltrami figure of the 14 November memo moves (169 -> 170)",
+    "99303ee Package 5, Addendum 2: the assembly (--a2) and the Grace run's record",
+    "bbce1ac Package 5, item 3: review of the LiL driver and the table; A100 class",
+    "b3fddf0 Package 5, item 3: the time-to-error table",
+    "13a23a5 Package 5, item 3: the LiL runs (LiL-Q, LiL-N trf and L-BFGS, square collocation)",
+    "7659961 Package 5, Addendum 2: Grace stage p5a (one cpu-mem job)",
+    "b7e91c2 Package 5, Addendum 2: update histories and the 18 plateau runs",
+    "ad6e636 Package 5, item 3: network runs to the 600 s budget (NiL-N, NiL-Q, LM)",
+    "6a1c2e8 Package 5, item 3: error along a run and wall-clock budget in the L-BFGS loops",
     "57ba02a Package 5 assembly: the re-timed item 2 run beside the timed job's",
     "16b128b Package 5, item 2: untimed warm-up for one-pass timings; re-time stage p5t",
     "21ec859 Package 5 assembly A2: the results folder from Grace's tarball (experiments/p5_assemble.py)",
@@ -25,5 +34,9 @@
     "commit": "16b128bd2a58db39be2d6ba15f2e9014b0042440",
     "job": "20534654"
   },
-  "note": "Every run, table and log is Grace's, at the runs' commit. The comparisons with the advisor's files and with the delivered Beltrami rows, and checks.json (C1 to C3, against Packages 2, 3 and 4 as delivered), are written at the assembly on Grace's files. package5_retime/ is the re-time of one item 2 run (stage p5t, its own commit lock), as Grace wrote it; P5_2_nlls/retime.csv sets its time beside the timed job's."
+  "addendum2": {
+    "commit": "765996180bdf30c4b86ca0cf279ef570ca9daaba",
+    "job": "20553982"
+  },
+  "note": "Every run, table and log is Grace's, at the runs' commit. The comparisons with the advisor's files and with the delivered Beltrami rows, and checks.json (C1 to C3, against Packages 2, 3 and 4 as delivered), are written at the assembly on Grace's files. package5_retime/ is the re-time of one item 2 run (stage p5t, its own commit lock), as Grace wrote it; P5_2_nlls/retime.csv sets its time beside the timed job's. P5_A2_initial_profile/ holds Addendum 2's plateau runs as Grace wrote them (stage p5a, its own commit lock; the stage's records in package5_a2/); its summary was rerun at the assembly on Grace's iterates (package5_a2_rerun_differences.json). Section 3a's update histories (updates_by_iterate.csv in the delivered run folders, P5_A2_initial_profile/updates_package4/) are written at the assembly from the stored coefficients."
 }

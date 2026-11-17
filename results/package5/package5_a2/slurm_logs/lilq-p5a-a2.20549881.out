@@ -1,0 +1,14 @@
+provenance lock OK: commit 765996180bdf, tree 8422e18e947f
+job 20549881 on c224: 24 threads, 24 cores usable, OverSubscribe=OK
+no GPU visible
+inputs OK (11 files)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_a2/provenance/a2
+STOPPED OR FAILED (exit 124): python experiments/p5_a2_plateau.py run --part C --out $SCRATCH/lilq-run/lilq-pinn/results/package5_a2 --reference-dir $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2/reference --item1-root $SCRATCH/lilq-run/lilq-pinn/results/package5
+STOPPED OR FAILED (exit 124): python experiments/p5_a2_plateau.py run --part A --space sine --out $SCRATCH/lilq-run/lilq-pinn/results/package5_a2 --reference-dir $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2/reference --item1-root $SCRATCH/lilq-run/lilq-pinn/results/package5
+STOPPED OR FAILED (exit 124): python experiments/p5_a2_plateau.py k1 --out $SCRATCH/lilq-run/lilq-pinn/results/package5_a2 --reference-dir $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2/reference --item1-root $SCRATCH/lilq-run/lilq-pinn/results/package5
+STOPPED OR FAILED (exit 124): python experiments/p5_a2_plateau.py run --part A --space cheb --out $SCRATCH/lilq-run/lilq-pinn/results/package5_a2 --reference-dir $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2/reference --item1-root $SCRATCH/lilq-run/lilq-pinn/results/package5
+STOPPED OR FAILED (exit 124): python experiments/p5_a2_plateau.py run --part B --space cheb --out $SCRATCH/lilq-run/lilq-pinn/results/package5_a2 --reference-dir $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2/reference --item1-root $SCRATCH/lilq-run/lilq-pinn/results/package5
+STOPPED OR FAILED (exit 124): python experiments/p5_a2_plateau.py run --part B --space sine --out $SCRATCH/lilq-run/lilq-pinn/results/package5_a2 --reference-dir $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2/reference --item1-root $SCRATCH/lilq-run/lilq-pinn/results/package5
+PARTS A TO C AND K1 DONE
+NOT RUN, NO TIME LEFT: python experiments/p5_a2_plateau.py run --part D --out $SCRATCH/lilq-run/lilq-pinn/results/package5_a2 --reference-dir $SCRATCH/lilq-run/lilq-pinn/results/package2_stage2/reference --item1-root $SCRATCH/lilq-run/lilq-pinn/results/package5
+[2026-11-16T12:28:50.017] error: *** JOB 20549881 ON c224 CANCELLED AT 2026-11-16T12:28:50 DUE TO TIME LIMIT ***

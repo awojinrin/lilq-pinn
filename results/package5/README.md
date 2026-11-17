@@ -1,10 +1,12 @@
-# Computational Package 5 results (items 1, 2 and 4)
+# Computational Package 5 results (items 1, 2 and 4, and Addendum 2)
 
 This is `package5_results/`, in the Section 8 layout of Computational Package 5 (the advisor's
-instructions of 13 November 2026), for items 1, 2 and 4. Item 3 follows separately. The branch holds
-`v3-dev` at `57ba02a`, the commit the results were assembled at, and adds only `results/package5/`.
+instructions of 13 November 2026), for items 1, 2 and 4, and for Addendum 2 (15 November 2026). Item 3
+follows separately. The branch holds `v3-dev` at `4417866`, the commit the results were assembled at,
+and adds only `results/package5/`.
 
-**Start with `report.md`.** It ends with a list of its files.
+**Start with `report.md`** (items 1, 2 and 4). It ends with a list of its files. Addendum 2 is
+reported in the item 3 cost-check memo.
 
 **Commits:**
 - **The runs:** every Grace job of 14 November 2026 ran at `60c2d8c` (`COMMIT`), under the source lock.
@@ -13,11 +15,17 @@ instructions of 13 November 2026), for items 1, 2 and 4. Item 3 follows separate
   one-time cost of about 29 s fell inside that run's only timed pass. `16b128b` adds an untimed
   warm-up of 5 iterations before every solver timed by one pass. The warm-up changes the clock only:
   the re-timed run has the same iterations and identical coefficients.
+- **Addendum 2:** its 18 runs, K1 and K2 ran at `7659961` on 16 November 2026, in one job under its
+  own lock (`package5_a2/COMMIT`). A first job that day produced nothing (see Cost).
 - **After the runs:** `8674498` and `21ec859` add the assembly (`experiments/p5_assemble.py`) and
-  the comparisons with the advisor's files; `57ba02a` adds the re-time to the assembly. Apart from
-  `16b128b`'s warm-up, no code a run uses changed.
-- **Where they are recorded:** `provenance.json` records the runs' commit, the re-time's, the
-  assembly's and the commits between. `DECISIONS_package5.md` gives the reasons.
+  the comparisons with the advisor's files; `57ba02a` adds the re-time to the assembly; `99303ee`
+  adds Addendum 2 to it; `4417866` is a DECISIONS note. Item 3's commits (`13a23a5`, `b3fddf0`,
+  `bbce1ac`) add PyTorch residuals beside code item 1 uses, and a path that evaluates the residual
+  alone, which equals the full assembly's residual to 1e-14 (tested); the item 1 code paths the runs
+  took are otherwise unchanged. Otherwise, apart from `16b128b`'s warm-up, no code a
+  run uses changed between the runs and the assembly, which reruns summaries only.
+- **Where they are recorded:** `provenance.json` records the runs' commit, the re-time's, Addendum 2's,
+  the assembly's and the commits between. `DECISIONS_package5.md` gives the reasons.
 
 **What is Grace's.** Every run folder, table, log and timing is as Grace wrote it. The cluster did
 not have the advisor's expected files, so the assembly reran the summaries on Grace's files with
@@ -25,7 +33,10 @@ them:
 - `P5_1_weights/compare_expected.csv`, `P5_2_nlls/compare_expected.csv` and
   `P5_4_pb/compare_expected_4b.csv` set the runs beside the advisor's values;
 - `P3_1_beltrami_certified/beside_delivered.csv` sets the Beltrami runs beside the rows Package 3
-  delivered;
+  delivered. Since 16 November it reads Package 3 as delivered, with the pressure delta_P as
+  re-evaluated after the advisor's reply of 10 October; the version of 14 November read Grace's first
+  value. The p and combined ratios moved by at most 2e-4 relative; one figure printed in `report.md`
+  changes (B2, weight 10^3, p (pin gauge) / delta_P: 169 there, 170 now);
 - `checks.json` holds the checks C1 to C3 of the delivered packages; all three pass;
 - the summaries also rewrote Grace's tables. The tables kept here are Grace's; every column agreed
   exactly, except delta_P (the error of the best approximation) and the ratios to it, which differ by
@@ -35,16 +46,33 @@ them:
 - `P5_2_nlls/retime.csv` sets the re-timed run beside the timed job's. Grace's item 2 tables keep the
   timed job's time (30.9 s); the re-timed time is 0.372 s.
 
-**Cost:** `su.csv`, 9 jobs, 122.6 SU at Grace's rates (the report job's and the re-time job's rows
-from sacct after they ended).
+**Addendum 2** (the advisor's Section 6 layout):
+- `P5_A2_initial_profile/`: one folder per run (`iterations.csv`, `errors_by_iterate.csv`,
+  `updates_by_iterate.csv`, `betas.npy`, `beta_last.npy`, `run.json`), `terminal.csv`,
+  `stretches.csv`, `trig_delta_P.json`, `item1_references.json`, `checks.json` (K1 and K2, both
+  pass), and `K1/` (item 1's two runs rerun in the job). All as Grace wrote them.
+- The summary was rerun at the assembly on Grace's stored iterates: every number agrees within 2e-14
+  relative but delta_P's, which differ by round-off of at most 1.8e-9
+  (`package5_a2_rerun_differences.json`).
+- Section 3a: `updates_by_iterate.csv` in the 96 run folders of item 1 and the 54 Poisson-Boltzmann
+  run folders of items 4a and 4b, and under `P5_A2_initial_profile/updates_package4/` for Package 4's
+  18 runs (so that the `package4-results` branch stays as delivered). Written at the assembly from the
+  stored coefficients.
+- `package5_a2/`: the stage's records (`COMMIT`, `provenance/a2`, `slurm_logs`, `sacct.txt`,
+  `su_per_job.csv`, `report_log.txt`).
+
+**Cost:** `su.csv`, 11 jobs, 153.5 SU at Grace's rates (the report job's, the re-time job's and both
+Addendum 2 jobs' rows from sacct after they ended). The first Addendum 2 job (20549881, 24.5 SU) ran
+its full hour without producing a run: its processes sat idle after starting, most likely a stall of
+the scratch filesystem during that day's outage. The second (20553982) ran the same bundle in 954 s.
 
 **What is not here:**
-- the raw cluster tarballs (`package5.tar.gz`, `package5_retime.tar.gz`). Everything in them is
-  here, assembled. The tarballs are kept by the authors;
+- the raw cluster tarballs (`package5.tar.gz`, `package5_retime.tar.gz`, `package5_a2.tar.gz`).
+  Everything in them is here, assembled. The tarballs are kept by the authors;
 - the advisor's `expected_weight_bratu.json`, `expected_weight_bl.json`,
   `expected_nlls_liln.json` and `expected_rf_pb.json`. `provenance.json` records their SHA-256.
 
-**Redactions.** Before publishing, these were replaced by placeholders in 10 text files (listed in
+**Redactions.** Before publishing, these were replaced by placeholders in 14 text files (listed in
 `REDACTED_FILES.txt`):
 - the cluster user's scratch path (`$SCRATCH`);
 - the HPRC allocation account (`<account>`);

@@ -1,0 +1,3 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20549881                          lilq-p5a-a2     medium                             billing=24,cpu=24,mem=96G,node=1   01:01:11    TIMEOUT      0:0 

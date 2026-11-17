@@ -1,0 +1,47 @@
+{
+  "K1": {
+    "check": "K1",
+    "rows": [
+      {
+        "family": "bl_cheb_gravity",
+        "P": 1024,
+        "lam": 10000.0,
+        "rule_step_delivered": 5,
+        "rule_step_rerun": 5,
+        "iterates_compared": 7,
+        "max_rel_diff": 0.0,
+        "tolerance": 1e-08,
+        "pass": true
+      },
+      {
+        "family": "bl_sine_gravity",
+        "P": 1024,
+        "lam": 10000.0,
+        "rule_step_delivered": 3,
+        "rule_step_rerun": 3,
+        "iterates_compared": 5,
+        "max_rel_diff": 0.0,
+        "tolerance": 1e-08,
+        "pass": true
+      }
+    ],
+    "pass": true
+  },
+  "K2": {
+    "check": "K2",
+    "columns": [
+      "norm_R_h",
+      "norm_Rlin_h",
+      "eps_ref"
+    ],
+    "tolerance": 1e-08,
+    "iterates": 61,
+    "rows_delivered": 61,
+    "rows_rerun": 61,
+    "max_rel_diff_every_iterate": 0.0,
+    "first_iterate_over_tolerance": null,
+    "max_rel_diff_to_first_stall": 0.0,
+    "delivered_first_stall": 13,
+    "pass": true
+  }
+}

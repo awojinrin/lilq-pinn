@@ -8,3 +8,5 @@ job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
 20533643,lilq-p5-item4,"billing=24,cpu=24,mem=96G,node=1",0.8942,COMPLETED,24,21.5,
 20533644,lilq-p5-report,"billing=24,cpu=24,mem=32G,node=1",0.1086,COMPLETED,24,2.6,not in the last tarball: from sacct after it ended
 20534654,lilq-p5t-retime,"billing=48,cpu=48,mem=360G,node=1",0.0808,COMPLETED,48,3.9,not in the last tarball: from sacct after it ended
+20549881,lilq-p5a-a2,"billing=24,cpu=24,mem=96G,node=1",1.0197,TIMEOUT,24,24.5,not in the last tarball: from sacct after it ended
+20553982,lilq-p5a-a2,"billing=24,cpu=24,mem=96G,node=1",0.265,COMPLETED,24,6.4,not in the last tarball: from sacct after it ended

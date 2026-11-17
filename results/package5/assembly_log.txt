@@ -1,5 +1,5 @@
-Package 5 assembly, 2026-11-15T01:08:39.844176+00:00
-from package5 (runs at 60c2d8c), assembled at 57ba02a
+Package 5 assembly, 2026-11-17T00:09:24.077889+00:00
+from package5 (runs at 60c2d8c), assembled at 4417866
 copied P5_1_weights/
 copied P3_1_beltrami_certified/
 copied P5_2_nlls/
@@ -17,5 +17,11 @@ written with the advisor's files: P5_1_weights/compare_expected.csv, P5_2_nlls/c
 checks.json: C1 passed, C2 passed, C3 passed
 copied package5_retime/ (the re-time, commit 16b128b)
 P5_2_nlls/retime.csv: burgers p = 10 lbfgs: 30.95 s in the timed job, 0.372 s re-timed after a 59.7 s warm-up of 5 iterations; the same 138 iterations, coefficients within 0e+00
-su.csv: 9 jobs, 122.6 SU charged at Grace's rates
-provenance.json: 4 commit(s) between the runs and the assembly
+copied P5_A2_initial_profile/ and the stage's records to package5_a2/ (Addendum 2, commit 7659961)
+package5_a2/slurm_logs/lilq-p5a-a2.20553982.out: added (the tarball was written before its job ended)
+Section 3a, the update histories of delivered runs (updates_by_iterate.csv): {'item1': 96, 'package4_2a': 18, 'item4a': 9, 'item4b': 45}
+tables: rewritten from Grace's logs; every column but delta_P's within 0e+00 relative of Grace's (60 CSVs; Grace's kept); delta_P's columns differ by up to 7.6e-10 (package5_a2_rerun_differences.json)
+P5_A2_initial_profile: the summary rerun on Grace's iterates; terminal.csv, stretches.csv and the JSON files within 2e-14 relative of Grace's but delta_P's (up to 1.8e-09, package5_a2_rerun_differences.json); Grace's kept
+P5_A2_initial_profile: K1 passed, K2 passed (Grace's checks.json)
+su.csv: 11 jobs, 153.5 SU charged at Grace's rates
+provenance.json: 13 commit(s) between the runs and the assembly
