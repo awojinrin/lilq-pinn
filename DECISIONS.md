@@ -17,6 +17,93 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-16 -- Package 5, item 3: the job layout (batch 5; stages p5c and p5g)
+
+**Two stages**, each with its own results folder under its own commit lock: `p5c`, the CPU set
+(`results/package5_item3_cpu`), and `p5g`, the A100 set (`results/package5_item3_gpu`). The A100 set is
+submitted only after the cost check has told the advisor its class and cost (his rule 3).
+
+**The CPU set** (`submit_p5_item3_cpu.sh`, 8 jobs):
+- `p5c_preflight` (cpu): the three references, the test suite. The others wait for it.
+- `p5c_protocol` (timed-cpu): LiL-Q, `trf` and the square collocation by the usual protocol on the three
+  problems, then C2 and C4 (NiL-N and LM at the largest size, about 30 s each; see the review below).
+- Five budget jobs (timed-cpu, 48 threads, one run at a time): `p5c_bratu` (27 network runs and LiL-N
+  L-BFGS at the 3 sizes), `p5c_burgers_a` / `_b` (23 + 3, 22 + 4), `p5c_bl_a` / `_b` (18 + 2 each). The
+  network runs are split round robin (`--part i/n`) over the list sorted by size, so each job gets about
+  the same mix of sizes, methods and seeds.
+- `p5c_report` (afterany): the time-to-error table, then the tarball.
+
+**The A100 set** (`submit_p5_item3_gpu.sh`, 5 jobs):
+- `p5g_preflight` (shared-gpu, one A100): the references, and the item 3 tests with CUDA visible (the torch
+  residuals and the off-clock timer on the GPU; the CPU preflight skips them).
+- One `gpu-pair` job per problem (both A100s, 48 cores, 360 GB, 192 SU/h): first stops unless it sees two
+  GPUs. Then two processes side by side, process i on GPU i (`CUDA_VISIBLE_DEVICES`), 24 threads each,
+  network part i/2 and then its share of the LiL-N L-BFGS sizes.
+- **The solo check** (the plan's paired-against-solo check): per problem, NiL-N seed 0 at the largest size
+  (the run with the most work on the GPU), run alone for 60 s before the pair starts, on the GPU its paired
+  run uses. The report compares the clock at the last iteration both logged; within 5% (cutoff set before
+  any run). Three solo runs cost about 15 SU.
+- **No CPU pinning.** Each process has 24 threads and the operating system places them. If the pairing
+  check fails, binding each process to its GPU's socket is the first thing to try.
+- `p5g_report` (afterany): the pairing check, the table, the tarball.
+
+**Every process has its own tag** (`--tag`, e.g. `cpu-burgers-a`, `gpu-bl-1`): it names the process's
+warm-up and provenance records and is kept in each `run.json`, so no two processes write the same file.
+Each run's folder is fixed by problem, size, method, seed and device, and the tests check that every run
+is in exactly one job per stage.
+
+**Plan changes (flagged to the user):**
+- **C1 and C3 run at the assembly on the laptop**, not on Grace. C1 compares with the Package 1 histories
+  and C3 with the delivered Package 4 logs, which are not on Grace. Items 1, 2 and 4 did the same.
+- **Report steps under their own time limits** (table 10 min, tarball 15 min, pairing 5 min): the
+  weakness found in Addendum 2's lost hour.
+
+**Walltimes and cost, from a laptop probe** (16 November 2026, 30 s budgets at each problem's largest
+size, CPU and CUDA). The error log is off the clock but not off the walltime:
+- LM logs the error at every iteration: 7 to 21% of the budget (Bratu 21% CPU / 15% CUDA, Burgers
+  12% / 11%, BL 7% / 5%).
+- The L-BFGS methods log every 10 iterations: under 2%. Pretraining is under 2 s.
+- Each run is costed at 600 s x (1 + its share, rounded up: 0.22, 0.13, 0.08; 0.02) + 30 s fixed, and
+  LiL-N L-BFGS as a full budget run. Walltime = expected x 1.10, rounded up to 15 min.
+- **CPU set: 1,260 SU requested, about 1,110 expected. A100 set: 2,535 requested, about 2,220 expected.**
+  Both are upper bounds: LiL-N L-BFGS stalls early at the small sizes, and the fixed part was 2 to 5 s on
+  the laptop. Against the plan's 1,070 and 2,040, the difference is the LM error log. With both sets, the
+  upper bound is about 3,330 against the 3,177 left in the advisor's cap. The cost check gives him the
+  A100 figure after the CPU set has run, when its real charge is known.
+- The probe's BL NiL-N CUDA run took 1,498 s for a 30 s budget: the laptop slept from 19:34:58 to
+  19:59:22 (Windows Kernel-Power events 42 and 107) during one iteration. Not the code: the budget is
+  checked after each iteration, and an iteration cannot be interrupted.
+
+**The second review for implicit state and missed bugs** (the user's request, after the rehearsal):
+- Fixed: `pairing()` stopped the report if a solo or paired run had been cut before its `run.json`; such
+  a row now has no verdict and says why. Each row also records both runs' evaluation counts at the
+  compared iteration, so a different iterate path is visible.
+- Fixed, a missed plan item: C2 and C4 were still 300 NiL-N and 30 LM iterations (2 to 10 s), not the
+  "tens of seconds" the 15 November entry asked for. Fixed counts did not work either: in the rehearsal
+  1,000 NiL-N iterations took 5 to 7 s on the laptop (the probe's rates had predicted 17 to 33 s), and C4
+  failed on two such runs (12.8% and 5.7%; one overlapped a test run). **Both runs now have the count
+  that takes about 30 s at the rate of an untimed pilot on the same node** (NiL-N 100 iterations, LM 10).
+  The 5% cutoff is unchanged. A wall-clock budget for the first run was rejected: it can end an LM
+  iteration in the middle of its rejected steps, so a run capped at the same count would not repeat it.
+  With the pilot, the laptop's six C2/C4 runs took 27 to 36 s; C2 passed in all six, C4 in four (Bratu LM
+  +7.7%, Burgers NiL-N +8.2%). Repeated three times each on a quiet laptop, those two gave -2.9, +2.6,
+  -2.8% and +0.6, +0.3, -0.8%: noise on the laptop, not a cost of the log that the clock misses. On
+  Grace C4 is one run per method and problem, as planned; a failure is reported, never rerun to a pass.
+- Fixed: the pair jobs wrote `hardware.json` before setting their 24 threads.
+- **The rehearsal** (laptop, 5 s budgets, both stages, every job script's own body): every job ended
+  with rc 0; 108 network and 14 LiL-N L-BFGS runs per device, each in one job; one warm-up and one
+  provenance record per process; the 31 protocol runs all timed with `timing_matches`; tables with no
+  run flagged; both tarballs (12.6 and 3.2 MB at 5 s budgets). The pairing check failed (paired runs
+  70 to 124% slower) because both processes shared the laptop's one GPU: the check tells the cases
+  apart, and the evaluation counts at the compared iterations were equal (the same path).
+- Checked, by design: each run calls `set_seed` and draws its collocation set from its own seed, and the
+  weights are built on the CPU, so a run's result does not depend on the runs before it in its process
+  (the parts give each process a different sequence). The network driver sets torch's default dtype to
+  float64 for the whole process, as P2-8 and the four-method runs do; every run in it wants float64.
+- Checked: the table reads `networks/*_P*/*/run.json`, so the solo runs under `checks/` never enter it.
+
+---
+
 ## 2026-11-16 -- Package 5, Addendum 2: the Grace run, a lost hour, and the assembly (`experiments/p5_assemble.py --a2`)
 
 **The first job (20549881, node c224, 11:27-12:28) produced nothing.** All six processes were stopped by
