@@ -111,6 +111,15 @@ What the numbers show (read after the verdicts, which stand as fixed):
   31.01 s), and the next run, without the log, was as slow (31.02 s): the node, not the log. It
   bears on the A100 set's pairing gate (5%), not on C4.
 
+**The A100 set (p5g)** ran on bundle 1a88feb (jobs 20592822-25, 18 November 2026; sha256 825ab4b6...):
+all four jobs COMPLETED, **1,866 SU** (expected about 2,270: preflight 5.6, Bratu 445.5, Burgers 758.5,
+Buckley-Leverett 656.6). The failure, gate and library greps printed nothing. Pairing gates passed
+(Buckley-Leverett +3.1%, Bratu +0.5%, Burgers +2.1%) and the report's pairing check too (+2.8%, -2.1%,
++1.8%). 108 network budget runs plus the 9 solo and gate runs, all at 1a88feb; 14 LiL-N L-BFGS runs;
+24 hardware.json, all the module's OpenMP library; nothing flagged. Runs that stopped before the budget
+stopped on an optimizer stall (11 of 108; the CPU rerun had 13). Package 5 so far: about 3,934 SU of
+the 4,400 cap.
+
 ---
 
 ## 2026-11-17 -- Package 5, item 3: the advisor's reply to the cost check; C4's three timings; Component A's OpenMP library (stage p5k)
