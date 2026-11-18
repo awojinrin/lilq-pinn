@@ -135,6 +135,34 @@ code changed since bundle 03bd5ab:
 - **Native libraries:** every Grace process checks its OpenMP library itself (p5r, p5g: 'module';
   p5k: the one its first import should give).
 
+**The p5k result** (job 20581996 on 17 November 2026, bundle 3df7b7b; tarball sha256 688e646c...,
+matches Grace). Every process loaded the library its first import should give; 48 threads in every
+run, as Package 1. Judged by the criteria fixed before the job:
+- **F1: the library changes it, and the module's library is the slower one.** Seconds per Adam
+  iteration, medians over the three rounds: wheel's 0.336, module's 0.458 (wheel/module 0.73); per
+  L-BFGS iteration 0.360 against 0.450 (0.80). The rounds do not overlap. The torch-first values are
+  Package 1's own (0.327 and 0.353, all five seeds), within 3%.
+- **F2: no change beyond the cutoff** (seconds per evaluation, wheel/module 0.89, the rounds overlap).
+- **So Package 1's Kovasznay CPU baselines ran with the faster library for F1.** LiL-Q's CPU times
+  (Part B) loaded the module's. Under the module's library F1 would have been about 25 to 36% slower
+  per iteration. The mixed libraries favour the baselines, so the same-hardware comparison is, if
+  anything, conservative for LiL-Q. Rerunning them under the module's library would only slow the
+  baselines down (about 480 SU, more than the cap leaves). What to tell the advisor: put to the user.
+- **The reproduction check fails on its letter, cause shown.** Its rule compares every log row that
+  Package 1's seed-0 run also has. In rounds 0 and 2 of torch first, F2's time ran out inside step 10;
+  that row is the rejected try (accepted 0), logged with the step-9 loss under iteration 10, while
+  Package 1's row 10 is the accepted step (13% apart). On every accepted step the torch-first F2 losses
+  equal Package 1's exactly (0.0), and F1's Adam rows too (0.0). The numpy-first runs differ from
+  Package 1 by up to 1e-12 (F1) and 4e-7 (F2): the library changes the round-off, as in item 3. The
+  rule should have left out rows with accepted 0; not changed after the job, reported as is.
+- **F2's measure is weaker than F1's.** Its seconds per evaluation are not constant over a run:
+  Package 1's whole-log value (5.86) mixes cheap rejected tries late in the run, so it cannot be set
+  beside these 90 s runs. Per accepted step over rows 2 to 8 (not a criterion, for the record): wheel
+  9.34, module 10.50 (the rounds overlap), Package 1 10.97 (five seeds, same rows). So this job's F2
+  was about 15% faster than Package 1's own runs with the same library: F2 ran second in a process
+  that had run F1, where Package 1's F2 ran first in its own. The same for both orders, so the
+  comparison stands; its absolute values do not reproduce Package 1's.
+
 ---
 
 ## 2026-11-17 -- Package 5, item 3: the diagnostic's result; numpy first, the OpenMP library check, and the CPU network runs again (stage p5r)
