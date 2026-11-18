@@ -1,0 +1,173 @@
+provenance lock OK: commit 0f74bdfdbde9, tree 540143b755e4
+job 20564296 on c188: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu/provenance/protocol
+bratu P=25 LiL-Q cpu: rule fired, 0.00127 s, error 1.299e-02
+bratu P=25 LiL-N (trf) cpu: 4: Both `ftol` and `xtol` termination conditions are satisfied., 0.00413 s, error 1.299e-02
+bratu P=25 square collocation (SQ-CGL) cpu: tolerance, 0.000428 s, error 4.581e-04
+bratu P=100 LiL-Q cpu: rule fired, 0.0404 s, error 1.582e-04
+bratu P=100 LiL-N (trf) cpu: 2: `ftol` termination condition is satisfied., 0.118 s, error 1.582e-04
+bratu P=100 square collocation (SQ-CGL) cpu: tolerance, 0.00523 s, error 3.245e-05
+bratu P=225 LiL-Q cpu: rule fired, 0.244 s, error 1.515e-05
+bratu P=225 LiL-N (trf) cpu: 3: `xtol` termination condition is satisfied., 0.459 s, error 1.515e-05
+bratu P=225 square collocation (SQ-CGL) cpu: tolerance, 0.0129 s, error 2.393e-06
+burgers P=36 LiL-Q cpu: rule fired, 0.0039 s, error 3.957e-02
+burgers P=36 LiL-N (trf) cpu: 2: `ftol` termination condition is satisfied., 0.0144 s, error 3.955e-02
+burgers P=100 LiL-Q cpu: rule fired, 0.0452 s, error 3.994e-03
+burgers P=100 LiL-N (trf) cpu: 2: `ftol` termination condition is satisfied., 0.143 s, error 3.994e-03
+burgers P=196 LiL-Q cpu: rule fired, 0.188 s, error 2.848e-04
+burgers P=196 LiL-N (trf) cpu: 2: `ftol` termination condition is satisfied., 0.358 s, error 2.848e-04
+burgers P=324 LiL-Q cpu: rule fired, 0.418 s, error 2.546e-05
+burgers P=324 LiL-N (trf) cpu: 3: `xtol` termination condition is satisfied., 0.792 s, error 2.546e-05
+burgers P=484 LiL-Q cpu: rule fired, 0.758 s, error 2.775e-06
+burgers P=484 LiL-N (trf) cpu: 1: `gtol` termination condition is satisfied., 1.38 s, error 2.775e-06
+burgers P=676 LiL-Q cpu: rule fired, 1.34 s, error 3.149e-07
+burgers P=676 LiL-N (trf) cpu: 1: `gtol` termination condition is satisfied., 2.57 s, error 3.149e-07
+burgers P=900 LiL-Q cpu: rule fired, 2.65 s, error 3.605e-08
+burgers P=900 LiL-N (trf) cpu: 1: `gtol` termination condition is satisfied., 4.5 s, error 3.605e-08
+bl P=64 LiL-Q cpu: rule fired, 0.0405 s, error 1.396e-02
+bl P=64 LiL-N (trf) cpu: 2: `ftol` termination condition is satisfied., 0.285 s, error 1.510e-02
+bl P=256 LiL-Q cpu: rule fired, 0.368 s, error 6.081e-04
+bl P=256 LiL-N (trf) cpu: 2: `ftol` termination condition is satisfied., 1.67 s, error 6.086e-04
+bl P=576 LiL-Q cpu: rule fired, 1.23 s, error 1.028e-04
+bl P=576 LiL-N (trf) cpu: 2: `ftol` termination condition is satisfied., 4.88 s, error 1.028e-04
+bl P=1024 LiL-Q cpu: rule fired, 4.58 s, error 4.844e-05
+bl P=1024 LiL-N (trf) cpu: 4: Both `ftol` and `xtol` termination conditions are satisfied., 16.8 s, error 4.844e-05
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "method": "NiL-N (L-BFGS)",
+  "device": "cpu",
+  "iterations": 3093,
+  "pilot": {
+    "iterations": 100,
+    "training_time_s": 0.9699986819177866,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 33.27386913448572,
+  "time_with_s": 33.81622312963009,
+  "error_time_s": 0.827060803771019,
+  "time_rel_diff": 0.016299697307586642,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": true
+}
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 334,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 0.9002956189215183,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 10.280354699119925,
+  "time_with_s": 10.096671495586634,
+  "error_time_s": 1.7929826080799103,
+  "time_rel_diff": 0.017867399414634638,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": true
+}
+{
+  "benchmark": "burgers",
+  "P": 625,
+  "method": "NiL-N (L-BFGS)",
+  "device": "cpu",
+  "iterations": 591,
+  "pilot": {
+    "iterations": 100,
+    "training_time_s": 5.077081548050046,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 30.3387458845973,
+  "time_with_s": 29.15959155932069,
+  "error_time_s": 0.3254656158387661,
+  "time_rel_diff": 0.038866284379779154,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": true
+}
+{
+  "benchmark": "burgers",
+  "P": 625,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 150,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 2.00181064940989,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 27.75795610062778,
+  "time_with_s": 28.35467849485576,
+  "error_time_s": 6.165292572230101,
+  "time_rel_diff": 0.021497346276676543,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": true
+}
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "method": "NiL-N (L-BFGS)",
+  "device": "cpu",
+  "iterations": 438,
+  "pilot": {
+    "iterations": 100,
+    "training_time_s": 6.851268898695707,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 30.078507337719202,
+  "time_with_s": 28.305283786728978,
+  "error_time_s": 0.32214377261698246,
+  "time_rel_diff": 0.05895317646851967,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": false
+}
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 128,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 2.359186101704836,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 31.26850199326873,
+  "time_with_s": 32.041683714836836,
+  "error_time_s": 5.483867427334189,
+  "time_rel_diff": 0.024727175025351485,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": true
+}

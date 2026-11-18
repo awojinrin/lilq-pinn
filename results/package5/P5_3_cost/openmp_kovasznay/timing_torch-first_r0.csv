@@ -1,0 +1,4 @@
+first,round,library,measure,value,intervals,end_reason
+torch,0,torch,F1_adam_s_per_iteration,0.33596,1,budget
+torch,0,torch,F1_lbfgs_s_per_iteration,0.3713356164383561,15,budget
+torch,0,torch,F2_s_per_evaluation,9.514875,8,budget

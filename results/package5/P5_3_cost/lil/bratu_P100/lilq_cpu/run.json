@@ -1,0 +1,81 @@
+{
+  "benchmark": "bratu",
+  "P": 100,
+  "p": 10,
+  "method": "LiL-Q",
+  "method_key": "lilq",
+  "device": "cpu",
+  "trial_space": "tensor Chebyshev on the CGL set, N/P = 10 (P2-16)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.013539966195821762,
+  "rule_step": 3,
+  "returned_iterate": 4,
+  "stopping_reason": "rule fired",
+  "iterates": 4,
+  "logged_pass_s": 0.04410372115671635,
+  "time_s": 0.04035330004990101,
+  "timing": {
+    "stamps": [
+      0.0,
+      0.009715460240840912,
+      0.01983826793730259,
+      0.02992234192788601,
+      0.039965905249118805
+    ],
+    "total_s": 0.04035330004990101,
+    "timings": [
+      {
+        "total_s": 0.04031975939869881,
+        "runs_s": [
+          0.046154746785759926,
+          0.04031975939869881,
+          0.040302544832229614,
+          0.04028313234448433,
+          0.04032010771334171
+        ]
+      },
+      {
+        "total_s": 0.04038248956203461,
+        "runs_s": [
+          0.04025769606232643,
+          0.04041929729282856,
+          0.040385326370596886,
+          0.04038248956203461,
+          0.040332864969968796
+        ]
+      },
+      {
+        "total_s": 0.04035330004990101,
+        "runs_s": [
+          0.04036442004144192,
+          0.04039495252072811,
+          0.04035330004990101,
+          0.04030357301235199,
+          0.040331851691007614
+        ]
+      }
+    ],
+    "spread": 0.0015558169064329164,
+    "iterate_counts": [
+      5
+    ],
+    "logged_count": 5,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 0.0008708837442935817,
+  "final_error": 0.00015824760801540997,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

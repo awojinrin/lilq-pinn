@@ -1,0 +1,74 @@
+provenance lock OK: commit 1a88feb4ba15, tree 63a389858cf9
+job 20592823 on g004: 48 threads, 48 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+NVIDIA A100-PCIE-40GB, 40960 MiB
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_gpu/provenance/gpu-bratu
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+solo bratu P=225 NiL-N (L-BFGS) s0 cuda: 3392 it in 60.0 s
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+
+gate (GPU 1) bratu P=225 NiL-N (L-BFGS) s0 cuda: 3440 it in 60.0 s
+gate (GPU 0) bratu P=225 NiL-N (L-BFGS) s0 cuda: 3376 it in 60.0 s
+{
+  "check": "the pairing gate: the solo run again with both GPUs busy, before the budget runs",
+  "benchmark": "bratu",
+  "P": 225,
+  "method_key": "nil_n",
+  "seed": 0,
+  "device": "cuda",
+  "gpu": 0,
+  "solo": "solo_bratu_P225_nil_n_s0_cuda",
+  "gate": "gate_bratu_P225_nil_n_s0_cuda_gpu0",
+  "other_gpu": "gate_bratu_P225_nil_n_s0_cuda_gpu1",
+  "slurm_job_id_solo": "20592823",
+  "slurm_job_id_paired": "20592823",
+  "iteration": 3370,
+  "time_solo_s": 59.59851514920592,
+  "time_paired_s": 59.89630758203566,
+  "evaluations_solo": 3787,
+  "evaluations_paired": 3787,
+  "paired_over_solo_minus_1": 0.004996641813713065,
+  "rtol": 0.05,
+  "paired_tag": "gpu-bratu-gate0",
+  "passed": true,
+  "overlap_fraction": 0.9992477006279997,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "slurm_job_id": "20592823"
+}
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+
+bratu P=25 NiL-N (L-BFGS) s1 cuda: 13741 it, 276.6 s, optimizer_stall, loss 1.782e-02, error 1.761e-02
+bratu P=25 NiL-N (L-BFGS) s0 cuda: 28798 it, 600.0 s, budget, loss 4.407e-02, error 3.322e-02
+bratu P=25 NiL-Q (L-BFGS) s0 cuda: 26334 it, 600.0 s, budget, loss 2.526e-02, error 3.174e-01
+bratu P=25 NiL-N (L-BFGS) s2 cuda: 17349 it, 342.4 s, optimizer_stall, loss 5.745e-02, error 4.315e-02
+bratu P=25 NiL-Q (L-BFGS) s1 cuda: 3214 it, 65.6 s, optimizer_stall, loss 6.278e-02, error 3.922e-02
+bratu P=25 NiL-Q (L-BFGS) s2 cuda: 7412 it, 150.8 s, optimizer_stall, loss 2.693e-02, error 2.294e-02
+bratu P=25 NiL-N (LM) s0 cuda: 38093 it, 600.0 s, budget, loss 3.836e-02, error 1.031e+00
+bratu P=25 NiL-N (LM) s1 cuda: 37846 it, 600.0 s, budget, loss 1.681e+00, error 1.040e+00
+bratu P=100 NiL-N (L-BFGS) s0 cuda: 29783 it, 600.0 s, budget, loss 5.397e-04, error 2.936e-03
+bratu P=25 NiL-N (LM) s2 cuda: 38118 it, 600.0 s, budget, loss 9.127e-03, error 1.174e-02
+bratu P=100 NiL-N (L-BFGS) s2 cuda: 28185 it, 600.0 s, budget, loss 2.498e-03, error 6.980e-03
+bratu P=100 NiL-N (L-BFGS) s1 cuda: 29141 it, 600.0 s, budget, loss 2.262e-03, error 7.220e-03
+bratu P=100 NiL-Q (L-BFGS) s1 cuda: 27266 it, 600.0 s, budget, loss 3.807e-04, error 2.536e-03
+bratu P=100 NiL-Q (L-BFGS) s0 cuda: 24559 it, 600.0 s, budget, loss 6.425e-04, error 2.850e-03
+bratu P=100 NiL-Q (L-BFGS) s2 cuda: 24985 it, 600.0 s, budget, loss 6.769e-04, error 3.590e-03
+bratu P=100 NiL-N (LM) s0 cuda: 37971 it, 600.0 s, budget, loss 8.226e-05, error 1.011e-01
+bratu P=100 NiL-N (LM) s1 cuda: 38254 it, 600.0 s, budget, loss 9.283e-05, error 3.070e-01
+bratu P=100 NiL-N (LM) s2 cuda: 38075 it, 600.0 s, budget, loss 7.997e-05, error 9.510e-04
+bratu P=225 NiL-N (L-BFGS) s0 cuda: 29461 it, 600.0 s, budget, loss 9.148e-05, error 8.042e-04
+bratu P=225 NiL-N (L-BFGS) s1 cuda: 29682 it, 600.0 s, budget, loss 5.273e-04, error 3.044e-03
+bratu P=225 NiL-N (L-BFGS) s2 cuda: 29138 it, 600.0 s, budget, loss 2.167e-04, error 1.322e-03
+bratu P=225 NiL-Q (L-BFGS) s0 cuda: 29783 it, 600.0 s, budget, loss 1.757e-04, error 1.149e-03
+bratu P=225 NiL-Q (L-BFGS) s1 cuda: 26019 it, 600.0 s, budget, loss 8.832e-05, error 8.164e-04
+bratu P=225 NiL-Q (L-BFGS) s2 cuda: 28276 it, 600.0 s, budget, loss 1.126e-04, error 9.162e-04
+bratu P=225 NiL-N (LM) s0 cuda: 37029 it, 600.0 s, budget, loss 1.395e-07, error 4.258e-05
+bratu P=225 NiL-N (LM) s1 cuda: 37214 it, 600.0 s, budget, loss 2.798e-07, error 6.155e-05
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+bratu P=25 LiL-N (L-BFGS) cuda: optimizer_stall, 0.0708 s, error 1.299e-02
+bratu P=100 LiL-N (L-BFGS) cuda: optimizer_stall, 4.38 s, error 1.582e-04
+bratu P=225 NiL-N (LM) s2 cuda: 37786 it, 600.0 s, budget, loss 2.933e-05, error 6.994e-04
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+bratu P=225 LiL-N (L-BFGS) cuda: optimizer_stall, 24.6 s, error 1.515e-05
+THE BRATU PAIR DONE

@@ -1,0 +1,88 @@
+{
+  "benchmark": "burgers",
+  "P": 196,
+  "p": 14,
+  "method": "LiL-N (trf)",
+  "method_key": "trf",
+  "device": "cpu",
+  "trial_space": "sine x Chebyshev on the Gauss-Legendre set, 3p per direction (Package 4)",
+  "boundary_weight": 10.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.008528735488653183,
+  "status": 2,
+  "message": "`ftol` termination condition is satisfied.",
+  "nfev": 7,
+  "njev": 7,
+  "stopping_reason": "2: `ftol` termination condition is satisfied.",
+  "iterates": 6,
+  "logged_pass_s": 0.38297973945736885,
+  "tolerances": 1e-12,
+  "max_nfev": 200,
+  "final_x_is_last_logged": true,
+  "time_s": 0.35781518183648586,
+  "timing": {
+    "stamps": [
+      0.0004357229918241501,
+      0.05914247967302799,
+      0.12097010388970375,
+      0.17894296534359455,
+      0.23807918280363083,
+      0.29629441536962986,
+      0.3542416822165251
+    ],
+    "total_s": 0.35781518183648586,
+    "timings": [
+      {
+        "total_s": 0.38125972263514996,
+        "runs_s": [
+          0.37942866422235966,
+          0.38125972263514996,
+          0.37989182583987713,
+          0.387362577021122,
+          0.382285762578249
+        ]
+      },
+      {
+        "total_s": 0.35763630643486977,
+        "runs_s": [
+          0.3671196047216654,
+          0.3582895491272211,
+          0.3557175640016794,
+          0.35571459122002125,
+          0.35763630643486977
+        ]
+      },
+      {
+        "total_s": 0.35781518183648586,
+        "runs_s": [
+          0.35781518183648586,
+          0.3559279050678015,
+          0.3659120351076126,
+          0.3580864779651165,
+          0.3557538129389286
+        ]
+      }
+    ],
+    "spread": 0.0660543009063379,
+    "iterate_counts": [
+      7
+    ],
+    "logged_count": 7,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 4.058345294482605e-05,
+  "final_error": 0.00028483075794569196,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

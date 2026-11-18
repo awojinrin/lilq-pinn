@@ -1,0 +1,43 @@
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "p": 32,
+  "method": "LiL-N (L-BFGS)",
+  "method_key": "lbfgs",
+  "device": "cuda",
+  "trial_space": "lifted sine x Chebyshev on the CGL set, N/P = 10 (Package 3 split)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "ic",
+  "setup_s": 0.5020224433392286,
+  "device_setup_s": 0.0666006151586771,
+  "budget_s": 600.0,
+  "stopping_reason": "budget",
+  "iterations": 65473,
+  "evaluations": 129663,
+  "restarts": 1,
+  "time_s": 600.0003735013306,
+  "training_time_s": 600.0003735013306,
+  "error_time_s": 15.052778266370296,
+  "error_every": 10,
+  "final_loss": 0.00041187019010203177,
+  "stall": {
+    "stall_iteration": null,
+    "stall_evaluations": null,
+    "stall_time_s": null
+  },
+  "timing": "one logged pass (Section 6), the error off the clock",
+  "torch_threads": 24,
+  "gradient": "autograd through the torch residual",
+  "timed": true,
+  "final_error": 4.84381002340836e-05,
+  "last_logged_is_returned": true,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "gpu-bl-1",
+  "slurm_job_id": "20592825"
+}

@@ -1,0 +1,5 @@
+first,round,library,benchmark,P,method,iterations,training_time_s,s_per_iteration,stopping_reason
+numpy,1,module,bratu,225,nil_n,2871,30.00675655156374,0.010451674173306771,budget
+numpy,1,module,bratu,225,lm,838,30.02951316908002,0.03583474125188547,budget
+numpy,1,module,bl,1024,nil_n,843,30.00029536522925,0.035587538986037066,budget
+numpy,1,module,bl,1024,lm,198,30.006294870749116,0.1515469437916622,budget

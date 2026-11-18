@@ -1,0 +1,82 @@
+{
+  "benchmark": "burgers",
+  "P": 196,
+  "p": 14,
+  "method": "LiL-Q",
+  "method_key": "lilq",
+  "device": "cpu",
+  "trial_space": "sine x Chebyshev on the Gauss-Legendre set, 3p per direction (Package 4)",
+  "boundary_weight": 10.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.018942533060908318,
+  "rule_step": 4,
+  "returned_iterate": 5,
+  "stopping_reason": "rule fired",
+  "iterates": 5,
+  "logged_pass_s": 0.18976185098290443,
+  "time_s": 0.18784835189580917,
+  "timing": {
+    "stamps": [
+      0.0,
+      0.03792448528110981,
+      0.07597553916275501,
+      0.1130741685628891,
+      0.1501120738685131,
+      0.18717069551348686
+    ],
+    "total_s": 0.18784835189580917,
+    "timings": [
+      {
+        "total_s": 0.18786673247814178,
+        "runs_s": [
+          0.18789427913725376,
+          0.1917002573609352,
+          0.18765914253890514,
+          0.18778843246400356,
+          0.18786673247814178
+        ]
+      },
+      {
+        "total_s": 0.187758294865489,
+        "runs_s": [
+          0.18762799724936485,
+          0.187758294865489,
+          0.18759217858314514,
+          0.18937630020081997,
+          0.18947304226458073
+        ]
+      },
+      {
+        "total_s": 0.18784835189580917,
+        "runs_s": [
+          0.19213571585714817,
+          0.18793833628296852,
+          0.18784835189580917,
+          0.18777235597372055,
+          0.18749591149389744
+        ]
+      }
+    ],
+    "spread": 0.0005775383331556583,
+    "iterate_counts": [
+      6
+    ],
+    "logged_count": 6,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 4.058345294482718e-05,
+  "final_error": 0.0002848306673990336,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

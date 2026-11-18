@@ -1,0 +1,4 @@
+first,round,library,measure,value,intervals,end_reason
+numpy,1,module,F1_adam_s_per_iteration,0.45829000000000003,1,budget
+numpy,1,module,F1_lbfgs_s_per_iteration,0.4503000000000003,5,budget
+numpy,1,module,F2_s_per_evaluation,11.816333333333333,6,budget

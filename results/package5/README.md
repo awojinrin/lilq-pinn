@@ -1,12 +1,14 @@
-# Computational Package 5 results (items 1, 2 and 4, and Addendum 2)
+# Computational Package 5 results (items 1 to 4, and Addendum 2)
 
 This is `package5_results/`, in the Section 8 layout of Computational Package 5 (the advisor's
-instructions of 13 November 2026), for items 1, 2 and 4, and for Addendum 2 (15 November 2026). Item 3
-follows separately. The branch holds `v3-dev` at `4417866`, the commit the results were assembled at,
-and adds only `results/package5/`.
+instructions of 13 November 2026), for items 1 to 4, and for Addendum 2 (15 November 2026). The
+branch holds `v3-dev` at `99fbd07`, the commit item 3 was assembled at, and adds only
+`results/package5/`. Items 1, 2 and 4 and Addendum 2 were assembled at `4417866`; the assembly at
+`99fbd07` leaves every one of their files as it was (it adds item 3 and rewrites `su.csv`,
+`provenance.json`, `hardware.json`, `assembly_log.txt` and `DECISIONS_package5.md`).
 
-**Start with `report.md`** (items 1, 2 and 4). It ends with a list of its files. Addendum 2 is
-reported in the item 3 cost-check memo.
+**Start with `report.md`** (items 1, 2 and 4) **and `report_item3.md`** (item 3). Each ends with a
+list of its files. Addendum 2 is reported in the item 3 cost-check memo.
 
 **Commits:**
 - **The runs:** every Grace job of 14 November 2026 ran at `60c2d8c` (`COMMIT`), under the source lock.
@@ -61,18 +63,40 @@ them:
 - `package5_a2/`: the stage's records (`COMMIT`, `provenance/a2`, `slurm_logs`, `sacct.txt`,
   `su_per_job.csv`, `report_log.txt`).
 
-**Cost:** `su.csv`, 11 jobs, 153.5 SU at Grace's rates (the report job's, the re-time job's and both
+**Item 3** (the time to reach an error; `report_item3.md`):
+- `P5_3_cost/`: one folder per run under `networks/` and `lil/` (`history.csv`, `run.json`); the
+  table (`time_to_error.md`, `.csv`, `time_to_error_runs.csv`); `checks.json` (C1 to C4, the pairing,
+  the diagnostics) with the check records under `networks/checks/` and `lil/checks/`; the three
+  diagnostics `openmp/`, `openmp_kovasznay/` and `c4_diagnostic/`.
+- `package5_item3_<stage>/`: each Grace stage's records (`COMMIT`, provenance with a `hardware.json`
+  per process, `sacct.txt`, `slurm_logs/`, `report_log.txt`). The runs ran at the stage's `COMMIT`,
+  under the source lock: the CPU set at `0f74bdf` (its LiL runs, protocol runs and C3 are in the
+  table; its network runs, superseded, stay in `package5_item3_cpu/`), the OpenMP diagnostic at
+  `fcb9952`, the CPU network runs again and Component A's library check at `3df7b7b`, the C4
+  diagnostic and the A100 set at `1a88feb`.
+- **What is Grace's:** every run folder, history and check record. The assembly rebuilt the table
+  from the histories; every row equals the table each stage's report job wrote on Grace. It reran
+  C1 against Package 1 and the diagnostics' summaries on the downloaded data (the C4 diagnostic's
+  groups equal Grace's).
+- **Left out here, for size** (1.4 GB, kept by the authors with the cluster tarballs): each run's
+  per-iteration logs `log.csv` and `metrics.csv`, the logged coefficients `betas_logged.npy`, and
+  the saved networks (`network.pt`, `model.pt`). The table needs none of them: it is rebuilt from
+  `history.csv` and `run.json` alone.
+
+**Cost:** `su.csv`, 37 jobs, 3,938.5 SU at Grace's rates (item 3: 26 jobs, 3,785.0 SU; the cap is
+4,400). Items 1, 2 and 4, the re-time and Addendum 2: 11 jobs, 153.5 SU at Grace's rates (the report job's, the re-time job's and both
 Addendum 2 jobs' rows from sacct after they ended). The first Addendum 2 job (20549881, 24.5 SU) ran
 its full hour without producing a run: its processes sat idle after starting, most likely a stall of
 the scratch filesystem during that day's outage. The second (20553982) ran the same bundle in 954 s.
 
 **What is not here:**
-- the raw cluster tarballs (`package5.tar.gz`, `package5_retime.tar.gz`, `package5_a2.tar.gz`).
-  Everything in them is here, assembled. The tarballs are kept by the authors;
+- the raw cluster tarballs (`package5.tar.gz`, `package5_retime.tar.gz`, `package5_a2.tar.gz`, and
+  item 3's six). Everything in them is here, assembled, except item 3's per-iteration logs,
+  logged coefficients and saved networks (above). The tarballs are kept by the authors;
 - the advisor's `expected_weight_bratu.json`, `expected_weight_bl.json`,
   `expected_nlls_liln.json` and `expected_rf_pb.json`. `provenance.json` records their SHA-256.
 
-**Redactions.** Before publishing, these were replaced by placeholders in 14 text files (listed in
+**Redactions.** Before publishing, these were replaced by placeholders in 226 text files (listed in
 `REDACTED_FILES.txt`):
 - the cluster user's scratch path (`$SCRATCH`);
 - the HPRC allocation account (`<account>`);

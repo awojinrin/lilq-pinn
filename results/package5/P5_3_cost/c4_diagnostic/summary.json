@@ -1,0 +1,407 @@
+{
+  "check": "C4 diagnostic: Buckley-Leverett LM, P = 1024, the pair timed three times per process",
+  "rtol": 0.05,
+  "groups": {
+    "cpu numpy (module)": {
+      "processes": 3,
+      "pairs": 9,
+      "median": -0.018532190767274283,
+      "min": -0.1066465993033138,
+      "max": 0.048589418918745964,
+      "pairs_outside_rtol": 2,
+      "verdict": "clean",
+      "iterations": [
+        213
+      ],
+      "libraries_as_expected": true,
+      "wait_policy_as_expected": true,
+      "c2_passed": true
+    },
+    "cpu torch (wheel)": {
+      "processes": 3,
+      "pairs": 9,
+      "median": -0.01397230035178443,
+      "min": -0.1472297380814482,
+      "max": 0.0376494000545604,
+      "pairs_outside_rtol": 3,
+      "verdict": "clean",
+      "iterations": [
+        213
+      ],
+      "libraries_as_expected": true,
+      "wait_policy_as_expected": true,
+      "c2_passed": true
+    },
+    "cpu active (module, OMP_WAIT_POLICY=ACTIVE)": {
+      "processes": 3,
+      "pairs": 9,
+      "median": -0.06135065929485875,
+      "min": -0.40319521526831087,
+      "max": 0.064352940015186,
+      "pairs_outside_rtol": 6,
+      "verdict": "faster with the log",
+      "iterations": [
+        213
+      ],
+      "libraries_as_expected": true,
+      "wait_policy_as_expected": true,
+      "c2_passed": true
+    },
+    "A100 numpy (module, two processes side by side)": {
+      "processes": 2,
+      "pairs": 6,
+      "median": -0.0002834160089978733,
+      "min": -0.013511933588657037,
+      "max": 0.12270661471461938,
+      "pairs_outside_rtol": 1,
+      "verdict": "clean",
+      "iterations": [
+        1286,
+        1330
+      ],
+      "libraries_as_expected": true,
+      "wait_policy_as_expected": true,
+      "c2_passed": true
+    }
+  },
+  "findings": [
+    "cpu numpy is clean: the rerun's +18% was not reproduced",
+    "a group is more than 5% faster with the log: not foreseen, to be explained"
+  ],
+  "records_as_expected": true,
+  "c2_passed": true,
+  "processes_without_result": [],
+  "a100_set_may_go": true,
+  "processes": [
+    {
+      "process": "cpu_active_r0",
+      "kind": "active",
+      "device": "cpu",
+      "round": 0,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": "ACTIVE",
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          50.719800570979714,
+          41.59187107346952,
+          -0.17996777185147117
+        ],
+        [
+          31.317684473469853,
+          31.503648031502962,
+          0.005937972783097805
+        ],
+        [
+          30.860599607229233,
+          32.32181907072663,
+          0.047349030222831545
+        ]
+      ],
+      "error_time_s": 4.485824840143323
+    },
+    {
+      "process": "cpu_active_r1",
+      "kind": "active",
+      "device": "cpu",
+      "round": 1,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": "ACTIVE",
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          40.55301287584007,
+          34.22616212815046,
+          -0.15601432049106517
+        ],
+        [
+          31.494091713801026,
+          30.391627257689834,
+          -0.03500543740488575
+        ],
+        [
+          32.85417357459664,
+          29.84593280404806,
+          -0.09156342842464923
+        ]
+      ],
+      "error_time_s": 3.5192456636577845
+    },
+    {
+      "process": "cpu_active_r2",
+      "kind": "active",
+      "device": "cpu",
+      "round": 2,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": "ACTIVE",
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          49.860344745218754,
+          29.756892312318087,
+          -0.40319521526831087
+        ],
+        [
+          29.260997246950865,
+          31.144028447568417,
+          0.064352940015186
+        ],
+        [
+          31.095852825790644,
+          29.18810175359249,
+          -0.06135065929485875
+        ]
+      ],
+      "error_time_s": 3.1329708229750395
+    },
+    {
+      "process": "cpu_numpy_r0",
+      "kind": "numpy",
+      "device": "cpu",
+      "round": 0,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": null,
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          33.52481457963586,
+          33.474273728206754,
+          -0.0015075654276639932
+        ],
+        [
+          31.90372233837843,
+          30.923349989578128,
+          -0.030729089803448024
+        ],
+        [
+          34.4250107370317,
+          30.753700410947204,
+          -0.1066465993033138
+        ]
+      ],
+      "error_time_s": 3.372011009603739
+    },
+    {
+      "process": "cpu_numpy_r1",
+      "kind": "numpy",
+      "device": "cpu",
+      "round": 1,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": null,
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          34.712680388242006,
+          31.078975427895784,
+          -0.10467946928054114
+        ],
+        [
+          31.135339999571443,
+          30.231777157634497,
+          -0.029020490604868387
+        ],
+        [
+          29.780336713418365,
+          31.22734596952796,
+          0.048589418918745964
+        ]
+      ],
+      "error_time_s": 3.073095742613077
+    },
+    {
+      "process": "cpu_numpy_r2",
+      "kind": "numpy",
+      "device": "cpu",
+      "round": 2,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": null,
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          33.80609589070082,
+          34.013577718287706,
+          0.006137408716395499
+        ],
+        [
+          30.891812717542052,
+          30.319319751113653,
+          -0.018532190767274283
+        ],
+        [
+          29.99832334369421,
+          29.47347591817379,
+          -0.017495892003935795
+        ]
+      ],
+      "error_time_s": 3.2513171061873436
+    },
+    {
+      "process": "cpu_torch_r0",
+      "kind": "torch",
+      "device": "cpu",
+      "round": 0,
+      "library": "torch",
+      "expected_library": "torch",
+      "omp_wait_policy": null,
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          52.74517627246678,
+          51.99666542746127,
+          -0.014191076756268958
+        ],
+        [
+          51.70974391885102,
+          51.0020817425102,
+          -0.013685277139476164
+        ],
+        [
+          59.11079109273851,
+          55.079405432567,
+          -0.06820050257569207
+        ]
+      ],
+      "error_time_s": 10.176634376868606
+    },
+    {
+      "process": "cpu_torch_r1",
+      "kind": "torch",
+      "device": "cpu",
+      "round": 1,
+      "library": "torch",
+      "expected_library": "torch",
+      "omp_wait_policy": null,
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          51.92589787207544,
+          51.20037363097072,
+          -0.01397230035178443
+        ],
+        [
+          53.192726232111454,
+          50.1959375962615,
+          -0.056338316309887636
+        ],
+        [
+          60.49670307151973,
+          51.58978932350874,
+          -0.1472297380814482
+        ]
+      ],
+      "error_time_s": 8.887802246958017
+    },
+    {
+      "process": "cpu_torch_r2",
+      "kind": "torch",
+      "device": "cpu",
+      "round": 2,
+      "library": "torch",
+      "expected_library": "torch",
+      "omp_wait_policy": null,
+      "omp_num_threads": "48",
+      "iterations": 213,
+      "c2_passed": true,
+      "pairs": [
+        [
+          49.85047443024814,
+          51.62449247762561,
+          0.035586783629506104
+        ],
+        [
+          51.021177019923925,
+          51.249285601079464,
+          0.004470860816606827
+        ],
+        [
+          52.17058560810983,
+          54.13477685675025,
+          0.0376494000545604
+        ]
+      ],
+      "error_time_s": 8.620655858889222
+    },
+    {
+      "process": "cuda_numpy_r0",
+      "kind": "numpy",
+      "device": "cuda",
+      "round": 0,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": null,
+      "omp_num_threads": "24",
+      "iterations": 1286,
+      "c2_passed": true,
+      "pairs": [
+        [
+          27.016805264167488,
+          26.930871098302305,
+          -0.0031807671197585214
+        ],
+        [
+          26.928373577073216,
+          26.926193771883845,
+          -8.094826756365978e-05
+        ],
+        [
+          26.991493380628526,
+          26.978378652594984,
+          -0.0004858837504320868
+        ]
+      ],
+      "error_time_s": 3.6949494248256087
+    },
+    {
+      "process": "cuda_numpy_r1",
+      "kind": "numpy",
+      "device": "cuda",
+      "round": 1,
+      "library": "module",
+      "expected_library": "module",
+      "omp_wait_policy": null,
+      "omp_num_threads": "24",
+      "iterations": 1330,
+      "c2_passed": true,
+      "pairs": [
+        [
+          26.827064199373126,
+          26.83320840075612,
+          0.000229029957856448
+        ],
+        [
+          27.61642719153315,
+          31.005145482718945,
+          0.12270661471461938
+        ],
+        [
+          31.020491145551205,
+          30.601344329304993,
+          -0.013511933588657037
+        ]
+      ],
+      "error_time_s": 3.6766025237739086
+    }
+  ]
+}

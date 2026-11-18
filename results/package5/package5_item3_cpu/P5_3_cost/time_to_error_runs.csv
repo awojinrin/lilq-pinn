@@ -1,0 +1,766 @@
+benchmark,method_key,method,device,P,seed,level,reached,time_s,iteration,setup_and_pretraining_s,with_setup_s,stopping_reason,final_error,run
+bl,lm,NiL-N (LM),cpu,1024,0,0.01,True,4.072565,17,0.7879500575363636,4.860515057536364,budget,5.540316382267572e-05,P5_3_cost/networks/bl_P1024/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,1024,0,0.001,True,44.536667,185,0.7879500575363636,45.324617057536365,budget,5.540316382267572e-05,P5_3_cost/networks/bl_P1024/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,1024,0,0.0001,True,91.973217,389,0.7879500575363636,92.76116705753637,budget,5.540316382267572e-05,P5_3_cost/networks/bl_P1024/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,1024,0,1e-05,False,,,0.7879500575363636,,budget,5.540316382267572e-05,P5_3_cost/networks/bl_P1024/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,1024,0,1e-06,False,,,0.7879500575363636,,budget,5.540316382267572e-05,P5_3_cost/networks/bl_P1024/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,1024,1,0.01,True,5.967375,25,0.27138830348849297,6.238763303488493,budget,0.00015775725772844906,P5_3_cost/networks/bl_P1024/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,1024,1,0.001,True,14.008594,60,0.27138830348849297,14.279982303488493,budget,0.00015775725772844906,P5_3_cost/networks/bl_P1024/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,1024,1,0.0001,True,83.187741,351,0.27138830348849297,83.4591293034885,budget,0.00015775725772844906,P5_3_cost/networks/bl_P1024/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,1024,1,1e-05,False,,,0.27138830348849297,,budget,0.00015775725772844906,P5_3_cost/networks/bl_P1024/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,1024,1,1e-06,False,,,0.27138830348849297,,budget,0.00015775725772844906,P5_3_cost/networks/bl_P1024/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,1024,2,0.01,True,4.733173,20,0.4981039706617594,5.231276970661759,budget,0.00018347423298954027,P5_3_cost/networks/bl_P1024/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,1024,2,0.001,True,26.11152,110,0.4981039706617594,26.609623970661758,budget,0.00018347423298954027,P5_3_cost/networks/bl_P1024/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,1024,2,0.0001,True,130.029105,554,0.4981039706617594,130.52720897066175,budget,0.00018347423298954027,P5_3_cost/networks/bl_P1024/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,1024,2,1e-05,False,,,0.4981039706617594,,budget,0.00018347423298954027,P5_3_cost/networks/bl_P1024/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,1024,2,1e-06,False,,,0.4981039706617594,,budget,0.00018347423298954027,P5_3_cost/networks/bl_P1024/lm_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,0,0.01,True,43.4990653488785,730,0.7015692852437496,44.20063463412225,budget,0.0009238584575835549,P5_3_cost/networks/bl_P1024/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,0,0.001,True,546.4113074615598,9330,0.7015692852437496,547.1128767468035,budget,0.0009238584575835549,P5_3_cost/networks/bl_P1024/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,0,0.0001,False,,,0.7015692852437496,,budget,0.0009238584575835549,P5_3_cost/networks/bl_P1024/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,0,1e-05,False,,,0.7015692852437496,,budget,0.0009238584575835549,P5_3_cost/networks/bl_P1024/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,0,1e-06,False,,,0.7015692852437496,,budget,0.0009238584575835549,P5_3_cost/networks/bl_P1024/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,1,0.01,True,27.88991478085518,480,0.47227548249065876,28.362190263345838,budget,0.0007931940465013631,P5_3_cost/networks/bl_P1024/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,1,0.001,True,308.6667553912848,5220,0.47227548249065876,309.1390308737755,budget,0.0007931940465013631,P5_3_cost/networks/bl_P1024/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,1,0.0001,False,,,0.47227548249065876,,budget,0.0007931940465013631,P5_3_cost/networks/bl_P1024/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,1,1e-05,False,,,0.47227548249065876,,budget,0.0007931940465013631,P5_3_cost/networks/bl_P1024/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,1,1e-06,False,,,0.47227548249065876,,budget,0.0007931940465013631,P5_3_cost/networks/bl_P1024/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,2,0.01,True,32.072473756968975,500,0.3590033072978258,32.4314770642668,budget,0.00121052442958258,P5_3_cost/networks/bl_P1024/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,2,0.001,False,,,0.3590033072978258,,budget,0.00121052442958258,P5_3_cost/networks/bl_P1024/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,2,0.0001,False,,,0.3590033072978258,,budget,0.00121052442958258,P5_3_cost/networks/bl_P1024/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,2,1e-05,False,,,0.3590033072978258,,budget,0.00121052442958258,P5_3_cost/networks/bl_P1024/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,1024,2,1e-06,False,,,0.3590033072978258,,budget,0.00121052442958258,P5_3_cost/networks/bl_P1024/nil_n_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,0,0.01,True,88.47931717708707,1270,0.7237207889556885,89.20303796604276,budget,0.0019133361773280323,P5_3_cost/networks/bl_P1024/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,0,0.001,False,,,0.7237207889556885,,budget,0.0019133361773280323,P5_3_cost/networks/bl_P1024/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,0,0.0001,False,,,0.7237207889556885,,budget,0.0019133361773280323,P5_3_cost/networks/bl_P1024/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,0,1e-05,False,,,0.7237207889556885,,budget,0.0019133361773280323,P5_3_cost/networks/bl_P1024/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,0,1e-06,False,,,0.7237207889556885,,budget,0.0019133361773280323,P5_3_cost/networks/bl_P1024/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,1,0.01,True,82.81726926006377,1250,1.0579174384474754,83.87518669851124,budget,0.0008955568583873451,P5_3_cost/networks/bl_P1024/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,1,0.001,True,515.6060863379389,7770,1.0579174384474754,516.6640037763864,budget,0.0008955568583873451,P5_3_cost/networks/bl_P1024/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,1,0.0001,False,,,1.0579174384474754,,budget,0.0008955568583873451,P5_3_cost/networks/bl_P1024/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,1,1e-05,False,,,1.0579174384474754,,budget,0.0008955568583873451,P5_3_cost/networks/bl_P1024/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,1,1e-06,False,,,1.0579174384474754,,budget,0.0008955568583873451,P5_3_cost/networks/bl_P1024/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,2,0.01,True,101.35807595960796,1420,0.3394467979669571,101.69752275757492,budget,0.0011594154285691073,P5_3_cost/networks/bl_P1024/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,2,0.001,False,,,0.3394467979669571,,budget,0.0011594154285691073,P5_3_cost/networks/bl_P1024/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,2,0.0001,False,,,0.3394467979669571,,budget,0.0011594154285691073,P5_3_cost/networks/bl_P1024/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,2,1e-05,False,,,0.3394467979669571,,budget,0.0011594154285691073,P5_3_cost/networks/bl_P1024/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,1024,2,1e-06,False,,,0.3394467979669571,,budget,0.0011594154285691073,P5_3_cost/networks/bl_P1024/nil_q_s2_cpu
+bl,lm,NiL-N (LM),cpu,256,0,0.01,True,2.14381,20,0.2020419854670763,2.3458519854670765,budget,0.24968600593356627,P5_3_cost/networks/bl_P256/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,256,0,0.001,False,,,0.2020419854670763,,budget,0.24968600593356627,P5_3_cost/networks/bl_P256/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,256,0,0.0001,False,,,0.2020419854670763,,budget,0.24968600593356627,P5_3_cost/networks/bl_P256/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,256,0,1e-05,False,,,0.2020419854670763,,budget,0.24968600593356627,P5_3_cost/networks/bl_P256/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,256,0,1e-06,False,,,0.2020419854670763,,budget,0.24968600593356627,P5_3_cost/networks/bl_P256/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,256,1,0.01,True,2.399851,28,0.4310460276901722,2.830897027690172,budget,0.0039193480988013885,P5_3_cost/networks/bl_P256/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,256,1,0.001,False,,,0.4310460276901722,,budget,0.0039193480988013885,P5_3_cost/networks/bl_P256/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,256,1,0.0001,False,,,0.4310460276901722,,budget,0.0039193480988013885,P5_3_cost/networks/bl_P256/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,256,1,1e-05,False,,,0.4310460276901722,,budget,0.0039193480988013885,P5_3_cost/networks/bl_P256/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,256,1,1e-06,False,,,0.4310460276901722,,budget,0.0039193480988013885,P5_3_cost/networks/bl_P256/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,256,2,0.01,True,2.707422,36,0.4032925199717283,3.1107145199717285,budget,0.03968588234157668,P5_3_cost/networks/bl_P256/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,256,2,0.001,True,8.877957,127,0.4032925199717283,9.281249519971729,budget,0.03968588234157668,P5_3_cost/networks/bl_P256/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,256,2,0.0001,False,,,0.4032925199717283,,budget,0.03968588234157668,P5_3_cost/networks/bl_P256/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,256,2,1e-05,False,,,0.4032925199717283,,budget,0.03968588234157668,P5_3_cost/networks/bl_P256/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,256,2,1e-06,False,,,0.4032925199717283,,budget,0.03968588234157668,P5_3_cost/networks/bl_P256/lm_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,0,0.01,True,17.775971304625273,380,0.5680510718375444,18.344022376462817,budget,0.0007539836080700872,P5_3_cost/networks/bl_P256/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,0,0.001,True,463.6317321844399,10280,0.5680510718375444,464.19978325627744,budget,0.0007539836080700872,P5_3_cost/networks/bl_P256/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,0,0.0001,False,,,0.5680510718375444,,budget,0.0007539836080700872,P5_3_cost/networks/bl_P256/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,0,1e-05,False,,,0.5680510718375444,,budget,0.0007539836080700872,P5_3_cost/networks/bl_P256/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,0,1e-06,False,,,0.5680510718375444,,budget,0.0007539836080700872,P5_3_cost/networks/bl_P256/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,1,0.01,True,24.33834207803011,520,0.2970688547939062,24.635410932824016,budget,0.004400792637853748,P5_3_cost/networks/bl_P256/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,1,0.001,False,,,0.2970688547939062,,budget,0.004400792637853748,P5_3_cost/networks/bl_P256/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,1,0.0001,False,,,0.2970688547939062,,budget,0.004400792637853748,P5_3_cost/networks/bl_P256/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,1,1e-05,False,,,0.2970688547939062,,budget,0.004400792637853748,P5_3_cost/networks/bl_P256/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,1,1e-06,False,,,0.2970688547939062,,budget,0.004400792637853748,P5_3_cost/networks/bl_P256/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,2,0.01,True,52.389603052288294,1150,0.28281980380415916,52.67242285609245,budget,0.004078642574200894,P5_3_cost/networks/bl_P256/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,2,0.001,False,,,0.28281980380415916,,budget,0.004078642574200894,P5_3_cost/networks/bl_P256/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,2,0.0001,False,,,0.28281980380415916,,budget,0.004078642574200894,P5_3_cost/networks/bl_P256/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,2,1e-05,False,,,0.28281980380415916,,budget,0.004078642574200894,P5_3_cost/networks/bl_P256/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,256,2,1e-06,False,,,0.28281980380415916,,budget,0.004078642574200894,P5_3_cost/networks/bl_P256/nil_n_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,0,0.01,True,37.70524551346898,740,0.28580736368894577,37.99105287715793,budget,0.000903705956865066,P5_3_cost/networks/bl_P256/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,0,0.001,True,596.627110067755,11970,0.28580736368894577,596.9129174314439,budget,0.000903705956865066,P5_3_cost/networks/bl_P256/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,0,0.0001,False,,,0.28580736368894577,,budget,0.000903705956865066,P5_3_cost/networks/bl_P256/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,0,1e-05,False,,,0.28580736368894577,,budget,0.000903705956865066,P5_3_cost/networks/bl_P256/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,0,1e-06,False,,,0.28580736368894577,,budget,0.000903705956865066,P5_3_cost/networks/bl_P256/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,1,0.01,True,49.00498132221401,1040,0.30927607230842113,49.31425739452243,budget,0.0007278482707250803,P5_3_cost/networks/bl_P256/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,1,0.001,True,339.70522228628397,7400,0.30927607230842113,340.0144983585924,budget,0.0007278482707250803,P5_3_cost/networks/bl_P256/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,1,0.0001,False,,,0.30927607230842113,,budget,0.0007278482707250803,P5_3_cost/networks/bl_P256/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,1,1e-05,False,,,0.30927607230842113,,budget,0.0007278482707250803,P5_3_cost/networks/bl_P256/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,1,1e-06,False,,,0.30927607230842113,,budget,0.0007278482707250803,P5_3_cost/networks/bl_P256/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,2,0.01,True,119.63752654567361,2350,0.2602711860090494,119.89779773168266,budget,0.003239413556719789,P5_3_cost/networks/bl_P256/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,2,0.001,False,,,0.2602711860090494,,budget,0.003239413556719789,P5_3_cost/networks/bl_P256/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,2,0.0001,False,,,0.2602711860090494,,budget,0.003239413556719789,P5_3_cost/networks/bl_P256/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,2,1e-05,False,,,0.2602711860090494,,budget,0.003239413556719789,P5_3_cost/networks/bl_P256/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,256,2,1e-06,False,,,0.2602711860090494,,budget,0.003239413556719789,P5_3_cost/networks/bl_P256/nil_q_s2_cpu
+bl,lm,NiL-N (LM),cpu,576,0,0.01,True,4.381838,32,0.20409752056002617,4.585935520560026,budget,0.0001209681147898074,P5_3_cost/networks/bl_P576/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,576,0,0.001,True,25.015453,179,0.20409752056002617,25.219550520560027,budget,0.0001209681147898074,P5_3_cost/networks/bl_P576/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,576,0,0.0001,False,,,0.20409752056002617,,budget,0.0001209681147898074,P5_3_cost/networks/bl_P576/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,576,0,1e-05,False,,,0.20409752056002617,,budget,0.0001209681147898074,P5_3_cost/networks/bl_P576/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,576,0,1e-06,False,,,0.20409752056002617,,budget,0.0001209681147898074,P5_3_cost/networks/bl_P576/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,576,1,0.01,True,4.349834,25,0.17979986406862736,4.529633864068628,budget,0.00012326615150182288,P5_3_cost/networks/bl_P576/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,576,1,0.001,True,8.977114,66,0.17979986406862736,9.156913864068628,budget,0.00012326615150182288,P5_3_cost/networks/bl_P576/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,576,1,0.0001,True,31.746585,253,0.17979986406862736,31.926384864068627,budget,0.00012326615150182288,P5_3_cost/networks/bl_P576/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,576,1,1e-05,False,,,0.17979986406862736,,budget,0.00012326615150182288,P5_3_cost/networks/bl_P576/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,576,1,1e-06,False,,,0.17979986406862736,,budget,0.00012326615150182288,P5_3_cost/networks/bl_P576/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,576,2,0.01,True,2.920116,20,0.25677540153265,3.17689140153265,budget,0.00015895476918875823,P5_3_cost/networks/bl_P576/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,576,2,0.001,True,17.250786,126,0.25677540153265,17.50756140153265,budget,0.00015895476918875823,P5_3_cost/networks/bl_P576/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,576,2,0.0001,True,105.820124,781,0.25677540153265,106.07689940153266,budget,0.00015895476918875823,P5_3_cost/networks/bl_P576/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,576,2,1e-05,False,,,0.25677540153265,,budget,0.00015895476918875823,P5_3_cost/networks/bl_P576/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,576,2,1e-06,False,,,0.25677540153265,,budget,0.00015895476918875823,P5_3_cost/networks/bl_P576/lm_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,0,0.01,True,27.60129358805716,380,0.2749596908688545,27.876253278926015,budget,0.0005625776562889226,P5_3_cost/networks/bl_P576/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,0,0.001,True,437.19223058596253,7260,0.2749596908688545,437.4671902768314,budget,0.0005625776562889226,P5_3_cost/networks/bl_P576/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,0,0.0001,False,,,0.2749596908688545,,budget,0.0005625776562889226,P5_3_cost/networks/bl_P576/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,0,1e-05,False,,,0.2749596908688545,,budget,0.0005625776562889226,P5_3_cost/networks/bl_P576/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,0,1e-06,False,,,0.2749596908688545,,budget,0.0005625776562889226,P5_3_cost/networks/bl_P576/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,1,0.01,True,28.887691816315055,450,0.4199296813458204,29.307621497660875,budget,0.0008887979322086579,P5_3_cost/networks/bl_P576/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,1,0.001,True,564.7594340406358,8600,0.4199296813458204,565.1793637219816,budget,0.0008887979322086579,P5_3_cost/networks/bl_P576/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,1,0.0001,False,,,0.4199296813458204,,budget,0.0008887979322086579,P5_3_cost/networks/bl_P576/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,1,1e-05,False,,,0.4199296813458204,,budget,0.0008887979322086579,P5_3_cost/networks/bl_P576/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,1,1e-06,False,,,0.4199296813458204,,budget,0.0008887979322086579,P5_3_cost/networks/bl_P576/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,2,0.01,True,27.34712622873485,470,0.24845131859183311,27.595577547326684,budget,0.0024928241808916604,P5_3_cost/networks/bl_P576/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,2,0.001,False,,,0.24845131859183311,,budget,0.0024928241808916604,P5_3_cost/networks/bl_P576/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,2,0.0001,False,,,0.24845131859183311,,budget,0.0024928241808916604,P5_3_cost/networks/bl_P576/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,2,1e-05,False,,,0.24845131859183311,,budget,0.0024928241808916604,P5_3_cost/networks/bl_P576/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,576,2,1e-06,False,,,0.24845131859183311,,budget,0.0024928241808916604,P5_3_cost/networks/bl_P576/nil_n_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,0,0.01,True,198.35262862220407,2800,0.5854033604264259,198.9380319826305,budget,0.003164358026571652,P5_3_cost/networks/bl_P576/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,0,0.001,False,,,0.5854033604264259,,budget,0.003164358026571652,P5_3_cost/networks/bl_P576/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,0,0.0001,False,,,0.5854033604264259,,budget,0.003164358026571652,P5_3_cost/networks/bl_P576/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,0,1e-05,False,,,0.5854033604264259,,budget,0.003164358026571652,P5_3_cost/networks/bl_P576/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,0,1e-06,False,,,0.5854033604264259,,budget,0.003164358026571652,P5_3_cost/networks/bl_P576/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,1,0.01,True,72.48224975727499,1100,0.19609632715582848,72.67834608443081,budget,0.0035109136256877282,P5_3_cost/networks/bl_P576/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,1,0.001,False,,,0.19609632715582848,,budget,0.0035109136256877282,P5_3_cost/networks/bl_P576/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,1,0.0001,False,,,0.19609632715582848,,budget,0.0035109136256877282,P5_3_cost/networks/bl_P576/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,1,1e-05,False,,,0.19609632715582848,,budget,0.0035109136256877282,P5_3_cost/networks/bl_P576/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,1,1e-06,False,,,0.19609632715582848,,budget,0.0035109136256877282,P5_3_cost/networks/bl_P576/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,2,0.01,True,64.9164888896048,950,0.3223237842321396,65.23881267383695,budget,0.0052037065379172895,P5_3_cost/networks/bl_P576/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,2,0.001,False,,,0.3223237842321396,,budget,0.0052037065379172895,P5_3_cost/networks/bl_P576/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,2,0.0001,False,,,0.3223237842321396,,budget,0.0052037065379172895,P5_3_cost/networks/bl_P576/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,2,1e-05,False,,,0.3223237842321396,,budget,0.0052037065379172895,P5_3_cost/networks/bl_P576/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,576,2,1e-06,False,,,0.3223237842321396,,budget,0.0052037065379172895,P5_3_cost/networks/bl_P576/nil_q_s2_cpu
+bl,lm,NiL-N (LM),cpu,64,0,0.01,True,1.692653,28,0.22758937813341618,1.9202423781334161,budget,0.003710097821069195,P5_3_cost/networks/bl_P64/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,64,0,0.001,False,,,0.22758937813341618,,budget,0.003710097821069195,P5_3_cost/networks/bl_P64/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,64,0,0.0001,False,,,0.22758937813341618,,budget,0.003710097821069195,P5_3_cost/networks/bl_P64/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,64,0,1e-05,False,,,0.22758937813341618,,budget,0.003710097821069195,P5_3_cost/networks/bl_P64/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,64,0,1e-06,False,,,0.22758937813341618,,budget,0.003710097821069195,P5_3_cost/networks/bl_P64/lm_s0_cpu
+bl,lm,NiL-N (LM),cpu,64,1,0.01,True,1.274227,23,0.13169996067881584,1.4059269606788158,budget,0.0029882884710886615,P5_3_cost/networks/bl_P64/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,64,1,0.001,False,,,0.13169996067881584,,budget,0.0029882884710886615,P5_3_cost/networks/bl_P64/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,64,1,0.0001,False,,,0.13169996067881584,,budget,0.0029882884710886615,P5_3_cost/networks/bl_P64/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,64,1,1e-05,False,,,0.13169996067881584,,budget,0.0029882884710886615,P5_3_cost/networks/bl_P64/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,64,1,1e-06,False,,,0.13169996067881584,,budget,0.0029882884710886615,P5_3_cost/networks/bl_P64/lm_s1_cpu
+bl,lm,NiL-N (LM),cpu,64,2,0.01,True,32.825344,636,0.20264147780835629,33.02798547780836,budget,0.005214288360022328,P5_3_cost/networks/bl_P64/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,64,2,0.001,False,,,0.20264147780835629,,budget,0.005214288360022328,P5_3_cost/networks/bl_P64/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,64,2,0.0001,False,,,0.20264147780835629,,budget,0.005214288360022328,P5_3_cost/networks/bl_P64/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,64,2,1e-05,False,,,0.20264147780835629,,budget,0.005214288360022328,P5_3_cost/networks/bl_P64/lm_s2_cpu
+bl,lm,NiL-N (LM),cpu,64,2,1e-06,False,,,0.20264147780835629,,budget,0.005214288360022328,P5_3_cost/networks/bl_P64/lm_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,0,0.01,True,25.877979611977935,620,0.09369931370019913,25.971678925678134,budget,0.008111425614010313,P5_3_cost/networks/bl_P64/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,0,0.001,False,,,0.09369931370019913,,budget,0.008111425614010313,P5_3_cost/networks/bl_P64/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,0,0.0001,False,,,0.09369931370019913,,budget,0.008111425614010313,P5_3_cost/networks/bl_P64/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,0,1e-05,False,,,0.09369931370019913,,budget,0.008111425614010313,P5_3_cost/networks/bl_P64/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,0,1e-06,False,,,0.09369931370019913,,budget,0.008111425614010313,P5_3_cost/networks/bl_P64/nil_n_s0_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,1,0.01,False,,,0.09263942018151283,,budget,0.3928185421024997,P5_3_cost/networks/bl_P64/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,1,0.001,False,,,0.09263942018151283,,budget,0.3928185421024997,P5_3_cost/networks/bl_P64/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,1,0.0001,False,,,0.09263942018151283,,budget,0.3928185421024997,P5_3_cost/networks/bl_P64/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,1,1e-05,False,,,0.09263942018151283,,budget,0.3928185421024997,P5_3_cost/networks/bl_P64/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,1,1e-06,False,,,0.09263942018151283,,budget,0.3928185421024997,P5_3_cost/networks/bl_P64/nil_n_s1_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,2,0.01,True,16.143023969605565,420,0.1925491038709879,16.335573073476553,budget,0.0032952224686495484,P5_3_cost/networks/bl_P64/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,2,0.001,False,,,0.1925491038709879,,budget,0.0032952224686495484,P5_3_cost/networks/bl_P64/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,2,0.0001,False,,,0.1925491038709879,,budget,0.0032952224686495484,P5_3_cost/networks/bl_P64/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,2,1e-05,False,,,0.1925491038709879,,budget,0.0032952224686495484,P5_3_cost/networks/bl_P64/nil_n_s2_cpu
+bl,nil_n,NiL-N (L-BFGS),cpu,64,2,1e-06,False,,,0.1925491038709879,,budget,0.0032952224686495484,P5_3_cost/networks/bl_P64/nil_n_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,0,0.01,True,60.347688088193536,930,0.12677027471363544,60.47445836290717,budget,0.00921424662875705,P5_3_cost/networks/bl_P64/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,0,0.001,False,,,0.12677027471363544,,budget,0.00921424662875705,P5_3_cost/networks/bl_P64/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,0,0.0001,False,,,0.12677027471363544,,budget,0.00921424662875705,P5_3_cost/networks/bl_P64/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,0,1e-05,False,,,0.12677027471363544,,budget,0.00921424662875705,P5_3_cost/networks/bl_P64/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,0,1e-06,False,,,0.12677027471363544,,budget,0.00921424662875705,P5_3_cost/networks/bl_P64/nil_q_s0_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,1,0.01,True,124.01704996638,1850,0.12784191593527794,124.14489188231528,budget,0.005407087053536992,P5_3_cost/networks/bl_P64/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,1,0.001,False,,,0.12784191593527794,,budget,0.005407087053536992,P5_3_cost/networks/bl_P64/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,1,0.0001,False,,,0.12784191593527794,,budget,0.005407087053536992,P5_3_cost/networks/bl_P64/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,1,1e-05,False,,,0.12784191593527794,,budget,0.005407087053536992,P5_3_cost/networks/bl_P64/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,1,1e-06,False,,,0.12784191593527794,,budget,0.005407087053536992,P5_3_cost/networks/bl_P64/nil_q_s1_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,2,0.01,True,49.26007045432925,720,0.19637272879481316,49.456443183124065,budget,0.005548090221980767,P5_3_cost/networks/bl_P64/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,2,0.001,False,,,0.19637272879481316,,budget,0.005548090221980767,P5_3_cost/networks/bl_P64/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,2,0.0001,False,,,0.19637272879481316,,budget,0.005548090221980767,P5_3_cost/networks/bl_P64/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,2,1e-05,False,,,0.19637272879481316,,budget,0.005548090221980767,P5_3_cost/networks/bl_P64/nil_q_s2_cpu
+bl,nil_q,NiL-Q (L-BFGS),cpu,64,2,1e-06,False,,,0.19637272879481316,,budget,0.005548090221980767,P5_3_cost/networks/bl_P64/nil_q_s2_cpu
+bratu,lm,NiL-N (LM),cpu,100,0,0.01,True,3.498157,119,0.14661098830401897,3.644767988304019,budget,0.09181906883709573,P5_3_cost/networks/bratu_P100/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,100,0,0.001,False,,,0.14661098830401897,,budget,0.09181906883709573,P5_3_cost/networks/bratu_P100/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,100,0,0.0001,False,,,0.14661098830401897,,budget,0.09181906883709573,P5_3_cost/networks/bratu_P100/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,100,0,1e-05,False,,,0.14661098830401897,,budget,0.09181906883709573,P5_3_cost/networks/bratu_P100/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,100,0,1e-06,False,,,0.14661098830401897,,budget,0.09181906883709573,P5_3_cost/networks/bratu_P100/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,100,1,0.01,True,11.043586,255,0.2421440090984106,11.28573000909841,budget,0.001235305857934424,P5_3_cost/networks/bratu_P100/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,100,1,0.001,False,,,0.2421440090984106,,budget,0.001235305857934424,P5_3_cost/networks/bratu_P100/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,100,1,0.0001,False,,,0.2421440090984106,,budget,0.001235305857934424,P5_3_cost/networks/bratu_P100/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,100,1,1e-05,False,,,0.2421440090984106,,budget,0.001235305857934424,P5_3_cost/networks/bratu_P100/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,100,1,1e-06,False,,,0.2421440090984106,,budget,0.001235305857934424,P5_3_cost/networks/bratu_P100/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,100,2,0.01,True,5.793925,141,0.08787255547940731,5.881797555479407,budget,0.0009734426018848804,P5_3_cost/networks/bratu_P100/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,100,2,0.001,True,165.415709,5213,0.08787255547940731,165.5035815554794,budget,0.0009734426018848804,P5_3_cost/networks/bratu_P100/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,100,2,0.0001,False,,,0.08787255547940731,,budget,0.0009734426018848804,P5_3_cost/networks/bratu_P100/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,100,2,1e-05,False,,,0.08787255547940731,,budget,0.0009734426018848804,P5_3_cost/networks/bratu_P100/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,100,2,1e-06,False,,,0.08787255547940731,,budget,0.0009734426018848804,P5_3_cost/networks/bratu_P100/lm_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,0,0.01,True,17.44347140751779,420,0.07859504967927933,17.52206645719707,budget,0.002467091940469022,P5_3_cost/networks/bratu_P100/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,0,0.001,False,,,0.07859504967927933,,budget,0.002467091940469022,P5_3_cost/networks/bratu_P100/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,0,0.0001,False,,,0.07859504967927933,,budget,0.002467091940469022,P5_3_cost/networks/bratu_P100/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,0,1e-05,False,,,0.07859504967927933,,budget,0.002467091940469022,P5_3_cost/networks/bratu_P100/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,0,1e-06,False,,,0.07859504967927933,,budget,0.002467091940469022,P5_3_cost/networks/bratu_P100/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,1,0.01,True,44.32852885313332,1480,0.11909815669059753,44.44762700982392,budget,0.005161846789043625,P5_3_cost/networks/bratu_P100/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,1,0.001,False,,,0.11909815669059753,,budget,0.005161846789043625,P5_3_cost/networks/bratu_P100/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,1,0.0001,False,,,0.11909815669059753,,budget,0.005161846789043625,P5_3_cost/networks/bratu_P100/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,1,1e-05,False,,,0.11909815669059753,,budget,0.005161846789043625,P5_3_cost/networks/bratu_P100/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,1,1e-06,False,,,0.11909815669059753,,budget,0.005161846789043625,P5_3_cost/networks/bratu_P100/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,2,0.01,True,68.16302998177707,2690,0.08399014733731747,68.24702012911439,budget,0.00861661716087659,P5_3_cost/networks/bratu_P100/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,2,0.001,False,,,0.08399014733731747,,budget,0.00861661716087659,P5_3_cost/networks/bratu_P100/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,2,0.0001,False,,,0.08399014733731747,,budget,0.00861661716087659,P5_3_cost/networks/bratu_P100/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,2,1e-05,False,,,0.08399014733731747,,budget,0.00861661716087659,P5_3_cost/networks/bratu_P100/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,100,2,1e-06,False,,,0.08399014733731747,,budget,0.00861661716087659,P5_3_cost/networks/bratu_P100/nil_n_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,0,0.01,True,39.493641218170524,810,0.06765853613615036,39.561299754306674,budget,0.0036184319643568093,P5_3_cost/networks/bratu_P100/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,0,0.001,False,,,0.06765853613615036,,budget,0.0036184319643568093,P5_3_cost/networks/bratu_P100/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,0,0.0001,False,,,0.06765853613615036,,budget,0.0036184319643568093,P5_3_cost/networks/bratu_P100/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,0,1e-05,False,,,0.06765853613615036,,budget,0.0036184319643568093,P5_3_cost/networks/bratu_P100/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,0,1e-06,False,,,0.06765853613615036,,budget,0.0036184319643568093,P5_3_cost/networks/bratu_P100/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,1,0.01,True,25.063637355342507,810,0.1395272482186556,25.203164603561163,budget,0.002021014035743378,P5_3_cost/networks/bratu_P100/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,1,0.001,False,,,0.1395272482186556,,budget,0.002021014035743378,P5_3_cost/networks/bratu_P100/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,1,0.0001,False,,,0.1395272482186556,,budget,0.002021014035743378,P5_3_cost/networks/bratu_P100/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,1,1e-05,False,,,0.1395272482186556,,budget,0.002021014035743378,P5_3_cost/networks/bratu_P100/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,1,1e-06,False,,,0.1395272482186556,,budget,0.002021014035743378,P5_3_cost/networks/bratu_P100/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,2,0.01,True,24.785773973912,820,0.08804501593112946,24.87381898984313,budget,0.004789203425403117,P5_3_cost/networks/bratu_P100/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,2,0.001,False,,,0.08804501593112946,,budget,0.004789203425403117,P5_3_cost/networks/bratu_P100/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,2,0.0001,False,,,0.08804501593112946,,budget,0.004789203425403117,P5_3_cost/networks/bratu_P100/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,2,1e-05,False,,,0.08804501593112946,,budget,0.004789203425403117,P5_3_cost/networks/bratu_P100/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,100,2,1e-06,False,,,0.08804501593112946,,budget,0.004789203425403117,P5_3_cost/networks/bratu_P100/nil_q_s2_cpu
+bratu,lm,NiL-N (LM),cpu,225,0,0.01,True,1.318755,33,0.3099974989891052,1.6287524989891051,budget,6.31202975541821e-05,P5_3_cost/networks/bratu_P225/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,225,0,0.001,True,7.553996,235,0.3099974989891052,7.863993498989105,budget,6.31202975541821e-05,P5_3_cost/networks/bratu_P225/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,225,0,0.0001,True,174.091357,5537,0.3099974989891052,174.4013544989891,budget,6.31202975541821e-05,P5_3_cost/networks/bratu_P225/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,225,0,1e-05,False,,,0.3099974989891052,,budget,6.31202975541821e-05,P5_3_cost/networks/bratu_P225/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,225,0,1e-06,False,,,0.3099974989891052,,budget,6.31202975541821e-05,P5_3_cost/networks/bratu_P225/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,225,1,0.01,True,1.636154,54,1.7795533165335655,3.415707316533566,budget,6.96035511653122e-05,P5_3_cost/networks/bratu_P225/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,225,1,0.001,True,8.294413,274,1.7795533165335655,10.073966316533566,budget,6.96035511653122e-05,P5_3_cost/networks/bratu_P225/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,225,1,0.0001,True,284.533385,8825,1.7795533165335655,286.3129383165336,budget,6.96035511653122e-05,P5_3_cost/networks/bratu_P225/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,225,1,1e-05,False,,,1.7795533165335655,,budget,6.96035511653122e-05,P5_3_cost/networks/bratu_P225/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,225,1,1e-06,False,,,1.7795533165335655,,budget,6.96035511653122e-05,P5_3_cost/networks/bratu_P225/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,225,2,0.01,True,1.01638,34,1.7240835316479206,2.7404635316479204,budget,0.00037418425701797055,P5_3_cost/networks/bratu_P225/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,225,2,0.001,True,8.903841,294,1.7240835316479206,10.62792453164792,budget,0.00037418425701797055,P5_3_cost/networks/bratu_P225/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,225,2,0.0001,False,,,1.7240835316479206,,budget,0.00037418425701797055,P5_3_cost/networks/bratu_P225/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,225,2,1e-05,False,,,1.7240835316479206,,budget,0.00037418425701797055,P5_3_cost/networks/bratu_P225/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,225,2,1e-06,False,,,1.7240835316479206,,budget,0.00037418425701797055,P5_3_cost/networks/bratu_P225/lm_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,0,0.01,True,4.14526448585093,410,0.09873950108885765,4.244003986939788,budget,0.0032175194559693992,P5_3_cost/networks/bratu_P225/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,0,0.001,False,,,0.09873950108885765,,budget,0.0032175194559693992,P5_3_cost/networks/bratu_P225/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,0,0.0001,False,,,0.09873950108885765,,budget,0.0032175194559693992,P5_3_cost/networks/bratu_P225/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,0,1e-05,False,,,0.09873950108885765,,budget,0.0032175194559693992,P5_3_cost/networks/bratu_P225/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,0,1e-06,False,,,0.09873950108885765,,budget,0.0032175194559693992,P5_3_cost/networks/bratu_P225/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,1,0.01,True,3.9211380816996098,380,0.29307280108332634,4.214210882782936,budget,0.0016684565669970652,P5_3_cost/networks/bratu_P225/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,1,0.001,False,,,0.29307280108332634,,budget,0.0016684565669970652,P5_3_cost/networks/bratu_P225/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,1,0.0001,False,,,0.29307280108332634,,budget,0.0016684565669970652,P5_3_cost/networks/bratu_P225/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,1,1e-05,False,,,0.29307280108332634,,budget,0.0016684565669970652,P5_3_cost/networks/bratu_P225/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,1,1e-06,False,,,0.29307280108332634,,budget,0.0016684565669970652,P5_3_cost/networks/bratu_P225/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,2,0.01,True,4.335407672449946,400,0.04228593222796917,4.377693604677916,budget,0.0008593628978361998,P5_3_cost/networks/bratu_P225/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,2,0.001,True,139.43866065703332,12730,0.04228593222796917,139.4809465892613,budget,0.0008593628978361998,P5_3_cost/networks/bratu_P225/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,2,0.0001,False,,,0.04228593222796917,,budget,0.0008593628978361998,P5_3_cost/networks/bratu_P225/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,2,1e-05,False,,,0.04228593222796917,,budget,0.0008593628978361998,P5_3_cost/networks/bratu_P225/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,225,2,1e-06,False,,,0.04228593222796917,,budget,0.0008593628978361998,P5_3_cost/networks/bratu_P225/nil_n_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,0,0.01,True,12.227702220901847,810,1.2577152010053396,13.485417421907187,budget,0.0017169558653641395,P5_3_cost/networks/bratu_P225/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,0,0.001,False,,,1.2577152010053396,,budget,0.0017169558653641395,P5_3_cost/networks/bratu_P225/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,0,0.0001,False,,,1.2577152010053396,,budget,0.0017169558653641395,P5_3_cost/networks/bratu_P225/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,0,1e-05,False,,,1.2577152010053396,,budget,0.0017169558653641395,P5_3_cost/networks/bratu_P225/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,0,1e-06,False,,,1.2577152010053396,,budget,0.0017169558653641395,P5_3_cost/networks/bratu_P225/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,1,0.01,True,11.581183595582843,820,0.11340837553143501,11.694591971114278,budget,0.001013892552828701,P5_3_cost/networks/bratu_P225/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,1,0.001,True,168.87475167401135,11780,0.11340837553143501,168.98816004954278,budget,0.001013892552828701,P5_3_cost/networks/bratu_P225/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,1,0.0001,False,,,0.11340837553143501,,budget,0.001013892552828701,P5_3_cost/networks/bratu_P225/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,1,1e-05,False,,,0.11340837553143501,,budget,0.001013892552828701,P5_3_cost/networks/bratu_P225/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,1,1e-06,False,,,0.11340837553143501,,budget,0.001013892552828701,P5_3_cost/networks/bratu_P225/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,2,0.01,True,11.372398590669036,810,0.0339074470102787,11.406306037679315,budget,0.0010304210581090962,P5_3_cost/networks/bratu_P225/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,2,0.001,False,,,0.0339074470102787,,budget,0.0010304210581090962,P5_3_cost/networks/bratu_P225/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,2,0.0001,False,,,0.0339074470102787,,budget,0.0010304210581090962,P5_3_cost/networks/bratu_P225/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,2,1e-05,False,,,0.0339074470102787,,budget,0.0010304210581090962,P5_3_cost/networks/bratu_P225/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,225,2,1e-06,False,,,0.0339074470102787,,budget,0.0010304210581090962,P5_3_cost/networks/bratu_P225/nil_q_s2_cpu
+bratu,lm,NiL-N (LM),cpu,25,0,0.01,False,,,0.044017963111400604,,budget,1.0319632197507271,P5_3_cost/networks/bratu_P25/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,25,0,0.001,False,,,0.044017963111400604,,budget,1.0319632197507271,P5_3_cost/networks/bratu_P25/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,25,0,0.0001,False,,,0.044017963111400604,,budget,1.0319632197507271,P5_3_cost/networks/bratu_P25/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,25,0,1e-05,False,,,0.044017963111400604,,budget,1.0319632197507271,P5_3_cost/networks/bratu_P25/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,25,0,1e-06,False,,,0.044017963111400604,,budget,1.0319632197507271,P5_3_cost/networks/bratu_P25/lm_s0_cpu
+bratu,lm,NiL-N (LM),cpu,25,1,0.01,False,,,0.24526807479560375,,budget,1.0397137019088052,P5_3_cost/networks/bratu_P25/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,25,1,0.001,False,,,0.24526807479560375,,budget,1.0397137019088052,P5_3_cost/networks/bratu_P25/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,25,1,0.0001,False,,,0.24526807479560375,,budget,1.0397137019088052,P5_3_cost/networks/bratu_P25/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,25,1,1e-05,False,,,0.24526807479560375,,budget,1.0397137019088052,P5_3_cost/networks/bratu_P25/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,25,1,1e-06,False,,,0.24526807479560375,,budget,1.0397137019088052,P5_3_cost/networks/bratu_P25/lm_s1_cpu
+bratu,lm,NiL-N (LM),cpu,25,2,0.01,False,,,0.3690183088183403,,budget,0.014797557254076346,P5_3_cost/networks/bratu_P25/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,25,2,0.001,False,,,0.3690183088183403,,budget,0.014797557254076346,P5_3_cost/networks/bratu_P25/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,25,2,0.0001,False,,,0.3690183088183403,,budget,0.014797557254076346,P5_3_cost/networks/bratu_P25/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,25,2,1e-05,False,,,0.3690183088183403,,budget,0.014797557254076346,P5_3_cost/networks/bratu_P25/lm_s2_cpu
+bratu,lm,NiL-N (LM),cpu,25,2,1e-06,False,,,0.3690183088183403,,budget,0.014797557254076346,P5_3_cost/networks/bratu_P25/lm_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,0,0.01,False,,,0.014465680345892906,,budget,0.06286091220598135,P5_3_cost/networks/bratu_P25/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,0,0.001,False,,,0.014465680345892906,,budget,0.06286091220598135,P5_3_cost/networks/bratu_P25/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,0,0.0001,False,,,0.014465680345892906,,budget,0.06286091220598135,P5_3_cost/networks/bratu_P25/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,0,1e-05,False,,,0.014465680345892906,,budget,0.06286091220598135,P5_3_cost/networks/bratu_P25/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,0,1e-06,False,,,0.014465680345892906,,budget,0.06286091220598135,P5_3_cost/networks/bratu_P25/nil_n_s0_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,1,0.01,False,,,0.2178788259625435,,budget,0.013687848729067835,P5_3_cost/networks/bratu_P25/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,1,0.001,False,,,0.2178788259625435,,budget,0.013687848729067835,P5_3_cost/networks/bratu_P25/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,1,0.0001,False,,,0.2178788259625435,,budget,0.013687848729067835,P5_3_cost/networks/bratu_P25/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,1,1e-05,False,,,0.2178788259625435,,budget,0.013687848729067835,P5_3_cost/networks/bratu_P25/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,1,1e-06,False,,,0.2178788259625435,,budget,0.013687848729067835,P5_3_cost/networks/bratu_P25/nil_n_s1_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,2,0.01,False,,,0.03718134947121143,,optimizer_stall,0.021619848315506587,P5_3_cost/networks/bratu_P25/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,2,0.001,False,,,0.03718134947121143,,optimizer_stall,0.021619848315506587,P5_3_cost/networks/bratu_P25/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,2,0.0001,False,,,0.03718134947121143,,optimizer_stall,0.021619848315506587,P5_3_cost/networks/bratu_P25/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,2,1e-05,False,,,0.03718134947121143,,optimizer_stall,0.021619848315506587,P5_3_cost/networks/bratu_P25/nil_n_s2_cpu
+bratu,nil_n,NiL-N (L-BFGS),cpu,25,2,1e-06,False,,,0.03718134947121143,,optimizer_stall,0.021619848315506587,P5_3_cost/networks/bratu_P25/nil_n_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,0,0.01,False,,,0.02254302054643631,,budget,0.3098330407387575,P5_3_cost/networks/bratu_P25/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,0,0.001,False,,,0.02254302054643631,,budget,0.3098330407387575,P5_3_cost/networks/bratu_P25/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,0,0.0001,False,,,0.02254302054643631,,budget,0.3098330407387575,P5_3_cost/networks/bratu_P25/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,0,1e-05,False,,,0.02254302054643631,,budget,0.3098330407387575,P5_3_cost/networks/bratu_P25/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,0,1e-06,False,,,0.02254302054643631,,budget,0.3098330407387575,P5_3_cost/networks/bratu_P25/nil_q_s0_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,1,0.01,False,,,0.7566022481769323,,optimizer_stall,0.04556244085375874,P5_3_cost/networks/bratu_P25/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,1,0.001,False,,,0.7566022481769323,,optimizer_stall,0.04556244085375874,P5_3_cost/networks/bratu_P25/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,1,0.0001,False,,,0.7566022481769323,,optimizer_stall,0.04556244085375874,P5_3_cost/networks/bratu_P25/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,1,1e-05,False,,,0.7566022481769323,,optimizer_stall,0.04556244085375874,P5_3_cost/networks/bratu_P25/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,1,1e-06,False,,,0.7566022481769323,,optimizer_stall,0.04556244085375874,P5_3_cost/networks/bratu_P25/nil_q_s1_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,2,0.01,False,,,0.03687591105699539,,budget,0.013932561843822109,P5_3_cost/networks/bratu_P25/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,2,0.001,False,,,0.03687591105699539,,budget,0.013932561843822109,P5_3_cost/networks/bratu_P25/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,2,0.0001,False,,,0.03687591105699539,,budget,0.013932561843822109,P5_3_cost/networks/bratu_P25/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,2,1e-05,False,,,0.03687591105699539,,budget,0.013932561843822109,P5_3_cost/networks/bratu_P25/nil_q_s2_cpu
+bratu,nil_q,NiL-Q (L-BFGS),cpu,25,2,1e-06,False,,,0.03687591105699539,,budget,0.013932561843822109,P5_3_cost/networks/bratu_P25/nil_q_s2_cpu
+burgers,lm,NiL-N (LM),cpu,100,0,0.01,True,1.307277,34,0.052749721333384514,1.3600267213333845,budget,0.0003969451360990239,P5_3_cost/networks/burgers_P100/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,100,0,0.001,True,11.962892,382,0.052749721333384514,12.015641721333385,budget,0.0003969451360990239,P5_3_cost/networks/burgers_P100/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,100,0,0.0001,False,,,0.052749721333384514,,budget,0.0003969451360990239,P5_3_cost/networks/burgers_P100/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,100,0,1e-05,False,,,0.052749721333384514,,budget,0.0003969451360990239,P5_3_cost/networks/burgers_P100/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,100,0,1e-06,False,,,0.052749721333384514,,budget,0.0003969451360990239,P5_3_cost/networks/burgers_P100/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,100,1,0.01,True,1.062336,23,0.06155521608889103,1.123891216088891,budget,0.0008191137640891054,P5_3_cost/networks/burgers_P100/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,100,1,0.001,True,4.888347,161,0.06155521608889103,4.9499022160888915,budget,0.0008191137640891054,P5_3_cost/networks/burgers_P100/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,100,1,0.0001,False,,,0.06155521608889103,,budget,0.0008191137640891054,P5_3_cost/networks/burgers_P100/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,100,1,1e-05,False,,,0.06155521608889103,,budget,0.0008191137640891054,P5_3_cost/networks/burgers_P100/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,100,1,1e-06,False,,,0.06155521608889103,,budget,0.0008191137640891054,P5_3_cost/networks/burgers_P100/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,100,2,0.01,True,0.951634,32,0.0828114952892065,1.0344454952892064,optimizer_stall,0.0004193107559232958,P5_3_cost/networks/burgers_P100/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,100,2,0.001,True,11.295374,512,0.0828114952892065,11.378185495289207,optimizer_stall,0.0004193107559232958,P5_3_cost/networks/burgers_P100/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,100,2,0.0001,False,,,0.0828114952892065,,optimizer_stall,0.0004193107559232958,P5_3_cost/networks/burgers_P100/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,100,2,1e-05,False,,,0.0828114952892065,,optimizer_stall,0.0004193107559232958,P5_3_cost/networks/burgers_P100/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,100,2,1e-06,False,,,0.0828114952892065,,optimizer_stall,0.0004193107559232958,P5_3_cost/networks/burgers_P100/lm_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,0,0.01,True,20.55492435209453,520,0.12424496747553349,20.679169319570065,budget,0.002189958514317492,P5_3_cost/networks/burgers_P100/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,0,0.001,False,,,0.12424496747553349,,budget,0.002189958514317492,P5_3_cost/networks/burgers_P100/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,0,0.0001,False,,,0.12424496747553349,,budget,0.002189958514317492,P5_3_cost/networks/burgers_P100/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,0,1e-05,False,,,0.12424496747553349,,budget,0.002189958514317492,P5_3_cost/networks/burgers_P100/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,0,1e-06,False,,,0.12424496747553349,,budget,0.002189958514317492,P5_3_cost/networks/burgers_P100/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,1,0.01,True,10.97160911001265,260,0.13186361268162727,11.103472722694278,budget,0.001878395639155364,P5_3_cost/networks/burgers_P100/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,1,0.001,False,,,0.13186361268162727,,budget,0.001878395639155364,P5_3_cost/networks/burgers_P100/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,1,0.0001,False,,,0.13186361268162727,,budget,0.001878395639155364,P5_3_cost/networks/burgers_P100/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,1,1e-05,False,,,0.13186361268162727,,budget,0.001878395639155364,P5_3_cost/networks/burgers_P100/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,1,1e-06,False,,,0.13186361268162727,,budget,0.001878395639155364,P5_3_cost/networks/burgers_P100/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,2,0.01,True,17.33453146368265,1080,0.056882111355662346,17.391413575038314,budget,0.002037816758074637,P5_3_cost/networks/burgers_P100/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,2,0.001,False,,,0.056882111355662346,,budget,0.002037816758074637,P5_3_cost/networks/burgers_P100/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,2,0.0001,False,,,0.056882111355662346,,budget,0.002037816758074637,P5_3_cost/networks/burgers_P100/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,2,1e-05,False,,,0.056882111355662346,,budget,0.002037816758074637,P5_3_cost/networks/burgers_P100/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,100,2,1e-06,False,,,0.056882111355662346,,budget,0.002037816758074637,P5_3_cost/networks/burgers_P100/nil_n_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,0,0.01,True,17.064363334327936,890,0.050262702628970146,17.114626036956906,budget,0.002084096660814973,P5_3_cost/networks/burgers_P100/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,0,0.001,False,,,0.050262702628970146,,budget,0.002084096660814973,P5_3_cost/networks/burgers_P100/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,0,0.0001,False,,,0.050262702628970146,,budget,0.002084096660814973,P5_3_cost/networks/burgers_P100/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,0,1e-05,False,,,0.050262702628970146,,budget,0.002084096660814973,P5_3_cost/networks/burgers_P100/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,0,1e-06,False,,,0.050262702628970146,,budget,0.002084096660814973,P5_3_cost/networks/burgers_P100/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,1,0.01,True,7.1358620300889015,630,0.06583326309919357,7.201695293188095,budget,0.0010663291285786937,P5_3_cost/networks/burgers_P100/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,1,0.001,False,,,0.06583326309919357,,budget,0.0010663291285786937,P5_3_cost/networks/burgers_P100/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,1,0.0001,False,,,0.06583326309919357,,budget,0.0010663291285786937,P5_3_cost/networks/burgers_P100/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,1,1e-05,False,,,0.06583326309919357,,budget,0.0010663291285786937,P5_3_cost/networks/burgers_P100/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,1,1e-06,False,,,0.06583326309919357,,budget,0.0010663291285786937,P5_3_cost/networks/burgers_P100/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,2,0.01,True,23.56920760497451,1090,0.2219881135970354,23.791195718571544,budget,0.0018883676535968127,P5_3_cost/networks/burgers_P100/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,2,0.001,False,,,0.2219881135970354,,budget,0.0018883676535968127,P5_3_cost/networks/burgers_P100/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,2,0.0001,False,,,0.2219881135970354,,budget,0.0018883676535968127,P5_3_cost/networks/burgers_P100/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,2,1e-05,False,,,0.2219881135970354,,budget,0.0018883676535968127,P5_3_cost/networks/burgers_P100/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,100,2,1e-06,False,,,0.2219881135970354,,budget,0.0018883676535968127,P5_3_cost/networks/burgers_P100/nil_q_s2_cpu
+burgers,lm,NiL-N (LM),cpu,225,0,0.01,True,3.567075,24,0.3441822323948145,3.9112572323948145,budget,6.183067985735898e-06,P5_3_cost/networks/burgers_P225/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,225,0,0.001,True,4.445798,54,0.3441822323948145,4.789980232394814,budget,6.183067985735898e-06,P5_3_cost/networks/burgers_P225/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,225,0,0.0001,True,20.786654,589,0.3441822323948145,21.130836232394813,budget,6.183067985735898e-06,P5_3_cost/networks/burgers_P225/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,225,0,1e-05,True,222.688799,7536,0.3441822323948145,223.0329812323948,budget,6.183067985735898e-06,P5_3_cost/networks/burgers_P225/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,225,0,1e-06,False,,,0.3441822323948145,,budget,6.183067985735898e-06,P5_3_cost/networks/burgers_P225/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,225,1,0.01,True,0.994583,28,0.0736154057085514,1.0681984057085514,budget,7.1176835182350815e-06,P5_3_cost/networks/burgers_P225/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,225,1,0.001,True,1.758131,54,0.0736154057085514,1.8317464057085515,budget,7.1176835182350815e-06,P5_3_cost/networks/burgers_P225/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,225,1,0.0001,True,8.565434,275,0.0736154057085514,8.639049405708551,budget,7.1176835182350815e-06,P5_3_cost/networks/burgers_P225/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,225,1,1e-05,True,391.36018,12706,0.0736154057085514,391.43379540570857,budget,7.1176835182350815e-06,P5_3_cost/networks/burgers_P225/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,225,1,1e-06,False,,,0.0736154057085514,,budget,7.1176835182350815e-06,P5_3_cost/networks/burgers_P225/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,225,2,0.01,True,0.500821,18,0.19456381909549236,0.6953848190954923,budget,0.00012502119153042404,P5_3_cost/networks/burgers_P225/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,225,2,0.001,True,1.488343,54,0.19456381909549236,1.6829068190954923,budget,0.00012502119153042404,P5_3_cost/networks/burgers_P225/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,225,2,0.0001,False,,,0.19456381909549236,,budget,0.00012502119153042404,P5_3_cost/networks/burgers_P225/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,225,2,1e-05,False,,,0.19456381909549236,,budget,0.00012502119153042404,P5_3_cost/networks/burgers_P225/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,225,2,1e-06,False,,,0.19456381909549236,,budget,0.00012502119153042404,P5_3_cost/networks/burgers_P225/lm_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,0,0.01,True,3.2122892588377,290,0.1689731515944004,3.3812624104321003,budget,0.0004192985873871468,P5_3_cost/networks/burgers_P225/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,0,0.001,True,38.418885016813874,4260,0.1689731515944004,38.587858168408275,budget,0.0004192985873871468,P5_3_cost/networks/burgers_P225/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,0,0.0001,False,,,0.1689731515944004,,budget,0.0004192985873871468,P5_3_cost/networks/burgers_P225/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,0,1e-05,False,,,0.1689731515944004,,budget,0.0004192985873871468,P5_3_cost/networks/burgers_P225/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,0,1e-06,False,,,0.1689731515944004,,budget,0.0004192985873871468,P5_3_cost/networks/burgers_P225/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,1,0.01,True,5.0657468270510435,580,0.028538944199681282,5.094285771250725,budget,0.00027956084670474087,P5_3_cost/networks/burgers_P225/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,1,0.001,True,34.9722795188427,4120,0.028538944199681282,35.00081846304238,budget,0.00027956084670474087,P5_3_cost/networks/burgers_P225/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,1,0.0001,False,,,0.028538944199681282,,budget,0.00027956084670474087,P5_3_cost/networks/burgers_P225/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,1,1e-05,False,,,0.028538944199681282,,budget,0.00027956084670474087,P5_3_cost/networks/burgers_P225/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,1,1e-06,False,,,0.028538944199681282,,budget,0.00027956084670474087,P5_3_cost/networks/burgers_P225/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,2,0.01,True,2.773111553862691,340,0.14760530181229115,2.920716855674982,budget,0.0005376434995271219,P5_3_cost/networks/burgers_P225/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,2,0.001,True,22.912732906639576,2730,0.14760530181229115,23.060338208451867,budget,0.0005376434995271219,P5_3_cost/networks/burgers_P225/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,2,0.0001,False,,,0.14760530181229115,,budget,0.0005376434995271219,P5_3_cost/networks/burgers_P225/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,2,1e-05,False,,,0.14760530181229115,,budget,0.0005376434995271219,P5_3_cost/networks/burgers_P225/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,225,2,1e-06,False,,,0.14760530181229115,,budget,0.0005376434995271219,P5_3_cost/networks/burgers_P225/nil_n_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,0,0.01,True,7.23671043291688,640,0.12701933085918427,7.363729763776064,budget,0.0004687099195349192,P5_3_cost/networks/burgers_P225/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,0,0.001,True,48.93593060225248,3840,0.12701933085918427,49.06294993311167,budget,0.0004687099195349192,P5_3_cost/networks/burgers_P225/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,0,0.0001,False,,,0.12701933085918427,,budget,0.0004687099195349192,P5_3_cost/networks/burgers_P225/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,0,1e-05,False,,,0.12701933085918427,,budget,0.0004687099195349192,P5_3_cost/networks/burgers_P225/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,0,1e-06,False,,,0.12701933085918427,,budget,0.0004687099195349192,P5_3_cost/networks/burgers_P225/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,1,0.01,True,10.409604908898473,820,0.10404312796890736,10.51364803686738,budget,0.00028522716955217865,P5_3_cost/networks/burgers_P225/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,1,0.001,True,41.25684769079089,3610,0.10404312796890736,41.3608908187598,budget,0.00028522716955217865,P5_3_cost/networks/burgers_P225/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,1,0.0001,False,,,0.10404312796890736,,budget,0.00028522716955217865,P5_3_cost/networks/burgers_P225/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,1,1e-05,False,,,0.10404312796890736,,budget,0.00028522716955217865,P5_3_cost/networks/burgers_P225/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,1,1e-06,False,,,0.10404312796890736,,budget,0.00028522716955217865,P5_3_cost/networks/burgers_P225/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,2,0.01,True,9.176228186115623,820,0.07938620075583458,9.255614386871457,budget,0.00043874063840333304,P5_3_cost/networks/burgers_P225/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,2,0.001,True,41.22743014805019,3710,0.07938620075583458,41.306816348806024,budget,0.00043874063840333304,P5_3_cost/networks/burgers_P225/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,2,0.0001,False,,,0.07938620075583458,,budget,0.00043874063840333304,P5_3_cost/networks/burgers_P225/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,2,1e-05,False,,,0.07938620075583458,,budget,0.00043874063840333304,P5_3_cost/networks/burgers_P225/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,225,2,1e-06,False,,,0.07938620075583458,,budget,0.00043874063840333304,P5_3_cost/networks/burgers_P225/nil_q_s2_cpu
+burgers,lm,NiL-N (LM),cpu,25,0,0.01,False,,,0.32630408741533756,,budget,0.03859671579640491,P5_3_cost/networks/burgers_P25/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,25,0,0.001,False,,,0.32630408741533756,,budget,0.03859671579640491,P5_3_cost/networks/burgers_P25/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,25,0,0.0001,False,,,0.32630408741533756,,budget,0.03859671579640491,P5_3_cost/networks/burgers_P25/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,25,0,1e-05,False,,,0.32630408741533756,,budget,0.03859671579640491,P5_3_cost/networks/burgers_P25/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,25,0,1e-06,False,,,0.32630408741533756,,budget,0.03859671579640491,P5_3_cost/networks/burgers_P25/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,25,1,0.01,False,,,0.1816813237965107,,budget,0.20120657962419325,P5_3_cost/networks/burgers_P25/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,25,1,0.001,False,,,0.1816813237965107,,budget,0.20120657962419325,P5_3_cost/networks/burgers_P25/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,25,1,0.0001,False,,,0.1816813237965107,,budget,0.20120657962419325,P5_3_cost/networks/burgers_P25/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,25,1,1e-05,False,,,0.1816813237965107,,budget,0.20120657962419325,P5_3_cost/networks/burgers_P25/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,25,1,1e-06,False,,,0.1816813237965107,,budget,0.20120657962419325,P5_3_cost/networks/burgers_P25/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,25,2,0.01,False,,,0.11055501736700535,,budget,1.5484412680144806,P5_3_cost/networks/burgers_P25/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,25,2,0.001,False,,,0.11055501736700535,,budget,1.5484412680144806,P5_3_cost/networks/burgers_P25/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,25,2,0.0001,False,,,0.11055501736700535,,budget,1.5484412680144806,P5_3_cost/networks/burgers_P25/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,25,2,1e-05,False,,,0.11055501736700535,,budget,1.5484412680144806,P5_3_cost/networks/burgers_P25/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,25,2,1e-06,False,,,0.11055501736700535,,budget,1.5484412680144806,P5_3_cost/networks/burgers_P25/lm_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,0,0.01,False,,,0.011101089417934418,,budget,0.14312026472315845,P5_3_cost/networks/burgers_P25/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,0,0.001,False,,,0.011101089417934418,,budget,0.14312026472315845,P5_3_cost/networks/burgers_P25/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,0,0.0001,False,,,0.011101089417934418,,budget,0.14312026472315845,P5_3_cost/networks/burgers_P25/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,0,1e-05,False,,,0.011101089417934418,,budget,0.14312026472315845,P5_3_cost/networks/burgers_P25/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,0,1e-06,False,,,0.011101089417934418,,budget,0.14312026472315845,P5_3_cost/networks/burgers_P25/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,1,0.01,False,,,0.021214595064520836,,budget,0.13294173825325453,P5_3_cost/networks/burgers_P25/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,1,0.001,False,,,0.021214595064520836,,budget,0.13294173825325453,P5_3_cost/networks/burgers_P25/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,1,0.0001,False,,,0.021214595064520836,,budget,0.13294173825325453,P5_3_cost/networks/burgers_P25/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,1,1e-05,False,,,0.021214595064520836,,budget,0.13294173825325453,P5_3_cost/networks/burgers_P25/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,1,1e-06,False,,,0.021214595064520836,,budget,0.13294173825325453,P5_3_cost/networks/burgers_P25/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,2,0.01,False,,,0.17781228199601173,,budget,0.09237744908334411,P5_3_cost/networks/burgers_P25/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,2,0.001,False,,,0.17781228199601173,,budget,0.09237744908334411,P5_3_cost/networks/burgers_P25/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,2,0.0001,False,,,0.17781228199601173,,budget,0.09237744908334411,P5_3_cost/networks/burgers_P25/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,2,1e-05,False,,,0.17781228199601173,,budget,0.09237744908334411,P5_3_cost/networks/burgers_P25/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,25,2,1e-06,False,,,0.17781228199601173,,budget,0.09237744908334411,P5_3_cost/networks/burgers_P25/nil_n_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,0,0.01,False,,,0.04375411756336689,,budget,0.12249995988191276,P5_3_cost/networks/burgers_P25/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,0,0.001,False,,,0.04375411756336689,,budget,0.12249995988191276,P5_3_cost/networks/burgers_P25/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,0,0.0001,False,,,0.04375411756336689,,budget,0.12249995988191276,P5_3_cost/networks/burgers_P25/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,0,1e-05,False,,,0.04375411756336689,,budget,0.12249995988191276,P5_3_cost/networks/burgers_P25/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,0,1e-06,False,,,0.04375411756336689,,budget,0.12249995988191276,P5_3_cost/networks/burgers_P25/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,1,0.01,False,,,0.17292326502501965,,optimizer_stall,0.14366537485426814,P5_3_cost/networks/burgers_P25/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,1,0.001,False,,,0.17292326502501965,,optimizer_stall,0.14366537485426814,P5_3_cost/networks/burgers_P25/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,1,0.0001,False,,,0.17292326502501965,,optimizer_stall,0.14366537485426814,P5_3_cost/networks/burgers_P25/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,1,1e-05,False,,,0.17292326502501965,,optimizer_stall,0.14366537485426814,P5_3_cost/networks/burgers_P25/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,1,1e-06,False,,,0.17292326502501965,,optimizer_stall,0.14366537485426814,P5_3_cost/networks/burgers_P25/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,2,0.01,False,,,0.04667152278125286,,budget,0.44738652916090954,P5_3_cost/networks/burgers_P25/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,2,0.001,False,,,0.04667152278125286,,budget,0.44738652916090954,P5_3_cost/networks/burgers_P25/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,2,0.0001,False,,,0.04667152278125286,,budget,0.44738652916090954,P5_3_cost/networks/burgers_P25/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,2,1e-05,False,,,0.04667152278125286,,budget,0.44738652916090954,P5_3_cost/networks/burgers_P25/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,25,2,1e-06,False,,,0.04667152278125286,,budget,0.44738652916090954,P5_3_cost/networks/burgers_P25/nil_q_s2_cpu
+burgers,lm,NiL-N (LM),cpu,400,0,0.01,True,2.914104,30,0.2362019084393978,3.150305908439398,budget,8.639800074223935e-07,P5_3_cost/networks/burgers_P400/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,400,0,0.001,True,3.399143,38,0.2362019084393978,3.635344908439398,budget,8.639800074223935e-07,P5_3_cost/networks/burgers_P400/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,400,0,0.0001,True,9.935573,126,0.2362019084393978,10.171774908439398,budget,8.639800074223935e-07,P5_3_cost/networks/burgers_P400/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,400,0,1e-05,True,60.14589,799,0.2362019084393978,60.3820919084394,budget,8.639800074223935e-07,P5_3_cost/networks/burgers_P400/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,400,0,1e-06,True,517.906577,6643,0.2362019084393978,518.1427789084394,budget,8.639800074223935e-07,P5_3_cost/networks/burgers_P400/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,400,1,0.01,True,2.164805,27,0.1153685636818409,2.2801735636818408,budget,7.118888609112606e-05,P5_3_cost/networks/burgers_P400/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,400,1,0.001,True,4.618541,57,0.1153685636818409,4.7339095636818405,budget,7.118888609112606e-05,P5_3_cost/networks/burgers_P400/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,400,1,0.0001,True,191.739131,2426,0.1153685636818409,191.85449956368183,budget,7.118888609112606e-05,P5_3_cost/networks/burgers_P400/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,400,1,1e-05,False,,,0.1153685636818409,,budget,7.118888609112606e-05,P5_3_cost/networks/burgers_P400/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,400,1,1e-06,False,,,0.1153685636818409,,budget,7.118888609112606e-05,P5_3_cost/networks/burgers_P400/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,400,2,0.01,True,1.768972,25,0.12824754789471626,1.8972195478947163,budget,3.2334305978159977e-05,P5_3_cost/networks/burgers_P400/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,400,2,0.001,True,4.643802,55,0.12824754789471626,4.772049547894716,budget,3.2334305978159977e-05,P5_3_cost/networks/burgers_P400/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,400,2,0.0001,True,10.840926,136,0.12824754789471626,10.969173547894716,budget,3.2334305978159977e-05,P5_3_cost/networks/burgers_P400/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,400,2,1e-05,False,,,0.12824754789471626,,budget,3.2334305978159977e-05,P5_3_cost/networks/burgers_P400/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,400,2,1e-06,False,,,0.12824754789471626,,budget,3.2334305978159977e-05,P5_3_cost/networks/burgers_P400/lm_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,0,0.01,True,29.581991627812386,460,0.13016600348055363,29.71215763129294,budget,0.00026920507246468747,P5_3_cost/networks/burgers_P400/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,0,0.001,True,181.97833518125117,3540,0.13016600348055363,182.10850118473172,budget,0.00026920507246468747,P5_3_cost/networks/burgers_P400/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,0,0.0001,False,,,0.13016600348055363,,budget,0.00026920507246468747,P5_3_cost/networks/burgers_P400/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,0,1e-05,False,,,0.13016600348055363,,budget,0.00026920507246468747,P5_3_cost/networks/burgers_P400/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,0,1e-06,False,,,0.13016600348055363,,budget,0.00026920507246468747,P5_3_cost/networks/burgers_P400/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,1,0.01,True,21.448773058131337,390,0.20054233446717262,21.64931539259851,budget,0.00025936917576207456,P5_3_cost/networks/burgers_P400/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,1,0.001,True,208.27403520792723,4190,0.20054233446717262,208.4745775423944,budget,0.00025936917576207456,P5_3_cost/networks/burgers_P400/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,1,0.0001,False,,,0.20054233446717262,,budget,0.00025936917576207456,P5_3_cost/networks/burgers_P400/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,1,1e-05,False,,,0.20054233446717262,,budget,0.00025936917576207456,P5_3_cost/networks/burgers_P400/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,1,1e-06,False,,,0.20054233446717262,,budget,0.00025936917576207456,P5_3_cost/networks/burgers_P400/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,2,0.01,True,22.108728701248765,450,0.19076300226151943,22.299491703510284,budget,0.00027599721795528375,P5_3_cost/networks/burgers_P400/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,2,0.001,True,160.69518697075546,3600,0.19076300226151943,160.88594997301698,budget,0.00027599721795528375,P5_3_cost/networks/burgers_P400/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,2,0.0001,False,,,0.19076300226151943,,budget,0.00027599721795528375,P5_3_cost/networks/burgers_P400/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,2,1e-05,False,,,0.19076300226151943,,budget,0.00027599721795528375,P5_3_cost/networks/burgers_P400/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,400,2,1e-06,False,,,0.19076300226151943,,budget,0.00027599721795528375,P5_3_cost/networks/burgers_P400/nil_n_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,0,0.01,True,64.59632329083979,1120,0.05801388621330261,64.6543371770531,budget,0.000508416183426193,P5_3_cost/networks/burgers_P400/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,0,0.001,True,341.2662124540657,6190,0.05801388621330261,341.324226340279,budget,0.000508416183426193,P5_3_cost/networks/burgers_P400/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,0,0.0001,False,,,0.05801388621330261,,budget,0.000508416183426193,P5_3_cost/networks/burgers_P400/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,0,1e-05,False,,,0.05801388621330261,,budget,0.000508416183426193,P5_3_cost/networks/burgers_P400/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,0,1e-06,False,,,0.05801388621330261,,budget,0.000508416183426193,P5_3_cost/networks/burgers_P400/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,1,0.01,True,44.175329653546214,770,0.18696364387869835,44.36229329742491,budget,0.00038773913432959314,P5_3_cost/networks/burgers_P400/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,1,0.001,True,136.9269393775612,2610,0.18696364387869835,137.1139030214399,budget,0.00038773913432959314,P5_3_cost/networks/burgers_P400/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,1,0.0001,False,,,0.18696364387869835,,budget,0.00038773913432959314,P5_3_cost/networks/burgers_P400/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,1,1e-05,False,,,0.18696364387869835,,budget,0.00038773913432959314,P5_3_cost/networks/burgers_P400/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,1,1e-06,False,,,0.18696364387869835,,budget,0.00038773913432959314,P5_3_cost/networks/burgers_P400/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,2,0.01,True,60.43737865425646,1030,0.21978613547980785,60.65716478973627,budget,0.0003804284038586228,P5_3_cost/networks/burgers_P400/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,2,0.001,True,200.9827763121575,3620,0.21978613547980785,201.20256244763732,budget,0.0003804284038586228,P5_3_cost/networks/burgers_P400/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,2,0.0001,False,,,0.21978613547980785,,budget,0.0003804284038586228,P5_3_cost/networks/burgers_P400/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,2,1e-05,False,,,0.21978613547980785,,budget,0.0003804284038586228,P5_3_cost/networks/burgers_P400/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,400,2,1e-06,False,,,0.21978613547980785,,budget,0.0003804284038586228,P5_3_cost/networks/burgers_P400/nil_q_s2_cpu
+burgers,lm,NiL-N (LM),cpu,625,0,0.01,True,6.005338,16,0.38153985887765884,6.386877858877659,budget,6.108335068146935e-05,P5_3_cost/networks/burgers_P625/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,625,0,0.001,True,7.49088,25,0.38153985887765884,7.872419858877659,budget,6.108335068146935e-05,P5_3_cost/networks/burgers_P625/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,625,0,0.0001,True,16.198044,72,0.38153985887765884,16.57958385887766,budget,6.108335068146935e-05,P5_3_cost/networks/burgers_P625/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,625,0,1e-05,False,,,0.38153985887765884,,budget,6.108335068146935e-05,P5_3_cost/networks/burgers_P625/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,625,0,1e-06,False,,,0.38153985887765884,,budget,6.108335068146935e-05,P5_3_cost/networks/burgers_P625/lm_s0_cpu
+burgers,lm,NiL-N (LM),cpu,625,1,0.01,True,5.239561,27,0.25043173134326935,5.4899927313432695,budget,2.5186115506562143e-06,P5_3_cost/networks/burgers_P625/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,625,1,0.001,True,6.625494,33,0.25043173134326935,6.875925731343269,budget,2.5186115506562143e-06,P5_3_cost/networks/burgers_P625/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,625,1,0.0001,True,21.555194,118,0.25043173134326935,21.80562573134327,budget,2.5186115506562143e-06,P5_3_cost/networks/burgers_P625/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,625,1,1e-05,True,480.472882,2796,0.25043173134326935,480.7233137313433,budget,2.5186115506562143e-06,P5_3_cost/networks/burgers_P625/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,625,1,1e-06,False,,,0.25043173134326935,,budget,2.5186115506562143e-06,P5_3_cost/networks/burgers_P625/lm_s1_cpu
+burgers,lm,NiL-N (LM),cpu,625,2,0.01,True,3.618559,18,0.17495832405984402,3.793517324059844,budget,5.14347054924772e-07,P5_3_cost/networks/burgers_P625/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,625,2,0.001,True,6.95562,37,0.17495832405984402,7.130578324059844,budget,5.14347054924772e-07,P5_3_cost/networks/burgers_P625/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,625,2,0.0001,True,28.099265,154,0.17495832405984402,28.274223324059843,budget,5.14347054924772e-07,P5_3_cost/networks/burgers_P625/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,625,2,1e-05,True,110.19748,611,0.17495832405984402,110.37243832405984,budget,5.14347054924772e-07,P5_3_cost/networks/burgers_P625/lm_s2_cpu
+burgers,lm,NiL-N (LM),cpu,625,2,1e-06,True,489.45655,2746,0.17495832405984402,489.63150832405984,budget,5.14347054924772e-07,P5_3_cost/networks/burgers_P625/lm_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,0,0.01,True,19.042019341140985,400,0.09271338395774364,19.13473272509873,budget,0.0003129167589126814,P5_3_cost/networks/burgers_P625/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,0,0.001,True,151.99903285875916,3010,0.09271338395774364,152.0917462427169,budget,0.0003129167589126814,P5_3_cost/networks/burgers_P625/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,0,0.0001,False,,,0.09271338395774364,,budget,0.0003129167589126814,P5_3_cost/networks/burgers_P625/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,0,1e-05,False,,,0.09271338395774364,,budget,0.0003129167589126814,P5_3_cost/networks/burgers_P625/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,0,1e-06,False,,,0.09271338395774364,,budget,0.0003129167589126814,P5_3_cost/networks/burgers_P625/nil_n_s0_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,1,0.01,True,26.638072887435555,570,0.12620016932487488,26.76427305676043,budget,0.00029528385078977584,P5_3_cost/networks/burgers_P625/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,1,0.001,True,175.7407788876444,3740,0.12620016932487488,175.86697905696929,budget,0.00029528385078977584,P5_3_cost/networks/burgers_P625/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,1,0.0001,False,,,0.12620016932487488,,budget,0.00029528385078977584,P5_3_cost/networks/burgers_P625/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,1,1e-05,False,,,0.12620016932487488,,budget,0.00029528385078977584,P5_3_cost/networks/burgers_P625/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,1,1e-06,False,,,0.12620016932487488,,budget,0.00029528385078977584,P5_3_cost/networks/burgers_P625/nil_n_s1_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,2,0.01,True,22.960074331611395,490,0.1633215118199587,23.123395843431354,budget,0.0001905850362179293,P5_3_cost/networks/burgers_P625/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,2,0.001,True,124.37655227258801,2590,0.1633215118199587,124.53987378440797,budget,0.0001905850362179293,P5_3_cost/networks/burgers_P625/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,2,0.0001,False,,,0.1633215118199587,,budget,0.0001905850362179293,P5_3_cost/networks/burgers_P625/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,2,1e-05,False,,,0.1633215118199587,,budget,0.0001905850362179293,P5_3_cost/networks/burgers_P625/nil_n_s2_cpu
+burgers,nil_n,NiL-N (L-BFGS),cpu,625,2,1e-06,False,,,0.1633215118199587,,budget,0.0001905850362179293,P5_3_cost/networks/burgers_P625/nil_n_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,0,0.01,True,65.69469121471047,1120,0.06815274059772491,65.7628439553082,budget,0.0003975574667406883,P5_3_cost/networks/burgers_P625/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,0,0.001,True,175.20078090764582,3110,0.06815274059772491,175.26893364824355,budget,0.0003975574667406883,P5_3_cost/networks/burgers_P625/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,0,0.0001,False,,,0.06815274059772491,,budget,0.0003975574667406883,P5_3_cost/networks/burgers_P625/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,0,1e-05,False,,,0.06815274059772491,,budget,0.0003975574667406883,P5_3_cost/networks/burgers_P625/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,0,1e-06,False,,,0.06815274059772491,,budget,0.0003975574667406883,P5_3_cost/networks/burgers_P625/nil_q_s0_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,1,0.01,True,71.88890402205288,1280,0.8848567567765713,72.77376077882946,budget,0.00020499288961002392,P5_3_cost/networks/burgers_P625/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,1,0.001,True,185.68198709189892,3390,0.8848567567765713,186.5668438486755,budget,0.00020499288961002392,P5_3_cost/networks/burgers_P625/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,1,0.0001,False,,,0.8848567567765713,,budget,0.00020499288961002392,P5_3_cost/networks/burgers_P625/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,1,1e-05,False,,,0.8848567567765713,,budget,0.00020499288961002392,P5_3_cost/networks/burgers_P625/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,1,1e-06,False,,,0.8848567567765713,,budget,0.00020499288961002392,P5_3_cost/networks/burgers_P625/nil_q_s1_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,2,0.01,True,67.82773151807487,1220,0.16735243424773216,67.9950839523226,budget,0.00021972134303257848,P5_3_cost/networks/burgers_P625/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,2,0.001,True,257.2066417336464,4760,0.16735243424773216,257.3739941678941,budget,0.00021972134303257848,P5_3_cost/networks/burgers_P625/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,2,0.0001,False,,,0.16735243424773216,,budget,0.00021972134303257848,P5_3_cost/networks/burgers_P625/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,2,1e-05,False,,,0.16735243424773216,,budget,0.00021972134303257848,P5_3_cost/networks/burgers_P625/nil_q_s2_cpu
+burgers,nil_q,NiL-Q (L-BFGS),cpu,625,2,1e-06,False,,,0.16735243424773216,,budget,0.00021972134303257848,P5_3_cost/networks/burgers_P625/nil_q_s2_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,1024,,0.01,True,12.895240444689989,680,0.40210590697824955,13.297346351668239,budget,4.8439340695386e-05,P5_3_cost/lil/bl_P1024/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,1024,,0.001,True,15.807524539530277,850,0.40210590697824955,16.209630446508527,budget,4.8439340695386e-05,P5_3_cost/lil/bl_P1024/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,1024,,0.0001,True,19.771361799910665,1080,0.40210590697824955,20.173467706888914,budget,4.8439340695386e-05,P5_3_cost/lil/bl_P1024/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,1024,,1e-05,False,,,0.40210590697824955,,budget,4.8439340695386e-05,P5_3_cost/lil/bl_P1024/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,1024,,1e-06,False,,,0.40210590697824955,,budget,4.8439340695386e-05,P5_3_cost/lil/bl_P1024/lbfgs_cpu
+bl,lilq,LiL-Q,cpu,1024,,0.01,True,2.281646553426981,3,0.3896605335175991,2.67130708694458,rule fired,4.8436691149851904e-05,P5_3_cost/lil/bl_P1024/lilq_cpu
+bl,lilq,LiL-Q,cpu,1024,,0.001,True,3.046744141727686,4,0.3896605335175991,3.436404675245285,rule fired,4.8436691149851904e-05,P5_3_cost/lil/bl_P1024/lilq_cpu
+bl,lilq,LiL-Q,cpu,1024,,0.0001,True,3.046744141727686,4,0.3896605335175991,3.436404675245285,rule fired,4.8436691149851904e-05,P5_3_cost/lil/bl_P1024/lilq_cpu
+bl,lilq,LiL-Q,cpu,1024,,1e-05,False,,,0.3896605335175991,,rule fired,4.8436691149851904e-05,P5_3_cost/lil/bl_P1024/lilq_cpu
+bl,lilq,LiL-Q,cpu,1024,,1e-06,False,,,0.3896605335175991,,rule fired,4.8436691149851904e-05,P5_3_cost/lil/bl_P1024/lilq_cpu
+bl,trf,LiL-N (trf),cpu,1024,,0.01,True,12.110631240531802,8,0.3788764923810959,12.489507732912898,4: Both `ftol` and `xtol` termination conditions are satisfied.,4.843669023898105e-05,P5_3_cost/lil/bl_P1024/trf_cpu
+bl,trf,LiL-N (trf),cpu,1024,,0.001,True,12.110631240531802,8,0.3788764923810959,12.489507732912898,4: Both `ftol` and `xtol` termination conditions are satisfied.,4.843669023898105e-05,P5_3_cost/lil/bl_P1024/trf_cpu
+bl,trf,LiL-N (trf),cpu,1024,,0.0001,True,13.589949095621705,9,0.3788764923810959,13.968825588002801,4: Both `ftol` and `xtol` termination conditions are satisfied.,4.843669023898105e-05,P5_3_cost/lil/bl_P1024/trf_cpu
+bl,trf,LiL-N (trf),cpu,1024,,1e-05,False,,,0.3788764923810959,,4: Both `ftol` and `xtol` termination conditions are satisfied.,4.843669023898105e-05,P5_3_cost/lil/bl_P1024/trf_cpu
+bl,trf,LiL-N (trf),cpu,1024,,1e-06,False,,,0.3788764923810959,,4: Both `ftol` and `xtol` termination conditions are satisfied.,4.843669023898105e-05,P5_3_cost/lil/bl_P1024/trf_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,256,,0.01,True,0.7660178765654564,180,0.11541248112916946,0.8814303576946259,optimizer_stall,0.0006085929613434937,P5_3_cost/lil/bl_P256/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,256,,0.001,True,0.9106621984392405,210,0.11541248112916946,1.02607467956841,optimizer_stall,0.0006085929613434937,P5_3_cost/lil/bl_P256/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,256,,0.0001,False,,,0.11541248112916946,,optimizer_stall,0.0006085929613434937,P5_3_cost/lil/bl_P256/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,256,,1e-05,False,,,0.11541248112916946,,optimizer_stall,0.0006085929613434937,P5_3_cost/lil/bl_P256/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,256,,1e-06,False,,,0.11541248112916946,,optimizer_stall,0.0006085929613434937,P5_3_cost/lil/bl_P256/lbfgs_cpu
+bl,lilq,LiL-Q,cpu,256,,0.01,True,0.24414556473493576,4,0.08264551497995853,0.3267910797148943,rule fired,0.0006081491034556758,P5_3_cost/lil/bl_P256/lilq_cpu
+bl,lilq,LiL-Q,cpu,256,,0.001,True,0.30526670441031456,5,0.08264551497995853,0.3879122193902731,rule fired,0.0006081491034556758,P5_3_cost/lil/bl_P256/lilq_cpu
+bl,lilq,LiL-Q,cpu,256,,0.0001,False,,,0.08264551497995853,,rule fired,0.0006081491034556758,P5_3_cost/lil/bl_P256/lilq_cpu
+bl,lilq,LiL-Q,cpu,256,,1e-05,False,,,0.08264551497995853,,rule fired,0.0006081491034556758,P5_3_cost/lil/bl_P256/lilq_cpu
+bl,lilq,LiL-Q,cpu,256,,1e-06,False,,,0.08264551497995853,,rule fired,0.0006081491034556758,P5_3_cost/lil/bl_P256/lilq_cpu
+bl,trf,LiL-N (trf),cpu,256,,0.01,True,0.9901574160903692,8,0.08241438679397106,1.0725718028843403,2: `ftol` termination condition is satisfied.,0.0006085960696487054,P5_3_cost/lil/bl_P256/trf_cpu
+bl,trf,LiL-N (trf),cpu,256,,0.001,True,1.1142121125012636,9,0.08241438679397106,1.1966264992952347,2: `ftol` termination condition is satisfied.,0.0006085960696487054,P5_3_cost/lil/bl_P256/trf_cpu
+bl,trf,LiL-N (trf),cpu,256,,0.0001,False,,,0.08241438679397106,,2: `ftol` termination condition is satisfied.,0.0006085960696487054,P5_3_cost/lil/bl_P256/trf_cpu
+bl,trf,LiL-N (trf),cpu,256,,1e-05,False,,,0.08241438679397106,,2: `ftol` termination condition is satisfied.,0.0006085960696487054,P5_3_cost/lil/bl_P256/trf_cpu
+bl,trf,LiL-N (trf),cpu,256,,1e-06,False,,,0.08241438679397106,,2: `ftol` termination condition is satisfied.,0.0006085960696487054,P5_3_cost/lil/bl_P256/trf_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,576,,0.01,True,2.7662028148770332,350,0.20492391474545002,2.9711267296224833,optimizer_stall,0.0001028485660304214,P5_3_cost/lil/bl_P576/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,576,,0.001,True,3.353852240368724,420,0.20492391474545002,3.558776155114174,optimizer_stall,0.0001028485660304214,P5_3_cost/lil/bl_P576/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,576,,0.0001,False,,,0.20492391474545002,,optimizer_stall,0.0001028485660304214,P5_3_cost/lil/bl_P576/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,576,,1e-05,False,,,0.20492391474545002,,optimizer_stall,0.0001028485660304214,P5_3_cost/lil/bl_P576/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,576,,1e-06,False,,,0.20492391474545002,,optimizer_stall,0.0001028485660304214,P5_3_cost/lil/bl_P576/lbfgs_cpu
+bl,lilq,LiL-Q,cpu,576,,0.01,True,0.6063697766512632,3,0.17868664860725403,0.7850564252585173,rule fired,0.00010284023377401195,P5_3_cost/lil/bl_P576/lilq_cpu
+bl,lilq,LiL-Q,cpu,576,,0.001,True,0.8143226206302643,4,0.17868664860725403,0.9930092692375183,rule fired,0.00010284023377401195,P5_3_cost/lil/bl_P576/lilq_cpu
+bl,lilq,LiL-Q,cpu,576,,0.0001,False,,,0.17868664860725403,,rule fired,0.00010284023377401195,P5_3_cost/lil/bl_P576/lilq_cpu
+bl,lilq,LiL-Q,cpu,576,,1e-05,False,,,0.17868664860725403,,rule fired,0.00010284023377401195,P5_3_cost/lil/bl_P576/lilq_cpu
+bl,lilq,LiL-Q,cpu,576,,1e-06,False,,,0.17868664860725403,,rule fired,0.00010284023377401195,P5_3_cost/lil/bl_P576/lilq_cpu
+bl,trf,LiL-N (trf),cpu,576,,0.01,True,3.526999903842807,8,0.18341750092804432,3.710417404770851,2: `ftol` termination condition is satisfied.,0.00010284023353226721,P5_3_cost/lil/bl_P576/trf_cpu
+bl,trf,LiL-N (trf),cpu,576,,0.001,True,3.9652986135333776,9,0.18341750092804432,4.148716114461422,2: `ftol` termination condition is satisfied.,0.00010284023353226721,P5_3_cost/lil/bl_P576/trf_cpu
+bl,trf,LiL-N (trf),cpu,576,,0.0001,False,,,0.18341750092804432,,2: `ftol` termination condition is satisfied.,0.00010284023353226721,P5_3_cost/lil/bl_P576/trf_cpu
+bl,trf,LiL-N (trf),cpu,576,,1e-05,False,,,0.18341750092804432,,2: `ftol` termination condition is satisfied.,0.00010284023353226721,P5_3_cost/lil/bl_P576/trf_cpu
+bl,trf,LiL-N (trf),cpu,576,,1e-06,False,,,0.18341750092804432,,2: `ftol` termination condition is satisfied.,0.00010284023353226721,P5_3_cost/lil/bl_P576/trf_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,64,,0.01,False,,,0.01751287840306759,,optimizer_stall,0.015098555962505611,P5_3_cost/lil/bl_P64/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,64,,0.001,False,,,0.01751287840306759,,optimizer_stall,0.015098555962505611,P5_3_cost/lil/bl_P64/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,64,,0.0001,False,,,0.01751287840306759,,optimizer_stall,0.015098555962505611,P5_3_cost/lil/bl_P64/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,64,,1e-05,False,,,0.01751287840306759,,optimizer_stall,0.015098555962505611,P5_3_cost/lil/bl_P64/lbfgs_cpu
+bl,lbfgs,LiL-N (L-BFGS),cpu,64,,1e-06,False,,,0.01751287840306759,,optimizer_stall,0.015098555962505611,P5_3_cost/lil/bl_P64/lbfgs_cpu
+bl,lilq,LiL-Q,cpu,64,,0.01,False,,,0.015241457149386406,,rule fired,0.013956088419405578,P5_3_cost/lil/bl_P64/lilq_cpu
+bl,lilq,LiL-Q,cpu,64,,0.001,False,,,0.015241457149386406,,rule fired,0.013956088419405578,P5_3_cost/lil/bl_P64/lilq_cpu
+bl,lilq,LiL-Q,cpu,64,,0.0001,False,,,0.015241457149386406,,rule fired,0.013956088419405578,P5_3_cost/lil/bl_P64/lilq_cpu
+bl,lilq,LiL-Q,cpu,64,,1e-05,False,,,0.015241457149386406,,rule fired,0.013956088419405578,P5_3_cost/lil/bl_P64/lilq_cpu
+bl,lilq,LiL-Q,cpu,64,,1e-06,False,,,0.015241457149386406,,rule fired,0.013956088419405578,P5_3_cost/lil/bl_P64/lilq_cpu
+bl,trf,LiL-N (trf),cpu,64,,0.01,False,,,0.015380576252937317,,2: `ftol` termination condition is satisfied.,0.015098500643409141,P5_3_cost/lil/bl_P64/trf_cpu
+bl,trf,LiL-N (trf),cpu,64,,0.001,False,,,0.015380576252937317,,2: `ftol` termination condition is satisfied.,0.015098500643409141,P5_3_cost/lil/bl_P64/trf_cpu
+bl,trf,LiL-N (trf),cpu,64,,0.0001,False,,,0.015380576252937317,,2: `ftol` termination condition is satisfied.,0.015098500643409141,P5_3_cost/lil/bl_P64/trf_cpu
+bl,trf,LiL-N (trf),cpu,64,,1e-05,False,,,0.015380576252937317,,2: `ftol` termination condition is satisfied.,0.015098500643409141,P5_3_cost/lil/bl_P64/trf_cpu
+bl,trf,LiL-N (trf),cpu,64,,1e-06,False,,,0.015380576252937317,,2: `ftol` termination condition is satisfied.,0.015098500643409141,P5_3_cost/lil/bl_P64/trf_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,100,,0.01,True,0.13332046195864677,60,0.01408638060092926,0.14740684255957603,optimizer_stall,0.00015824759028676205,P5_3_cost/lil/bratu_P100/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,100,,0.001,True,0.16163600981235504,70,0.01408638060092926,0.1757223904132843,optimizer_stall,0.00015824759028676205,P5_3_cost/lil/bratu_P100/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,100,,0.0001,False,,,0.01408638060092926,,optimizer_stall,0.00015824759028676205,P5_3_cost/lil/bratu_P100/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,100,,1e-05,False,,,0.01408638060092926,,optimizer_stall,0.00015824759028676205,P5_3_cost/lil/bratu_P100/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,100,,1e-06,False,,,0.01408638060092926,,optimizer_stall,0.00015824759028676205,P5_3_cost/lil/bratu_P100/lbfgs_cpu
+bratu,lilq,LiL-Q,cpu,100,,0.01,True,0.02992234192788601,3,0.013539966195821762,0.04346230812370777,rule fired,0.00015824760801540997,P5_3_cost/lil/bratu_P100/lilq_cpu
+bratu,lilq,LiL-Q,cpu,100,,0.001,True,0.02992234192788601,3,0.013539966195821762,0.04346230812370777,rule fired,0.00015824760801540997,P5_3_cost/lil/bratu_P100/lilq_cpu
+bratu,lilq,LiL-Q,cpu,100,,0.0001,False,,,0.013539966195821762,,rule fired,0.00015824760801540997,P5_3_cost/lil/bratu_P100/lilq_cpu
+bratu,lilq,LiL-Q,cpu,100,,1e-05,False,,,0.013539966195821762,,rule fired,0.00015824760801540997,P5_3_cost/lil/bratu_P100/lilq_cpu
+bratu,lilq,LiL-Q,cpu,100,,1e-06,False,,,0.013539966195821762,,rule fired,0.00015824760801540997,P5_3_cost/lil/bratu_P100/lilq_cpu
+bratu,square,square collocation (SQ-CGL),cpu,100,,0.01,True,0.002691522240638733,3,0.00563882477581501,0.008330347016453743,tolerance,3.2452632843611526e-05,P5_3_cost/lil/bratu_P100/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,100,,0.001,True,0.002691522240638733,3,0.00563882477581501,0.008330347016453743,tolerance,3.2452632843611526e-05,P5_3_cost/lil/bratu_P100/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,100,,0.0001,True,0.003550088033080101,4,0.00563882477581501,0.009188912808895111,tolerance,3.2452632843611526e-05,P5_3_cost/lil/bratu_P100/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,100,,1e-05,False,,,0.00563882477581501,,tolerance,3.2452632843611526e-05,P5_3_cost/lil/bratu_P100/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,100,,1e-06,False,,,0.00563882477581501,,tolerance,3.2452632843611526e-05,P5_3_cost/lil/bratu_P100/square_cpu
+bratu,trf,LiL-N (trf),cpu,100,,0.01,True,0.07064221240580082,3,0.013338042423129082,0.0839802548289299,2: `ftol` termination condition is satisfied.,0.0001582475537807342,P5_3_cost/lil/bratu_P100/trf_cpu
+bratu,trf,LiL-N (trf),cpu,100,,0.001,True,0.07064221240580082,3,0.013338042423129082,0.0839802548289299,2: `ftol` termination condition is satisfied.,0.0001582475537807342,P5_3_cost/lil/bratu_P100/trf_cpu
+bratu,trf,LiL-N (trf),cpu,100,,0.0001,False,,,0.013338042423129082,,2: `ftol` termination condition is satisfied.,0.0001582475537807342,P5_3_cost/lil/bratu_P100/trf_cpu
+bratu,trf,LiL-N (trf),cpu,100,,1e-05,False,,,0.013338042423129082,,2: `ftol` termination condition is satisfied.,0.0001582475537807342,P5_3_cost/lil/bratu_P100/trf_cpu
+bratu,trf,LiL-N (trf),cpu,100,,1e-06,False,,,0.013338042423129082,,2: `ftol` termination condition is satisfied.,0.0001582475537807342,P5_3_cost/lil/bratu_P100/trf_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,225,,0.01,True,0.7389309424906969,200,0.0363759770989418,0.7753069195896387,optimizer_stall,1.5150972606553222e-05,P5_3_cost/lil/bratu_P225/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,225,,0.001,True,0.9539141710847616,250,0.0363759770989418,0.9902901481837034,optimizer_stall,1.5150972606553222e-05,P5_3_cost/lil/bratu_P225/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,225,,0.0001,True,1.314394250512123,320,0.0363759770989418,1.350770227611065,optimizer_stall,1.5150972606553222e-05,P5_3_cost/lil/bratu_P225/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,225,,1e-05,False,,,0.0363759770989418,,optimizer_stall,1.5150972606553222e-05,P5_3_cost/lil/bratu_P225/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,225,,1e-06,False,,,0.0363759770989418,,optimizer_stall,1.5150972606553222e-05,P5_3_cost/lil/bratu_P225/lbfgs_cpu
+bratu,lilq,LiL-Q,cpu,225,,0.01,True,0.14578249491751194,3,0.03554285503923893,0.18132534995675087,rule fired,1.5150973612819512e-05,P5_3_cost/lil/bratu_P225/lilq_cpu
+bratu,lilq,LiL-Q,cpu,225,,0.001,True,0.14578249491751194,3,0.03554285503923893,0.18132534995675087,rule fired,1.5150973612819512e-05,P5_3_cost/lil/bratu_P225/lilq_cpu
+bratu,lilq,LiL-Q,cpu,225,,0.0001,True,0.19404657930135727,4,0.03554285503923893,0.2295894343405962,rule fired,1.5150973612819512e-05,P5_3_cost/lil/bratu_P225/lilq_cpu
+bratu,lilq,LiL-Q,cpu,225,,1e-05,False,,,0.03554285503923893,,rule fired,1.5150973612819512e-05,P5_3_cost/lil/bratu_P225/lilq_cpu
+bratu,lilq,LiL-Q,cpu,225,,1e-06,False,,,0.03554285503923893,,rule fired,1.5150973612819512e-05,P5_3_cost/lil/bratu_P225/lilq_cpu
+bratu,square,square collocation (SQ-CGL),cpu,225,,0.01,True,0.006511704996228218,3,0.011175939813256264,0.017687644809484482,tolerance,2.3928458717073676e-06,P5_3_cost/lil/bratu_P225/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,225,,0.001,True,0.006511704996228218,3,0.011175939813256264,0.017687644809484482,tolerance,2.3928458717073676e-06,P5_3_cost/lil/bratu_P225/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,225,,0.0001,True,0.008648552000522614,4,0.011175939813256264,0.019824491813778877,tolerance,2.3928458717073676e-06,P5_3_cost/lil/bratu_P225/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,225,,1e-05,True,0.008648552000522614,4,0.011175939813256264,0.019824491813778877,tolerance,2.3928458717073676e-06,P5_3_cost/lil/bratu_P225/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,225,,1e-06,False,,,0.011175939813256264,,tolerance,2.3928458717073676e-06,P5_3_cost/lil/bratu_P225/square_cpu
+bratu,trf,LiL-N (trf),cpu,225,,0.01,True,0.22919318079948425,3,0.03363753482699394,0.2628307156264782,3: `xtol` termination condition is satisfied.,1.5150973612820464e-05,P5_3_cost/lil/bratu_P225/trf_cpu
+bratu,trf,LiL-N (trf),cpu,225,,0.001,True,0.22919318079948425,3,0.03363753482699394,0.2628307156264782,3: `xtol` termination condition is satisfied.,1.5150973612820464e-05,P5_3_cost/lil/bratu_P225/trf_cpu
+bratu,trf,LiL-N (trf),cpu,225,,0.0001,True,0.3064104653894901,4,0.03363753482699394,0.34004800021648407,3: `xtol` termination condition is satisfied.,1.5150973612820464e-05,P5_3_cost/lil/bratu_P225/trf_cpu
+bratu,trf,LiL-N (trf),cpu,225,,1e-05,False,,,0.03363753482699394,,3: `xtol` termination condition is satisfied.,1.5150973612820464e-05,P5_3_cost/lil/bratu_P225/trf_cpu
+bratu,trf,LiL-N (trf),cpu,225,,1e-06,False,,,0.03363753482699394,,3: `xtol` termination condition is satisfied.,1.5150973612820464e-05,P5_3_cost/lil/bratu_P225/trf_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,25,,0.01,False,,,0.004457524046301842,,optimizer_stall,0.012994389425211644,P5_3_cost/lil/bratu_P25/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,25,,0.001,False,,,0.004457524046301842,,optimizer_stall,0.012994389425211644,P5_3_cost/lil/bratu_P25/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,25,,0.0001,False,,,0.004457524046301842,,optimizer_stall,0.012994389425211644,P5_3_cost/lil/bratu_P25/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,25,,1e-05,False,,,0.004457524046301842,,optimizer_stall,0.012994389425211644,P5_3_cost/lil/bratu_P25/lbfgs_cpu
+bratu,lbfgs,LiL-N (L-BFGS),cpu,25,,1e-06,False,,,0.004457524046301842,,optimizer_stall,0.012994389425211644,P5_3_cost/lil/bratu_P25/lbfgs_cpu
+bratu,lilq,LiL-Q,cpu,25,,0.01,False,,,0.004015304148197174,,rule fired,0.012994268768477181,P5_3_cost/lil/bratu_P25/lilq_cpu
+bratu,lilq,LiL-Q,cpu,25,,0.001,False,,,0.004015304148197174,,rule fired,0.012994268768477181,P5_3_cost/lil/bratu_P25/lilq_cpu
+bratu,lilq,LiL-Q,cpu,25,,0.0001,False,,,0.004015304148197174,,rule fired,0.012994268768477181,P5_3_cost/lil/bratu_P25/lilq_cpu
+bratu,lilq,LiL-Q,cpu,25,,1e-05,False,,,0.004015304148197174,,rule fired,0.012994268768477181,P5_3_cost/lil/bratu_P25/lilq_cpu
+bratu,lilq,LiL-Q,cpu,25,,1e-06,False,,,0.004015304148197174,,rule fired,0.012994268768477181,P5_3_cost/lil/bratu_P25/lilq_cpu
+bratu,square,square collocation (SQ-CGL),cpu,25,,0.01,True,0.00023277662694454193,3,0.002169128507375717,0.002401905134320259,tolerance,0.000458054455071818,P5_3_cost/lil/bratu_P25/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,25,,0.001,True,0.00023277662694454193,3,0.002169128507375717,0.002401905134320259,tolerance,0.000458054455071818,P5_3_cost/lil/bratu_P25/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,25,,0.0001,False,,,0.002169128507375717,,tolerance,0.000458054455071818,P5_3_cost/lil/bratu_P25/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,25,,1e-05,False,,,0.002169128507375717,,tolerance,0.000458054455071818,P5_3_cost/lil/bratu_P25/square_cpu
+bratu,square,square collocation (SQ-CGL),cpu,25,,1e-06,False,,,0.002169128507375717,,tolerance,0.000458054455071818,P5_3_cost/lil/bratu_P25/square_cpu
+bratu,trf,LiL-N (trf),cpu,25,,0.01,False,,,0.0040152836591005325,,4: Both `ftol` and `xtol` termination conditions are satisfied.,0.012994392735897161,P5_3_cost/lil/bratu_P25/trf_cpu
+bratu,trf,LiL-N (trf),cpu,25,,0.001,False,,,0.0040152836591005325,,4: Both `ftol` and `xtol` termination conditions are satisfied.,0.012994392735897161,P5_3_cost/lil/bratu_P25/trf_cpu
+bratu,trf,LiL-N (trf),cpu,25,,0.0001,False,,,0.0040152836591005325,,4: Both `ftol` and `xtol` termination conditions are satisfied.,0.012994392735897161,P5_3_cost/lil/bratu_P25/trf_cpu
+bratu,trf,LiL-N (trf),cpu,25,,1e-05,False,,,0.0040152836591005325,,4: Both `ftol` and `xtol` termination conditions are satisfied.,0.012994392735897161,P5_3_cost/lil/bratu_P25/trf_cpu
+bratu,trf,LiL-N (trf),cpu,25,,1e-06,False,,,0.0040152836591005325,,4: Both `ftol` and `xtol` termination conditions are satisfied.,0.012994392735897161,P5_3_cost/lil/bratu_P25/trf_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,100,,0.01,True,0.08321774005889893,40,0.0041011422872543335,0.08731888234615326,optimizer_stall,0.003994424832882204,P5_3_cost/lil/burgers_P100/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,100,,0.001,False,,,0.0041011422872543335,,optimizer_stall,0.003994424832882204,P5_3_cost/lil/burgers_P100/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,100,,0.0001,False,,,0.0041011422872543335,,optimizer_stall,0.003994424832882204,P5_3_cost/lil/burgers_P100/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,100,,1e-05,False,,,0.0041011422872543335,,optimizer_stall,0.003994424832882204,P5_3_cost/lil/burgers_P100/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,100,,1e-06,False,,,0.0041011422872543335,,optimizer_stall,0.003994424832882204,P5_3_cost/lil/burgers_P100/lbfgs_cpu
+burgers,lilq,LiL-Q,cpu,100,,0.01,True,0.018149083480238914,2,0.003927547484636307,0.02207663096487522,rule fired,0.00399443079401321,P5_3_cost/lil/burgers_P100/lilq_cpu
+burgers,lilq,LiL-Q,cpu,100,,0.001,False,,,0.003927547484636307,,rule fired,0.00399443079401321,P5_3_cost/lil/burgers_P100/lilq_cpu
+burgers,lilq,LiL-Q,cpu,100,,0.0001,False,,,0.003927547484636307,,rule fired,0.00399443079401321,P5_3_cost/lil/burgers_P100/lilq_cpu
+burgers,lilq,LiL-Q,cpu,100,,1e-05,False,,,0.003927547484636307,,rule fired,0.00399443079401321,P5_3_cost/lil/burgers_P100/lilq_cpu
+burgers,lilq,LiL-Q,cpu,100,,1e-06,False,,,0.003927547484636307,,rule fired,0.00399443079401321,P5_3_cost/lil/burgers_P100/lilq_cpu
+burgers,trf,LiL-N (trf),cpu,100,,0.01,True,0.04719078354537487,2,0.004001924768090248,0.05119270831346512,2: `ftol` termination condition is satisfied.,0.003994425702232486,P5_3_cost/lil/burgers_P100/trf_cpu
+burgers,trf,LiL-N (trf),cpu,100,,0.001,False,,,0.004001924768090248,,2: `ftol` termination condition is satisfied.,0.003994425702232486,P5_3_cost/lil/burgers_P100/trf_cpu
+burgers,trf,LiL-N (trf),cpu,100,,0.0001,False,,,0.004001924768090248,,2: `ftol` termination condition is satisfied.,0.003994425702232486,P5_3_cost/lil/burgers_P100/trf_cpu
+burgers,trf,LiL-N (trf),cpu,100,,1e-05,False,,,0.004001924768090248,,2: `ftol` termination condition is satisfied.,0.003994425702232486,P5_3_cost/lil/burgers_P100/trf_cpu
+burgers,trf,LiL-N (trf),cpu,100,,1e-06,False,,,0.004001924768090248,,2: `ftol` termination condition is satisfied.,0.003994425702232486,P5_3_cost/lil/burgers_P100/trf_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,196,,0.01,True,0.14349334500730038,60,0.012639719992876053,0.15613306500017643,optimizer_stall,0.00028482961981527024,P5_3_cost/lil/burgers_P196/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,196,,0.001,True,0.1781442929059267,70,0.012639719992876053,0.19078401289880276,optimizer_stall,0.00028482961981527024,P5_3_cost/lil/burgers_P196/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,196,,0.0001,False,,,0.012639719992876053,,optimizer_stall,0.00028482961981527024,P5_3_cost/lil/burgers_P196/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,196,,1e-05,False,,,0.012639719992876053,,optimizer_stall,0.00028482961981527024,P5_3_cost/lil/burgers_P196/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,196,,1e-06,False,,,0.012639719992876053,,optimizer_stall,0.00028482961981527024,P5_3_cost/lil/burgers_P196/lbfgs_cpu
+burgers,lilq,LiL-Q,cpu,196,,0.01,True,0.07597553916275501,2,0.018942533060908318,0.09491807222366333,rule fired,0.0002848306673990336,P5_3_cost/lil/burgers_P196/lilq_cpu
+burgers,lilq,LiL-Q,cpu,196,,0.001,True,0.1130741685628891,3,0.018942533060908318,0.13201670162379742,rule fired,0.0002848306673990336,P5_3_cost/lil/burgers_P196/lilq_cpu
+burgers,lilq,LiL-Q,cpu,196,,0.0001,False,,,0.018942533060908318,,rule fired,0.0002848306673990336,P5_3_cost/lil/burgers_P196/lilq_cpu
+burgers,lilq,LiL-Q,cpu,196,,1e-05,False,,,0.018942533060908318,,rule fired,0.0002848306673990336,P5_3_cost/lil/burgers_P196/lilq_cpu
+burgers,lilq,LiL-Q,cpu,196,,1e-06,False,,,0.018942533060908318,,rule fired,0.0002848306673990336,P5_3_cost/lil/burgers_P196/lilq_cpu
+burgers,trf,LiL-N (trf),cpu,196,,0.01,True,0.12097010388970375,2,0.008528735488653183,0.12949883937835693,2: `ftol` termination condition is satisfied.,0.00028483075794569196,P5_3_cost/lil/burgers_P196/trf_cpu
+burgers,trf,LiL-N (trf),cpu,196,,0.001,True,0.17894296534359455,3,0.008528735488653183,0.18747170083224773,2: `ftol` termination condition is satisfied.,0.00028483075794569196,P5_3_cost/lil/burgers_P196/trf_cpu
+burgers,trf,LiL-N (trf),cpu,196,,0.0001,False,,,0.008528735488653183,,2: `ftol` termination condition is satisfied.,0.00028483075794569196,P5_3_cost/lil/burgers_P196/trf_cpu
+burgers,trf,LiL-N (trf),cpu,196,,1e-05,False,,,0.008528735488653183,,2: `ftol` termination condition is satisfied.,0.00028483075794569196,P5_3_cost/lil/burgers_P196/trf_cpu
+burgers,trf,LiL-N (trf),cpu,196,,1e-06,False,,,0.008528735488653183,,2: `ftol` termination condition is satisfied.,0.00028483075794569196,P5_3_cost/lil/burgers_P196/trf_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,324,,0.01,True,0.16356597281992435,80,0.047136230394244194,0.21070220321416855,optimizer_stall,2.5459157485807765e-05,P5_3_cost/lil/burgers_P324/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,324,,0.001,True,0.2203930001705885,100,0.047136230394244194,0.2675292305648327,optimizer_stall,2.5459157485807765e-05,P5_3_cost/lil/burgers_P324/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,324,,0.0001,True,0.28156290017068386,120,0.047136230394244194,0.32869913056492805,optimizer_stall,2.5459157485807765e-05,P5_3_cost/lil/burgers_P324/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,324,,1e-05,False,,,0.047136230394244194,,optimizer_stall,2.5459157485807765e-05,P5_3_cost/lil/burgers_P324/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,324,,1e-06,False,,,0.047136230394244194,,optimizer_stall,2.5459157485807765e-05,P5_3_cost/lil/burgers_P324/lbfgs_cpu
+burgers,lilq,LiL-Q,cpu,324,,0.01,True,0.14044969528913498,2,0.020507052540779114,0.1609567478299141,rule fired,2.5460155726293707e-05,P5_3_cost/lil/burgers_P324/lilq_cpu
+burgers,lilq,LiL-Q,cpu,324,,0.001,True,0.21051914244890213,3,0.020507052540779114,0.23102619498968124,rule fired,2.5460155726293707e-05,P5_3_cost/lil/burgers_P324/lilq_cpu
+burgers,lilq,LiL-Q,cpu,324,,0.0001,True,0.21051914244890213,3,0.020507052540779114,0.23102619498968124,rule fired,2.5460155726293707e-05,P5_3_cost/lil/burgers_P324/lilq_cpu
+burgers,lilq,LiL-Q,cpu,324,,1e-05,False,,,0.020507052540779114,,rule fired,2.5460155726293707e-05,P5_3_cost/lil/burgers_P324/lilq_cpu
+burgers,lilq,LiL-Q,cpu,324,,1e-06,False,,,0.020507052540779114,,rule fired,2.5460155726293707e-05,P5_3_cost/lil/burgers_P324/lilq_cpu
+burgers,trf,LiL-N (trf),cpu,324,,0.01,True,0.2670093085616827,2,0.01774751953780651,0.2847568280994892,3: `xtol` termination condition is satisfied.,2.5460155639440944e-05,P5_3_cost/lil/burgers_P324/trf_cpu
+burgers,trf,LiL-N (trf),cpu,324,,0.001,True,0.39752048812806606,3,0.01774751953780651,0.4152680076658726,3: `xtol` termination condition is satisfied.,2.5460155639440944e-05,P5_3_cost/lil/burgers_P324/trf_cpu
+burgers,trf,LiL-N (trf),cpu,324,,0.0001,True,0.39752048812806606,3,0.01774751953780651,0.4152680076658726,3: `xtol` termination condition is satisfied.,2.5460155639440944e-05,P5_3_cost/lil/burgers_P324/trf_cpu
+burgers,trf,LiL-N (trf),cpu,324,,1e-05,False,,,0.01774751953780651,,3: `xtol` termination condition is satisfied.,2.5460155639440944e-05,P5_3_cost/lil/burgers_P324/trf_cpu
+burgers,trf,LiL-N (trf),cpu,324,,1e-06,False,,,0.01774751953780651,,3: `xtol` termination condition is satisfied.,2.5460155639440944e-05,P5_3_cost/lil/burgers_P324/trf_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,36,,0.01,False,,,0.002472739666700363,,optimizer_stall,0.039553956366944774,P5_3_cost/lil/burgers_P36/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,36,,0.001,False,,,0.002472739666700363,,optimizer_stall,0.039553956366944774,P5_3_cost/lil/burgers_P36/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,36,,0.0001,False,,,0.002472739666700363,,optimizer_stall,0.039553956366944774,P5_3_cost/lil/burgers_P36/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,36,,1e-05,False,,,0.002472739666700363,,optimizer_stall,0.039553956366944774,P5_3_cost/lil/burgers_P36/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,36,,1e-06,False,,,0.002472739666700363,,optimizer_stall,0.039553956366944774,P5_3_cost/lil/burgers_P36/lbfgs_cpu
+burgers,lilq,LiL-Q,cpu,36,,0.01,False,,,0.001874404028058052,,rule fired,0.03956802121873786,P5_3_cost/lil/burgers_P36/lilq_cpu
+burgers,lilq,LiL-Q,cpu,36,,0.001,False,,,0.001874404028058052,,rule fired,0.03956802121873786,P5_3_cost/lil/burgers_P36/lilq_cpu
+burgers,lilq,LiL-Q,cpu,36,,0.0001,False,,,0.001874404028058052,,rule fired,0.03956802121873786,P5_3_cost/lil/burgers_P36/lilq_cpu
+burgers,lilq,LiL-Q,cpu,36,,1e-05,False,,,0.001874404028058052,,rule fired,0.03956802121873786,P5_3_cost/lil/burgers_P36/lilq_cpu
+burgers,lilq,LiL-Q,cpu,36,,1e-06,False,,,0.001874404028058052,,rule fired,0.03956802121873786,P5_3_cost/lil/burgers_P36/lilq_cpu
+burgers,trf,LiL-N (trf),cpu,36,,0.01,False,,,0.002335004508495331,,2: `ftol` termination condition is satisfied.,0.03955395739214437,P5_3_cost/lil/burgers_P36/trf_cpu
+burgers,trf,LiL-N (trf),cpu,36,,0.001,False,,,0.002335004508495331,,2: `ftol` termination condition is satisfied.,0.03955395739214437,P5_3_cost/lil/burgers_P36/trf_cpu
+burgers,trf,LiL-N (trf),cpu,36,,0.0001,False,,,0.002335004508495331,,2: `ftol` termination condition is satisfied.,0.03955395739214437,P5_3_cost/lil/burgers_P36/trf_cpu
+burgers,trf,LiL-N (trf),cpu,36,,1e-05,False,,,0.002335004508495331,,2: `ftol` termination condition is satisfied.,0.03955395739214437,P5_3_cost/lil/burgers_P36/trf_cpu
+burgers,trf,LiL-N (trf),cpu,36,,1e-06,False,,,0.002335004508495331,,2: `ftol` termination condition is satisfied.,0.03955395739214437,P5_3_cost/lil/burgers_P36/trf_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,484,,0.01,True,0.3671315610408783,110,0.044124120846390724,0.411255681887269,optimizer_stall,2.7749365926869484e-06,P5_3_cost/lil/burgers_P484/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,484,,0.001,True,0.515085019171238,140,0.044124120846390724,0.5592091400176287,optimizer_stall,2.7749365926869484e-06,P5_3_cost/lil/burgers_P484/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,484,,0.0001,True,0.6158074028789997,160,0.044124120846390724,0.6599315237253904,optimizer_stall,2.7749365926869484e-06,P5_3_cost/lil/burgers_P484/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,484,,1e-05,True,0.7646067254245281,190,0.044124120846390724,0.8087308462709188,optimizer_stall,2.7749365926869484e-06,P5_3_cost/lil/burgers_P484/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,484,,1e-06,False,,,0.044124120846390724,,optimizer_stall,2.7749365926869484e-06,P5_3_cost/lil/burgers_P484/lbfgs_cpu
+burgers,lilq,LiL-Q,cpu,484,,0.01,True,0.2555837444961071,2,0.04339463263750076,0.29897837713360786,rule fired,2.7748712159168083e-06,P5_3_cost/lil/burgers_P484/lilq_cpu
+burgers,lilq,LiL-Q,cpu,484,,0.001,True,0.38018832355737686,3,0.04339463263750076,0.4235829561948776,rule fired,2.7748712159168083e-06,P5_3_cost/lil/burgers_P484/lilq_cpu
+burgers,lilq,LiL-Q,cpu,484,,0.0001,True,0.38018832355737686,3,0.04339463263750076,0.4235829561948776,rule fired,2.7748712159168083e-06,P5_3_cost/lil/burgers_P484/lilq_cpu
+burgers,lilq,LiL-Q,cpu,484,,1e-05,True,0.5062823742628098,4,0.04339463263750076,0.5496770069003105,rule fired,2.7748712159168083e-06,P5_3_cost/lil/burgers_P484/lilq_cpu
+burgers,lilq,LiL-Q,cpu,484,,1e-06,False,,,0.04339463263750076,,rule fired,2.7748712159168083e-06,P5_3_cost/lil/burgers_P484/lilq_cpu
+burgers,trf,LiL-N (trf),cpu,484,,0.01,True,0.5382459927350283,2,0.038740864023566246,0.5769868567585945,1: `gtol` termination condition is satisfied.,2.7748712160656977e-06,P5_3_cost/lil/burgers_P484/trf_cpu
+burgers,trf,LiL-N (trf),cpu,484,,0.001,True,0.8141206558793783,3,0.038740864023566246,0.8528615199029446,1: `gtol` termination condition is satisfied.,2.7748712160656977e-06,P5_3_cost/lil/burgers_P484/trf_cpu
+burgers,trf,LiL-N (trf),cpu,484,,0.0001,True,0.8141206558793783,3,0.038740864023566246,0.8528615199029446,1: `gtol` termination condition is satisfied.,2.7748712160656977e-06,P5_3_cost/lil/burgers_P484/trf_cpu
+burgers,trf,LiL-N (trf),cpu,484,,1e-05,True,1.0851257592439651,4,0.038740864023566246,1.1238666232675314,1: `gtol` termination condition is satisfied.,2.7748712160656977e-06,P5_3_cost/lil/burgers_P484/trf_cpu
+burgers,trf,LiL-N (trf),cpu,484,,1e-06,False,,,0.038740864023566246,,1: `gtol` termination condition is satisfied.,2.7748712160656977e-06,P5_3_cost/lil/burgers_P484/trf_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,676,,0.01,True,0.38750301487743855,150,0.10531667433679104,0.4928196892142296,optimizer_stall,3.150319611394288e-07,P5_3_cost/lil/burgers_P676/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,676,,0.001,True,0.4944805596023798,180,0.10531667433679104,0.5997972339391708,optimizer_stall,3.150319611394288e-07,P5_3_cost/lil/burgers_P676/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,676,,0.0001,True,0.6580026801675558,230,0.10531667433679104,0.7633193545043468,optimizer_stall,3.150319611394288e-07,P5_3_cost/lil/burgers_P676/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,676,,1e-05,True,0.7558772265911102,260,0.10531667433679104,0.8611939009279013,optimizer_stall,3.150319611394288e-07,P5_3_cost/lil/burgers_P676/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,676,,1e-06,True,1.3821544870734215,440,0.10531667433679104,1.4874711614102125,optimizer_stall,3.150319611394288e-07,P5_3_cost/lil/burgers_P676/lbfgs_cpu
+burgers,lilq,LiL-Q,cpu,676,,0.01,True,0.44943007826805115,2,0.08353227563202381,0.532962353900075,rule fired,3.149123766868852e-07,P5_3_cost/lil/burgers_P676/lilq_cpu
+burgers,lilq,LiL-Q,cpu,676,,0.001,True,0.6675934251397848,3,0.08353227563202381,0.7511257007718086,rule fired,3.149123766868852e-07,P5_3_cost/lil/burgers_P676/lilq_cpu
+burgers,lilq,LiL-Q,cpu,676,,0.0001,True,0.6675934251397848,3,0.08353227563202381,0.7511257007718086,rule fired,3.149123766868852e-07,P5_3_cost/lil/burgers_P676/lilq_cpu
+burgers,lilq,LiL-Q,cpu,676,,1e-05,True,0.6675934251397848,3,0.08353227563202381,0.7511257007718086,rule fired,3.149123766868852e-07,P5_3_cost/lil/burgers_P676/lilq_cpu
+burgers,lilq,LiL-Q,cpu,676,,1e-06,True,0.8908706810325384,4,0.08353227563202381,0.9744029566645622,rule fired,3.149123766868852e-07,P5_3_cost/lil/burgers_P676/lilq_cpu
+burgers,trf,LiL-N (trf),cpu,676,,0.01,True,1.0081225018948317,2,0.0711299441754818,1.0792524460703135,1: `gtol` termination condition is satisfied.,3.1491237667953255e-07,P5_3_cost/lil/burgers_P676/trf_cpu
+burgers,trf,LiL-N (trf),cpu,676,,0.001,True,1.5099728144705296,3,0.0711299441754818,1.5811027586460114,1: `gtol` termination condition is satisfied.,3.1491237667953255e-07,P5_3_cost/lil/burgers_P676/trf_cpu
+burgers,trf,LiL-N (trf),cpu,676,,0.0001,True,1.5099728144705296,3,0.0711299441754818,1.5811027586460114,1: `gtol` termination condition is satisfied.,3.1491237667953255e-07,P5_3_cost/lil/burgers_P676/trf_cpu
+burgers,trf,LiL-N (trf),cpu,676,,1e-05,True,1.5099728144705296,3,0.0711299441754818,1.5811027586460114,1: `gtol` termination condition is satisfied.,3.1491237667953255e-07,P5_3_cost/lil/burgers_P676/trf_cpu
+burgers,trf,LiL-N (trf),cpu,676,,1e-06,True,2.013121137395501,4,0.0711299441754818,2.084251081570983,1: `gtol` termination condition is satisfied.,3.1491237667953255e-07,P5_3_cost/lil/burgers_P676/trf_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,900,,0.01,True,0.571684492751956,200,0.1436446327716112,0.7153291255235672,optimizer_stall,3.630078553885586e-08,P5_3_cost/lil/burgers_P900/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,900,,0.001,True,0.7396904919296503,250,0.1436446327716112,0.8833351247012615,optimizer_stall,3.630078553885586e-08,P5_3_cost/lil/burgers_P900/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,900,,0.0001,True,0.9411150813102722,310,0.1436446327716112,1.0847597140818834,optimizer_stall,3.630078553885586e-08,P5_3_cost/lil/burgers_P900/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,900,,1e-05,True,2.004982329905033,610,0.1436446327716112,2.1486269626766443,optimizer_stall,3.630078553885586e-08,P5_3_cost/lil/burgers_P900/lbfgs_cpu
+burgers,lbfgs,LiL-N (L-BFGS),cpu,900,,1e-06,True,5.982835838571191,1720,0.1436446327716112,6.126480471342802,optimizer_stall,3.630078553885586e-08,P5_3_cost/lil/burgers_P900/lbfgs_cpu
+burgers,lilq,LiL-Q,cpu,900,,0.01,True,0.8789187949150801,2,0.14539304748177528,1.0243118423968554,rule fired,3.604953145709735e-08,P5_3_cost/lil/burgers_P900/lilq_cpu
+burgers,lilq,LiL-Q,cpu,900,,0.001,True,1.3207400888204575,3,0.14539304748177528,1.4661331363022327,rule fired,3.604953145709735e-08,P5_3_cost/lil/burgers_P900/lilq_cpu
+burgers,lilq,LiL-Q,cpu,900,,0.0001,True,1.3207400888204575,3,0.14539304748177528,1.4661331363022327,rule fired,3.604953145709735e-08,P5_3_cost/lil/burgers_P900/lilq_cpu
+burgers,lilq,LiL-Q,cpu,900,,1e-05,True,1.3207400888204575,3,0.14539304748177528,1.4661331363022327,rule fired,3.604953145709735e-08,P5_3_cost/lil/burgers_P900/lilq_cpu
+burgers,lilq,LiL-Q,cpu,900,,1e-06,True,1.7637378871440887,4,0.14539304748177528,1.909130934625864,rule fired,3.604953145709735e-08,P5_3_cost/lil/burgers_P900/lilq_cpu
+burgers,trf,LiL-N (trf),cpu,900,,0.01,True,1.750398889183998,2,0.14419072680175304,1.8945896159857512,1: `gtol` termination condition is satisfied.,3.6049531471131956e-08,P5_3_cost/lil/burgers_P900/trf_cpu
+burgers,trf,LiL-N (trf),cpu,900,,0.001,True,2.628214990720153,3,0.14419072680175304,2.772405717521906,1: `gtol` termination condition is satisfied.,3.6049531471131956e-08,P5_3_cost/lil/burgers_P900/trf_cpu
+burgers,trf,LiL-N (trf),cpu,900,,0.0001,True,2.628214990720153,3,0.14419072680175304,2.772405717521906,1: `gtol` termination condition is satisfied.,3.6049531471131956e-08,P5_3_cost/lil/burgers_P900/trf_cpu
+burgers,trf,LiL-N (trf),cpu,900,,1e-05,True,2.628214990720153,3,0.14419072680175304,2.772405717521906,1: `gtol` termination condition is satisfied.,3.6049531471131956e-08,P5_3_cost/lil/burgers_P900/trf_cpu
+burgers,trf,LiL-N (trf),cpu,900,,1e-06,True,3.503674266859889,4,0.14419072680175304,3.647864993661642,1: `gtol` termination condition is satisfied.,3.6049531471131956e-08,P5_3_cost/lil/burgers_P900/trf_cpu

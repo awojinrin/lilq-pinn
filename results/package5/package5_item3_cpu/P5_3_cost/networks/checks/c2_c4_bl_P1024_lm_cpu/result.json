@@ -1,0 +1,23 @@
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 128,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 2.359186101704836,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 31.26850199326873,
+  "time_with_s": 32.041683714836836,
+  "error_time_s": 5.483867427334189,
+  "time_rel_diff": 0.024727175025351485,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": true
+}

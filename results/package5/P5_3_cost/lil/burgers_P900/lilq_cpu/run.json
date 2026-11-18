@@ -1,0 +1,71 @@
+{
+  "benchmark": "burgers",
+  "P": 900,
+  "p": 30,
+  "method": "LiL-Q",
+  "method_key": "lilq",
+  "device": "cpu",
+  "trial_space": "sine x Chebyshev on the Gauss-Legendre set, 3p per direction (Package 4)",
+  "boundary_weight": 10.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.14539304748177528,
+  "rule_step": 5,
+  "returned_iterate": 6,
+  "stopping_reason": "rule fired",
+  "iterates": 6,
+  "logged_pass_s": 2.6552598010748625,
+  "time_s": 2.6522930320352316,
+  "timing": {
+    "stamps": [
+      0.0,
+      0.4370456486940384,
+      0.8789187949150801,
+      1.3207400888204575,
+      1.7637378871440887,
+      2.2050788197666407,
+      2.650473140180111
+    ],
+    "total_s": 2.6522930320352316,
+    "timings": [
+      {
+        "total_s": 2.6559794917702675,
+        "runs_s": [
+          2.6559794917702675
+        ]
+      },
+      {
+        "total_s": 2.6522930320352316,
+        "runs_s": [
+          2.6522930320352316
+        ]
+      },
+      {
+        "total_s": 2.6485447101294994,
+        "runs_s": [
+          2.6485447101294994
+        ]
+      }
+    ],
+    "spread": 0.002807119552233006,
+    "iterate_counts": [
+      7
+    ],
+    "logged_count": 7,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 1.7189383281618247e-11,
+  "final_error": 3.604953145709735e-08,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

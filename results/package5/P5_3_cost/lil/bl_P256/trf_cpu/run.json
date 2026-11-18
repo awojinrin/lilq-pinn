@@ -1,0 +1,83 @@
+{
+  "benchmark": "bl",
+  "P": 256,
+  "p": 16,
+  "method": "LiL-N (trf)",
+  "method_key": "trf",
+  "device": "cpu",
+  "trial_space": "lifted sine x Chebyshev on the CGL set, N/P = 10 (Package 3 split)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "ic",
+  "setup_s": 0.08241438679397106,
+  "status": 2,
+  "message": "`ftol` termination condition is satisfied.",
+  "nfev": 15,
+  "njev": 14,
+  "stopping_reason": "2: `ftol` termination condition is satisfied.",
+  "iterates": 13,
+  "logged_pass_s": 1.619770860299468,
+  "tolerances": 1e-12,
+  "max_nfev": 200,
+  "final_x_is_last_logged": true,
+  "time_s": 1.6701123919337988,
+  "timing": {
+    "stamps": [
+      0.0018936768174171448,
+      0.126725597307086,
+      0.24827824160456657,
+      0.3740428164601326,
+      0.4966196231544018,
+      0.6196555998176336,
+      0.7425263170152903,
+      0.8665886614471674,
+      0.9901574160903692,
+      1.1142121125012636,
+      1.2382526900619268,
+      1.3614642452448606,
+      1.4842607602477074,
+      1.6599552799016237
+    ],
+    "total_s": 1.6701123919337988,
+    "timings": [
+      {
+        "total_s": 1.6193019971251488,
+        "runs_s": [
+          1.6193019971251488
+        ]
+      },
+      {
+        "total_s": 2.2437476851046085,
+        "runs_s": [
+          2.2437476851046085
+        ]
+      },
+      {
+        "total_s": 1.6701123919337988,
+        "runs_s": [
+          1.6701123919337988
+        ]
+      }
+    ],
+    "spread": 0.3856264545391028,
+    "iterate_counts": [
+      14
+    ],
+    "logged_count": 14,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 0.013328124349837362,
+  "final_error": 0.0006085960696487054,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

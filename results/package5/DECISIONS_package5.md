@@ -1,6 +1,555 @@
 # DECISIONS.md: the Package 5 entries
 
-Copied from the repository's `DECISIONS.md` at the assembly's commit (4417866), newest first.
+Copied from the repository's `DECISIONS.md` at the assembly's commit (a61de73), newest first.
+
+---
+
+## 2026-11-17 -- Package 5, item 3: the rerun's result, C4 on Buckley-Leverett LM, and the C4 diagnostic (stage p5e)
+
+**The rerun (p5r)** passed the advisor's stop check: 874 SU (his line: 1,000), every job COMPLETED, no
+process stopped, every process loaded the GCC module's OpenMP library. C1 18 of 18 against Package 1
+(exact), 108 runs, C2 6 of 6. **C4 failed on two of six:**
+- Bratu NiL-N +5.25% (within the ~7% spread the CPU set showed on Grace for that pair).
+- **Buckley-Leverett LM +18.1%**: 28.17 s without the error log, 33.28 s with it, 213 iterations
+  (the pilot's size on that node); the log's own 2.97 s is off the clock. In the CPU set (the wheel's
+  library, 128 iterations) the same pair was +2.5%. The Buckley-Leverett NiL-N pair, the one the advisor
+  asked about, timed three times as he asked: reported at the assembly with its spread.
+
+The A100 set's LM runs log the error at every iteration, so if the off-clock log puts time on the clock
+(a leak), it does so in every A100 LM run. **The user's decision (option 2):** hold the A100 set until
+the cause is shown; then **"CPU + mechanism + A100"**, about 45 SU.
+
+**The hypothesis** (not assumed; this tests it): between LM iterations the error evaluation runs off
+the clock; the OpenMP threads idle through part of it, go to sleep (libgomp's default wait policy spins a
+while, then sleeps), and the next on-clock step pays their wake-up, or the evaluation evicts the step's
+data from cache. Either would depend on the library and the thread count.
+
+**The diagnostic** (`experiments/p5_3_c4_diagnostic.py`; stage p5e, results/package5_item3_c4_diagnostic):
+each process imports in its kind's order, records its OpenMP library and its environment, runs the
+warm-up of the rerun's checks process (NiL-N, then LM), then times the Buckley-Leverett LM pair at P =
+1,024 three times (`p5_3_networks.c2_c4(..., repeats=3)`, which now takes the folder to write into: one
+per process). Kinds: `numpy` (the module's library, as the rerun), `torch` (the wheel's, as the CPU
+set), `active` (the module's, with `OMP_WAIT_POLICY=ACTIVE` set by the job: the threads spin instead of
+sleeping; every other process must run with it unset, checked before any import).
+- **CPU** (p5e_cpu, timed-cpu, 1 h walltime): nine processes, three rounds, each kind once in each
+  position (a Latin square, against drift over the job). Each pair is the rerun's length, 213
+  iterations, so the times compare with the rerun's directly. 9 pairs per kind.
+- **A100** (p5e_gpu, gpu-pair, 20 min): two processes side by side, one per A100, 24 threads each, the
+  module's library: as the A100 set runs. The length from C4's pilot (about 30 s), as the A100 set's
+  check would size it. 6 pairs.
+- **Report** (p5e_report, afterany): the summary, then the tarball. 118 SU requested, about 60
+  expected (a change from the 45 given to the user: the A100 part runs on a whole two-A100 node, 192
+  SU/h, to match the A100 set's threads and pairing; one A100 with 8 cores would cost about 13 SU less
+  but would not test the A100 set's layout).
+
+**Decided before the job.** For each group, the median over its pairs of the signed relative difference
+(with the log against without):
+- **leaks** if the median is above 5% (C4's cutoff); **clean** if within 5%; more than 5% faster with
+  the log is not foreseen and is reported to be explained.
+- cpu numpy leaks, cpu torch clean: the leak depends on the library. Both leak: it leaks with either.
+- cpu numpy clean: the rerun's +18% was not reproduced (reported as such, with the 9 pairs).
+- cpu numpy leaks and cpu active clean: the threads going to sleep are the cause; active leaks too:
+  not the sleeping threads.
+- **The A100 set's gate is the A100 group alone:** both processes' 6 pairs present, each with the
+  module's library and no wait policy, and clean: the A100 set goes (step 7 of the steps file).
+  Leaks: stop; a fix is brought to the user before the A100 set. C2 (the log does not change the
+  iterates) and the CPU groups are reported beside the gate, not part of it: C2 has not been run on
+  CUDA before, and a GPU run that is not bit-for-bit repeatable would fail it without any leak.
+
+**Differences from the rerun's process, stated:** the rerun's Buckley-Leverett checks process ran the
+NiL-N pair three times (about 3 min) and LM's 10-iteration pilot before the LM pair; these processes go
+from the warm-up to the LM pair. The CPU set's process (which passed) also ran NiL-N first, so that
+history is common to the pass and the fail; leaving it out saves about 22 SU.
+
+**The scan before the rehearsal** (the user's rule: before Grace, again after the rehearsals): torch's
+threads are pinned through `lilq.utils` as in the rerun's process (`pin_torch`, OMP_NUM_THREADS: 48 on
+the CPU node, 24 per process on the A100 node); `solve` sets float64; the kind's import order comes
+first (`p5_3_openmp.start_process`), and the wait policy is checked before any import (libgomp reads it
+at load). Found and changed: the summary first gated the A100 set on every group and on C2; now on the
+A100 group alone (above).
+
+**The laptop rehearsal** (code as committed in 1a88feb; BL LM at P = 1,024, the real lengths): the
+torch kind 213 iterations, pairs +0.0%, -2.0%, -0.3%; the active kind (OMP_WAIT_POLICY=ACTIVE
+recorded) -1.6%, +1.5%, +0.1%; CUDA (one GPU) 441 iterations from the pilot, -0.1%, -0.1%, +1.0%, **C2
+passed on CUDA** (the first time it ran there). About 3.5 min per process. The summary said NO, as it
+should on the laptop: Windows loads the wheel's library in either order, so the numpy kinds' library is
+not the module's, and one GPU gives 3 of the 6 A100 pairs.
+
+**The scan after the rehearsal:** a resubmitted job's process could leave an earlier attempt's
+`result.json` beside its own new records if it stopped before writing its own; each process now removes
+it first (tested). No CRLF in the changed files. Repo suite 1,058 passed; no-git bundle (1a88feb) 1,027;
+WSL bash tests 39 of 39 in each of three modes.
+
+**The result** (jobs 20590230/31/33, 18 November 2026; sha256 66097fcc...; 66 SU: CPU 40.9, A100 25.3).
+Every process loaded its kind's library and wait policy; C2 passed in all 11, on CUDA too. As fixed
+before the job: **cpu numpy clean (median -1.9%): the rerun's +18% was not reproduced**; cpu torch
+clean (-1.4%); cpu active "faster with the log" (-6.1%); **A100 clean (-0.0%): the A100 set may go.**
+What the numbers show (read after the verdicts, which stand as fixed):
+- No leak with either library. The spread is the clock's: on the CPU node a run of the same 213
+  iterations took 29.3 to 34.7 s with the module's library in this job, so the rerun's pair (28.17 s
+  without, 33.28 s with) is one fast run and one ordinary one. A single pair on that node cannot
+  resolve 5%: for the item 3 report.
+- The wheel's library is about 65% slower on this pair (about 51 s against 31 s), as p5o found (+61%).
+- The active kind's negative median comes from its first pair: in all three active processes the first
+  run without the log took 41 to 51 s against about 31 s afterwards (only that kind shows it). Without
+  log runs always go first, so a one-time cost lands on "without". Its other six pairs have a median
+  near -1.5%. Not foreseen; reported as such.
+- A100: five of six pairs within 0.3%. The +12.3% pair is a slow stretch on GPU 1 (with the log
+  31.01 s), and the next run, without the log, was as slow (31.02 s): the node, not the log. It
+  bears on the A100 set's pairing gate (5%), not on C4.
+
+**The A100 set (p5g)** ran on bundle 1a88feb (jobs 20592822-25, 18 November 2026; sha256 825ab4b6...):
+all four jobs COMPLETED, **1,866 SU** (expected about 2,270: preflight 5.6, Bratu 445.5, Burgers 758.5,
+Buckley-Leverett 656.6). The failure, gate and library greps printed nothing. Pairing gates passed
+(Buckley-Leverett +3.1%, Bratu +0.5%, Burgers +2.1%) and the report's pairing check too (+2.8%, -2.1%,
++1.8%). 108 network budget runs plus the 9 solo and gate runs, all at 1a88feb; 14 LiL-N L-BFGS runs;
+24 hardware.json, all the module's OpenMP library; nothing flagged. Runs that stopped before the budget
+stopped on an optimizer stall (11 of 108; the CPU rerun had 13). Package 5 so far: about 3,934 SU of
+the 4,400 cap.
+
+---
+
+## 2026-11-17 -- Package 5, item 3: the advisor's reply to the cost check; C4's three timings; Component A's OpenMP library (stage p5k)
+
+**The advisor's reply** (17 November 2026; `Post-JCP/Computational Package 5/Package5_Reply_to_item3_cost_check.md`):
+- The rerun of all five CPU network jobs, then the A100 set. The cap of Package 5 is now 4,400 SU. If
+  the rerun uses more than 1,000 SU, or a job fails, stop and tell him before the A100 set; otherwise go
+  on without asking. The LiL runs, the protocol runs and their checks stay as they ran.
+- Pretraining on the clock, for every method: the time to an error is from the starting data to the
+  iterate, including what computes the starting point (a network's pretraining; the LiL methods'
+  least-squares fit of the initial profile on Buckley-Leverett), excluding what is paid once per
+  session (imports, device start-up, compilation, the warm-up run). Both columns kept.
+- C4 on Buckley-Leverett NiL-N: rerun the pair; if again outside 5% either way, report both times and
+  the spread of the three timings.
+- For the release: the library check and the import order go in `REPRODUCE.md`, with the names and
+  versions of the two OpenMP libraries.
+
+**Pretraining on the clock: no code or runs needed.** `p5_3_table.py` already writes both columns:
+`time_s` (the optimizer's clock) and `with_setup_s` (that plus `setup_s` and `pretrain_s`). Every
+record's `setup_s` is per solve, measured after the warm-up, imports and device start-up (the drivers'
+clocks start at the solve), so `with_setup_s` is his rule. For the LiL methods on Buckley-Leverett,
+`setup_s` holds the system's construction and the initial-profile fit together (`p5_3_lil.Problem`),
+not split: the report says so. CPU set values: up to 0.39 s at P = 1,024, against LiL-Q's 4.6 s
+solve. The networks' `pretrain_s` is under 1 s everywhere. The assembly makes `with_setup_s` the
+headline column.
+
+**C4's three timings (the user's decision, 17 November 2026: three timings always).**
+`p5_3_networks.c2_c4(..., repeats=N)` times the pair N times in all, the same length each time, and
+records every timing (`timings`: both times and the signed difference, with the log against without),
+their spread and how many fall outside 5%. The verdicts stay the first pair's, as fixed before.
+`checks --c4-repeats nil_n=3`. In `p5r_checks` only Buckley-Leverett carries it. About 2 min more,
+inside the job's walltime. Not chosen: repeating only after a failure (that reruns on a failure);
+three timings for all six pairs (about 10 SU, more than asked).
+
+**Component A's OpenMP library (the user's decision, 17 November 2026: measure it).** Package 1's
+Component A processes imported torch first and loaded the wheel's library. Their CPU runs
+(`A_calibration/full_cpu/`, the representatives F1_18 and F2_05, seeds 0-4, 3,600 s each) are timed
+against LiL-Q's CPU runs, which loaded the module's (`kovasznay_comparison.py`). A budget run that is
+slower per iteration reaches less in its hour, so the library could make the baselines look worse.
+- `experiments/p5_3_openmp_kovasznay.py`, as p5o: three rounds, the two orders alternating, each
+  process checking its library (`p5_3_openmp.start_process`, now shared by both drivers). Each process
+  runs F1_18 (seed 0; 201 Adam iterations, then L-BFGS, 140 s) and F2_05 (seed 0; 90 s), on the CPU,
+  as `component_a.run_one` runs them (`pin_torch` at `component_a`'s import; float64; `test_every=1`,
+  test errors off the clock; `component_a.lm_args`, factored out of `run_one`).
+- Measures: F1's seconds per Adam iteration (log rows 100 to 200), per L-BFGS iteration (second to last
+  L-BFGS row), F2's seconds per evaluation (second to last row). The first row of each phase carries
+  set-up and is left out.
+- **Criteria, fixed before the job:** the library changes a measure if the medians over the rounds
+  differ by more than 5% and the two orders' rounds do not overlap (p5o's). The torch-first runs
+  reproduce Package 1's seed-0 run if the loss on every shared log row agrees within 1e-6 (C1's
+  tolerance; F1 compares only its three Adam rows, F2 every LM step, so this checks the setting more
+  weakly than C1 did: on the laptop the F1 rows agree with Grace's to 7.5e-13 even with another machine
+  and library). The summary also gives Package 1's own values of the three measures (all five seeds,
+  whole logs: Adam 0.327 s, L-BFGS 0.353 s per iteration, F2 5.86 s per evaluation, medians) and the
+  thread counts (Package 1: 48).
+- **What follows is not decided here.** If the library changes a measure, the effect on the Kovasznay
+  CPU comparison is estimated from these numbers and put to the user before anything else. Rerunning
+  the ten CPU runs would cost about 10 node-hours, about 480 SU: more than the cap leaves (below).
+- Stage p5k (`results/package5_item3_openmp_kovasznay`; `p5k_openmp_kovasznay.slurm`, timed-cpu, 40
+  min; `submit_p5_item3_openmp_kovasznay.sh`): 32 SU requested, about 22 expected. It runs beside the
+  rerun. It is not part of the rerun's 1,000 SU line.
+
+**The cap.** Used: 153.5 (items 1, 2, 4 and Addendum 2) + 938.3 (the CPU set) + about 15 (p5o) =
+about 1,107. Left of 4,400: about 3,293. Expected: the rerun about 925, p5k about 22, the A100 set
+about 2,270 = about 3,217, which leaves about 76.
+
+**The Grace steps** (`Post-JCP/Grace_steps_item3_rerun_and_gpu.md`): p5r and p5k first; dry runs of
+all three stages before; then the check of his stop rule (the rerun's `report_log.txt` total, the logs'
+failure lines, every job `COMPLETED`); only then p5g.
+
+**Tests:** `tests/test_p5_3_openmp_kovasznay.py` (the measures; a whole process with small networks;
+the check stops before any run; the summary's criteria, reproduction, Package 1 values and threads; a
+missing order or reference); `tests/test_p5_3_networks.py` (the repeats keep the first pair's verdicts
+and record six timed solves; `--c4-repeats` reaches its method only and rejects bad values);
+`tests/test_p5_submission.py` (p5k's job, wiring, dry run and submission; p5r's checks job with the
+repeats on Buckley-Leverett NiL-N only; the checks loops expanded per job).
+- One failure in 13 runs of the new tests, explained before going on: the whole-process test gave F1 an
+  8 s budget; with the rehearsal loading the laptop, Adam ran at 0.038 s per iteration instead of
+  0.022, so its 201 iterations used 7.7 s and L-BFGS logged too few rows to measure (the failing
+  assertion: the L-BFGS value empty). The test now ends F1 by one L-BFGS call
+  (`F1_MAX_LBFGS_CALLS`, None on Grace; `f1_train`'s test cap) under a 300 s budget, so its rows no
+  longer depend on the load; 3 of 3 passes with the rehearsal running.
+
+**The laptop rehearsal** (bundle at decae59; the check run with 'torch' in p5r_checks, as before):
+- p5r_checks rc 0 (513 s). C2 6 of 6. The Buckley-Leverett NiL-N pair three times: C4 1.2%, the
+  timings -1.2%, +0.04%, -1.3% (spread 1.4%).
+- **C4 5 of 6: Buckley-Leverett LM at 7.9% (with the log 32.0 s, without 29.7 s).** Cause shown, not
+  assumed: the same pair three times on the laptop at this commit (`c2_c4(..., repeats=3)`) gave
+  -0.7%, +0.6%, -0.4%, every run 28.9 to 29.8 s. The 32.0 s run was a slow stretch of the laptop;
+  the log puts no time on the clock (its 1.5 to 1.7 s are off it). On Grace the CPU set's pair was
+  +2.5%.
+- p5k as written, rc 0 (745 s): the three numpy-first processes stopped at the check (Windows loads
+  the wheel's library in either order), the three torch-first ones ran (16 threads on the laptop;
+  Package 1's runs: 48); their losses match Package 1's Grace runs within 1.6e-8 (F2) and 1.5e-12
+  (F1); the tarball written. An earlier run without the check (bundle de4df64): all six processes;
+  with one library on both sides the medians differed by 7 to 8% (laptop noise) but the rounds
+  overlapped, so the criterion says no change, as it should.
+- Repo suite 1,037 passed; no-git 1,006; WSL bash tests 37 of 37 in each of three modes.
+
+**The scan after the rehearsal** (the user's rule: before Grace, again after the rehearsals), over the
+code changed since bundle 03bd5ab:
+- **Found and fixed:** `component_a.py` had been saved with CRLF line endings by an edit (the repo is
+  LF), so the bundle carried a whole-file rewrite for a 16-line change. Python reads both the same;
+  converted back, and the diff against 03bd5ab is the 16 lines again. Earlier in this round (before the
+  rehearsal): p5k's provenance was written before `pin_torch` (now after); the summary had no thread
+  check (now both runs' and Package 1's); a missing Package 1 reference crashed the summary (now
+  reported).
+- **Implicit state looked at, none acting:** the C4 repeats build a fresh seed-0 network each time
+  (C2 shows the solves are deterministic); they run after the first pair, so warmer, which affects only
+  the spread beside the fixed verdict; an interrupted checks job leaves no `result.json` and reruns the
+  pair whole. The default `repeats=1` path is the old code, so the budget jobs of p5r and p5g are
+  unchanged. In p5k each process imports in its own order before anything else, then
+  `component_a` (`pin_torch`: OMP_NUM_THREADS, 48 on a whole node, as Package 1); F1 sets its dtype
+  per run and F2 sets float64 after F1 has run; each run seeds itself; F2 runs second in its process
+  (in Package 1 it ran first in its own), the same for both orders, so it does not bias the
+  comparison. A process that fails its check is caught by `until_end`, the job goes on, and the
+  summary says "not measured" for that order (p5o's design).
+- **Native libraries:** every Grace process checks its OpenMP library itself (p5r, p5g: 'module';
+  p5k: the one its first import should give).
+
+**The p5k result** (job 20581996 on 17 November 2026, bundle 3df7b7b; tarball sha256 688e646c...,
+matches Grace; sacct: COMPLETED, 26 min 9 s on 48 cores = 20.9 SU, expected about 22; no 'STOPPED OR
+FAILED' or 'NOT RUN' in its log. The report ran inside the job and left it out, so the row is the
+user's sacct, as for p5o). Every process loaded the library its first import should give; 48 threads in every
+run, as Package 1. Judged by the criteria fixed before the job:
+- **F1: the library changes it, and the module's library is the slower one.** Seconds per Adam
+  iteration, medians over the three rounds: wheel's 0.336, module's 0.458 (wheel/module 0.73); per
+  L-BFGS iteration 0.360 against 0.450 (0.80). The rounds do not overlap. The torch-first values are
+  Package 1's own (0.327 and 0.353, all five seeds), within 3%.
+- **F2: no change beyond the cutoff** (seconds per evaluation, wheel/module 0.89, the rounds overlap).
+- **So Package 1's Kovasznay CPU baselines ran with the faster library for F1.** LiL-Q's CPU times
+  (Part B) loaded the module's. Under the module's library F1 would have been about 25 to 36% slower
+  per iteration. The mixed libraries favour the baselines, so the same-hardware comparison is, if
+  anything, conservative for LiL-Q. Rerunning them under the module's library would only slow the
+  baselines down (about 480 SU, more than the cap leaves). What to tell the advisor: put to the user.
+- **The reproduction check fails on its letter, cause shown.** Its rule compares every log row that
+  Package 1's seed-0 run also has. In rounds 0 and 2 of torch first, F2's time ran out inside step 10;
+  that row is the rejected try (accepted 0), logged with the step-9 loss under iteration 10, while
+  Package 1's row 10 is the accepted step (13% apart). On every accepted step the torch-first F2 losses
+  equal Package 1's exactly (0.0), and F1's Adam rows too (0.0). The numpy-first runs differ from
+  Package 1 by up to 1e-12 (F1) and 4e-7 (F2): the library changes the round-off, as in item 3. The
+  rule should have left out rows with accepted 0; not changed after the job, reported as is.
+- **F2's measure is weaker than F1's.** Its seconds per evaluation are not constant over a run:
+  Package 1's whole-log value (5.86) mixes cheap rejected tries late in the run, so it cannot be set
+  beside these 90 s runs. Per accepted step over rows 2 to 8 (not a criterion, for the record): wheel
+  9.34, module 10.50 (the rounds overlap), Package 1 10.97 (five seeds, same rows). So this job's F2
+  was about 15% faster than Package 1's own runs with the same library: F2 ran second in a process
+  that had run F1, where Package 1's F2 ran first in its own. The same for both orders, so the
+  comparison stands; its absolute values do not reproduce Package 1's.
+
+---
+
+## 2026-11-17 -- Package 5, item 3: the diagnostic's result; numpy first, the OpenMP library check, and the CPU network runs again (stage p5r)
+
+**The diagnostic** (job on 17 November, about 18 min, about 15 SU; tarball sha256 5aa68002...). Every
+process loaded the library its first import should give. Judged by the criteria fixed before the job
+(the entry below):
+- **The library is the cause of C1's failure.** With numpy first, the three C1 runs (NiL-N, seed 0, each
+  problem's largest size) equal Package 1's losses over iterations 0 to 100 exactly (difference 0.0).
+  With torch first, they equal the CPU set's runs exactly.
+- **It changes the timing on Buckley-Leverett, not on Bratu.** The median time per iteration over the
+  three rounds, wheel's library against the module's: Bratu P = 225, NiL-N +3.9% and LM +1.0% (under
+  the 5% cutoff); Buckley-Leverett P = 1,024, NiL-N +73.5% and LM +60.6% (over it; the rounds do not
+  overlap). Burgers was not in the diagnostic.
+
+**Decided (the user, 17 November 2026):** the network runs import numpy first, every Grace job checks
+the library, and the CPU set's five network jobs run again, with checks C2 and C4 for the networks:
+about 925 SU expected (the CPU set's own SU less its LiL runs), 1,128 requested. The A100 set gets the
+same order and check. Both wait for the advisor's approval in the item 3 cost check
+(`Post-JCP/Package5_item3_cost_check.md`): item 3 then costs about 4,150 SU against the 3,146 left in
+his cap.
+- **The CPU set stays as it ran** (`results/package5_item3_cpu`, its scripts unchanged). Its LiL runs
+  loaded the module's library (`p5_3_lil.py` imports numpy first) and are kept; its network runs and
+  their C2/C4 are replaced by stage p5r's at the assembly.
+- **Not chosen:** rerunning only Buckley-Leverett (Burgers was not measured), or keeping Bratu (within
+  5%, saves about 220 SU, but its C1 stays failed and the table would mix two libraries). The second is
+  offered to the advisor as the cheaper alternative.
+
+**The code.**
+- `p5_3_networks.py` imports numpy before torch, as Package 1's `four_method_tables.py` and `p5_3_lil.py`.
+- `lilq.provenance`: `openmp_libraries`, `openmp_library_kind` ('torch' if the wheel's library is
+  loaded, 'module' if only another), `require_openmp(kind)`, which stops the process (SystemExit,
+  "OPENMP LIBRARY CHECK FAILED") otherwise. `p5_3_openmp.py` uses them instead of its own copies.
+- `--require-openmp {module,torch}` on `p5_3_networks.py run | solo | checks` and `p5_3_lil.py run`:
+  the check before any run or record.
+- In the job scripts of p5r and p5g (`OPENMP_CHECK`, `_generate_jobs.py`): before the first run of every
+  job, each driver is imported in a fresh process and `require_openmp('module')` must pass, or the job
+  ends (`set -e`). In the preflights this stops the whole stage (afterok). Every driver call also
+  carries `--require-openmp module`. The check runs in each process because the library is chosen
+  per process, by its first import.
+- On the laptop (Windows) both orders load the wheel's library (numpy's wheel brings no OpenMP), so the
+  laptop rehearsal runs the check with 'torch' in place of 'module'.
+
+**Stage p5r** (`results/package5_item3_cpu_rerun`, its own commit lock; `submit_p5_item3_rerun.sh`):
+the preflight (cpu: the library, the inputs, the test suite); then on whole CPU nodes the checks job
+(C2/C4 for NiL-N and LM) and the five budget jobs in the CPU set's parts, network runs only; then the
+report (afterany). Walltimes from the same model as p5c.
+
+**Tests:** `tests/test_p5_3_openmp.py` (the classification; `require_openmp` on each library; a driver
+with `--require-openmp` stops before any record; in a fresh process, numpy is loaded before torch by
+every item 3 entry point: the two drivers, the table, `p4_checks.py`, `lilq.provenance`; with the old
+order the networks case fails); `tests/test_p5_submission.py` (p5r's runs, records, classes,
+walltimes, SU requested, dry run and chain; the check in every p5r and p5g job before its first run;
+p5c's scripts without it).
+
+**The scans before each hand-off** now also diff the OpenMP and BLAS libraries in the rehearsal's
+`hardware.json` against the reference package's.
+
+**The laptop rehearsal** (bundle at 710f49c; 5 s budgets, one GPU; the check run with 'torch', since
+the laptop loads the wheel's library in either order):
+- p5r: every job rc 0; 108 network runs; the resubmitted job skipped its 18 runs; the tarball written.
+- p5g: the pair jobs rc 0 (108 network and 14 LiL runs); the gate stopped the BL job as written (one
+  GPU); the tarball written.
+- Run as written (with 'module'), the check stopped p5r_bl_b and the p5g preflight before any run
+  ("OPENMP LIBRARY CHECK FAILED").
+- C2 6 of 6. **C4 5 of 6: Bratu NiL-N at 5.4%.** Cause shown, not assumed: the same pair repeated three
+  times on the laptop at this commit gave +3.3%, -2.5% and +2.4%. Both signs, and the run without the
+  log alone ranged 33.9 to 34.8 s, against 35.9 s in the rehearsal. So it is the laptop's clock spread
+  during a slow stretch. On Grace the same pair gave 1.6% (CPU set).
+- Repo suite 1,028 passed; no-git 997; WSL bash tests 35 of 35 in each of three modes.
+
+**The first such diff, over every Grace record** (`hardware.json`, grouped by loaded libraries and
+versions):
+- Every record has the same BLAS (FlexiBLAS 3.4.4 over OpenBLAS 0.3.27, the GCC 13.3.0 modules) and the
+  same numpy 1.26.4, scipy 1.13.1 and torch 2.10.0+cu126. Only the OpenMP library differs.
+- Package 1: Parts B (the four-method runs among them) and C loaded the module's library (313 records).
+  **Component A, the Kovasznay calibration, loaded the torch wheel's (116 records: screening 48, full
+  45, full_cpu 20, float32 2, checks 1).** These are the tuned network baselines, timed against LiL-Q;
+  the 20 `full_cpu` records are CPU runs. How much the library changed their CPU times is not known
+  (in item 3 it was +1 to +4% on Bratu and +61 to +74% on Buckley-Leverett). Open; put to the user.
+- Packages 2 to 5 on Grace: the module's library in every record. The only others are laptop previews
+  (Windows) and laptop assembly records with no OpenMP library.
+- The CPU set: the LiL processes loaded the module's library, the network processes the wheel's.
+
+---
+
+## 2026-11-17 -- Package 5, item 3: the CPU set's checks, C1's failure, and the OpenMP library diagnostic (stage p5o)
+
+**The CPU set** (bundle 0f74bdf, jobs 20564295-20564302). All seven compute jobs completed, about
+938 SU used against about 1,110 expected. There are 108 network runs, 14 LiL-N L-BFGS budget runs
+and 31 protocol runs, all with `timing_matches`. No job was stopped early.
+- C2: 6 of 6 pass.
+- C3 (LiL-Q on Burgers against Package 4): 7 of 7 pass, to 1e-11 or better, with every rule step equal.
+- C4: 5 of 6 pass. BL NiL-N failed at 5.9%: the run *with* the error log was the faster one, which the
+  log cannot cause. It is reported and not rerun.
+- **C1 failed on 15 of the 18 runs it compares** (cutoff 1e-6, fixed on 15 November and not moved).
+  - The losses agree to round-off at first (about 1e-16 at iterations 0 to 10). The gap then grows
+    about tenfold every few iterations: about 1e-12 by iteration 20, 1e-8 by 50, and 1e-4 to 0.66 by
+    100.
+  - BL differs by 2e-9 already at iteration 0, through its pretraining.
+  - This is the same algorithm from the same start, with arithmetic that differs in the last digit
+    from the first step.
+- `p5_3_networks.py c1` (`c1_all`) now runs C1 on every run that has a Package 1 counterpart; it was
+  added at this assembly.
+
+**The likely cause, missed by the three implicit-state reviews: which OpenMP library a process loads.**
+- `p5_3_networks.py` imports torch before numpy, so its processes loaded the PyTorch wheel's own
+  OpenMP library (`torch/lib/libgomp.so.1`).
+- Package 1's four-method runs (`four_method_tables.py`, numpy first) loaded the GCC module's
+  (`GCCcore/13.3.0/lib64/libgomp.so.1.0.0`). So did every Grace job recorded since, including the LiL
+  driver of this item, which imports numpy first.
+- The thread counts were the same (48, one pool). The reviews checked counts, not libraries.
+- If the two libraries also differ in speed, the network times are not on Package 1's footing, nor
+  on the LiL runs'.
+
+**The diagnostic** (the user's decision, 17 November 2026): stage p5o, `results/package5_item3_openmp`
+under its own commit lock. It is one timed-cpu job, 30 min, 24 SU requested and about 16 expected.
+- Six processes of `experiments/p5_3_openmp.py`, three rounds, alternating which package is imported
+  first.
+- Each process checks which library it loaded and stops if it is not the expected one
+  (`--require-library`).
+- In round 0, the C1 runs: NiL-N, seed 0, at each problem's largest size, 110 iterations.
+- In every round, NiL-N and LM at Bratu P = 225 and BL P = 1,024, 30 s each, without the error log.
+
+**Decided before the job:**
+- The library is the cause if the numpy-first C1 runs pass C1 against Package 1 and the torch-first
+  ones reproduce the CPU set's own runs (C1's comparison, against those runs).
+- The library changes a method's timing on a problem if the medians over the rounds of the time per
+  iteration differ by more than 5% (C4's and the pairing cutoff) and the two orders' rounds do not
+  overlap.
+- What follows from each outcome (keep the CPU set or rerun its network jobs; the import order of the
+  A100 set) is the user's decision, with these numbers. The A100 set and the cost-check memo wait
+  for it.
+
+---
+
+## 2026-11-16 -- Package 5, item 3: the job layout (batch 5; stages p5c and p5g)
+
+**Two stages**, each with its own results folder under its own commit lock: `p5c`, the CPU set
+(`results/package5_item3_cpu`), and `p5g`, the A100 set (`results/package5_item3_gpu`). The A100 set is
+submitted only after the cost check has told the advisor its class and cost (his rule 3).
+
+**The CPU set** (`submit_p5_item3_cpu.sh`, 8 jobs):
+- `p5c_preflight` (cpu): the three references, the test suite. The others wait for it.
+- `p5c_protocol` (timed-cpu): LiL-Q, `trf` and the square collocation by the usual protocol on the three
+  problems, then C2 and C4 (NiL-N and LM at the largest size, about 30 s each; see the review below).
+- Five budget jobs (timed-cpu, 48 threads, one run at a time): `p5c_bratu` (27 network runs and LiL-N
+  L-BFGS at the 3 sizes), `p5c_burgers_a` / `_b` (23 + 3, 22 + 4), `p5c_bl_a` / `_b` (18 + 2 each). The
+  network runs are split round robin (`--part i/n`) over the list sorted by size, so each job gets about
+  the same mix of sizes, methods and seeds.
+- `p5c_report` (afterany): the time-to-error table, then the tarball.
+
+**The A100 set** (`submit_p5_item3_gpu.sh`, 5 jobs):
+- `p5g_preflight` (shared-gpu, one A100): the references, and the item 3 tests with CUDA visible (the torch
+  residuals and the off-clock timer on the GPU; the CPU preflight skips them).
+- One `gpu-pair` job per problem (both A100s, 48 cores, 360 GB, 192 SU/h): first stops unless it sees two
+  GPUs. Then two processes side by side, process i on GPU i (`CUDA_VISIBLE_DEVICES`), 24 threads each,
+  network part i/2 and then its share of the LiL-N L-BFGS sizes.
+- **The solo check** (the plan's paired-against-solo check): per problem, NiL-N seed 0 at the largest size
+  (the run with the most work on the GPU), run alone for 60 s before the pair starts, on the GPU its paired
+  run uses. The report compares the clock at the last iteration both logged; within 5% (cutoff set before
+  any run). Three solo runs cost about 15 SU.
+- **No CPU pinning.** Each process has 24 threads and the operating system places them. If the pairing
+  check fails, binding each process to its GPU's socket is the first thing to try.
+- `p5g_report` (afterany): the pairing check, the table, the tarball.
+
+**Every process has its own tag** (`--tag`, e.g. `cpu-burgers-a`, `gpu-bl-1`): it names the process's
+warm-up and provenance records and is kept in each `run.json`, so no two processes write the same file.
+Each run's folder is fixed by problem, size, method, seed and device, and the tests check that every run
+is in exactly one job per stage.
+
+**Plan changes (flagged to the user):**
+- **C1 and C3 run at the assembly on the laptop**, not on Grace. C1 compares with the Package 1 histories
+  and C3 with the delivered Package 4 logs, which are not on Grace. Items 1, 2 and 4 did the same.
+- **Report steps under their own time limits** (table 10 min, tarball 15 min, pairing 5 min): the
+  weakness found in Addendum 2's lost hour.
+
+**Walltimes and cost, from a laptop probe** (16 November 2026, 30 s budgets at each problem's largest
+size, CPU and CUDA). The error log is off the clock but not off the walltime:
+- LM logs the error at every iteration: 7 to 21% of the budget (Bratu 21% CPU / 15% CUDA, Burgers
+  12% / 11%, BL 7% / 5%).
+- The L-BFGS methods log every 10 iterations: under 2%. Pretraining is under 2 s.
+- Each run is costed at 600 s x (1 + its share, rounded up: 0.22, 0.13, 0.08; 0.02) + 30 s fixed, and
+  LiL-N L-BFGS as a full budget run. Walltime = expected x 1.10, rounded up to 15 min.
+- **CPU set: 1,260 SU requested, about 1,110 expected. A100 set: 2,535 requested, about 2,220 expected.**
+  Both are upper bounds: LiL-N L-BFGS stalls early at the small sizes, and the fixed part was 2 to 5 s on
+  the laptop. Against the plan's 1,070 and 2,040, the difference is the LM error log. With both sets, the
+  upper bound is about 3,330 against the 3,177 left in the advisor's cap. The cost check gives him the
+  A100 figure after the CPU set has run, when its real charge is known.
+- The probe's BL NiL-N CUDA run took 1,498 s for a 30 s budget: the laptop slept from 19:34:58 to
+  19:59:22 (Windows Kernel-Power events 42 and 107) during one iteration. Not the code: the budget is
+  checked after each iteration, and an iteration cannot be interrupted.
+
+**The second review for implicit state and missed bugs** (the user's request, after the rehearsal):
+- Fixed: `pairing()` stopped the report if a solo or paired run had been cut before its `run.json`; such
+  a row now has no verdict and says why. Each row also records both runs' evaluation counts at the
+  compared iteration, so a different iterate path is visible.
+- Fixed, a missed plan item: C2 and C4 were still 300 NiL-N and 30 LM iterations (2 to 10 s), not the
+  "tens of seconds" the 15 November entry asked for. Fixed counts did not work either: in the rehearsal
+  1,000 NiL-N iterations took 5 to 7 s on the laptop (the probe's rates had predicted 17 to 33 s), and C4
+  failed on two such runs (12.8% and 5.7%; one overlapped a test run). **Both runs now have the count
+  that takes about 30 s at the rate of an untimed pilot on the same node** (NiL-N 100 iterations, LM 10).
+  The 5% cutoff is unchanged. A wall-clock budget for the first run was rejected: it can end an LM
+  iteration in the middle of its rejected steps, so a run capped at the same count would not repeat it.
+  With the pilot, the laptop's six C2/C4 runs took 27 to 36 s; C2 passed in all six, C4 in four (Bratu LM
+  +7.7%, Burgers NiL-N +8.2%). Repeated three times each on a quiet laptop, those two gave -2.9, +2.6,
+  -2.8% and +0.6, +0.3, -0.8%: noise on the laptop, not a cost of the log that the clock misses. On
+  Grace C4 is one run per method and problem, as planned; a failure is reported, never rerun to a pass.
+- Fixed: the pair jobs wrote `hardware.json` before setting their 24 threads.
+- **The rehearsal** (laptop, 5 s budgets, both stages, every job script's own body): every job ended
+  with rc 0; 108 network and 14 LiL-N L-BFGS runs per device, each in one job; one warm-up and one
+  provenance record per process; the 31 protocol runs all timed with `timing_matches`; tables with no
+  run flagged; both tarballs (12.6 and 3.2 MB at 5 s budgets). The pairing check failed (paired runs
+  70 to 124% slower) because both processes shared the laptop's one GPU: the check tells the cases
+  apart, and the evaluation counts at the compared iterations were equal (the same path).
+- Checked, by design: each run calls `set_seed` and draws its collocation set from its own seed, and the
+  weights are built on the CPU, so a run's result does not depend on the runs before it in its process
+  (the parts give each process a different sequence). The network driver sets torch's default dtype to
+  float64 for the whole process, as P2-8 and the four-method runs do; every run in it wants float64.
+- Checked: the table reads `networks/*_P*/*/run.json`, so the solo runs under `checks/` never enter it.
+
+**The third review: implicit state in everything the CPU set touches** (the user's request, "I don't have
+SUs to waste"). Read: the job scripts, `env.sh`, the resource classes, `lilq/blas_threads.py`, both
+drivers, P2-8's `setup` and `lm`, the four-method runners and the solver path.
+- Fixed, the costliest: **a resubmitted job ran every run again.** Nothing looked at what `$PKG`
+  already held, so a job resubmitted after a node failure 4 h in would have repeated 4 h of runs
+  (about 190 SU on a whole CPU node). Each driver now skips a run whose `run.json` is from this commit
+  with the same settings (`finished()`: the networks' budget; LiL-N L-BFGS's budget; the protocol runs'
+  timed/untimed). It skips the warm-up when nothing is left. A run stopped part way has no `run.json`,
+  because it is written last, so it runs again from the start. C2 and C4 skip a `result.json` of this
+  commit. This is the rule `experiments/component_a.py` already uses.
+- Fixed: a resubmitted job overwrote the first job's `hardware.json`, the record of the node its
+  finished runs ran on. `lilq.provenance.job_dir` now writes a second job's record beside the first
+  (`<name>_job<SLURM_JOB_ID>`), in both drivers and in `p4_checks.py provenance`. Every `run.json` and
+  C2/C4 result records its `slurm_job_id`, so each run points to its node.
+- Fixed, wording: the item 3 jobs' `until_end` comment said a stop keeps every iterate. That is true of
+  items 1 and 2's drivers, but not of these, which write a run's files when it ends. The item 3 jobs now
+  say that a stop keeps only the finished runs. The scripts of items 1, 2 and Addendum 2, which have
+  run, are unchanged.
+- Checked, by design: threads. `env.sh` sets OMP/OPENBLAS/MKL to `SLURM_CPUS_PER_TASK` (48 on a
+  timed-cpu node) before Python starts. `lilq.utils` sets torch's threads to the same count, and every
+  `run.json` records both (`thread_env`, `torch_threads`).
+- Checked, by design: the budget is training time with the error log off the clock, in both L-BFGS
+  (`RunProbe`) and LM (`lm`'s `excluded`). LM checks it after each iteration and inside the rejected
+  steps. One LM iteration at the largest sizes took 0.06 to 0.25 s on the laptop, so a run overshoots
+  600 s by well under the walltime model's 30 s fixed allowance.
+- Checked, by design: no file is written outside `$PKG`. The warm-up's scratch log is under `$PKG`,
+  named per tag, and deleted afterwards. The four-method runners and the solver path write nothing.
+  Matplotlib is not used.
+- Checked, by design: C2 compares bit for bit. Grace has reproduced runs bit for bit across jobs before
+  (entry of 2026-10-05, Package 2 Stage 2, check C8). A failure is reported, never
+  rerun.
+- Checked: the preflight (class `cpu`, 24 cores, 32 GB) ran Package 4's suite in 10 min 33 s. The suite
+  takes 10.5 min on the laptop now, inside the 30 min walltime.
+- To resubmit one job after a failure: `LILQ_WAVE=p5c bash scripts/cluster/sbatch.sh <job>.slurm`, then the
+  report job again. The commit lock refuses a different bundle.
+- The CPU set was submitted on 17 November 2026 from bundle 0f74bdf (jobs 20564295-20564302).
+
+**The pairing gate (the user's decision, 16 November 2026).** Before, the paired-against-solo check
+ran only in the report, after all three A100 jobs. A failure would have been found after about
+2,220 SU, with every A100 time in the table biased. Now each pair job checks first:
+- **How.** After the solo check, the same run (NiL-N, seed 0, largest size, 60 s) runs on both GPUs at
+  once (`solo --gate 0` and `--gate 1`). `p5_3_networks.py gate` compares the run on the solo's GPU with
+  the solo by `compare_clocks`, which the report's `pairing` now shares: the clock at the last
+  iteration both logged, within 5% either way. The cutoff is the plan's (`PAIR_RTOL`), not a new one.
+- **The job goes on only if `passed` is True.** It stops before any budget run (exit 1) if the clock
+  is off by more than 5%, or if there is no verdict: a gate run that did not finish (the run on the
+  other GPU is the load, so it must finish too), or a record from an earlier job (each record's
+  `slurm_job_id` must be this job's). The report still runs (afterany) and packs what there is.
+- **Recorded:** `checks/gate_<bench>.json` with both clocks, the evaluation counts and
+  `overlap_fraction`. That is the share of the judged run's solve during which the other GPU was
+  solving too, from the solve windows (`solver_window_epoch_s`, now in every network `run.json`). It
+  is recorded, not judged.
+- **Cost:** `GATE_EXTRA_S` = 300 s per job in the walltime model. Bratu's walltime goes from 3:15 to
+  3:30; the other two are unchanged after rounding. The A100 set is now 2,583 SU requested and about
+  2,270 expected, up from 2,535 and 2,220. The model counts 5 min per job; the gate itself should take
+  about 2 (warm-up, pretraining, 60 s). If the gate fails, a job costs about 5 min (about 16 SU)
+  instead of 3 to 5 h.
+- **Rehearsal** (laptop, `rehearse_item3_v2.sh`; solo and gate at their 60 s, budget runs at 5 s):
+  - With the gate as written, `p5g_bl` stopped before its budget runs, rc 1. On one GPU the two gate
+    runs share it, so the clock was +107%, with an overlap of 0.999: the stop works.
+  - With the stop made non-fatal, all three pair jobs and the report ended with rc 0.
+  - The CPU stage, rehearsed on bundle 0f74bdf itself, ended with rc 0 in every job. A resubmitted
+    `p5c_bl_a` took 9 s and `p5c_protocol` 22 s, every run and C2/C4 result skipped as held.
+- **Scan after the rehearsal:**
+  - The gate and solo folders are under `networks/checks/`, which the table's glob
+    (`networks/*_P*/*/run.json`) and `pairing`'s (`checks/solo_*`) do not reach.
+  - Both gate processes exit before the pair starts, so their GPU memory is free.
+  - `until_end` hides a gate run's failure, but the missing record then gives no verdict, and the job
+    stops.
+  - The gate command has its own 5 min `timeout`.
+  - On a resubmission the solo and gate runs are redone on the new node; the job-id check refuses
+    the old records.
 
 ---
 

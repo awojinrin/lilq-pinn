@@ -1,0 +1,43 @@
+{
+  "benchmark": "burgers",
+  "P": 324,
+  "p": 18,
+  "method": "LiL-N (L-BFGS)",
+  "method_key": "lbfgs",
+  "device": "cpu",
+  "trial_space": "sine x Chebyshev on the Gauss-Legendre set, 3p per direction (Package 4)",
+  "boundary_weight": 10.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.047136230394244194,
+  "device_setup_s": 0.0009682103991508484,
+  "budget_s": 600.0,
+  "stopping_reason": "optimizer_stall",
+  "iterations": 1519,
+  "evaluations": 2913,
+  "restarts": 2,
+  "time_s": 3.686480037868023,
+  "training_time_s": 3.686480037868023,
+  "error_time_s": 0.06838735193014145,
+  "error_every": 10,
+  "final_loss": 1.2294146804507335e-06,
+  "stall": {
+    "stall_iteration": 1519,
+    "stall_evaluations": 2913,
+    "stall_time_s": 3.686480037868023
+  },
+  "timing": "one logged pass (Section 6), the error off the clock",
+  "torch_threads": 48,
+  "gradient": "autograd through the torch residual",
+  "timed": true,
+  "final_error": 2.5459157485807765e-05,
+  "last_logged_is_returned": true,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-burgers-b",
+  "slurm_job_id": "20564299"
+}

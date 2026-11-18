@@ -1,0 +1,11 @@
+{
+  "first": "numpy",
+  "round": 0,
+  "openmp_libraries": [
+    "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+  ],
+  "library": "module",
+  "expected_library": "module",
+  "slurm_job_id": "20590231",
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"
+}

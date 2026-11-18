@@ -1,0 +1,43 @@
+{
+  "pretrain_s": 0.025626562535762787,
+  "benchmark": "bratu",
+  "P": 25,
+  "method": "NiL-N (LM)",
+  "method_key": "lm",
+  "seed": 0,
+  "collocation_seed": 42,
+  "device": "cpu",
+  "budget_s": 600.0,
+  "iteration_cap": null,
+  "error_logged": true,
+  "error_every": 1,
+  "stopping_reason": "budget",
+  "iterations": 18739,
+  "evaluations": 37478,
+  "training_time_s": 600.0236281193793,
+  "error_time_s": 49.10106714814901,
+  "solver_wall_s": 649.1698253490031,
+  "setup_s": 0.018391400575637817,
+  "wall_total_s": 649.2158515714109,
+  "final_loss": 0.038476593884626244,
+  "final_error": 1.0319632197507271,
+  "n_params": 37,
+  "pretrain_loss": 1.6453682439232657e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": null,
+  "nil_q_inner_cap": null,
+  "stall": null,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "torch_threads": 48,
+  "lm": {
+    "mu_final": 0.0002000000000000003,
+    "n_jacobian_evals": 18739
+  },
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "tag": "cpu-bratu",
+  "slurm_job_id": "20564297"
+}

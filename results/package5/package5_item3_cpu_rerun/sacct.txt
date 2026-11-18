@@ -1,0 +1,9 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20581988                   lilq-p5r-preflight     medium                             billing=24,cpu=24,mem=32G,node=1   00:08:33  COMPLETED      0:0 
+20581989                      lilq-p5r-checks     medium                            billing=48,cpu=48,mem=360G,node=1   00:11:54  COMPLETED      0:0 
+20581990                       lilq-p5r-bratu     medium                            billing=48,cpu=48,mem=360G,node=1   04:19:11  COMPLETED      0:0 
+20581991                   lilq-p5r-burgers-a     medium                            billing=48,cpu=48,mem=360G,node=1   03:41:29  COMPLETED      0:0 
+20581992                   lilq-p5r-burgers-b     medium                            billing=48,cpu=48,mem=360G,node=1   03:40:00  COMPLETED      0:0 
+20581993                        lilq-p5r-bl-a     medium                            billing=48,cpu=48,mem=360G,node=1   03:02:39  COMPLETED      0:0 
+20581994                        lilq-p5r-bl-b     medium                            billing=48,cpu=48,mem=360G,node=1   03:12:27  COMPLETED      0:0 

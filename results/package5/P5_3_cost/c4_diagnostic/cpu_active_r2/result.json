@@ -1,0 +1,38 @@
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 213,
+  "pilot": null,
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 49.860344745218754,
+  "time_with_s": 29.756892312318087,
+  "error_time_s": 3.1329708229750395,
+  "time_rel_diff": 0.40319521526831087,
+  "c4_rtol": 0.05,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "slurm_job_id": "20590230",
+  "c2_passed": true,
+  "c4_passed": false,
+  "timings": [
+    {
+      "time_without_s": 49.860344745218754,
+      "time_with_s": 29.756892312318087,
+      "rel_diff_with_vs_without": -0.40319521526831087
+    },
+    {
+      "time_without_s": 29.260997246950865,
+      "time_with_s": 31.144028447568417,
+      "rel_diff_with_vs_without": 0.064352940015186
+    },
+    {
+      "time_without_s": 31.095852825790644,
+      "time_with_s": 29.18810175359249,
+      "rel_diff_with_vs_without": -0.06135065929485875
+    }
+  ],
+  "timings_spread": 0.46754815528349686,
+  "timings_outside_rtol": 3
+}

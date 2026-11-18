@@ -1,0 +1,53 @@
+{
+  "pretrain_s": 0.12693723663687706,
+  "benchmark": "burgers",
+  "P": 625,
+  "method": "NiL-N (L-BFGS)",
+  "method_key": "nil_n",
+  "seed": 0,
+  "collocation_seed": 42,
+  "device": "cpu",
+  "budget_s": null,
+  "iteration_cap": 110,
+  "error_logged": false,
+  "error_every": 10,
+  "stopping_reason": "iteration_cap",
+  "iterations": 110,
+  "evaluations": 115,
+  "training_time_s": 6.6694007739424706,
+  "error_time_s": 0.0,
+  "solver_wall_s": 6.674306638538837,
+  "solver_window_epoch_s": [
+    1794930327.6387112,
+    1794930334.3130178
+  ],
+  "setup_s": 0.0017326083034276962,
+  "wall_total_s": 6.803129248321056,
+  "final_loss": 0.04295862848881998,
+  "final_error": NaN,
+  "n_params": 645,
+  "pretrain_loss": 1.1542640023809713e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": null,
+  "nil_q_inner_cap": null,
+  "stall": {
+    "stall_iteration": null,
+    "stall_evaluations": null,
+    "stall_time_s": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "torch_threads": 48,
+  "first": "torch",
+  "round": 0,
+  "openmp_libraries": [
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1"
+  ],
+  "library": "torch",
+  "expected_library": "torch",
+  "slurm_job_id": "20571987",
+  "commit": "fcb99525b0929c108db8b960b2c234bc061218b6"
+}

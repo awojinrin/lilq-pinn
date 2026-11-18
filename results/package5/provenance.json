@@ -6,10 +6,34 @@
     "locked_at_utc": "2026-11-14T19:29:35.739441+00:00"
   },
   "assembly": {
-    "commit": "44178666911dd36b13f5725399e362c14981534a",
+    "commit": "a61de73c6f6182e96c4c521bad21ada7b7d3894e",
     "branch": "v3-dev"
   },
   "commits_between": [
+    "a61de73 Package 5, item 3: the assembly (--item3-*) and the table's headline",
+    "5adea2f DECISIONS: the A100 set's result (p5g): 1,866 SU, every gate and check passed",
+    "e99e5d3 DECISIONS: the C4 diagnostic's result (p5e): no leak; the A100 set may go",
+    "3edbd66 DECISIONS: p5e's scans, laptop rehearsal and suites (bundle 1a88feb)",
+    "1a88feb Package 5, item 3: the C4 diagnostic for Buckley-Leverett LM (stage p5e)",
+    "0e3cb8d DECISIONS: p5k's sacct row (20.9 SU) and clean log",
+    "6d28d09 DECISIONS: Package 5, item 3 -- the p5k result (Component A's F1 ran with the faster OpenMP library; F2 unchanged)",
+    "3df7b7b component_a.py back to LF line endings (an edit had saved it CRLF); DECISIONS: the scan after the rehearsal",
+    "b6ff9f5 DECISIONS: Package 5, item 3 -- the decae59 rehearsal (C4 on Buckley-Leverett LM at 7.9% on the laptop shown to be clock spread by three repeats), p5k as written, the suites",
+    "decae59 Package 5, item 3: the advisor's reply -- C4's three timings on Buckley-Leverett NiL-N; p5k's summary checks threads and a missing reference",
+    "de4df64 Package 5, item 3: the OpenMP library of Package 1's Component A baselines (stage p5k)",
+    "03bd5ab DECISIONS: Package 5, item 3 -- the p5r/p5g rehearsal, C4 on the laptop, and the library diff (Package 1 Component A loaded the wheel's OpenMP library)",
+    "710f49c Package 5, item 3: numpy before torch, the OpenMP library check, and the CPU network runs again (stage p5r)",
+    "fcb9952 Package 5, item 3: C1 at the assembly for every run; the OpenMP library diagnostic (stage p5o)",
+    "1d89258 DECISIONS: Package 5, item 3 -- the pairing gate, its cost and rehearsal; the CPU set submitted",
+    "387c85e Package 5, item 3: the pairing gate in each A100 pair job",
+    "0f74bdf tests: the wave dry-run tests use Grace's profile whatever CLUSTER a job inherited",
+    "3caaad3 Package 5, item 3: a resubmitted job skips the runs it finished; each job keeps its own provenance record",
+    "36436bf tests: the GPU addendum chain test uses Grace's profile whatever CLUSTER a job inherited",
+    "7e7bb6b DECISIONS: Package 5, item 3 -- the job layout, the walltimes and cost, the second review and the rehearsal",
+    "766d102 Package 5, item 3: C2 and C4 sized on the node by an untimed pilot",
+    "3063e55 Package 5, item 3: second review before Grace -- pairing on unfinished runs, C2/C4 lengths, pair thread record",
+    "bcf7bc0 Package 5, item 3: the job layout (stages p5c, the CPU set, and p5g, the A100 set)",
+    "a484aad Package 5, item 3: process tags, parts, and the paired-against-solo check",
     "4417866 DECISIONS: the assembly reads the delivered packages; one Beltrami figure of the 14 November memo moves (169 -> 170)",
     "99303ee Package 5, Addendum 2: the assembly (--a2) and the Grace run's record",
     "bbce1ac Package 5, item 3: review of the LiL driver and the table; A100 class",
@@ -37,6 +61,14 @@
   "addendum2": {
     "commit": "765996180bdf30c4b86ca0cf279ef570ca9daaba",
     "job": "20553982"
+  },
+  "item3": {
+    "package5_item3_cpu": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+    "package5_item3_cpu_rerun": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+    "package5_item3_gpu": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+    "package5_item3_openmp": "fcb99525b0929c108db8b960b2c234bc061218b6",
+    "package5_item3_openmp_kovasznay": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+    "package5_item3_c4_diagnostic": "1a88feb4ba15257b6970c21e9eb41b4590117166"
   },
   "note": "Every run, table and log is Grace's, at the runs' commit. The comparisons with the advisor's files and with the delivered Beltrami rows, and checks.json (C1 to C3, against Packages 2, 3 and 4 as delivered), are written at the assembly on Grace's files. package5_retime/ is the re-time of one item 2 run (stage p5t, its own commit lock), as Grace wrote it; P5_2_nlls/retime.csv sets its time beside the timed job's. P5_A2_initial_profile/ holds Addendum 2's plateau runs as Grace wrote them (stage p5a, its own commit lock; the stage's records in package5_a2/); its summary was rerun at the assembly on Grace's iterates (package5_a2_rerun_differences.json). Section 3a's update histories (updates_by_iterate.csv in the delivered run folders, P5_A2_initial_profile/updates_package4/) are written at the assembly from the stored coefficients."
 }

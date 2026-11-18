@@ -1,0 +1,30 @@
+provenance lock OK: commit 1a88feb4ba15, tree 63a389858cf9
+job 20592822 on g074: 8 threads, 8 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+Wed Nov 18 08:21:52 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.126.20             Driver Version: 580.126.20     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-PCIE-40GB          On  |   00000000:D8:00.0 Off |                    0 |
+| N/A   28C    P0             33W /  250W |       0MiB /  40960MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+torch 2.10.0+cu126 NVIDIA A100-PCIE-40GB
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+inputs OK (3 files)
+...............................................................          [100%]
+63 passed in 84.33s (0:01:24)
+PREFLIGHT OK

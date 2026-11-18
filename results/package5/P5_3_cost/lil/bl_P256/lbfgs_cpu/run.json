@@ -1,0 +1,43 @@
+{
+  "benchmark": "bl",
+  "P": 256,
+  "p": 16,
+  "method": "LiL-N (L-BFGS)",
+  "method_key": "lbfgs",
+  "device": "cpu",
+  "trial_space": "lifted sine x Chebyshev on the CGL set, N/P = 10 (Package 3 split)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "ic",
+  "setup_s": 0.11541248112916946,
+  "device_setup_s": 0.00013191625475883484,
+  "budget_s": 600.0,
+  "stopping_reason": "optimizer_stall",
+  "iterations": 724,
+  "evaluations": 1166,
+  "restarts": 2,
+  "time_s": 4.132746957242489,
+  "training_time_s": 4.132746957242489,
+  "error_time_s": 0.050737861543893814,
+  "error_every": 10,
+  "final_loss": 0.013328124349880222,
+  "stall": {
+    "stall_iteration": 724,
+    "stall_evaluations": 1166,
+    "stall_time_s": 4.132746957242489
+  },
+  "timing": "one logged pass (Section 6), the error off the clock",
+  "torch_threads": 48,
+  "gradient": "autograd through the torch residual",
+  "timed": true,
+  "final_error": 0.0006085929613434937,
+  "last_logged_is_returned": true,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-bl-b",
+  "slurm_job_id": "20564301"
+}

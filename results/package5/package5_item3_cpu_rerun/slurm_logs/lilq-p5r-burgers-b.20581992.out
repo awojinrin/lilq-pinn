@@ -1,0 +1,29 @@
+provenance lock OK: commit 3df7b7b2225c, tree c3748314e419
+job 20581992 on c211: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu_rerun/provenance/cpu-burgers-b
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+burgers P=25 NiL-N (L-BFGS) s1 cpu: 7144 it, 47.2 s, optimizer_stall, loss 6.777e-03, error 5.152e-02
+burgers P=25 NiL-Q (L-BFGS) s0 cpu: 53047 it, 600.0 s, budget, loss 2.063e-02, error 2.914e-01
+burgers P=25 NiL-Q (L-BFGS) s2 cpu: 6225 it, 51.2 s, optimizer_stall, loss 9.139e-03, error 5.255e-02
+burgers P=25 NiL-N (LM) s1 cpu: 47628 it, 600.0 s, budget, loss 5.087e-03, error 2.013e-01
+burgers P=100 NiL-N (L-BFGS) s0 cpu: 58597 it, 600.0 s, budget, loss 2.264e-05, error 2.821e-03
+burgers P=100 NiL-N (L-BFGS) s2 cpu: 61223 it, 600.0 s, budget, loss 3.578e-05, error 1.279e-03
+burgers P=100 NiL-Q (L-BFGS) s1 cpu: 53139 it, 600.0 s, budget, loss 2.062e-05, error 1.500e-03
+burgers P=100 NiL-N (LM) s0 cpu: 30008 it, 600.0 s, budget, loss 7.445e-07, error 4.006e-04
+burgers P=100 NiL-N (LM) s2 cpu: 30084 it, 600.0 s, budget, loss 1.057e-06, error 5.450e-04
+burgers P=225 NiL-N (L-BFGS) s1 cpu: 46918 it, 600.0 s, budget, loss 1.463e-05, error 5.586e-04
+burgers P=225 NiL-Q (L-BFGS) s0 cpu: 39283 it, 600.0 s, budget, loss 4.121e-06, error 3.784e-04
+burgers P=225 NiL-Q (L-BFGS) s2 cpu: 42932 it, 600.0 s, budget, loss 1.099e-05, error 5.543e-04
+burgers P=225 NiL-N (LM) s1 cpu: 18280 it, 600.0 s, budget, loss 1.834e-10, error 7.363e-06
+burgers P=400 NiL-N (L-BFGS) s0 cpu: 32396 it, 600.0 s, budget, loss 3.245e-06, error 1.868e-04
+burgers P=400 NiL-N (L-BFGS) s2 cpu: 33629 it, 600.0 s, budget, loss 7.029e-06, error 2.983e-04
+burgers P=400 NiL-Q (L-BFGS) s1 cpu: 26155 it, 600.0 s, budget, loss 5.307e-06, error 2.361e-04
+burgers P=400 NiL-N (LM) s0 cpu: 11471 it, 600.0 s, budget, loss 3.073e-12, error 4.252e-07
+burgers P=400 NiL-N (LM) s2 cpu: 11735 it, 600.0 s, budget, loss 6.652e-08, error 3.787e-05
+burgers P=625 NiL-N (L-BFGS) s1 cpu: 33143 it, 600.0 s, budget, loss 5.329e-06, error 2.413e-04
+burgers P=625 NiL-Q (L-BFGS) s0 cpu: 21886 it, 600.3 s, budget, loss 1.428e-05, error 4.790e-04
+burgers P=625 NiL-Q (L-BFGS) s2 cpu: 22901 it, 600.0 s, budget, loss 8.899e-06, error 3.171e-04
+burgers P=625 NiL-N (LM) s1 cpu: 8571 it, 600.0 s, budget, loss 5.042e-10, error 5.335e-06

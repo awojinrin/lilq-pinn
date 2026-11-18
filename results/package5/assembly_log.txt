@@ -1,5 +1,5 @@
-Package 5 assembly, 2026-11-17T00:09:24.077889+00:00
-from package5 (runs at 60c2d8c), assembled at 4417866
+Package 5 assembly, 2026-11-18T19:14:50.294625+00:00
+from package5 (runs at 60c2d8c), assembled at a61de73
 copied P5_1_weights/
 copied P3_1_beltrami_certified/
 copied P5_2_nlls/
@@ -23,5 +23,18 @@ Section 3a, the update histories of delivered runs (updates_by_iterate.csv): {'i
 tables: rewritten from Grace's logs; every column but delta_P's within 0e+00 relative of Grace's (60 CSVs; Grace's kept); delta_P's columns differ by up to 7.6e-10 (package5_a2_rerun_differences.json)
 P5_A2_initial_profile: the summary rerun on Grace's iterates; terminal.csv, stretches.csv and the JSON files within 2e-14 relative of Grace's but delta_P's (up to 1.8e-09, package5_a2_rerun_differences.json); Grace's kept
 P5_A2_initial_profile: K1 passed, K2 passed (Grace's checks.json)
-su.csv: 11 jobs, 153.5 SU charged at Grace's rates
-provenance.json: 13 commit(s) between the runs and the assembly
+item 3, package5_item3_cpu/ (commit 0f74bdf): 46 folders or files to P5_3_cost/, its records to package5_item3_cpu/
+item 3, package5_item3_cpu_rerun/ (commit 3df7b7b): 114 folders or files to P5_3_cost/, its records to package5_item3_cpu_rerun/
+item 3, package5_item3_gpu/ (commit 1a88feb): 135 folders or files to P5_3_cost/, its records to package5_item3_gpu/
+item 3, package5_item3_openmp/ (commit fcb9952): 1 folders or files to P5_3_cost/, its records to package5_item3_openmp/
+item 3, package5_item3_openmp_kovasznay/ (commit 3df7b7b): 1 folders or files to P5_3_cost/, its records to package5_item3_openmp_kovasznay/
+item 3, package5_item3_c4_diagnostic/ (commit 1a88feb): 1 folders or files to P5_3_cost/, its records to package5_item3_c4_diagnostic/
+P5_3_cost: every run of the table is there (275)
+P5_3_cost: every process of the table's runs loaded the module's OpenMP library: {'package5_item3_cpu/P5_3_cost/lil/provenance': {'module': 8}, 'package5_item3_cpu_rerun/P5_3_cost/networks/provenance': {'module': 8}, 'package5_item3_cpu_rerun/provenance': {'module': 6}, 'package5_item3_gpu/P5_3_cost/networks/provenance': {'module': 15}, 'package5_item3_gpu/P5_3_cost/lil/provenance': {'module': 6}, 'package5_item3_gpu/provenance': {'module': 3}}
+P5_3_cost/time_to_error.csv: 50 rows equal package5_item3_cpu's own table
+P5_3_cost/time_to_error.csv: 45 rows equal package5_item3_cpu_rerun's own table
+P5_3_cost/time_to_error.csv: 60 rows equal package5_item3_gpu's own table
+P5_3_cost: 155 table rows, 0 runs flagged
+P5_3_cost/checks.json: item 3 C1 passed, item 3 C2 passed, item 3 C3 passed, item 3 C4 FAILED, item 3 pairing passed
+su.csv: 37 jobs, 3938.5 SU charged at Grace's rates
+provenance.json: 37 commit(s) between the runs and the assembly

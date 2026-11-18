@@ -1,0 +1,9 @@
+p5g report, 2026-11-18T18:25:05.359804+00:00
+
+jobs: 20592825 20592823 20592824 20592822
+
+SUs by job (Grace's rates; su_per_job.csv): 1,866 in all
+  20592822 lilq-p5g-preflight: 5.6 (0.07 h at 80/h), COMPLETED
+  20592823 lilq-p5g-bratu: 445.5 (2.32 h at 192/h), COMPLETED
+  20592824 lilq-p5g-burgers: 758.5 (3.95 h at 192/h), COMPLETED
+  20592825 lilq-p5g-bl: 656.6 (3.42 h at 192/h), COMPLETED

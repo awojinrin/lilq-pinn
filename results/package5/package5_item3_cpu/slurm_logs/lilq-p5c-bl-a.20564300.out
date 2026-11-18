@@ -1,0 +1,24 @@
+provenance lock OK: commit 0f74bdfdbde9, tree 540143b755e4
+job 20564300 on c174: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu/provenance/cpu-bl-a
+bl P=64 NiL-N (L-BFGS) s0 cpu: 14458 it, 600.0 s, budget, loss 7.901e-04, error 8.111e-03
+bl P=64 NiL-N (L-BFGS) s2 cpu: 11071 it, 600.0 s, budget, loss 2.264e-04, error 3.295e-03
+bl P=64 NiL-Q (L-BFGS) s1 cpu: 9077 it, 600.0 s, budget, loss 4.085e-04, error 5.407e-03
+bl P=64 NiL-N (LM) s0 cpu: 12334 it, 600.0 s, budget, loss 1.557e-04, error 3.710e-03
+bl P=64 NiL-N (LM) s2 cpu: 11847 it, 600.0 s, budget, loss 1.644e-04, error 5.214e-03
+bl P=256 NiL-N (L-BFGS) s1 cpu: 12584 it, 600.0 s, budget, loss 3.981e-04, error 4.401e-03
+bl P=256 NiL-Q (L-BFGS) s0 cpu: 12038 it, 600.0 s, budget, loss 1.594e-04, error 9.037e-04
+bl P=256 NiL-Q (L-BFGS) s2 cpu: 12134 it, 600.0 s, budget, loss 6.517e-04, error 3.239e-03
+bl P=256 NiL-N (LM) s1 cpu: 7779 it, 600.0 s, budget, loss 1.123e-08, error 3.919e-03
+bl P=576 NiL-N (L-BFGS) s0 cpu: 10077 it, 600.0 s, budget, loss 8.709e-05, error 5.626e-04
+bl P=576 NiL-N (L-BFGS) s2 cpu: 9617 it, 600.0 s, budget, loss 3.522e-04, error 2.493e-03
+bl P=576 NiL-Q (L-BFGS) s1 cpu: 8780 it, 600.1 s, budget, loss 5.994e-04, error 3.511e-03
+bl P=576 NiL-N (LM) s0 cpu: 4654 it, 600.1 s, budget, loss 1.280e-09, error 1.210e-04
+bl P=576 NiL-N (LM) s2 cpu: 4553 it, 600.0 s, budget, loss 8.043e-10, error 1.590e-04
+bl P=1024 NiL-N (L-BFGS) s1 cpu: 9064 it, 600.3 s, budget, loss 6.191e-05, error 7.932e-04
+bl P=1024 NiL-Q (L-BFGS) s0 cpu: 9129 it, 600.0 s, budget, loss 1.984e-04, error 1.913e-03
+bl P=1024 NiL-Q (L-BFGS) s2 cpu: 8587 it, 600.0 s, budget, loss 1.649e-04, error 1.159e-03
+bl P=1024 NiL-N (LM) s1 cpu: 2510 it, 600.0 s, budget, loss 1.352e-09, error 1.578e-04
+bl P=64 LiL-N (L-BFGS) cpu: optimizer_stall, 0.307 s, error 1.510e-02
+bl P=576 LiL-N (L-BFGS) cpu: optimizer_stall, 98.3 s, error 1.028e-04

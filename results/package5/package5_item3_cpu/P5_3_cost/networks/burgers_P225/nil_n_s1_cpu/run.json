@@ -1,0 +1,43 @@
+{
+  "pretrain_s": 0.025753535330295563,
+  "benchmark": "burgers",
+  "P": 225,
+  "method": "NiL-N (L-BFGS)",
+  "method_key": "nil_n",
+  "seed": 1,
+  "collocation_seed": 42,
+  "device": "cpu",
+  "budget_s": 600.0,
+  "iteration_cap": null,
+  "error_logged": true,
+  "error_every": 10,
+  "stopping_reason": "budget",
+  "iterations": 58881,
+  "evaluations": 76746,
+  "training_time_s": 600.0136585142463,
+  "error_time_s": 17.900249602273107,
+  "solver_wall_s": 617.9155614618212,
+  "setup_s": 0.0027854088693857193,
+  "wall_total_s": 617.9770568646491,
+  "final_loss": 2.800898967340902e-06,
+  "final_error": 0.00027956084670474087,
+  "n_params": 235,
+  "pretrain_loss": 5.1353252145545445e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": null,
+  "nil_q_inner_cap": null,
+  "stall": {
+    "stall_iteration": null,
+    "stall_evaluations": null,
+    "stall_time_s": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "torch_threads": 48,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "tag": "cpu-burgers-b",
+  "slurm_job_id": "20564299"
+}

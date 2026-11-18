@@ -1,0 +1,34 @@
+provenance lock OK: commit 3df7b7b2225c, tree c3748314e419
+job 20581990 on c112: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu_rerun/provenance/cpu-bratu
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+bratu P=25 NiL-N (L-BFGS) s0 cpu: 16522 it, 123.6 s, optimizer_stall, loss 3.817e-02, error 4.046e-02
+bratu P=25 NiL-N (L-BFGS) s1 cpu: 9432 it, 74.4 s, optimizer_stall, loss 2.372e-02, error 2.079e-02
+bratu P=25 NiL-N (L-BFGS) s2 cpu: 63601 it, 600.0 s, budget, loss 1.197e-03, error 6.639e-03
+bratu P=25 NiL-Q (L-BFGS) s0 cpu: 41134 it, 420.5 s, optimizer_stall, loss 2.050e-02, error 3.788e-01
+bratu P=25 NiL-Q (L-BFGS) s1 cpu: 7900 it, 68.2 s, optimizer_stall, loss 4.779e-02, error 3.190e-02
+bratu P=25 NiL-Q (L-BFGS) s2 cpu: 21093 it, 215.4 s, optimizer_stall, loss 1.905e-02, error 2.557e-02
+bratu P=25 NiL-N (LM) s0 cpu: 43901 it, 600.0 s, budget, loss 3.833e-02, error 1.030e+00
+bratu P=25 NiL-N (LM) s1 cpu: 44234 it, 600.0 s, budget, loss 1.680e+00, error 1.039e+00
+bratu P=25 NiL-N (LM) s2 cpu: 44515 it, 600.0 s, budget, loss 9.382e-03, error 1.173e-02
+bratu P=100 NiL-N (L-BFGS) s0 cpu: 53568 it, 600.0 s, budget, loss 7.871e-04, error 4.359e-03
+bratu P=100 NiL-N (L-BFGS) s1 cpu: 53953 it, 600.1 s, budget, loss 1.046e-03, error 4.091e-03
+bratu P=100 NiL-N (L-BFGS) s2 cpu: 56175 it, 600.0 s, budget, loss 1.126e-03, error 5.214e-03
+bratu P=100 NiL-Q (L-BFGS) s0 cpu: 53832 it, 600.0 s, budget, loss 7.108e-04, error 3.578e-03
+bratu P=100 NiL-Q (L-BFGS) s1 cpu: 46201 it, 600.0 s, budget, loss 1.041e-03, error 4.859e-03
+bratu P=100 NiL-Q (L-BFGS) s2 cpu: 48581 it, 600.0 s, budget, loss 8.390e-04, error 4.522e-03
+bratu P=100 NiL-N (LM) s0 cpu: 28381 it, 600.0 s, budget, loss 8.386e-05, error 9.718e-02
+bratu P=100 NiL-N (LM) s1 cpu: 28303 it, 600.0 s, budget, loss 1.072e-04, error 1.219e-03
+bratu P=100 NiL-N (LM) s2 cpu: 28007 it, 600.0 s, budget, loss 8.051e-05, error 9.639e-04
+bratu P=225 NiL-N (L-BFGS) s0 cpu: 41231 it, 600.0 s, budget, loss 4.963e-04, error 2.758e-03
+bratu P=225 NiL-N (L-BFGS) s1 cpu: 41134 it, 600.0 s, budget, loss 3.338e-04, error 2.229e-03
+bratu P=225 NiL-N (L-BFGS) s2 cpu: 40037 it, 600.0 s, budget, loss 7.452e-05, error 8.863e-04
+bratu P=225 NiL-Q (L-BFGS) s0 cpu: 37238 it, 600.0 s, budget, loss 7.166e-05, error 8.375e-04
+bratu P=225 NiL-Q (L-BFGS) s1 cpu: 37876 it, 600.0 s, budget, loss 1.190e-04, error 9.244e-04
+bratu P=225 NiL-Q (L-BFGS) s2 cpu: 43904 it, 600.0 s, budget, loss 1.333e-04, error 9.211e-04
+bratu P=225 NiL-N (LM) s0 cpu: 17883 it, 600.0 s, budget, loss 2.981e-07, error 6.602e-05
+bratu P=225 NiL-N (LM) s1 cpu: 17853 it, 600.1 s, budget, loss 3.796e-07, error 7.019e-05
+bratu P=225 NiL-N (LM) s2 cpu: 17575 it, 600.0 s, budget, loss 4.144e-05, error 7.525e-04

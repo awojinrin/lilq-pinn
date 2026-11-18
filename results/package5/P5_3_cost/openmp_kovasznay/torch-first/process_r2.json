@@ -1,0 +1,11 @@
+{
+  "first": "torch",
+  "round": 2,
+  "openmp_libraries": [
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1"
+  ],
+  "library": "torch",
+  "expected_library": "torch",
+  "slurm_job_id": "20581996",
+  "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd"
+}

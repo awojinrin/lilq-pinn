@@ -1,0 +1,25 @@
+provenance lock OK: commit 3df7b7b2225c, tree c3748314e419
+job 20581994 on c039: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu_rerun/provenance/cpu-bl-b
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+bl P=64 NiL-N (L-BFGS) s1 cpu: 57859 it, 600.0 s, budget, loss 5.329e-03, error 1.094e-02
+bl P=64 NiL-Q (L-BFGS) s0 cpu: 55180 it, 600.0 s, budget, loss 2.460e-03, error 5.434e-03
+bl P=64 NiL-Q (L-BFGS) s2 cpu: 57842 it, 600.0 s, budget, loss 9.587e-05, error 2.578e-03
+bl P=64 NiL-N (LM) s1 cpu: 28818 it, 600.0 s, budget, loss 8.677e-05, error 2.987e-03
+bl P=256 NiL-N (L-BFGS) s0 cpu: 41269 it, 600.0 s, budget, loss 4.444e-05, error 6.122e-04
+bl P=256 NiL-N (L-BFGS) s2 cpu: 37013 it, 600.0 s, budget, loss 1.352e-03, error 2.765e-03
+bl P=256 NiL-Q (L-BFGS) s1 cpu: 38759 it, 600.0 s, budget, loss 3.046e-04, error 2.657e-03
+bl P=256 NiL-N (LM) s0 cpu: 14616 it, 600.0 s, budget, loss 5.514e-10, error 1.137e-01
+bl P=256 NiL-N (LM) s2 cpu: 14627 it, 600.0 s, budget, loss 9.905e-09, error 4.357e-04
+bl P=576 NiL-N (L-BFGS) s1 cpu: 26201 it, 600.0 s, budget, loss 4.932e-05, error 4.658e-04
+bl P=576 NiL-Q (L-BFGS) s0 cpu: 21725 it, 600.0 s, budget, loss 1.744e-04, error 7.870e-04
+bl P=576 NiL-Q (L-BFGS) s2 cpu: 24486 it, 600.7 s, budget, loss 3.624e-05, error 3.992e-04
+bl P=576 NiL-N (LM) s1 cpu: 9063 it, 600.0 s, budget, loss 3.125e-10, error 6.582e-05
+bl P=1024 NiL-N (L-BFGS) s0 cpu: 14449 it, 600.0 s, budget, loss 1.405e-04, error 1.562e-03
+bl P=1024 NiL-N (L-BFGS) s2 cpu: 13961 it, 600.4 s, budget, loss 3.390e-05, error 4.976e-04
+bl P=1024 NiL-Q (L-BFGS) s1 cpu: 14489 it, 600.1 s, budget, loss 2.856e-04, error 2.362e-03
+bl P=1024 NiL-N (LM) s0 cpu: 4440 it, 600.0 s, budget, loss 3.227e-09, error 1.108e-03
+bl P=1024 NiL-N (LM) s2 cpu: 4385 it, 600.1 s, budget, loss 1.481e-10, error 2.108e-03

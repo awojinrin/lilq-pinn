@@ -1,0 +1,82 @@
+{
+  "benchmark": "bratu",
+  "P": 25,
+  "p": 5,
+  "method": "LiL-Q",
+  "method_key": "lilq",
+  "device": "cpu",
+  "trial_space": "tensor Chebyshev on the CGL set, N/P = 10 (P2-16)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.004015304148197174,
+  "rule_step": 4,
+  "returned_iterate": 5,
+  "stopping_reason": "rule fired",
+  "iterates": 5,
+  "logged_pass_s": 0.0018900055438280106,
+  "time_s": 0.0012691318988800049,
+  "timing": {
+    "stamps": [
+      0.0,
+      0.00020136497914791107,
+      0.00045257993042469025,
+      0.0007068198174238205,
+      0.0009592026472091675,
+      0.0012121275067329407
+    ],
+    "total_s": 0.0012691318988800049,
+    "timings": [
+      {
+        "total_s": 0.0012702960520982742,
+        "runs_s": [
+          0.0017277542501688004,
+          0.0012718252837657928,
+          0.0012692548334598541,
+          0.0012696105986833572,
+          0.0012702960520982742
+        ]
+      },
+      {
+        "total_s": 0.0012691318988800049,
+        "runs_s": [
+          0.0012744925916194916,
+          0.001275600865483284,
+          0.0012691318988800049,
+          0.0012643150985240936,
+          0.0012655481696128845
+        ]
+      },
+      {
+        "total_s": 0.001261647790670395,
+        "runs_s": [
+          0.001261269673705101,
+          0.0012611374258995056,
+          0.001267826184630394,
+          0.0012619495391845703,
+          0.001261647790670395
+        ]
+      }
+    ],
+    "spread": 0.006854735126420541,
+    "iterate_counts": [
+      6
+    ],
+    "logged_count": 6,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 0.17584988399600737,
+  "final_error": 0.012994268768477181,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

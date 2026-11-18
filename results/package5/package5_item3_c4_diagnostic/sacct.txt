@@ -1,0 +1,4 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20590230                      lilq-p5e-c4-cpu     medium                            billing=48,cpu=48,mem=360G,node=1   00:51:07  COMPLETED      0:0 
+20590231                      lilq-p5e-c4-gpu        gpu billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1   00:07:54  COMPLETED      0:0 

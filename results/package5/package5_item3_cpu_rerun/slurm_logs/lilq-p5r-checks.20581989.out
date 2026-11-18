@@ -1,0 +1,166 @@
+provenance lock OK: commit 3df7b7b2225c, tree c3748314e419
+job 20581989 on c196: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu_rerun/provenance/checks
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "method": "NiL-N (L-BFGS)",
+  "device": "cpu",
+  "iterations": 3158,
+  "pilot": {
+    "iterations": 100,
+    "training_time_s": 0.9501800779253244,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 32.796115692704916,
+  "time_with_s": 34.518472619354725,
+  "error_time_s": 1.4795721285045147,
+  "time_rel_diff": 0.05251710119539935,
+  "c4_rtol": 0.05,
+  "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+  "slurm_job_id": "20581989",
+  "c2_passed": true,
+  "c4_passed": false
+}
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 766,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 0.3921483997255564,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 27.446956852450967,
+  "time_with_s": 27.269756585359573,
+  "error_time_s": 5.0587181728333235,
+  "time_rel_diff": 0.006456098868956024,
+  "c4_rtol": 0.05,
+  "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+  "slurm_job_id": "20581989",
+  "c2_passed": true,
+  "c4_passed": true
+}
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+{
+  "benchmark": "burgers",
+  "P": 625,
+  "method": "NiL-N (L-BFGS)",
+  "device": "cpu",
+  "iterations": 1934,
+  "pilot": {
+    "iterations": 100,
+    "training_time_s": 1.5518948882818222,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 35.22949992120266,
+  "time_with_s": 36.89121382124722,
+  "error_time_s": 0.7360005117952824,
+  "time_rel_diff": 0.047168251146377134,
+  "c4_rtol": 0.05,
+  "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+  "slurm_job_id": "20581989",
+  "c2_passed": true,
+  "c4_passed": true
+}
+{
+  "benchmark": "burgers",
+  "P": 625,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 239,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 1.256501181051135,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 17.74227125197649,
+  "time_with_s": 17.040229082107544,
+  "error_time_s": 2.229170151054859,
+  "time_rel_diff": 0.039568900728577154,
+  "c4_rtol": 0.05,
+  "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+  "slurm_job_id": "20581989",
+  "c2_passed": true,
+  "c4_passed": true
+}
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "method": "NiL-N (L-BFGS)",
+  "device": "cpu",
+  "iterations": 758,
+  "pilot": {
+    "iterations": 100,
+    "training_time_s": 3.9611831717193127,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 26.874609047546983,
+  "time_with_s": 27.185212172567844,
+  "error_time_s": 0.39842137321829796,
+  "time_rel_diff": 0.011557493709818725,
+  "c4_rtol": 0.05,
+  "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+  "slurm_job_id": "20581989",
+  "c2_passed": true,
+  "c4_passed": true,
+  "timings": [
+    {
+      "time_without_s": 26.874609047546983,
+      "time_with_s": 27.185212172567844,
+      "rel_diff_with_vs_without": 0.011557493709818725
+    },
+    {
+      "time_without_s": 27.410722060129046,
+      "time_with_s": 26.70409864000976,
+      "rel_diff_with_vs_without": -0.02577908814547875
+    },
+    {
+      "time_without_s": 26.235623775050044,
+      "time_with_s": 24.641024492681026,
+      "rel_diff_with_vs_without": -0.060779926410039244
+    }
+  ],
+  "timings_spread": 0.07233742011985797,
+  "timings_outside_rtol": 1
+}
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "method": "NiL-N (LM)",
+  "device": "cpu",
+  "iterations": 213,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 1.4109119065105915,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 28.169683502987027,
+  "time_with_s": 33.27811309322715,
+  "error_time_s": 2.966250542551279,
+  "time_rel_diff": 0.1813449409077826,
+  "c4_rtol": 0.05,
+  "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+  "slurm_job_id": "20581989",
+  "c2_passed": true,
+  "c4_passed": false
+}

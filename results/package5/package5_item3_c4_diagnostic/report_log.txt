@@ -1,0 +1,7 @@
+p5e report, 2026-11-18T06:31:53.119464+00:00
+
+jobs: 20590230 20590231
+
+SUs by job (Grace's rates; su_per_job.csv): 66 in all
+  20590230 lilq-p5e-c4-cpu: 40.9 (0.85 h at 48/h), COMPLETED
+  20590231 lilq-p5e-c4-gpu: 25.3 (0.13 h at 192/h), COMPLETED

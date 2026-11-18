@@ -1,0 +1,429 @@
+{
+  "C1": {
+    "check": "C1: the loss over iterations 0..100 equals Package 1 (v2.0.0)",
+    "passed": true,
+    "runs": 90,
+    "worst": 0.0,
+    "record": "networks/checks/c1.json"
+  },
+  "C2": {
+    "check": "C2: the error log does not change the iterates",
+    "passed": true,
+    "pairs": 6,
+    "c4_diagnostic_processes": 11
+  },
+  "C3": {
+    "check": "C3: LiL-Q values of Burgers equal Package 4",
+    "passed": true,
+    "rows": 7,
+    "record": "lil/checks/c3_burgers.json"
+  },
+  "C4": {
+    "check": "C4: the clock with and without the error log within 5% (the first pair of each)",
+    "passed": false,
+    "pairs": {
+      "c2_c4_bl_P1024_lm_cpu": {
+        "benchmark": "bl",
+        "method": "NiL-N (LM)",
+        "iterations": 213,
+        "time_without_s": 28.169683502987027,
+        "time_with_s": 33.27811309322715,
+        "time_rel_diff": 0.1813449409077826,
+        "c4_passed": false,
+        "timings": null,
+        "timings_spread": null
+      },
+      "c2_c4_bl_P1024_nil_n_cpu": {
+        "benchmark": "bl",
+        "method": "NiL-N (L-BFGS)",
+        "iterations": 758,
+        "time_without_s": 26.874609047546983,
+        "time_with_s": 27.185212172567844,
+        "time_rel_diff": 0.011557493709818725,
+        "c4_passed": true,
+        "timings": [
+          {
+            "time_without_s": 26.874609047546983,
+            "time_with_s": 27.185212172567844,
+            "rel_diff_with_vs_without": 0.011557493709818725
+          },
+          {
+            "time_without_s": 27.410722060129046,
+            "time_with_s": 26.70409864000976,
+            "rel_diff_with_vs_without": -0.02577908814547875
+          },
+          {
+            "time_without_s": 26.235623775050044,
+            "time_with_s": 24.641024492681026,
+            "rel_diff_with_vs_without": -0.060779926410039244
+          }
+        ],
+        "timings_spread": 0.07233742011985797
+      },
+      "c2_c4_bratu_P225_lm_cpu": {
+        "benchmark": "bratu",
+        "method": "NiL-N (LM)",
+        "iterations": 766,
+        "time_without_s": 27.446956852450967,
+        "time_with_s": 27.269756585359573,
+        "time_rel_diff": 0.006456098868956024,
+        "c4_passed": true,
+        "timings": null,
+        "timings_spread": null
+      },
+      "c2_c4_bratu_P225_nil_n_cpu": {
+        "benchmark": "bratu",
+        "method": "NiL-N (L-BFGS)",
+        "iterations": 3158,
+        "time_without_s": 32.796115692704916,
+        "time_with_s": 34.518472619354725,
+        "time_rel_diff": 0.05251710119539935,
+        "c4_passed": false,
+        "timings": null,
+        "timings_spread": null
+      },
+      "c2_c4_burgers_P625_lm_cpu": {
+        "benchmark": "burgers",
+        "method": "NiL-N (LM)",
+        "iterations": 239,
+        "time_without_s": 17.74227125197649,
+        "time_with_s": 17.040229082107544,
+        "time_rel_diff": 0.039568900728577154,
+        "c4_passed": true,
+        "timings": null,
+        "timings_spread": null
+      },
+      "c2_c4_burgers_P625_nil_n_cpu": {
+        "benchmark": "burgers",
+        "method": "NiL-N (L-BFGS)",
+        "iterations": 1934,
+        "time_without_s": 35.22949992120266,
+        "time_with_s": 36.89121382124722,
+        "time_rel_diff": 0.047168251146377134,
+        "c4_passed": true,
+        "timings": null,
+        "timings_spread": null
+      }
+    },
+    "c4_diagnostic": {
+      "groups": {
+        "cpu numpy (module)": {
+          "processes": 3,
+          "pairs": 9,
+          "median": -0.018532190767274283,
+          "min": -0.1066465993033138,
+          "max": 0.048589418918745964,
+          "pairs_outside_rtol": 2,
+          "verdict": "clean",
+          "iterations": [
+            213
+          ],
+          "libraries_as_expected": true,
+          "wait_policy_as_expected": true,
+          "c2_passed": true
+        },
+        "cpu torch (wheel)": {
+          "processes": 3,
+          "pairs": 9,
+          "median": -0.01397230035178443,
+          "min": -0.1472297380814482,
+          "max": 0.0376494000545604,
+          "pairs_outside_rtol": 3,
+          "verdict": "clean",
+          "iterations": [
+            213
+          ],
+          "libraries_as_expected": true,
+          "wait_policy_as_expected": true,
+          "c2_passed": true
+        },
+        "cpu active (module, OMP_WAIT_POLICY=ACTIVE)": {
+          "processes": 3,
+          "pairs": 9,
+          "median": -0.06135065929485875,
+          "min": -0.40319521526831087,
+          "max": 0.064352940015186,
+          "pairs_outside_rtol": 6,
+          "verdict": "faster with the log",
+          "iterations": [
+            213
+          ],
+          "libraries_as_expected": true,
+          "wait_policy_as_expected": true,
+          "c2_passed": true
+        },
+        "A100 numpy (module, two processes side by side)": {
+          "processes": 2,
+          "pairs": 6,
+          "median": -0.0002834160089978733,
+          "min": -0.013511933588657037,
+          "max": 0.12270661471461938,
+          "pairs_outside_rtol": 1,
+          "verdict": "clean",
+          "iterations": [
+            1286,
+            1330
+          ],
+          "libraries_as_expected": true,
+          "wait_policy_as_expected": true,
+          "c2_passed": true
+        }
+      },
+      "findings": [
+        "cpu numpy is clean: the rerun's +18% was not reproduced",
+        "a group is more than 5% faster with the log: not foreseen, to be explained"
+      ],
+      "a100_set_may_go": true
+    }
+  },
+  "pairing": {
+    "check": "a paired A100 run against the same run alone",
+    "passed": true,
+    "rows": [
+      {
+        "solo": "solo_bl_P1024_nil_n_s0_cuda",
+        "benchmark": "bl",
+        "P": 1024,
+        "method": "NiL-N (L-BFGS)",
+        "seed": 0,
+        "device": "cuda",
+        "solo_tag": "gpu-bl-solo",
+        "slurm_job_id_solo": "20592825",
+        "slurm_job_id_paired": "20592825",
+        "iteration": 3630,
+        "time_solo_s": 59.93013270571828,
+        "time_paired_s": 61.62726138159633,
+        "evaluations_solo": 4017,
+        "evaluations_paired": 4017,
+        "paired_over_solo_minus_1": 0.02831845349336448,
+        "rtol": 0.05,
+        "paired_tag": "gpu-bl-1",
+        "passed": true
+      },
+      {
+        "solo": "solo_bratu_P225_nil_n_s0_cuda",
+        "benchmark": "bratu",
+        "P": 225,
+        "method": "NiL-N (L-BFGS)",
+        "seed": 0,
+        "device": "cuda",
+        "solo_tag": "gpu-bratu-solo",
+        "slurm_job_id_solo": "20592823",
+        "slurm_job_id_paired": "20592823",
+        "iteration": 3390,
+        "time_solo_s": 59.97115950100124,
+        "time_paired_s": 58.706715354695916,
+        "evaluations_solo": 3810,
+        "evaluations_paired": 3810,
+        "paired_over_solo_minus_1": -0.021084203754376474,
+        "rtol": 0.05,
+        "paired_tag": "gpu-bratu-0",
+        "passed": true
+      },
+      {
+        "solo": "solo_burgers_P625_nil_n_s0_cuda",
+        "benchmark": "burgers",
+        "P": 625,
+        "method": "NiL-N (L-BFGS)",
+        "seed": 0,
+        "device": "cuda",
+        "solo_tag": "gpu-burgers-solo",
+        "slurm_job_id_solo": "20592824",
+        "slurm_job_id_paired": "20592824",
+        "iteration": 3890,
+        "time_solo_s": 59.977518828585744,
+        "time_paired_s": 61.060769544914365,
+        "evaluations_solo": 4172,
+        "evaluations_paired": 4172,
+        "paired_over_solo_minus_1": 0.018060945792448102,
+        "rtol": 0.05,
+        "paired_tag": "gpu-burgers-0",
+        "passed": true
+      }
+    ],
+    "gates": {
+      "gate_bl": {
+        "paired_over_solo_minus_1": 0.0305719271823921,
+        "passed": true
+      },
+      "gate_bratu": {
+        "paired_over_solo_minus_1": 0.004996641813713065,
+        "passed": true
+      },
+      "gate_burgers": {
+        "paired_over_solo_minus_1": 0.020879792847337875,
+        "passed": true
+      }
+    }
+  },
+  "openmp_diagnostic_c1": {
+    "numpy-first/bl_P1024_nil_n_s0_cpu": {
+      "benchmark": "bl",
+      "P": 1024,
+      "method": "NiL-N (L-BFGS)",
+      "seed": 0,
+      "device": "cpu",
+      "iterations_compared": 101,
+      "last_iteration": 100,
+      "max_rel_diff": 0.0,
+      "rtol": 1e-06,
+      "passed": true,
+      "package1_history": "..\\package1_local\\package1\\B_instrumentation\\four_method_jobs\\bl_cpu\\models\\bl_P1024_NiL-N_s0_cpu\\history.csv"
+    },
+    "numpy-first/bratu_P225_nil_n_s0_cpu": {
+      "benchmark": "bratu",
+      "P": 225,
+      "method": "NiL-N (L-BFGS)",
+      "seed": 0,
+      "device": "cpu",
+      "iterations_compared": 101,
+      "last_iteration": 100,
+      "max_rel_diff": 0.0,
+      "rtol": 1e-06,
+      "passed": true,
+      "package1_history": "..\\package1_local\\package1\\B_instrumentation\\four_method_jobs\\bratu_cpu\\models\\bratu_P225_NiL-N_s0_cpu\\history.csv"
+    },
+    "numpy-first/burgers_P625_nil_n_s0_cpu": {
+      "benchmark": "burgers",
+      "P": 625,
+      "method": "NiL-N (L-BFGS)",
+      "seed": 0,
+      "device": "cpu",
+      "iterations_compared": 101,
+      "last_iteration": 100,
+      "max_rel_diff": 0.0,
+      "rtol": 1e-06,
+      "passed": true,
+      "package1_history": "..\\package1_local\\package1\\B_instrumentation\\four_method_jobs\\burgers_cpu\\models\\burgers_P625_NiL-N_s0_cpu\\history.csv"
+    },
+    "torch-first/bl_P1024_nil_n_s0_cpu": {
+      "benchmark": "bl",
+      "P": 1024,
+      "method": "NiL-N (L-BFGS)",
+      "seed": 0,
+      "device": "cpu",
+      "iterations_compared": 101,
+      "last_iteration": 100,
+      "max_rel_diff": 0.3719497240305008,
+      "rtol": 1e-06,
+      "passed": false,
+      "package1_history": "..\\package1_local\\package1\\B_instrumentation\\four_method_jobs\\bl_cpu\\models\\bl_P1024_NiL-N_s0_cpu\\history.csv"
+    },
+    "torch-first/bratu_P225_nil_n_s0_cpu": {
+      "benchmark": "bratu",
+      "P": 225,
+      "method": "NiL-N (L-BFGS)",
+      "seed": 0,
+      "device": "cpu",
+      "iterations_compared": 101,
+      "last_iteration": 100,
+      "max_rel_diff": 0.002885755790203002,
+      "rtol": 1e-06,
+      "passed": false,
+      "package1_history": "..\\package1_local\\package1\\B_instrumentation\\four_method_jobs\\bratu_cpu\\models\\bratu_P225_NiL-N_s0_cpu\\history.csv"
+    },
+    "torch-first/burgers_P625_nil_n_s0_cpu": {
+      "benchmark": "burgers",
+      "P": 625,
+      "method": "NiL-N (L-BFGS)",
+      "seed": 0,
+      "device": "cpu",
+      "iterations_compared": 101,
+      "last_iteration": 100,
+      "max_rel_diff": 1.3513726289215173e-06,
+      "rtol": 1e-06,
+      "passed": false,
+      "package1_history": "..\\package1_local\\package1\\B_instrumentation\\four_method_jobs\\burgers_cpu\\models\\burgers_P625_NiL-N_s0_cpu\\history.csv"
+    }
+  },
+  "component_a_library": {
+    "libraries": {
+      "numpy": [
+        "module"
+      ],
+      "torch": [
+        "torch"
+      ]
+    },
+    "threads": [
+      48
+    ],
+    "package1_threads": [
+      48
+    ],
+    "effect": {
+      "F1_adam_s_per_iteration": {
+        "numpy": [
+          0.4656500000000001,
+          0.45829000000000003,
+          0.4480799999999999
+        ],
+        "torch": [
+          0.33596,
+          0.35653999999999997,
+          0.31305
+        ],
+        "median_numpy": 0.45829000000000003,
+        "median_torch": 0.33596,
+        "torch_over_numpy": 0.7330729450784437,
+        "rounds_overlap": false,
+        "verdict": "the library changes it"
+      },
+      "F1_lbfgs_s_per_iteration": {
+        "numpy": [
+          0.4470789473684208,
+          0.4503000000000003,
+          0.49242222222222204
+        ],
+        "torch": [
+          0.3713356164383561,
+          0.36029192546583855,
+          0.3452023121387283
+        ],
+        "median_numpy": 0.4503000000000003,
+        "median_torch": 0.36029192546583855,
+        "torch_over_numpy": 0.8001153130487193,
+        "rounds_overlap": false,
+        "verdict": "the library changes it"
+      },
+      "F2_s_per_evaluation": {
+        "numpy": [
+          9.3695,
+          11.816333333333333,
+          10.386714285714286
+        ],
+        "torch": [
+          9.514875,
+          7.9768,
+          9.2715
+        ],
+        "median_numpy": 10.386714285714286,
+        "median_torch": 9.2715,
+        "torch_over_numpy": 0.892630695806456,
+        "rounds_overlap": true,
+        "verdict": "no change beyond the cutoff"
+      }
+    },
+    "torch_first_reproduces_package1": false
+  },
+  "openmp_libraries": {
+    "package5_item3_cpu/P5_3_cost/lil/provenance": {
+      "module": 8
+    },
+    "package5_item3_cpu_rerun/P5_3_cost/networks/provenance": {
+      "module": 8
+    },
+    "package5_item3_cpu_rerun/provenance": {
+      "module": 6
+    },
+    "package5_item3_gpu/P5_3_cost/networks/provenance": {
+      "module": 15
+    },
+    "package5_item3_gpu/P5_3_cost/lil/provenance": {
+      "module": 6
+    },
+    "package5_item3_gpu/provenance": {
+      "module": 3
+    }
+  }
+}

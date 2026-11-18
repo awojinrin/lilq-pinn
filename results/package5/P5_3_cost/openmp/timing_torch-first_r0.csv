@@ -1,0 +1,5 @@
+first,round,library,benchmark,P,method,iterations,training_time_s,s_per_iteration,stopping_reason
+torch,0,torch,bratu,225,nil_n,2641,30.001202834770083,0.011359789032476366,budget
+torch,0,torch,bratu,225,lm,985,30.007199646905065,0.030464162078076208,budget
+torch,0,torch,bl,1024,nil_n,462,30.050479356199503,0.06504432761082143,budget
+torch,0,torch,bl,1024,lm,123,30.04642576724291,0.24427988428652772,budget

@@ -1,0 +1,16 @@
+{
+  "kind": "active",
+  "device": "cpu",
+  "round": 1,
+  "library": "module",
+  "environment": {
+    "OMP_WAIT_POLICY": "ACTIVE",
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48",
+    "GOMP_SPINCOUNT": null,
+    "CUDA_VISIBLE_DEVICES": null,
+    "SLURM_JOB_ID": "20590230",
+    "SLURM_CPUS_PER_TASK": "48"
+  }
+}

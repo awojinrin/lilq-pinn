@@ -1,0 +1,83 @@
+{
+  "benchmark": "burgers",
+  "P": 324,
+  "p": 18,
+  "method": "LiL-Q",
+  "method_key": "lilq",
+  "device": "cpu",
+  "trial_space": "sine x Chebyshev on the Gauss-Legendre set, 3p per direction (Package 4)",
+  "boundary_weight": 10.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.020507052540779114,
+  "rule_step": 5,
+  "returned_iterate": 6,
+  "stopping_reason": "rule fired",
+  "iterates": 6,
+  "logged_pass_s": 0.42912305891513824,
+  "time_s": 0.4176133871078491,
+  "timing": {
+    "stamps": [
+      0.0,
+      0.07111012563109398,
+      0.14044969528913498,
+      0.21051914244890213,
+      0.2794050369411707,
+      0.3479081019759178,
+      0.41662378795444965
+    ],
+    "total_s": 0.4176133871078491,
+    "timings": [
+      {
+        "total_s": 0.4165811389684677,
+        "runs_s": [
+          0.4165624361485243,
+          0.42072489112615585,
+          0.41599312983453274,
+          0.41875803656876087,
+          0.4165811389684677
+        ]
+      },
+      {
+        "total_s": 0.4176133871078491,
+        "runs_s": [
+          0.4186676498502493,
+          0.41591902263462543,
+          0.4176133871078491,
+          0.4165772367268801,
+          0.42556115612387657
+        ]
+      },
+      {
+        "total_s": 0.4231013972312212,
+        "runs_s": [
+          0.44425676949322224,
+          0.4231013972312212,
+          0.4227967206388712,
+          0.424908060580492,
+          0.42282235994935036
+        ]
+      }
+    ],
+    "spread": 0.015651832627129547,
+    "iterate_counts": [
+      7
+    ],
+    "logged_count": 7,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 1.2294146803980419e-06,
+  "final_error": 2.5460155726293707e-05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

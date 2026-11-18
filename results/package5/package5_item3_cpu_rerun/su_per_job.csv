@@ -1,0 +1,8 @@
+job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
+20581988,lilq-p5r-preflight,"billing=24,cpu=24,mem=32G,node=1",0.1425,COMPLETED,24,3.4,
+20581989,lilq-p5r-checks,"billing=48,cpu=48,mem=360G,node=1",0.1983,COMPLETED,48,9.5,
+20581990,lilq-p5r-bratu,"billing=48,cpu=48,mem=360G,node=1",4.3197,COMPLETED,48,207.3,
+20581991,lilq-p5r-burgers-a,"billing=48,cpu=48,mem=360G,node=1",3.6914,COMPLETED,48,177.2,
+20581992,lilq-p5r-burgers-b,"billing=48,cpu=48,mem=360G,node=1",3.6667,COMPLETED,48,176.0,
+20581993,lilq-p5r-bl-a,"billing=48,cpu=48,mem=360G,node=1",3.0442,COMPLETED,48,146.1,
+20581994,lilq-p5r-bl-b,"billing=48,cpu=48,mem=360G,node=1",3.2075,COMPLETED,48,154.0,

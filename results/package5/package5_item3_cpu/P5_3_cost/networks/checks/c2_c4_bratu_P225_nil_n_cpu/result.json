@@ -1,0 +1,23 @@
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "method": "NiL-N (L-BFGS)",
+  "device": "cpu",
+  "iterations": 3093,
+  "pilot": {
+    "iterations": 100,
+    "training_time_s": 0.9699986819177866,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 33.27386913448572,
+  "time_with_s": 33.81622312963009,
+  "error_time_s": 0.827060803771019,
+  "time_rel_diff": 0.016299697307586642,
+  "c4_rtol": 0.05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "slurm_job_id": "20564296",
+  "c2_passed": true,
+  "c4_passed": true
+}

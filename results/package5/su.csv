@@ -6,7 +6,33 @@ job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
 20533641,lilq-p5-beltrami,"billing=24,cpu=24,mem=96G,node=1",1.1931,COMPLETED,24,28.6,
 20533642,lilq-p5-timed,"billing=48,cpu=48,mem=360G,node=1",0.5836,COMPLETED,48,28.0,
 20533643,lilq-p5-item4,"billing=24,cpu=24,mem=96G,node=1",0.8942,COMPLETED,24,21.5,
+20564295,lilq-p5c-preflight,"billing=24,cpu=24,mem=32G,node=1",0.1717,COMPLETED,24,4.1,"item 3, package5_item3_cpu"
+20564296,lilq-p5c-protocol,"billing=48,cpu=48,mem=360G,node=1",0.2439,COMPLETED,48,11.7,"item 3, package5_item3_cpu"
+20564297,lilq-p5c-bratu,"billing=48,cpu=48,mem=360G,node=1",4.6733,COMPLETED,48,224.3,"item 3, package5_item3_cpu"
+20564298,lilq-p5c-burgers-a,"billing=48,cpu=48,mem=360G,node=1",4.0247,COMPLETED,48,193.2,"item 3, package5_item3_cpu"
+20564299,lilq-p5c-burgers-b,"billing=48,cpu=48,mem=360G,node=1",3.8353,COMPLETED,48,184.1,"item 3, package5_item3_cpu"
+20564300,lilq-p5c-bl-a,"billing=48,cpu=48,mem=360G,node=1",3.2706,COMPLETED,48,157.0,"item 3, package5_item3_cpu"
+20564301,lilq-p5c-bl-b,"billing=48,cpu=48,mem=360G,node=1",3.4144,COMPLETED,48,163.9,"item 3, package5_item3_cpu"
+20581988,lilq-p5r-preflight,"billing=24,cpu=24,mem=32G,node=1",0.1425,COMPLETED,24,3.4,"item 3, package5_item3_cpu_rerun"
+20581989,lilq-p5r-checks,"billing=48,cpu=48,mem=360G,node=1",0.1983,COMPLETED,48,9.5,"item 3, package5_item3_cpu_rerun"
+20581990,lilq-p5r-bratu,"billing=48,cpu=48,mem=360G,node=1",4.3197,COMPLETED,48,207.3,"item 3, package5_item3_cpu_rerun"
+20581991,lilq-p5r-burgers-a,"billing=48,cpu=48,mem=360G,node=1",3.6914,COMPLETED,48,177.2,"item 3, package5_item3_cpu_rerun"
+20581992,lilq-p5r-burgers-b,"billing=48,cpu=48,mem=360G,node=1",3.6667,COMPLETED,48,176.0,"item 3, package5_item3_cpu_rerun"
+20581993,lilq-p5r-bl-a,"billing=48,cpu=48,mem=360G,node=1",3.0442,COMPLETED,48,146.1,"item 3, package5_item3_cpu_rerun"
+20581994,lilq-p5r-bl-b,"billing=48,cpu=48,mem=360G,node=1",3.2075,COMPLETED,48,154.0,"item 3, package5_item3_cpu_rerun"
+20592822,lilq-p5g-preflight,"billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1",0.0697,COMPLETED,80,5.6,"item 3, package5_item3_gpu"
+20592823,lilq-p5g-bratu,"billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1",2.3203,COMPLETED,192,445.5,"item 3, package5_item3_gpu"
+20592824,lilq-p5g-burgers,"billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1",3.9506,COMPLETED,192,758.5,"item 3, package5_item3_gpu"
+20592825,lilq-p5g-bl,"billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1",3.4197,COMPLETED,192,656.6,"item 3, package5_item3_gpu"
+20590230,lilq-p5e-c4-cpu,"billing=48,cpu=48,mem=360G,node=1",0.8519,COMPLETED,48,40.9,"item 3, package5_item3_c4_diagnostic"
+20590231,lilq-p5e-c4-gpu,"billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1",0.1317,COMPLETED,192,25.3,"item 3, package5_item3_c4_diagnostic"
 20533644,lilq-p5-report,"billing=24,cpu=24,mem=32G,node=1",0.1086,COMPLETED,24,2.6,not in the last tarball: from sacct after it ended
 20534654,lilq-p5t-retime,"billing=48,cpu=48,mem=360G,node=1",0.0808,COMPLETED,48,3.9,not in the last tarball: from sacct after it ended
 20549881,lilq-p5a-a2,"billing=24,cpu=24,mem=96G,node=1",1.0197,TIMEOUT,24,24.5,not in the last tarball: from sacct after it ended
 20553982,lilq-p5a-a2,"billing=24,cpu=24,mem=96G,node=1",0.265,COMPLETED,24,6.4,not in the last tarball: from sacct after it ended
+20564302,lilq-p5c-report,"billing=24,cpu=24,mem=32G,node=1",0.0247,COMPLETED,24,0.6,not in the last tarball: from sacct after it ended
+20571987,lilq-p5o-openmp,"billing=48,cpu=48,mem=360G,node=1",0.3003,COMPLETED,48,14.4,not in the last tarball: from sacct after it ended
+20581995,lilq-p5r-report,"billing=24,cpu=24,mem=32G,node=1",0.0767,COMPLETED,24,1.8,not in the last tarball: from sacct after it ended
+20581996,lilq-p5k-openmp-kovasznay,"billing=48,cpu=48,mem=360G,node=1",0.4358,COMPLETED,48,20.9,not in the last tarball: from sacct after it ended
+20590233,lilq-p5e-report,"billing=24,cpu=24,mem=32G,node=1",0.0344,COMPLETED,24,0.8,not in the last tarball: from sacct after it ended
+20592826,lilq-p5g-report,"billing=24,cpu=24,mem=32G,node=1",0.0958,COMPLETED,24,2.3,not in the last tarball: from sacct after it ended

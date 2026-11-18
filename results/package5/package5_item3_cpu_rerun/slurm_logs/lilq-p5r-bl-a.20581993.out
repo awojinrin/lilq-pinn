@@ -1,0 +1,25 @@
+provenance lock OK: commit 3df7b7b2225c, tree c3748314e419
+job 20581993 on c239: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu_rerun/provenance/cpu-bl-a
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+bl P=64 NiL-N (L-BFGS) s0 cpu: 54648 it, 600.0 s, budget, loss 3.275e-04, error 3.165e-03
+bl P=64 NiL-N (L-BFGS) s2 cpu: 42745 it, 600.0 s, budget, loss 4.730e-04, error 3.333e-03
+bl P=64 NiL-Q (L-BFGS) s1 cpu: 10294 it, 104.9 s, optimizer_stall, loss 3.875e-03, error 1.012e-02
+bl P=64 NiL-N (LM) s0 cpu: 21071 it, 400.0 s, optimizer_stall, loss 1.557e-04, error 3.710e-03
+bl P=64 NiL-N (LM) s2 cpu: 29377 it, 600.0 s, budget, loss 6.049e-04, error 4.180e-03
+bl P=256 NiL-N (L-BFGS) s1 cpu: 37454 it, 600.0 s, budget, loss 5.223e-04, error 2.830e-03
+bl P=256 NiL-Q (L-BFGS) s0 cpu: 45764 it, 600.0 s, budget, loss 4.878e-04, error 3.705e-03
+bl P=256 NiL-Q (L-BFGS) s2 cpu: 43040 it, 600.0 s, budget, loss 5.455e-04, error 2.400e-03
+bl P=256 NiL-N (LM) s1 cpu: 14802 it, 600.0 s, budget, loss 9.204e-09, error 5.121e-03
+bl P=576 NiL-N (L-BFGS) s0 cpu: 30676 it, 600.0 s, budget, loss 9.986e-05, error 1.360e-03
+bl P=576 NiL-N (L-BFGS) s2 cpu: 23013 it, 600.0 s, budget, loss 6.520e-05, error 5.598e-04
+bl P=576 NiL-Q (L-BFGS) s1 cpu: 24186 it, 600.0 s, budget, loss 7.487e-04, error 2.699e-03
+bl P=576 NiL-N (LM) s0 cpu: 5051 it, 600.1 s, budget, loss 1.198e-09, error 6.340e-05
+bl P=576 NiL-N (LM) s2 cpu: 4910 it, 600.0 s, budget, loss 7.192e-10, error 1.562e-04
+bl P=1024 NiL-N (L-BFGS) s1 cpu: 11502 it, 600.0 s, budget, loss 7.536e-05, error 1.126e-03
+bl P=1024 NiL-Q (L-BFGS) s0 cpu: 10303 it, 600.0 s, budget, loss 6.215e-05, error 5.029e-04
+bl P=1024 NiL-Q (L-BFGS) s2 cpu: 9822 it, 600.0 s, budget, loss 2.951e-04, error 2.163e-03
+bl P=1024 NiL-N (LM) s1 cpu: 2880 it, 600.0 s, budget, loss 2.633e-09, error 3.161e-04

@@ -1,0 +1,47 @@
+{
+  "pretrain_s": 0.18328549340367317,
+  "benchmark": "bl",
+  "P": 576,
+  "method": "NiL-N (LM)",
+  "method_key": "lm",
+  "seed": 0,
+  "collocation_seed": 42,
+  "device": "cuda",
+  "budget_s": 600.0,
+  "iteration_cap": null,
+  "error_logged": true,
+  "error_every": 1,
+  "stopping_reason": "budget",
+  "iterations": 30846,
+  "evaluations": 61682,
+  "training_time_s": 600.0092482212931,
+  "error_time_s": 87.41344348341227,
+  "solver_wall_s": 687.6940352153033,
+  "solver_window_epoch_s": [
+    1795019371.4961236,
+    1795020059.1901624
+  ],
+  "setup_s": 0.03691045008599758,
+  "wall_total_s": 687.9156177081168,
+  "final_loss": 8.568576905689736e-11,
+  "final_error": 0.00021097531462117966,
+  "n_params": 595,
+  "pretrain_loss": 5.119800784735781e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": null,
+  "nil_q_inner_cap": null,
+  "stall": null,
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "torch_threads": 24,
+  "lm": {
+    "mu_final": 5.120000000000009e-10,
+    "n_jacobian_evals": 30846
+  },
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "tag": "gpu-bl-0",
+  "slurm_job_id": "20592825"
+}

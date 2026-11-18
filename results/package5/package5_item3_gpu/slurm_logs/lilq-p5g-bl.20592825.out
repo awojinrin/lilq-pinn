@@ -1,0 +1,84 @@
+provenance lock OK: commit 1a88feb4ba15, tree 63a389858cf9
+job 20592825 on g078: 48 threads, 48 cores usable, OverSubscribe=OK
+NVIDIA A100-PCIE-40GB, 40960 MiB
+NVIDIA A100-PCIE-40GB, 40960 MiB
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_gpu/provenance/gpu-bl
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+solo bl P=1024 NiL-N (L-BFGS) s0 cuda: 3635 it in 60.0 s
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+
+gate (GPU 0) bl P=1024 NiL-N (L-BFGS) s0 cuda: 3601 it in 60.0 s
+gate (GPU 1) bl P=1024 NiL-N (L-BFGS) s0 cuda: 3532 it in 60.0 s
+{
+  "check": "the pairing gate: the solo run again with both GPUs busy, before the budget runs",
+  "benchmark": "bl",
+  "P": 1024,
+  "method_key": "nil_n",
+  "seed": 0,
+  "device": "cuda",
+  "gpu": 1,
+  "solo": "solo_bl_P1024_nil_n_s0_cuda",
+  "gate": "gate_bl_P1024_nil_n_s0_cuda_gpu1",
+  "other_gpu": "gate_bl_P1024_nil_n_s0_cuda_gpu0",
+  "slurm_job_id_solo": "20592825",
+  "slurm_job_id_paired": "20592825",
+  "iteration": 3530,
+  "time_solo_s": 58.199825474992394,
+  "time_paired_s": 59.97910630144179,
+  "evaluations_solo": 3896,
+  "evaluations_paired": 3896,
+  "paired_over_solo_minus_1": 0.0305719271823921,
+  "rtol": 0.05,
+  "paired_tag": "gpu-bl-gate1",
+  "passed": true,
+  "overlap_fraction": 0.9997964873757522,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "slurm_job_id": "20592825"
+}
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+bl P=64 NiL-N (L-BFGS) s0 cuda: 26586 it, 600.0 s, budget, loss 4.454e-04, error 3.696e-03
+bl P=64 NiL-N (L-BFGS) s1 cuda: 31963 it, 600.0 s, budget, loss 3.733e-03, error 9.026e-03
+bl P=64 NiL-Q (L-BFGS) s0 cuda: 27126 it, 600.0 s, budget, loss 5.358e-04, error 3.296e-03bl P=64 NiL-N (L-BFGS) s2 cuda: 26260 it, 600.0 s, budget, loss 4.039e-04, error 3.641e-03
+
+bl P=64 NiL-Q (L-BFGS) s1 cuda: 31098 it, 600.0 s, budget, loss 2.432e-04, error 3.296e-03
+bl P=64 NiL-Q (L-BFGS) s2 cuda: 30764 it, 600.0 s, budget, loss 6.446e-04, error 7.407e-03
+bl P=64 NiL-N (LM) s0 cuda: 28540 it, 480.1 s, optimizer_stall, loss 1.557e-04, error 3.710e-03
+bl P=64 NiL-N (LM) s1 cuda: 32635 it, 600.0 s, budget, loss 8.676e-05, error 2.987e-03
+bl P=64 NiL-N (LM) s2 cuda: 33269 it, 600.0 s, budget, loss 7.118e-05, error 2.650e-03
+bl P=256 NiL-N (L-BFGS) s0 cuda: 25861 it, 600.0 s, budget, loss 5.029e-04, error 2.768e-03
+bl P=256 NiL-N (L-BFGS) s1 cuda: 26823 it, 600.0 s, budget, loss 3.869e-04, error 3.025e-03
+bl P=256 NiL-N (L-BFGS) s2 cuda: 28586 it, 600.0 s, budget, loss 1.161e-03, error 6.009e-03
+bl P=256 NiL-Q (L-BFGS) s0 cuda: 27960 it, 600.0 s, budget, loss 1.279e-04, error 9.031e-04
+bl P=256 NiL-Q (L-BFGS) s1 cuda: 26754 it, 600.0 s, budget, loss 3.882e-04, error 3.296e-03
+bl P=256 NiL-Q (L-BFGS) s2 cuda: 30229 it, 600.0 s, budget, loss 3.019e-04, error 3.466e-03
+bl P=256 NiL-N (LM) s0 cuda: 32667 it, 600.0 s, budget, loss 1.345e-09, error 2.260e-01
+bl P=256 NiL-N (LM) s1 cuda: 32976 it, 600.0 s, budget, loss 2.393e-09, error 5.268e-03
+bl P=256 NiL-N (LM) s2 cuda: 32525 it, 600.0 s, budget, loss 2.526e-09, error 1.429e-03
+bl P=576 NiL-N (L-BFGS) s0 cuda: 31732 it, 600.0 s, budget, loss 3.315e-04, error 2.565e-03
+bl P=576 NiL-N (L-BFGS) s1 cuda: 32445 it, 600.0 s, budget, loss 1.710e-05, error 2.518e-04
+bl P=576 NiL-N (L-BFGS) s2 cuda: 29774 it, 600.0 s, budget, loss 6.835e-05, error 7.602e-04
+bl P=576 NiL-Q (L-BFGS) s0 cuda: 28626 it, 600.0 s, budget, loss 1.256e-04, error 7.565e-04
+bl P=576 NiL-Q (L-BFGS) s1 cuda: 32367 it, 600.0 s, budget, loss 2.776e-05, error 2.963e-04
+bl P=576 NiL-Q (L-BFGS) s2 cuda: 33043 it, 600.0 s, budget, loss 3.442e-05, error 4.628e-04
+bl P=576 NiL-N (LM) s0 cuda: 30846 it, 600.0 s, budget, loss 8.569e-11, error 2.110e-04
+bl P=576 NiL-N (LM) s1 cuda: 30384 it, 600.0 s, budget, loss 6.068e-12, error 1.595e-03
+bl P=576 NiL-N (LM) s2 cuda: 30915 it, 600.0 s, budget, loss 7.071e-11, error 1.717e-04
+bl P=1024 NiL-N (L-BFGS) s0 cuda: 31140 it, 600.0 s, budget, loss 7.474e-06, error 1.480e-04
+bl P=1024 NiL-N (L-BFGS) s1 cuda: 36303 it, 600.0 s, budget, loss 1.876e-05, error 3.114e-04
+bl P=1024 NiL-N (L-BFGS) s2 cuda: 32353 it, 600.0 s, budget, loss 1.502e-05, error 1.890e-04
+bl P=1024 NiL-Q (L-BFGS) s0 cuda: 28415 it, 600.0 s, budget, loss 8.945e-05, error 1.054e-03
+bl P=1024 NiL-Q (L-BFGS) s1 cuda: 27242 it, 600.0 s, budget, loss 2.787e-04, error 3.332e-03
+bl P=1024 NiL-Q (L-BFGS) s2 cuda: 28599 it, 600.0 s, budget, loss 1.757e-04, error 1.923e-03
+bl P=1024 NiL-N (LM) s0 cuda: 29224 it, 600.0 s, budget, loss 5.030e-12, error 2.369e-04
+bl P=1024 NiL-N (LM) s1 cuda: 29226 it, 600.0 s, budget, loss 2.206e-11, error 3.141e-04
+bl P=1024 NiL-N (LM) s2 cuda: 29052 it, 600.0 s, budget, loss 5.429e-08, error 3.101e-04
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+OpenMP library: module (/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0)
+bl P=64 LiL-N (L-BFGS) cuda: optimizer_stall, 1.04 s, error 1.510e-02
+bl P=256 LiL-N (L-BFGS) cuda: optimizer_stall, 7.77 s, error 6.086e-04
+bl P=576 LiL-N (L-BFGS) cuda: optimizer_stall, 109 s, error 1.028e-04
+bl P=1024 LiL-N (L-BFGS) cuda: budget, 600 s, error 4.844e-05
+THE BL PAIR DONE

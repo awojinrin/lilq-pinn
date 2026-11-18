@@ -1,0 +1,75 @@
+{
+  "benchmark": "burgers",
+  "P": 900,
+  "p": 30,
+  "method": "LiL-N (trf)",
+  "method_key": "trf",
+  "device": "cpu",
+  "trial_space": "sine x Chebyshev on the Gauss-Legendre set, 3p per direction (Package 4)",
+  "boundary_weight": 10.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.14419072680175304,
+  "status": 1,
+  "message": "`gtol` termination condition is satisfied.",
+  "nfev": 6,
+  "njev": 6,
+  "stopping_reason": "1: `gtol` termination condition is satisfied.",
+  "iterates": 5,
+  "logged_pass_s": 5.032706946134567,
+  "tolerances": 1e-12,
+  "max_nfev": 200,
+  "final_x_is_last_logged": true,
+  "time_s": 4.5027187410742044,
+  "timing": {
+    "stamps": [
+      0.001251203939318657,
+      0.8771542180329561,
+      1.750398889183998,
+      2.628214990720153,
+      3.503674266859889,
+      4.379801474511623
+    ],
+    "total_s": 4.5027187410742044,
+    "timings": [
+      {
+        "total_s": 4.5027187410742044,
+        "runs_s": [
+          4.5027187410742044
+        ]
+      },
+      {
+        "total_s": 4.5023445300757885,
+        "runs_s": [
+          4.5023445300757885
+        ]
+      },
+      {
+        "total_s": 4.512030880898237,
+        "runs_s": [
+          4.512030880898237
+        ]
+      }
+    ],
+    "spread": 0.0021514015104227013,
+    "iterate_counts": [
+      6
+    ],
+    "logged_count": 6,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 1.7189383281384485e-11,
+  "final_error": 3.6049531471131956e-08,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

@@ -1,0 +1,47 @@
+{
+  "pretrain_s": 0.012957120314240456,
+  "benchmark": "bratu",
+  "P": 225,
+  "method": "NiL-Q (L-BFGS)",
+  "method_key": "nil_q",
+  "seed": 1,
+  "collocation_seed": 42,
+  "device": "cuda",
+  "budget_s": 600.0,
+  "iteration_cap": null,
+  "error_logged": true,
+  "error_every": 10,
+  "stopping_reason": "budget",
+  "iterations": 26019,
+  "evaluations": 40401,
+  "training_time_s": 600.0064180586487,
+  "error_time_s": 0.9484396073967218,
+  "solver_wall_s": 600.9561680685729,
+  "solver_window_epoch_s": [
+    1795018059.7016816,
+    1795018660.6578522
+  ],
+  "setup_s": 0.037294233217835426,
+  "wall_total_s": 601.0650816559792,
+  "final_loss": 8.832361224556878e-05,
+  "final_error": 0.0008164420480753922,
+  "n_params": 235,
+  "pretrain_loss": 6.645174368381393e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": 66,
+  "nil_q_inner_cap": 400,
+  "stall": {
+    "stall_iteration": null,
+    "stall_evaluations": null,
+    "stall_time_s": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "torch_threads": 24,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "tag": "gpu-bratu-0",
+  "slurm_job_id": "20592823"
+}

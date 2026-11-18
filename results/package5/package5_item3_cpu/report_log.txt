@@ -1,0 +1,12 @@
+p5c report, 2026-11-17T09:37:49.347335+00:00
+
+jobs: 20564300 20564301 20564297 20564298 20564299 20564295 20564296
+
+SUs by job (Grace's rates; su_per_job.csv): 938 in all
+  20564295 lilq-p5c-preflight: 4.1 (0.17 h at 24/h), COMPLETED
+  20564296 lilq-p5c-protocol: 11.7 (0.24 h at 48/h), COMPLETED
+  20564297 lilq-p5c-bratu: 224.3 (4.67 h at 48/h), COMPLETED
+  20564298 lilq-p5c-burgers-a: 193.2 (4.02 h at 48/h), COMPLETED
+  20564299 lilq-p5c-burgers-b: 184.1 (3.84 h at 48/h), COMPLETED
+  20564300 lilq-p5c-bl-a: 157.0 (3.27 h at 48/h), COMPLETED
+  20564301 lilq-p5c-bl-b: 163.9 (3.41 h at 48/h), COMPLETED

@@ -1,0 +1,81 @@
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "p": 32,
+  "method": "LiL-N (trf)",
+  "method_key": "trf",
+  "device": "cpu",
+  "trial_space": "lifted sine x Chebyshev on the CGL set, N/P = 10 (Package 3 split)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "ic",
+  "setup_s": 0.3788764923810959,
+  "status": 4,
+  "message": "Both `ftol` and `xtol` termination conditions are satisfied.",
+  "nfev": 19,
+  "njev": 12,
+  "stopping_reason": "4: Both `ftol` and `xtol` termination conditions are satisfied.",
+  "iterates": 11,
+  "logged_pass_s": 16.583882804960012,
+  "tolerances": 1e-12,
+  "max_nfev": 200,
+  "final_x_is_last_logged": true,
+  "time_s": 16.79354758746922,
+  "timing": {
+    "stamps": [
+      0.008266033604741096,
+      1.5388428587466478,
+      3.073869986459613,
+      4.560178043320775,
+      6.049856459721923,
+      7.590950904414058,
+      9.121642459183931,
+      10.634435683488846,
+      12.110631240531802,
+      13.589949095621705,
+      15.064415983855724,
+      16.574286555871367
+    ],
+    "total_s": 16.79354758746922,
+    "timings": [
+      {
+        "total_s": 23.118958497419953,
+        "runs_s": [
+          23.118958497419953
+        ]
+      },
+      {
+        "total_s": 16.594825387001038,
+        "runs_s": [
+          16.594825387001038
+        ]
+      },
+      {
+        "total_s": 16.79354758746922,
+        "runs_s": [
+          16.79354758746922
+        ]
+      }
+    ],
+    "spread": 0.39314261875448,
+    "iterate_counts": [
+      12
+    ],
+    "logged_count": 12,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 0.0004118701884908139,
+  "final_error": 4.843669023898105e-05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

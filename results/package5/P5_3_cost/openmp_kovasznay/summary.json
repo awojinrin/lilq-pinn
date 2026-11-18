@@ -1,0 +1,166 @@
+{
+  "libraries": {
+    "numpy": [
+      "module"
+    ],
+    "torch": [
+      "torch"
+    ]
+  },
+  "threads": [
+    48
+  ],
+  "package1_threads": [
+    48
+  ],
+  "torch_first_reproduces_package1": false,
+  "reproduction": {
+    "numpy-first/r0/F1": {
+      "rows": 3,
+      "max_rel_diff": 1.0472213460252623e-12,
+      "within_rtol": true
+    },
+    "numpy-first/r0/F2": {
+      "rows": 10,
+      "max_rel_diff": 0.12948136150948455,
+      "within_rtol": false
+    },
+    "numpy-first/r1/F1": {
+      "rows": 3,
+      "max_rel_diff": 1.0472213460252623e-12,
+      "within_rtol": true
+    },
+    "numpy-first/r1/F2": {
+      "rows": 8,
+      "max_rel_diff": 4.53366576691155e-08,
+      "within_rtol": true
+    },
+    "numpy-first/r2/F1": {
+      "rows": 3,
+      "max_rel_diff": 1.0472213460252623e-12,
+      "within_rtol": true
+    },
+    "numpy-first/r2/F2": {
+      "rows": 9,
+      "max_rel_diff": 3.9373262867725305e-07,
+      "within_rtol": true
+    },
+    "torch-first/r0/F1": {
+      "rows": 3,
+      "max_rel_diff": 0.0,
+      "within_rtol": true
+    },
+    "torch-first/r0/F2": {
+      "rows": 10,
+      "max_rel_diff": 0.12948091679599416,
+      "within_rtol": false
+    },
+    "torch-first/r1/F1": {
+      "rows": 3,
+      "max_rel_diff": 0.0,
+      "within_rtol": true
+    },
+    "torch-first/r1/F2": {
+      "rows": 11,
+      "max_rel_diff": 0.0,
+      "within_rtol": true
+    },
+    "torch-first/r2/F1": {
+      "rows": 3,
+      "max_rel_diff": 0.0,
+      "within_rtol": true
+    },
+    "torch-first/r2/F2": {
+      "rows": 10,
+      "max_rel_diff": 0.12948091679599416,
+      "within_rtol": false
+    }
+  },
+  "effect": {
+    "F1_adam_s_per_iteration": {
+      "numpy": [
+        0.4656500000000001,
+        0.45829000000000003,
+        0.4480799999999999
+      ],
+      "torch": [
+        0.33596,
+        0.35653999999999997,
+        0.31305
+      ],
+      "median_numpy": 0.45829000000000003,
+      "median_torch": 0.33596,
+      "torch_over_numpy": 0.7330729450784437,
+      "rounds_overlap": false,
+      "verdict": "the library changes it"
+    },
+    "F1_lbfgs_s_per_iteration": {
+      "numpy": [
+        0.4470789473684208,
+        0.4503000000000003,
+        0.49242222222222204
+      ],
+      "torch": [
+        0.3713356164383561,
+        0.36029192546583855,
+        0.3452023121387283
+      ],
+      "median_numpy": 0.4503000000000003,
+      "median_torch": 0.36029192546583855,
+      "torch_over_numpy": 0.8001153130487193,
+      "rounds_overlap": false,
+      "verdict": "the library changes it"
+    },
+    "F2_s_per_evaluation": {
+      "numpy": [
+        9.3695,
+        11.816333333333333,
+        10.386714285714286
+      ],
+      "torch": [
+        9.514875,
+        7.9768,
+        9.2715
+      ],
+      "median_numpy": 10.386714285714286,
+      "median_torch": 9.2715,
+      "torch_over_numpy": 0.892630695806456,
+      "rounds_overlap": true,
+      "verdict": "no change beyond the cutoff"
+    }
+  },
+  "package1_full_cpu": {
+    "F1_adam_s_per_iteration": {
+      "values": [
+        0.34360999999999997,
+        0.3353399999999999,
+        0.31977999999999995,
+        0.3270199999999999,
+        0.31532
+      ],
+      "median": 0.3270199999999999
+    },
+    "F1_lbfgs_s_per_iteration": {
+      "values": [
+        0.3528405874026893,
+        0.3578324411134904,
+        0.3525595891623871,
+        0.3683047636232407,
+        0.348918075649294
+      ],
+      "median": 0.3528405874026893
+    },
+    "F2_s_per_evaluation": {
+      "values": [
+        5.950434276206322,
+        5.861851063829787,
+        5.8329364820846905,
+        5.880604269293925,
+        5.850200652528549
+      ],
+      "median": 5.861851063829787
+    }
+  },
+  "rtol": 1e-06,
+  "cutoff": 0.05
+}

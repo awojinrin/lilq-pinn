@@ -1,0 +1,43 @@
+{
+  "benchmark": "burgers",
+  "P": 324,
+  "p": 18,
+  "method": "LiL-N (L-BFGS)",
+  "method_key": "lbfgs",
+  "device": "cuda",
+  "trial_space": "sine x Chebyshev on the Gauss-Legendre set, 3p per direction (Package 4)",
+  "boundary_weight": 10.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.03613222390413284,
+  "device_setup_s": 0.0006028097122907639,
+  "budget_s": 600.0,
+  "stopping_reason": "optimizer_stall",
+  "iterations": 4999,
+  "evaluations": 9866,
+  "restarts": 2,
+  "time_s": 33.80209100060165,
+  "training_time_s": 33.80209100060165,
+  "error_time_s": 0.25505413487553596,
+  "error_every": 10,
+  "final_loss": 1.2294146806422536e-06,
+  "stall": {
+    "stall_iteration": 4999,
+    "stall_evaluations": 9866,
+    "stall_time_s": 33.80209100060165
+  },
+  "timing": "one logged pass (Section 6), the error off the clock",
+  "torch_threads": 24,
+  "gradient": "autograd through the torch residual",
+  "timed": true,
+  "final_error": 2.5460164377044972e-05,
+  "last_logged_is_returned": true,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "gpu-burgers-1",
+  "slurm_job_id": "20592824"
+}

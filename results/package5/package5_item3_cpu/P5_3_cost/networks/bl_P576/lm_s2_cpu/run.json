@@ -1,0 +1,43 @@
+{
+  "pretrain_s": 0.23069069162011147,
+  "benchmark": "bl",
+  "P": 576,
+  "method": "NiL-N (LM)",
+  "method_key": "lm",
+  "seed": 2,
+  "collocation_seed": 42,
+  "device": "cpu",
+  "budget_s": 600.0,
+  "iteration_cap": null,
+  "error_logged": true,
+  "error_every": 1,
+  "stopping_reason": "budget",
+  "iterations": 4553,
+  "evaluations": 9099,
+  "training_time_s": 600.0081516988575,
+  "error_time_s": 169.17944995686412,
+  "solver_wall_s": 769.2108764667064,
+  "setup_s": 0.02608470991253853,
+  "wall_total_s": 769.4689036644995,
+  "final_loss": 8.043304801026551e-10,
+  "final_error": 0.00015895476918875823,
+  "n_params": 595,
+  "pretrain_loss": 9.709097812774404e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": null,
+  "nil_q_inner_cap": null,
+  "stall": null,
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "torch_threads": 48,
+  "lm": {
+    "mu_final": 6.400000000000011e-08,
+    "n_jacobian_evals": 4553
+  },
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "tag": "cpu-bl-a",
+  "slurm_job_id": "20564300"
+}

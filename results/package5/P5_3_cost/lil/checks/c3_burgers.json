@@ -1,0 +1,76 @@
+{
+  "check": "C3: LiL-Q values of Burgers equal Package 4",
+  "rows": [
+    {
+      "p": 6,
+      "P": 36,
+      "rule_step": 4,
+      "package4_rule_step": 4,
+      "iterates_compared": 6,
+      "max_rel_diff_error": 2.4524396678637024e-16,
+      "rtol": 1e-08,
+      "passed": true
+    },
+    {
+      "p": 10,
+      "P": 100,
+      "rule_step": 4,
+      "package4_rule_step": 4,
+      "iterates_compared": 6,
+      "max_rel_diff_error": 2.4524397183352193e-16,
+      "rtol": 1e-08,
+      "passed": true
+    },
+    {
+      "p": 14,
+      "P": 196,
+      "rule_step": 4,
+      "package4_rule_step": 4,
+      "iterates_compared": 6,
+      "max_rel_diff_error": 2.2004465857629181e-16,
+      "rtol": 1e-08,
+      "passed": true
+    },
+    {
+      "p": 18,
+      "P": 324,
+      "rule_step": 5,
+      "package4_rule_step": 5,
+      "iterates_compared": 7,
+      "max_rel_diff_error": 2.017716198122339e-12,
+      "rtol": 1e-08,
+      "passed": true
+    },
+    {
+      "p": 22,
+      "P": 484,
+      "rule_step": 5,
+      "package4_rule_step": 5,
+      "iterates_compared": 7,
+      "max_rel_diff_error": 1.0725613677263389e-11,
+      "rtol": 1e-08,
+      "passed": true
+    },
+    {
+      "p": 26,
+      "P": 676,
+      "rule_step": 5,
+      "package4_rule_step": 5,
+      "iterates_compared": 7,
+      "max_rel_diff_error": 5.6157099368905876e-11,
+      "rtol": 1e-08,
+      "passed": true
+    },
+    {
+      "p": 30,
+      "P": 900,
+      "rule_step": 5,
+      "package4_rule_step": 5,
+      "iterates_compared": 7,
+      "max_rel_diff_error": 1.4173245969972957e-10,
+      "rtol": 1e-08,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

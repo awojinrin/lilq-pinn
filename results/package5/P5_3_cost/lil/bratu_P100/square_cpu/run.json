@@ -1,0 +1,85 @@
+{
+  "benchmark": "bratu",
+  "P": 100,
+  "p": 12,
+  "method": "square collocation (SQ-CGL)",
+  "method_key": "square",
+  "device": "cpu",
+  "free_coefficients": 100,
+  "P_trial": 144,
+  "N": 144,
+  "k_stop": 6,
+  "stopping_reason": "tolerance",
+  "tolerance": 1e-09,
+  "K_max": 20,
+  "setup_s": 0.00563882477581501,
+  "kappa": 21406.005000236575,
+  "rank": 144,
+  "iterates": 6,
+  "time_s": 0.005232853814959526,
+  "timing": {
+    "stamps": [
+      0.0,
+      0.0010042786598205566,
+      0.0018541403114795685,
+      0.002691522240638733,
+      0.003550088033080101,
+      0.004387732595205307,
+      0.005232853814959526
+    ],
+    "total_s": 0.005232853814959526,
+    "timings": [
+      {
+        "total_s": 0.005200397223234177,
+        "runs_s": [
+          0.0051890648901462555,
+          0.005176980048418045,
+          0.005275240167975426,
+          0.005258038640022278,
+          0.005200397223234177
+        ]
+      },
+      {
+        "total_s": 0.005232853814959526,
+        "runs_s": [
+          0.005219127982854843,
+          0.005171583965420723,
+          0.005294244736433029,
+          0.005232853814959526,
+          0.005325682461261749
+        ]
+      },
+      {
+        "total_s": 0.005295176059007645,
+        "runs_s": [
+          0.0051832012832164764,
+          0.005307337269186974,
+          0.005186066031455994,
+          0.005295176059007645,
+          0.005299907177686691
+        ]
+      }
+    ],
+    "spread": 0.01822530697270941,
+    "iterate_counts": [
+      7
+    ],
+    "logged_count": 7,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "loss": "||R||^2 of the square system at the iterate (the last iterate: not evaluated)",
+  "final_error": 3.2452632843611526e-05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

@@ -1,0 +1,6 @@
+JobID                                 JobName  Partition                                                    AllocTRES    Elapsed      State ExitCode 
+------------ -------------------------------- ---------- ------------------------------------------------------------ ---------- ---------- -------- 
+20592822                   lilq-p5g-preflight        gpu    billing=8,cpu=8,gres/gpu:a100=1,gres/gpu=1,mem=32G,node=1   00:04:11  COMPLETED      0:0 
+20592823                       lilq-p5g-bratu        gpu billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1   02:19:13  COMPLETED      0:0 
+20592824                     lilq-p5g-burgers        gpu billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1   03:57:02  COMPLETED      0:0 
+20592825                          lilq-p5g-bl        gpu billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1   03:25:11  COMPLETED      0:0 

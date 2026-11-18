@@ -1,0 +1,22 @@
+provenance lock OK: commit 1a88feb4ba15, tree 63a389858cf9
+job 20590230 on c281: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_c4_diagnostic/provenance/c4-cpu
+{"first": "numpy", "round": 0, "openmp_libraries": ["/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"], "library": "module", "expected_library": "module", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_numpy_r0: 213 iterations, with the log against without: -0.2%, -3.1%, -10.7%; C2 passed
+{"first": "torch", "round": 0, "openmp_libraries": ["$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1"], "library": "torch", "expected_library": "torch", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_torch_r0: 213 iterations, with the log against without: -1.4%, -1.4%, -6.8%; C2 passed
+{"first": "numpy", "round": 0, "openmp_libraries": ["/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"], "library": "module", "expected_library": "module", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_active_r0: 213 iterations, with the log against without: -18.0%, +0.6%, +4.7%; C2 passed
+{"first": "torch", "round": 1, "openmp_libraries": ["$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1"], "library": "torch", "expected_library": "torch", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_torch_r1: 213 iterations, with the log against without: -1.4%, -5.6%, -14.7%; C2 passed
+{"first": "numpy", "round": 1, "openmp_libraries": ["/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"], "library": "module", "expected_library": "module", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_active_r1: 213 iterations, with the log against without: -15.6%, -3.5%, -9.2%; C2 passed
+{"first": "numpy", "round": 1, "openmp_libraries": ["/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"], "library": "module", "expected_library": "module", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_numpy_r1: 213 iterations, with the log against without: -10.5%, -2.9%, +4.9%; C2 passed
+{"first": "numpy", "round": 2, "openmp_libraries": ["/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"], "library": "module", "expected_library": "module", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_active_r2: 213 iterations, with the log against without: -40.3%, +6.4%, -6.1%; C2 passed
+{"first": "numpy", "round": 2, "openmp_libraries": ["/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"], "library": "module", "expected_library": "module", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_numpy_r2: 213 iterations, with the log against without: +0.6%, -1.9%, -1.7%; C2 passed
+{"first": "torch", "round": 2, "openmp_libraries": ["$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1"], "library": "torch", "expected_library": "torch", "slurm_job_id": "20590230", "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166"}
+cpu_torch_r2: 213 iterations, with the log against without: +3.6%, +0.4%, +3.8%; C2 passed

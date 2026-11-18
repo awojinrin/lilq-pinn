@@ -105,5 +105,408 @@
     "partition": "medium",
     "commit": "765996180bdf30c4b86ca0cf279ef570ca9daaba",
     "record": "package5_a2/provenance/a2/hardware.json"
+  },
+  "item3": {
+    "note": "Item 3's six stages, each under its own commit lock: per job, from its processes' hardware.json (in each stage records folder)",
+    "package5_item3_cpu": {
+      "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+      "jobs": [
+        {
+          "job": "20564300",
+          "name": "lilq-p5c-bl-a",
+          "node": "c174",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 3,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1",
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20564301",
+          "name": "lilq-p5c-bl-b",
+          "node": "c222",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 3,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1",
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20564296",
+          "name": "lilq-p5c-protocol",
+          "node": "c188",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 7,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1",
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20564297",
+          "name": "lilq-p5c-bratu",
+          "node": "c213",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 3,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1",
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20564298",
+          "name": "lilq-p5c-burgers-a",
+          "node": "c163",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 3,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1",
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20564299",
+          "name": "lilq-p5c-burgers-b",
+          "node": "c088",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 3,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1",
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        }
+      ]
+    },
+    "package5_item3_cpu_rerun": {
+      "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+      "jobs": [
+        {
+          "job": "20581993",
+          "name": "lilq-p5r-bl-a",
+          "node": "c239",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 2,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20581994",
+          "name": "lilq-p5r-bl-b",
+          "node": "c039",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 2,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20581989",
+          "name": "lilq-p5r-checks",
+          "node": "c196",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 4,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20581990",
+          "name": "lilq-p5r-bratu",
+          "node": "c112",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 2,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20581991",
+          "name": "lilq-p5r-burgers-a",
+          "node": "c289",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 2,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20581992",
+          "name": "lilq-p5r-burgers-b",
+          "node": "c211",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 2,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        }
+      ]
+    },
+    "package5_item3_gpu": {
+      "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+      "jobs": [
+        {
+          "job": "20592825",
+          "name": "lilq-p5g-bl",
+          "node": "g078",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": true,
+            "gpus": [
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              },
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              }
+            ],
+            "cuda_available_to_torch": true,
+            "torch_cuda_build_version": "12.6",
+            "cudnn_version": 91002
+          },
+          "processes": 8,
+          "torch_threads": [
+            24
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20592823",
+          "name": "lilq-p5g-bratu",
+          "node": "g004",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": true,
+            "gpus": [
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              },
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              }
+            ],
+            "cuda_available_to_torch": true,
+            "torch_cuda_build_version": "12.6",
+            "cudnn_version": 91002
+          },
+          "processes": 8,
+          "torch_threads": [
+            24
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20592824",
+          "name": "lilq-p5g-burgers",
+          "node": "g057",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": true,
+            "gpus": [
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              },
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              }
+            ],
+            "cuda_available_to_torch": true,
+            "torch_cuda_build_version": "12.6",
+            "cudnn_version": 91002
+          },
+          "processes": 8,
+          "torch_threads": [
+            24
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        }
+      ]
+    },
+    "package5_item3_openmp": {
+      "commit": "fcb99525b0929c108db8b960b2c234bc061218b6",
+      "jobs": [
+        {
+          "job": "20571987",
+          "name": "lilq-p5o-openmp",
+          "node": "c128",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 1,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        }
+      ]
+    },
+    "package5_item3_openmp_kovasznay": {
+      "commit": "3df7b7b2225c92fb35e1246b5a408b8f3160f9dd",
+      "jobs": [
+        {
+          "job": "20581996",
+          "name": "lilq-p5k-openmp-kovasznay",
+          "node": "c189",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 1,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        }
+      ]
+    },
+    "package5_item3_c4_diagnostic": {
+      "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+      "jobs": [
+        {
+          "job": "20590230",
+          "name": "lilq-p5e-c4-cpu",
+          "node": "c281",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": false
+          },
+          "processes": 1,
+          "torch_threads": [
+            48
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        },
+        {
+          "job": "20590231",
+          "name": "lilq-p5e-c4-gpu",
+          "node": "g100",
+          "cpu_model": "Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz",
+          "gpu": {
+            "available": true,
+            "gpus": [
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              },
+              {
+                "name": "NVIDIA A100-PCIE-40GB",
+                "driver_version": "580.126.20",
+                "memory_total": "40960 MiB"
+              }
+            ],
+            "cuda_available_to_torch": true,
+            "torch_cuda_build_version": "12.6",
+            "cudnn_version": 91002
+          },
+          "processes": 1,
+          "torch_threads": [
+            24
+          ],
+          "openmp_libraries": [
+            "/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0"
+          ]
+        }
+      ]
+    }
   }
 }

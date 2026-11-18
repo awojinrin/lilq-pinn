@@ -1,0 +1,53 @@
+{
+  "pretrain_s": 0.0326013769954443,
+  "benchmark": "bratu",
+  "P": 225,
+  "method": "NiL-N (L-BFGS)",
+  "method_key": "nil_n",
+  "seed": 0,
+  "collocation_seed": 42,
+  "device": "cpu",
+  "budget_s": null,
+  "iteration_cap": 110,
+  "error_logged": false,
+  "error_every": 10,
+  "stopping_reason": "iteration_cap",
+  "iterations": 110,
+  "evaluations": 123,
+  "training_time_s": 1.108303152024746,
+  "error_time_s": 0.0,
+  "solver_wall_s": 1.1091918144375086,
+  "solver_window_epoch_s": [
+    1794930326.3836992,
+    1794930327.4928908
+  ],
+  "setup_s": 0.0010828003287315369,
+  "wall_total_s": 1.1434390917420387,
+  "final_loss": 0.6549166053824739,
+  "final_error": NaN,
+  "n_params": 235,
+  "pretrain_loss": 6.206032164011917e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": null,
+  "nil_q_inner_cap": null,
+  "stall": {
+    "stall_iteration": null,
+    "stall_evaluations": null,
+    "stall_time_s": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "torch_threads": 48,
+  "first": "torch",
+  "round": 0,
+  "openmp_libraries": [
+    "$SCRATCH/lilq-run/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1"
+  ],
+  "library": "torch",
+  "expected_library": "torch",
+  "slurm_job_id": "20571987",
+  "commit": "fcb99525b0929c108db8b960b2c234bc061218b6"
+}

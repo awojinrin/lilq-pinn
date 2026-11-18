@@ -1,0 +1,42 @@
+{
+  "benchmark": "bl",
+  "P": 1024,
+  "method": "NiL-N (LM)",
+  "device": "cuda",
+  "iterations": 1286,
+  "pilot": {
+    "iterations": 10,
+    "training_time_s": 0.233337483368814,
+    "target_s": 30.0
+  },
+  "c2_same_parameters": true,
+  "c2_same_losses": true,
+  "time_without_s": 27.016805264167488,
+  "time_with_s": 26.930871098302305,
+  "error_time_s": 3.6949494248256087,
+  "time_rel_diff": 0.0031807671197585214,
+  "c4_rtol": 0.05,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "slurm_job_id": "20590231",
+  "c2_passed": true,
+  "c4_passed": true,
+  "timings": [
+    {
+      "time_without_s": 27.016805264167488,
+      "time_with_s": 26.930871098302305,
+      "rel_diff_with_vs_without": -0.0031807671197585214
+    },
+    {
+      "time_without_s": 26.928373577073216,
+      "time_with_s": 26.926193771883845,
+      "rel_diff_with_vs_without": -8.094826756365978e-05
+    },
+    {
+      "time_without_s": 26.991493380628526,
+      "time_with_s": 26.978378652594984,
+      "rel_diff_with_vs_without": -0.0004858837504320868
+    }
+  ],
+  "timings_spread": 0.0030998188521948614,
+  "timings_outside_rtol": 0
+}

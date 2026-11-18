@@ -1,0 +1,43 @@
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "p": 15,
+  "method": "LiL-N (L-BFGS)",
+  "method_key": "lbfgs",
+  "device": "cpu",
+  "trial_space": "tensor Chebyshev on the CGL set, N/P = 10 (P2-16)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.0363759770989418,
+  "device_setup_s": 0.0032196231186389923,
+  "budget_s": 600.0,
+  "stopping_reason": "optimizer_stall",
+  "iterations": 1345,
+  "evaluations": 1596,
+  "restarts": 2,
+  "time_s": 6.295325357466936,
+  "training_time_s": 6.295325357466936,
+  "error_time_s": 0.08938930742442608,
+  "error_every": 10,
+  "final_loss": 1.8080654638713473e-05,
+  "stall": {
+    "stall_iteration": 1345,
+    "stall_evaluations": 1596,
+    "stall_time_s": 6.295325357466936
+  },
+  "timing": "one logged pass (Section 6), the error off the clock",
+  "torch_threads": 48,
+  "gradient": "autograd through the torch residual",
+  "timed": true,
+  "final_error": 1.5150972606553222e-05,
+  "last_logged_is_returned": true,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-bratu",
+  "slurm_job_id": "20564297"
+}

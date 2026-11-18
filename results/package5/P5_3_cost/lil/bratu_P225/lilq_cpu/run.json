@@ -1,0 +1,82 @@
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "p": 15,
+  "method": "LiL-Q",
+  "method_key": "lilq",
+  "device": "cpu",
+  "trial_space": "tensor Chebyshev on the CGL set, N/P = 10 (P2-16)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.03554285503923893,
+  "rule_step": 4,
+  "returned_iterate": 5,
+  "stopping_reason": "rule fired",
+  "iterates": 5,
+  "logged_pass_s": 0.30867033638060093,
+  "time_s": 0.24444754794239998,
+  "timing": {
+    "stamps": [
+      0.0,
+      0.048903271555900574,
+      0.09758511185646057,
+      0.14578249491751194,
+      0.19404657930135727,
+      0.24223772808909416
+    ],
+    "total_s": 0.24444754794239998,
+    "timings": [
+      {
+        "total_s": 0.25044319219887257,
+        "runs_s": [
+          0.25250477716326714,
+          0.25044319219887257,
+          0.24410163424909115,
+          0.24628497287631035,
+          0.25258829817175865
+        ]
+      },
+      {
+        "total_s": 0.24444754794239998,
+        "runs_s": [
+          0.24513275548815727,
+          0.24703889153897762,
+          0.24425490945577621,
+          0.2443666122853756,
+          0.24444754794239998
+        ]
+      },
+      {
+        "total_s": 0.24433649145066738,
+        "runs_s": [
+          0.24403095804154873,
+          0.24479629285633564,
+          0.24433649145066738,
+          0.2463267706334591,
+          0.24413549154996872
+        ]
+      }
+    ],
+    "spread": 0.02499299515986597,
+    "iterate_counts": [
+      6
+    ],
+    "logged_count": 6,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 1.8080654630280332e-05,
+  "final_error": 1.5150973612819512e-05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

@@ -1,0 +1,87 @@
+{
+  "benchmark": "bratu",
+  "P": 225,
+  "p": 15,
+  "method": "LiL-N (trf)",
+  "method_key": "trf",
+  "device": "cpu",
+  "trial_space": "tensor Chebyshev on the CGL set, N/P = 10 (P2-16)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.03363753482699394,
+  "status": 3,
+  "message": "`xtol` termination condition is satisfied.",
+  "nfev": 7,
+  "njev": 6,
+  "stopping_reason": "3: `xtol` termination condition is satisfied.",
+  "iterates": 5,
+  "logged_pass_s": 0.474550262093544,
+  "tolerances": 1e-12,
+  "max_nfev": 200,
+  "final_x_is_last_logged": true,
+  "time_s": 0.45886820182204247,
+  "timing": {
+    "stamps": [
+      0.0017419122159481049,
+      0.07724617049098015,
+      0.15349333360791206,
+      0.22919318079948425,
+      0.3064104653894901,
+      0.38200034759938717
+    ],
+    "total_s": 0.45886820182204247,
+    "timings": [
+      {
+        "total_s": 0.45886820182204247,
+        "runs_s": [
+          0.8553611915558577,
+          0.458054605871439,
+          0.47484258748590946,
+          0.4574225526303053,
+          0.45886820182204247
+        ]
+      },
+      {
+        "total_s": 0.4599061105400324,
+        "runs_s": [
+          0.4599061105400324,
+          0.45806098356842995,
+          0.46841565519571304,
+          0.460465045645833,
+          0.4574886430054903
+        ]
+      },
+      {
+        "total_s": 0.4572928976267576,
+        "runs_s": [
+          0.45667935349047184,
+          0.4618163574486971,
+          0.4572928976267576,
+          0.4601633958518505,
+          0.4568389244377613
+        ]
+      }
+    ],
+    "spread": 0.005714527662329161,
+    "iterate_counts": [
+      6
+    ],
+    "logged_count": 6,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 1.8080654630279776e-05,
+  "final_error": 1.5150973612820464e-05,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

@@ -1,0 +1,47 @@
+{
+  "pretrain_s": 0.1726868748664856,
+  "benchmark": "burgers",
+  "P": 625,
+  "method": "NiL-Q (L-BFGS)",
+  "method_key": "nil_q",
+  "seed": 2,
+  "collocation_seed": 42,
+  "device": "cuda",
+  "budget_s": 600.0,
+  "iteration_cap": null,
+  "error_logged": true,
+  "error_every": 10,
+  "stopping_reason": "budget",
+  "iterations": 30366,
+  "evaluations": 38645,
+  "training_time_s": 600.00123988837,
+  "error_time_s": 1.567807761952281,
+  "solver_wall_s": 601.5703822039068,
+  "solver_window_epoch_s": [
+    1795023558.547732,
+    1795024160.1181133
+  ],
+  "setup_s": 0.936624102294445,
+  "wall_total_s": 602.681830637157,
+  "final_loss": 5.899581839227775e-06,
+  "final_error": 0.00027776898250117136,
+  "n_params": 645,
+  "pretrain_loss": 1.2889027190833708e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": 41,
+  "nil_q_inner_cap": 750,
+  "stall": {
+    "stall_iteration": null,
+    "stall_evaluations": null,
+    "stall_time_s": null
+  },
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "torch_threads": 24,
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "tag": "gpu-burgers-1",
+  "slurm_job_id": "20592824"
+}

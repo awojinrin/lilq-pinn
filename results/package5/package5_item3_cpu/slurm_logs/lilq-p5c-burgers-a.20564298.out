@@ -1,0 +1,30 @@
+provenance lock OK: commit 0f74bdfdbde9, tree 540143b755e4
+job 20564298 on c163: 48 threads, 48 cores usable, OverSubscribe=NO
+no GPU visible
+$SCRATCH/lilq-run/lilq-pinn/results/package5_item3_cpu/provenance/cpu-burgers-a
+burgers P=25 NiL-N (L-BFGS) s0 cpu: 20257 it, 600.0 s, budget, loss 9.185e-03, error 1.431e-01
+burgers P=25 NiL-N (L-BFGS) s2 cpu: 15833 it, 600.0 s, budget, loss 4.776e-03, error 9.238e-02
+burgers P=25 NiL-Q (L-BFGS) s1 cpu: 6403 it, 284.6 s, optimizer_stall, loss 1.174e-02, error 1.437e-01
+burgers P=25 NiL-N (LM) s0 cpu: 19709 it, 600.0 s, budget, loss 3.365e-03, error 3.860e-02
+burgers P=25 NiL-N (LM) s2 cpu: 19518 it, 600.0 s, budget, loss 1.425e-02, error 1.548e+00
+burgers P=100 NiL-N (L-BFGS) s1 cpu: 28255 it, 600.1 s, budget, loss 1.324e-05, error 1.878e-03
+burgers P=100 NiL-Q (L-BFGS) s0 cpu: 21084 it, 600.0 s, budget, loss 5.376e-05, error 2.084e-03
+burgers P=100 NiL-Q (L-BFGS) s2 cpu: 18528 it, 600.0 s, budget, loss 7.026e-05, error 1.888e-03
+burgers P=100 NiL-N (LM) s1 cpu: 17878 it, 600.0 s, budget, loss 5.095e-06, error 8.191e-04
+burgers P=225 NiL-N (L-BFGS) s0 cpu: 64575 it, 600.0 s, budget, loss 7.449e-06, error 4.193e-04
+burgers P=225 NiL-N (L-BFGS) s2 cpu: 46409 it, 600.0 s, budget, loss 1.340e-05, error 5.376e-04
+burgers P=225 NiL-Q (L-BFGS) s1 cpu: 40980 it, 600.0 s, budget, loss 4.928e-06, error 2.852e-04
+burgers P=225 NiL-N (LM) s0 cpu: 19918 it, 600.0 s, budget, loss 2.710e-10, error 6.183e-06
+burgers P=225 NiL-N (LM) s2 cpu: 19480 it, 600.0 s, budget, loss 5.902e-07, error 1.250e-04
+burgers P=400 NiL-N (L-BFGS) s1 cpu: 12221 it, 600.0 s, budget, loss 4.684e-06, error 2.594e-04
+burgers P=400 NiL-Q (L-BFGS) s0 cpu: 11065 it, 600.0 s, budget, loss 1.551e-05, error 5.084e-04
+burgers P=400 NiL-Q (L-BFGS) s2 cpu: 10944 it, 600.0 s, budget, loss 8.982e-06, error 3.804e-04
+burgers P=400 NiL-N (LM) s1 cpu: 7593 it, 600.1 s, budget, loss 3.138e-07, error 7.119e-05
+burgers P=625 NiL-N (L-BFGS) s0 cpu: 11273 it, 600.1 s, budget, loss 8.486e-06, error 3.129e-04
+burgers P=625 NiL-N (L-BFGS) s2 cpu: 11173 it, 600.0 s, budget, loss 3.850e-06, error 1.906e-04
+burgers P=625 NiL-Q (L-BFGS) s1 cpu: 10774 it, 600.1 s, budget, loss 3.908e-06, error 2.050e-04
+burgers P=625 NiL-N (LM) s0 cpu: 3355 it, 600.1 s, budget, loss 3.760e-07, error 6.108e-05
+burgers P=625 NiL-N (LM) s2 cpu: 3353 it, 600.1 s, budget, loss 2.765e-11, error 5.143e-07
+burgers P=36 LiL-N (L-BFGS) cpu: optimizer_stall, 0.0638 s, error 3.955e-02
+burgers P=196 LiL-N (L-BFGS) cpu: optimizer_stall, 0.977 s, error 2.848e-04
+burgers P=484 LiL-N (L-BFGS) cpu: optimizer_stall, 37.1 s, error 2.775e-06

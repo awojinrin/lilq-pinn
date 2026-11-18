@@ -1,0 +1,3 @@
+job_id,job_name,alloc_tres,elapsed_h,state,su_per_hour,su,note
+20590230,lilq-p5e-c4-cpu,"billing=48,cpu=48,mem=360G,node=1",0.8519,COMPLETED,48,40.9,
+20590231,lilq-p5e-c4-gpu,"billing=48,cpu=48,gres/gpu:a100=2,gres/gpu=2,mem=360G,node=1",0.1317,COMPLETED,192,25.3,

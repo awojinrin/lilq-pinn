@@ -1,0 +1,89 @@
+{
+  "benchmark": "bratu",
+  "P": 25,
+  "p": 5,
+  "method": "LiL-N (trf)",
+  "method_key": "trf",
+  "device": "cpu",
+  "trial_space": "tensor Chebyshev on the CGL set, N/P = 10 (P2-16)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "zero",
+  "setup_s": 0.0040152836591005325,
+  "status": 4,
+  "message": "Both `ftol` and `xtol` termination conditions are satisfied.",
+  "nfev": 14,
+  "njev": 8,
+  "stopping_reason": "4: Both `ftol` and `xtol` termination conditions are satisfied.",
+  "iterates": 7,
+  "logged_pass_s": 0.0057686697691679,
+  "tolerances": 1e-12,
+  "max_nfev": 200,
+  "final_x_is_last_logged": true,
+  "time_s": 0.004128435626626015,
+  "timing": {
+    "stamps": [
+      0.00016770511865615845,
+      0.0006377696990966797,
+      0.0010834597051143646,
+      0.0015243478119373322,
+      0.001969166100025177,
+      0.002410557121038437,
+      0.0028510503470897675,
+      0.004018604755401611
+    ],
+    "total_s": 0.004128435626626015,
+    "timings": [
+      {
+        "total_s": 0.004175093024969101,
+        "runs_s": [
+          0.004175093024969101,
+          0.004256369546055794,
+          0.004260839894413948,
+          0.004128843545913696,
+          0.004134984686970711
+        ]
+      },
+      {
+        "total_s": 0.004125082865357399,
+        "runs_s": [
+          0.004124483093619347,
+          0.004130301997065544,
+          0.004132609814405441,
+          0.004119757562875748,
+          0.004125082865357399
+        ]
+      },
+      {
+        "total_s": 0.004128435626626015,
+        "runs_s": [
+          0.0041283778846263885,
+          0.004120025783777237,
+          0.00421646423637867,
+          0.004137299954891205,
+          0.004128435626626015
+        ]
+      }
+    ],
+    "spread": 0.012123431514961647,
+    "iterate_counts": [
+      8
+    ],
+    "logged_count": 8,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 0.17584988399577234,
+  "final_error": 0.012994392735897161,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

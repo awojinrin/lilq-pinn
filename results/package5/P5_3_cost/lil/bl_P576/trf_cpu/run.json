@@ -1,0 +1,81 @@
+{
+  "benchmark": "bl",
+  "P": 576,
+  "p": 24,
+  "method": "LiL-N (trf)",
+  "method_key": "trf",
+  "device": "cpu",
+  "trial_space": "lifted sine x Chebyshev on the CGL set, N/P = 10 (Package 3 split)",
+  "boundary_weight": 10000.0,
+  "initial_coefficients": "ic",
+  "setup_s": 0.18341750092804432,
+  "status": 2,
+  "message": "`ftol` termination condition is satisfied.",
+  "nfev": 14,
+  "njev": 12,
+  "stopping_reason": "2: `ftol` termination condition is satisfied.",
+  "iterates": 11,
+  "logged_pass_s": 5.110725300386548,
+  "tolerances": 1e-12,
+  "max_nfev": 200,
+  "final_x_is_last_logged": true,
+  "time_s": 4.882806848734617,
+  "timing": {
+    "stamps": [
+      0.003536377102136612,
+      0.4417084474116564,
+      0.8756352700293064,
+      1.3214812520891428,
+      1.7606692090630531,
+      2.1982096824795008,
+      2.634678613394499,
+      3.09522564150393,
+      3.526999903842807,
+      3.9652986135333776,
+      4.396473877131939,
+      4.829947952181101
+    ],
+    "total_s": 4.882806848734617,
+    "timings": [
+      {
+        "total_s": 4.916918221861124,
+        "runs_s": [
+          4.916918221861124
+        ]
+      },
+      {
+        "total_s": 4.882806848734617,
+        "runs_s": [
+          4.882806848734617
+        ]
+      },
+      {
+        "total_s": 4.878700144588947,
+        "runs_s": [
+          4.878700144588947
+        ]
+      }
+    ],
+    "spread": 0.007833659815015492,
+    "iterate_counts": [
+      12
+    ],
+    "logged_count": 12,
+    "max_beta_rel_diff": 0.0,
+    "beta_rtol": 1e-10,
+    "matches_logged_pass": true
+  },
+  "timing_matches": true,
+  "timed": true,
+  "final_loss": 0.0016948777849343543,
+  "final_error": 0.00010284023353226721,
+  "commit": "0f74bdfdbde9ad704f975316655550ec8a93f1cb",
+  "thread_env": {
+    "OMP_NUM_THREADS": "48",
+    "OPENBLAS_NUM_THREADS": "48",
+    "MKL_NUM_THREADS": "48"
+  },
+  "scipy_version": "1.13.1",
+  "tag": "cpu-protocol",
+  "slurm_job_id": "20564296"
+}

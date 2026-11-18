@@ -1,0 +1,12 @@
+p5r report, 2026-11-18T03:49:32.096263+00:00
+
+jobs: 20581993 20581994 20581990 20581991 20581992 20581989 20581988
+
+SUs by job (Grace's rates; su_per_job.csv): 874 in all
+  20581988 lilq-p5r-preflight: 3.4 (0.14 h at 24/h), COMPLETED
+  20581989 lilq-p5r-checks: 9.5 (0.20 h at 48/h), COMPLETED
+  20581990 lilq-p5r-bratu: 207.3 (4.32 h at 48/h), COMPLETED
+  20581991 lilq-p5r-burgers-a: 177.2 (3.69 h at 48/h), COMPLETED
+  20581992 lilq-p5r-burgers-b: 176.0 (3.67 h at 48/h), COMPLETED
+  20581993 lilq-p5r-bl-a: 146.1 (3.04 h at 48/h), COMPLETED
+  20581994 lilq-p5r-bl-b: 154.0 (3.21 h at 48/h), COMPLETED

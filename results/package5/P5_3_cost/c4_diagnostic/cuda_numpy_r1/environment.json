@@ -1,0 +1,16 @@
+{
+  "kind": "numpy",
+  "device": "cuda",
+  "round": 1,
+  "library": "module",
+  "environment": {
+    "OMP_WAIT_POLICY": null,
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24",
+    "GOMP_SPINCOUNT": null,
+    "CUDA_VISIBLE_DEVICES": "1",
+    "SLURM_JOB_ID": "20590231",
+    "SLURM_CPUS_PER_TASK": "48"
+  }
+}

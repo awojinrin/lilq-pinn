@@ -1,0 +1,47 @@
+{
+  "pretrain_s": 0.025049738585948944,
+  "benchmark": "burgers",
+  "P": 100,
+  "method": "NiL-N (LM)",
+  "method_key": "lm",
+  "seed": 1,
+  "collocation_seed": 42,
+  "device": "cuda",
+  "budget_s": 600.0,
+  "iteration_cap": null,
+  "error_logged": true,
+  "error_every": 1,
+  "stopping_reason": "budget",
+  "iterations": 41158,
+  "evaluations": 82310,
+  "training_time_s": 600.0048515237868,
+  "error_time_s": 77.94185583479702,
+  "solver_wall_s": 677.950881479308,
+  "solver_window_epoch_s": [
+    1795015604.6452055,
+    1795016282.5960886
+  ],
+  "setup_s": 0.004586612805724144,
+  "wall_total_s": 677.9806922152638,
+  "final_loss": 3.093722839179598e-06,
+  "final_error": 0.0010669030606531573,
+  "n_params": 105,
+  "pretrain_loss": 3.4202667531374254e-05,
+  "restarts": 0,
+  "nil_q_outer_iterations": null,
+  "nil_q_inner_cap": null,
+  "stall": null,
+  "thread_env": {
+    "OMP_NUM_THREADS": "24",
+    "OPENBLAS_NUM_THREADS": "24",
+    "MKL_NUM_THREADS": "24"
+  },
+  "torch_threads": 24,
+  "lm": {
+    "mu_final": 3.2000000000000054e-07,
+    "n_jacobian_evals": 41158
+  },
+  "commit": "1a88feb4ba15257b6970c21e9eb41b4590117166",
+  "tag": "gpu-burgers-0",
+  "slurm_job_id": "20592824"
+}
