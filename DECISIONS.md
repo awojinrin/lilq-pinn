@@ -17,6 +17,48 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-18 -- Package 5, item 3: the assembly (`experiments/p5_assemble.py --item3-*`) and the table's headline
+
+**What the assembly does with item 3** (commit a61de73; run at a61de73 with every Grace tarball and the
+user's sacct rows for p5o, p5k and the four report jobs):
+- **Six stages, each with its own records folder** (`package5_item3_<stage>/`: COMMIT, provenance,
+  sacct, Slurm logs). The run folders go to `P5_3_cost/`, from the stage whose runs the table uses:
+  - the LiL runs on the CPU and C3 from the CPU set (p5c, 0f74bdf);
+  - the network runs on the CPU, C2 and C4 from the rerun (p5r, 3df7b7b);
+  - every A100 run, the solo and gate runs and the pairing check from the A100 set (p5g, 1a88feb);
+  - the three diagnostics (p5o, p5k, p5e) into `openmp/`, `openmp_kovasznay/`, `c4_diagnostic/`.
+  The CPU set's network runs stay in its records folder, as the record of the cost check. They are
+  not in the table.
+- **Every run the table needs is there** (275), and every process record of those runs loaded the
+  GCC module's OpenMP library (46 records).
+- **The table is rebuilt from the histories and must equal each stage's own table** (the one its
+  report job wrote on Grace): 50, 45 and 60 rows, all equal. 0 runs flagged.
+- **C1 is run again at the assembly** against Package 1 (`package1_local/package1`), now also on the
+  A100 runs: 90 runs, every difference 0.0 (the A100 runs against Package 1's GPU runs, bit for bit).
+  The p5o runs are compared too: numpy first exact, torch first up to 0.37.
+- **The diagnostics' summaries are rerun on the downloaded data** (C4 diagnostic: groups equal
+  Grace's; Component A: against Package 1's A_calibration).
+- **Items 1, 2, 4 and Addendum 2 are untouched:** a checksum of the results tree before and after
+  shows only `su.csv`, `provenance.json`, `hardware.json` (first run only), `assembly_log.txt` and
+  `DECISIONS_package5.md` changed outside item 3.
+- **The assembly ends with an error code because item 3's C4 failed** (Bratu NiL-N +5.25%,
+  Buckley-Leverett LM +18.1%). The failure is reported as it is, not rerun (Section 7).
+
+**The table's headline is now the time with setup and pretraining** (`with_setup_s`), the advisor's
+reply of 17 November ("Pretraining is on the clock for every method"). The optimizer's time is
+given beside it in every cell ("optimizer only"), with its size when another size gives its smallest.
+For the LiL methods on Buckley-Leverett, `setup_s` holds the system's build and the fit of the initial
+profile together (0.015 to 0.50 s); the report says so, as the reply asks.
+
+**SU:** item 3 3,785.0 (p5c 938.9, p5o 14.4, p5r 875.3, p5k 20.9, p5e 67.0, p5g 1,868.5); Package 5
+3,938.5 of the 4,400 cap, 37 jobs.
+
+**The report** (`results/package5/report_item3.md`) asks the advisor one question: whether the C4
+diagnostic is enough for the two CPU pairs outside 5%, or C4 on the CPU should use the median of
+several pairs (about 50 SU, not recommended).
+
+---
+
 ## 2026-11-17 -- Package 5, item 3: the rerun's result, C4 on Buckley-Leverett LM, and the C4 diagnostic (stage p5e)
 
 **The rerun (p5r)** passed the advisor's stop check: 874 SU (his line: 1,000), every job COMPLETED, no
