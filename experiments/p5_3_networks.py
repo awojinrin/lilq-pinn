@@ -378,7 +378,7 @@ def c2_c4_done(out_root, bench, P, method, device):
 
 
 def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=None, seconds=C2C4_SECONDS,
-          repeats=1):
+          repeats=1, d=None):
     """C2 and C4 on one run of a fixed length (no budget), with and without the
     error log: the same iterates (C2, bit for bit) and the same clock (C4,
     within C4_RTOL). The run without the log goes first. The length: ``iterations``,
@@ -389,8 +389,11 @@ def c2_c4(bench, P, method, reference_dir, out_root, device='cpu', iterations=No
     every timing is recorded (``timings``: the times and the signed relative difference, with the log
     against without) with their spread. The verdicts stay those of the first pair, as fixed before
     the runs (the advisor's reply of 17 November 2026 asks for the spread of three timings beside
-    them)."""
-    d = c2_c4_dir(out_root, bench, P, method, device)
+    them).
+
+    ``d``: the folder of its logs and ``result.json`` (default: ``c2_c4_dir``; the C4 diagnostic gives
+    each of its processes its own)."""
+    d = Path(d) if d is not None else c2_c4_dir(out_root, bench, P, method, device)
     d.mkdir(parents=True, exist_ok=True)
     pilot = None
     if iterations is None:

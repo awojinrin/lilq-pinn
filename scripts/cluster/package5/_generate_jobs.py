@@ -668,6 +668,74 @@ OPENMP_KOVASZNAY_JOBS = {
 }
 
 
+# The C4 diagnostic (the user's decision, 17 November 2026, after the rerun): stage p5e, its own results
+# folder (results/package5_item3_c4_diagnostic) under its own commit lock. In the rerun, C4 failed for
+# Buckley-Leverett LM (+18.1% with the error log, the module's OpenMP library); in the CPU set (the
+# wheel's) it passed. The A100 set waits for this. Each process times the LM pair three times at P = 1,024
+# (experiments/p5_3_c4_diagnostic.py). On one whole CPU node: three rounds of three processes, the
+# module's library, the wheel's, and the module's with OMP_WAIT_POLICY=ACTIVE, each kind once in each
+# position (a Latin square, against drift over the job). On one two-A100 node: two processes side by side,
+# 24 threads each, the module's library, as the A100 set runs.
+C4D = 'experiments/p5_3_c4_diagnostic.py'
+C4D_ROUNDS = (('numpy', 'torch', 'active'), ('torch', 'active', 'numpy'), ('active', 'numpy', 'torch'))
+
+
+def c4d_cpu_body():
+    runs = ''.join(f'until_end {"env OMP_WAIT_POLICY=ACTIVE " if kind == "active" else ""}python {C4D} run '
+                   f'--kind {kind} --round {r} --device cpu --require-library --out "$PKG" --reference-dir {REF2}\n'
+                   for r, kinds in enumerate(C4D_ROUNDS) for kind in kinds)
+    return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END_OMP}python experiments/p4_checks.py provenance --out "$PKG" --name c4-cpu
+# Three rounds of three processes, each kind once in each position. Each process: its OpenMP library (it
+# stops if that is not the one its kind should give) and its wait policy (ACTIVE for the 'active' kind,
+# unset for the others), the warm-up, then the Buckley-Leverett LM pair (without the error log, then with
+# it) three times, 213 iterations each, as the rerun's C4
+unset OMP_WAIT_POLICY
+{runs}'''
+
+
+def c4d_gpu_body():
+    pair = ''.join(f'''( export CUDA_VISIBLE_DEVICES={g}
+  until_end python {C4D} run --kind numpy --round {g} --device cuda --require-library --out "$PKG" --reference-dir {REF2} ) & pids+=($!)
+''' for g in (0, 1))
+    return f'''LILQ_WALL_S=__WALL_S__   # the walltime, in seconds
+{UNTIL_END_OMP}gpus=$(nvidia-smi -L | grep -c '^GPU' || true)
+[[ "$gpus" == 2 ]] || {{ echo "THIS JOB NEEDS BOTH A100S OF THE NODE, SEES $gpus: STOPPING"; exit 1; }}
+{THREADS24}   # each process's share of the 48 cores, as the A100 set
+unset OMP_WAIT_POLICY
+python experiments/p4_checks.py provenance --out "$PKG" --name c4-gpu
+# Two processes side by side, one per A100, as the A100 set: each its OpenMP library (the module's), the
+# warm-up, then the Buckley-Leverett LM pair three times, sized by C4's pilot (about 30 s)
+pids=()
+{pair}failed=0
+for pid in "${{pids[@]}}"; do wait "$pid" || failed=1; done
+[[ $failed == 0 ]] || {{ echo "THE C4 PAIR ON THE A100S: A PROCESS FAILED (see above)"; exit 1; }}
+'''
+
+
+C4D_REPORT_BODY = f'''# Each step under its own time limit, so that a stall cannot cost the tarball
+timeout 5m python {C4D} summary --out "$PKG" || echo "SUMMARY FAILED OR STOPPED (exit $?)"
+timeout 15m python scripts/cluster/package2/stage_report.py --stage p5e --results "$RESULTS" \\
+    || echo "REPORT FAILED OR STOPPED (exit $?)"
+'''
+
+C4D_JOBS = {
+    'p5e_cpu.slurm': ('c4-cpu', 'timed-cpu', '01:00:00', """# Package 5, item 3: the C4 diagnostic on one whole CPU node (48 threads), as the rerun's checks ran.
+# Nine processes of about 5 min (three rounds: the module's library, the wheel's, the module's with
+# OMP_WAIT_POLICY=ACTIVE).
+# Submit: through scripts/cluster/package5/submit_p5_item3_c4_diagnostic.sh
+""", c4d_cpu_body()),
+    'p5e_gpu.slurm': ('c4-gpu', 'gpu-pair', '00:20:00', """# Package 5, item 3: the C4 diagnostic on one whole two-A100 node (gpu-pair: both A100s, 48 cores, 192
+# SU/h), two processes side by side, 24 threads each, as the A100 set runs. About 6 min.
+# Submit: through scripts/cluster/package5/submit_p5_item3_c4_diagnostic.sh
+""", c4d_gpu_body()),
+    'p5e_report.slurm': ('report', 'cpu', '00:15:00', """# Package 5, item 3, the C4 diagnostic: after both jobs (afterany). The summary (its last line: A100 SET
+# MAY GO: yes or NO), then sacct, su_per_job.csv and results/package5_item3_c4_diagnostic.tar.gz.
+# Submit: through scripts/cluster/package5/submit_p5_item3_c4_diagnostic.sh
+""", C4D_REPORT_BODY),
+}
+
+
 def main():
     for name in JOBS:
         (HERE / name).write_bytes(render(name).encode())
@@ -683,7 +751,9 @@ def main():
         (HERE / name).write_bytes(render(name, OPENMP_JOBS, 'p5o').encode())
     for name in OPENMP_KOVASZNAY_JOBS:
         (HERE / name).write_bytes(render(name, OPENMP_KOVASZNAY_JOBS, 'p5k').encode())
-    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS) + sum(len(j) for j, _ in item3) + len(OPENMP_JOBS) + len(OPENMP_KOVASZNAY_JOBS)} '
+    for name in C4D_JOBS:
+        (HERE / name).write_bytes(render(name, C4D_JOBS, 'p5e').encode())
+    print(f'{len(JOBS) + len(RETIME_JOBS) + len(A2_JOBS) + sum(len(j) for j, _ in item3) + len(OPENMP_JOBS) + len(OPENMP_KOVASZNAY_JOBS) + len(C4D_JOBS)} '
           f'job scripts written in {HERE}')
 
 

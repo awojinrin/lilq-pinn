@@ -112,7 +112,7 @@ def test_p5_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p5)   export PKG="$RESULTS/package5"' in (cluster / 'env.sh').read_text()
     sb = (cluster / 'sbatch.sh').read_text()
-    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o|p5r|p5k)$' in sb
+    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o|p5r|p5k|p5e)$' in sb
     assert 'cpu-mem)' in sb and '--cpus-per-task=24 --mem=96G' in sb
     assert 'LILQ_WAVE" == p5' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5'] == 'package5'
@@ -690,3 +690,75 @@ def test_the_component_a_diagnostic_submits_its_one_job(tmp_path):
     assert out.returncode == 0, out.stdout + out.stderr
     lines = log.read_text().splitlines()
     assert len(lines) == 1 and _job(lines[0]) == 'p5k_openmp_kovasznay' and '--account=000000000000' in lines[0]
+
+
+# ---------------------------------------------- the C4 diagnostic, Buckley-Leverett LM (stage p5e)
+
+C4D = P5 / 'submit_p5_item3_c4_diagnostic.sh'
+
+
+def test_the_c4_diagnostic_cpu_job_runs_each_kind_once_in_each_position():
+    t = _text('p5e_cpu')
+    assert re.search(r'^# lilq-resources: timed-cpu ', t, re.M) and '#SBATCH --time=01:00:00\n' in t
+    assert '#SBATCH --job-name=lilq-p5e-c4-cpu\n' in t
+    runs = [a for a, _ in _calls('p5e_cpu', 'experiments/p5_3_c4_diagnostic.py')]
+    order = [(int(_arg(a, '--round')[0]), _arg(a, '--kind')[0]) for a in runs]
+    assert order == [(0, 'numpy'), (0, 'torch'), (0, 'active'), (1, 'torch'), (1, 'active'), (1, 'numpy'),
+                     (2, 'active'), (2, 'numpy'), (2, 'torch')]
+    for k in ('numpy', 'torch', 'active'):                   # a Latin square: each kind once in each position
+        assert sorted(i % 3 for i, (_, kind) in enumerate(order) if kind == k) == [0, 1, 2]
+    assert all(_arg(a, '--device') == ['cpu'] and '--require-library' in a for a in runs)
+    body = _body('p5e_cpu')
+    lines = [l for l in body.splitlines() if 'p5_3_c4_diagnostic.py' in l and not l.startswith('#')]
+    assert all(l.startswith('until_end env OMP_WAIT_POLICY=ACTIVE python ') == ('--kind active' in l) for l in lines)
+    assert all(l.startswith('until_end ') for l in lines)
+    assert body.index('unset OMP_WAIT_POLICY\n') < body.index(lines[0])
+
+
+def test_the_c4_diagnostic_gpu_job_runs_two_processes_side_by_side_as_the_a100_set():
+    t = _text('p5e_gpu')
+    assert re.search(r'^# lilq-resources: gpu-pair ', t, re.M) and '#SBATCH --time=00:20:00\n' in t
+    calls = _calls('p5e_gpu', 'experiments/p5_3_c4_diagnostic.py')
+    assert [(int(_arg(a, '--round')[0]), d) for a, d in calls] == [(0, 0), (1, 1)]
+    assert all(_arg(a, '--kind') == ['numpy'] and _arg(a, '--device') == ['cuda'] and '--require-library' in a
+               for a, _ in calls)
+    body = _body('p5e_gpu')
+    assert 'export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24' in body
+    assert "[[ \"$gpus\" == 2 ]]" in body and body.count(') & pids+=($!)') == 2 and 'unset OMP_WAIT_POLICY\n' in body
+    g = _body('p5g_bl')
+    assert 'export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24' in g   # the A100 set's threads
+
+
+def test_the_c4_diagnostic_report_wiring_and_su():
+    body = _body('p5e_report')
+    assert body.index('p5_3_c4_diagnostic.py summary --out "$PKG"') < body.index('stage_report.py --stage p5e')
+    assert re.search(r'^# lilq-resources: cpu ', _text('p5e_report'), re.M)
+    su = 48 * _hours('01:00:00') + 192 * _hours('00:20:00') + 24 * _hours('00:15:00')
+    assert su == 118 and '118 SU requested' in C4D.read_text()
+    cluster = REPO / 'scripts' / 'cluster'
+    assert 'p5e)  export PKG="$RESULTS/package5_item3_c4_diagnostic"' in (cluster / 'env.sh').read_text()
+    assert (_module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5e']
+            == 'package5_item3_c4_diagnostic')
+    assert 'LILQ_WAVE" == p5e' in (cluster / 'submit_lib.sh').read_text()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_c4_diagnostic_dry_run_checks_its_three_jobs(tmp_path):
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(C4D)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    assert 'results/package5_item3_c4_diagnostic' in out.stdout and '118 SU requested' in out.stdout
+    lines = log.read_text().splitlines()
+    assert [_job(l) for l in lines] == ['p5e_cpu', 'p5e_gpu', 'p5e_report']
+    assert '--exclusive' in lines[0] and all('--test-only' in l and '--dependency' not in l for l in lines)
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_c4_diagnostic_report_waits_for_both_jobs(tmp_path):
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(C4D)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert [_job(l) for l in lines] == ['p5e_cpu', 'p5e_gpu', 'p5e_report']
+    assert '--dependency' not in lines[0] and '--dependency' not in lines[1]
+    assert '--dependency=afterany:101:102' in lines[2] and all('--account=000000000000' in l for l in lines)

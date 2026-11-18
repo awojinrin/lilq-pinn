@@ -17,6 +17,65 @@ v3-dev three-way comparison run.
 
 ---
 
+## 2026-11-17 -- Package 5, item 3: the rerun's result, C4 on Buckley-Leverett LM, and the C4 diagnostic (stage p5e)
+
+**The rerun (p5r)** passed the advisor's stop check: 874 SU (his line: 1,000), every job COMPLETED, no
+process stopped, every process loaded the GCC module's OpenMP library. C1 18 of 18 against Package 1
+(exact), 108 runs, C2 6 of 6. **C4 failed on two of six:**
+- Bratu NiL-N +5.25% (within the ~7% spread the CPU set showed on Grace for that pair).
+- **Buckley-Leverett LM +18.1%**: 28.17 s without the error log, 33.28 s with it, 213 iterations
+  (the pilot's size on that node); the log's own 2.97 s is off the clock. In the CPU set (the wheel's
+  library, 128 iterations) the same pair was +2.5%. The Buckley-Leverett NiL-N pair, the one the advisor
+  asked about, timed three times as he asked: reported at the assembly with its spread.
+
+The A100 set's LM runs log the error at every iteration, so if the off-clock log puts time on the clock
+(a leak), it does so in every A100 LM run. **The user's decision (option 2):** hold the A100 set until
+the cause is shown; then **"CPU + mechanism + A100"**, about 45 SU.
+
+**The hypothesis** (not assumed; this tests it): between LM iterations the error evaluation runs off
+the clock; the OpenMP threads idle through part of it, go to sleep (libgomp's default wait policy spins a
+while, then sleeps), and the next on-clock step pays their wake-up, or the evaluation evicts the step's
+data from cache. Either would depend on the library and the thread count.
+
+**The diagnostic** (`experiments/p5_3_c4_diagnostic.py`; stage p5e, results/package5_item3_c4_diagnostic):
+each process imports in its kind's order, records its OpenMP library and its environment, runs the
+warm-up of the rerun's checks process (NiL-N, then LM), then times the Buckley-Leverett LM pair at P =
+1,024 three times (`p5_3_networks.c2_c4(..., repeats=3)`, which now takes the folder to write into: one
+per process). Kinds: `numpy` (the module's library, as the rerun), `torch` (the wheel's, as the CPU
+set), `active` (the module's, with `OMP_WAIT_POLICY=ACTIVE` set by the job: the threads spin instead of
+sleeping; every other process must run with it unset, checked before any import).
+- **CPU** (p5e_cpu, timed-cpu, 1 h walltime): nine processes, three rounds, each kind once in each
+  position (a Latin square, against drift over the job). Each pair is the rerun's length, 213
+  iterations, so the times compare with the rerun's directly. 9 pairs per kind.
+- **A100** (p5e_gpu, gpu-pair, 20 min): two processes side by side, one per A100, 24 threads each, the
+  module's library: as the A100 set runs. The length from C4's pilot (about 30 s), as the A100 set's
+  check would size it. 6 pairs.
+- **Report** (p5e_report, afterany): the summary, then the tarball. 118 SU requested, about 60
+  expected (a change from the 45 given to the user: the A100 part runs on a whole two-A100 node, 192
+  SU/h, to match the A100 set's threads and pairing; one A100 with 8 cores would cost about 13 SU less
+  but would not test the A100 set's layout).
+
+**Decided before the job.** For each group, the median over its pairs of the signed relative difference
+(with the log against without):
+- **leaks** if the median is above 5% (C4's cutoff); **clean** if within 5%; more than 5% faster with
+  the log is not foreseen and is reported to be explained.
+- cpu numpy leaks, cpu torch clean: the leak depends on the library. Both leak: it leaks with either.
+- cpu numpy clean: the rerun's +18% was not reproduced (reported as such, with the 9 pairs).
+- cpu numpy leaks and cpu active clean: the threads going to sleep are the cause; active leaks too:
+  not the sleeping threads.
+- **The A100 set's gate is the A100 group alone:** both processes' 6 pairs present, each with the
+  module's library and no wait policy, and clean: the A100 set goes (step 7 of the steps file).
+  Leaks: stop; a fix is brought to the user before the A100 set. C2 (the log does not change the
+  iterates) and the CPU groups are reported beside the gate, not part of it: C2 has not been run on
+  CUDA before, and a GPU run that is not bit-for-bit repeatable would fail it without any leak.
+
+**Differences from the rerun's process, stated:** the rerun's Buckley-Leverett checks process ran the
+NiL-N pair three times (about 3 min) and LM's 10-iteration pilot before the LM pair; these processes go
+from the warm-up to the LM pair. The CPU set's process (which passed) also ran NiL-N first, so that
+history is common to the pass and the fail; leaving it out saves about 22 SU.
+
+---
+
 ## 2026-11-17 -- Package 5, item 3: the advisor's reply to the cost check; C4's three timings; Component A's OpenMP library (stage p5k)
 
 **The advisor's reply** (17 November 2026; `Post-JCP/Computational Package 5/Package5_Reply_to_item3_cost_check.md`):
