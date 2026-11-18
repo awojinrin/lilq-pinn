@@ -345,3 +345,40 @@ def test_a_failed_k2_is_the_exit_code_and_a_missing_run_stops(tmp_path, stand_in
     (a / 'P5_A2_initial_profile' / 'D_trig_P1024_nu0.1_lam10' / 'betas.npy').unlink()
     with pytest.raises(SystemExit, match='1 run files missing'):
         m.assemble(g, tmp_path / 'out2', tmp_path, tmp_path, tmp_path, tmp_path, adv, extra, a2=a)
+
+
+# ---------------------------------------------------------------- item 3
+
+def test_item3_expects_every_run_of_the_table():
+    import experiments.p5_assemble as asm
+    runs = asm._item3_expected_runs()
+    assert len(runs) == len(set(runs)) == 275
+    nets = [r for r in runs if r.startswith('networks/')]
+    assert len(nets) == 216 and sum(r.endswith('_cuda') for r in nets) == 108       # 12 sizes x 3 methods x 3 seeds
+    lil = [r for r in runs if r.startswith('lil/')]
+    assert sum(r.endswith('/lbfgs_cuda') for r in lil) == 14 and sum(r.endswith('/square_cpu') for r in lil) == 3
+    assert all(r.startswith('lil/bratu_') for r in lil if r.endswith('/square_cpu'))
+
+
+def test_item3_reads_the_openmp_library_of_each_process(tmp_path):
+    import experiments.p5_assemble as asm
+
+    def hw(name, path):
+        d = tmp_path / name
+        d.mkdir(parents=True)
+        (d / 'hardware.json').write_text(json.dumps({'threads': {'threadpools': [
+            {'user_api': 'blas', 'internal_api': 'openblas', 'filepath': '/sw/libopenblas.so'},
+            {'user_api': 'openmp', 'internal_api': 'openmp', 'filepath': path}]}}))
+    hw('a', '/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0')
+    hw('b', '/sw/eb/sw/GCCcore/13.3.0/lib64/libgomp.so.1.0.0')
+    hw('c/d', '/venv/lib/python3.12/site-packages/torch/lib/libgomp.so.1')
+    assert asm._openmp_kinds(tmp_path) == {'module': 2, 'torch': 1}
+
+
+def test_item3_compares_each_stage_with_its_own_rows_only():
+    import experiments.p5_assemble as asm
+    keep = asm.ITEM3_TABLE_ROWS
+    assert keep['cpu']({'device': 'cpu', 'method_key': 'lilq'}) and not keep['cpu']({'device': 'cpu', 'method_key': 'nil_n'})
+    assert keep['rerun']({'device': 'cpu', 'method_key': 'nil_n'}) and not keep['rerun']({'device': 'cuda', 'method_key': 'nil_n'})
+    assert keep['gpu']({'device': 'cuda', 'method_key': 'lbfgs'}) and not keep['gpu']({'device': 'cpu', 'method_key': 'lbfgs'})
+    assert [a for a, _, _ in asm.ITEM3_STAGES] == ['cpu', 'rerun', 'gpu', 'openmp', 'kovasznay', 'c4']

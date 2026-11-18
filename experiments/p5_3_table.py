@@ -165,9 +165,12 @@ def _fmt(t):
 
 def markdown(long_rows, levels=LEVELS):
     lines = ['# Package 5, item 3: time to reach an error', '',
-             'Seconds on the run\'s clock (the solver from its initial coefficients; setup and pretraining '
-             'beside it, in brackets); the smallest over the sizes of the median over the seeds, and the size '
-             '(P) that gives it; a dash where no size reaches the level.', '']
+             'Seconds from the starting data to the iterate: the run\'s clock plus its setup and pretraining '
+             '(the networks\' pretraining; the LiL methods\' system and initial coefficients, on '
+             'Buckley-Leverett the fit of the initial profile), as the advisor\'s reply of 17 November 2026 '
+             'asks; the smallest over the sizes of the median over the seeds, and the size (P) that gives it. '
+             'Then the optimizer alone (the clock from the initial coefficients), with its size if another one '
+             'gives its smallest. A dash where no size reaches the level.', '']
     keys = sorted({(r['benchmark'], r['device']) for r in long_rows},
                   key=lambda k: (BENCHES.index(k[0]) if k[0] in BENCHES else 99, k[1]))
     for bench, device in keys:
@@ -185,7 +188,9 @@ def markdown(long_rows, levels=LEVELS):
                     cells.append('-')
                 else:
                     label = r['method']
-                    cells.append(f"{_fmt(r['time_s'])} ({_fmt(r['with_setup_s'])}), P = {r['P']}")
+                    other = '' if str(r['P']) == str(r['P_with_setup']) else f" (P = {r['P']})"
+                    cells.append(f"{_fmt(r['with_setup_s'])} (P = {r['P_with_setup']}); optimizer only "
+                                 f"{_fmt(r['time_s'])}{other}")
             if label == key:
                 label = next((x['method'] for x in long_rows if x['method_key'] == key), key)
             lines.append(f'| {label} | ' + ' | '.join(cells) + ' |')

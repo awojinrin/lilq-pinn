@@ -98,8 +98,10 @@ def _fake_sbatch(tmp_path):
     fake.write_text('#!/bin/bash\nn=$(cat "$(dirname "$0")/n" 2>/dev/null || echo 100); echo $((n+1)) > "$(dirname "$0")/n"\n'
                     'echo "$*" >> "$(dirname "$0")/log"; echo $((n+1))\n')
     fake.chmod(0o755)
-    return dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", LILQ_ACCOUNT='000000000000', YES='1',
-                LILQ_RESULTS=str(tmp_path / 'results'))
+    env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", LILQ_ACCOUNT='000000000000', YES='1',
+               LILQ_RESULTS=str(tmp_path / 'results'))
+    env.pop('CLUSTER', None)            # Grace's profile, whatever a job running the tests has inherited
+    return env
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')

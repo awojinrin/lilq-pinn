@@ -158,12 +158,13 @@ def copy_grace(grace, out, folders, files, log):
         log.append(f'copied {name}')
 
 
-def su_rows(out, sacct_extra):
-    """Grace's ``su_per_job.csv`` rows, plus the jobs of ``sacct_extra`` (``sacct -X -P -n`` lines of
-    jobs the tarball lacks, as its own report job). Returns (rows, total SU, columns)."""
+def su_rows(out, sacct_extra, more=()):
+    """Grace's ``su_per_job.csv`` rows and ``more`` (rows of other stages' tables), plus the jobs of
+    ``sacct_extra`` (``sacct -X -P -n`` lines of jobs the tarballs lack, as their own report jobs).
+    Returns (rows, total SU, columns)."""
     wave_report = load_module('wave_report', REPO / 'scripts' / 'cluster' / 'wave_report.py')
     with open(Path(out) / 'su_per_job.csv') as fh:
-        rows = list(csv.DictReader(fh))
+        rows = list(csv.DictReader(fh)) + list(more)
     have = {r['job_id'] for r in rows}
     if sacct_extra:
         for r in wave_report.su_rows(Path(sacct_extra).read_text()):

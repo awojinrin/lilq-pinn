@@ -43,7 +43,7 @@ def _text(name):
 
 
 def test_job_scripts_their_classes_and_the_su_plan():
-    assert {p.stem for p in P5.glob('*.slurm')} == set(CLASS) | {'p5_retime', 'p5_a2'}
+    assert {p.stem for p in P5.glob('p5_*.slurm')} == set(CLASS) | {'p5_retime', 'p5_a2'}
     for name, (cls, wall) in CLASS.items():
         t = _text(name)
         assert re.search(rf'^# lilq-resources: {cls} ', t, re.M), name
@@ -112,7 +112,7 @@ def test_p5_is_a_stage_of_the_cluster_scripts():
     cluster = REPO / 'scripts' / 'cluster'
     assert 'p5)   export PKG="$RESULTS/package5"' in (cluster / 'env.sh').read_text()
     sb = (cluster / 'sbatch.sh').read_text()
-    assert '|p3|p4|p5|p5t|p5a)$' in sb
+    assert '|p3|p4|p5|p5t|p5a|p5c|p5g|p5o|p5r|p5k|p5e)$' in sb
     assert 'cpu-mem)' in sb and '--cpus-per-task=24 --mem=96G' in sb
     assert 'LILQ_WAVE" == p5' in (cluster / 'submit_lib.sh').read_text()
     assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5'] == 'package5'
@@ -159,7 +159,7 @@ def _fake_cluster(tmp_path, dry):
 
 
 def _job(line):
-    return re.search(r'(p5_[A-Za-z0-9_]+)\.slurm', line).group(1)
+    return re.search(r'(p5[a-z]?_[A-Za-z0-9_]+)\.slurm', line).group(1)
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
@@ -328,3 +328,437 @@ def test_the_a2_submits_its_one_job(tmp_path):
     assert out.returncode == 0, out.stdout + out.stderr
     lines = log.read_text().splitlines()
     assert len(lines) == 1 and _job(lines[0]) == 'p5_a2' and '--account=000000000000' in lines[0]
+
+
+# ---------------------------------------------------------------- item 3 (stages p5c and p5g)
+
+CPU3 = P5 / 'submit_p5_item3_cpu.sh'
+GPU3 = P5 / 'submit_p5_item3_gpu.sh'
+CPU3_JOBS = {'p5c_preflight', 'p5c_protocol', 'p5c_bratu', 'p5c_burgers_a', 'p5c_burgers_b', 'p5c_bl_a', 'p5c_bl_b',
+             'p5c_report'}
+GPU3_JOBS = {'p5g_preflight', 'p5g_bratu', 'p5g_burgers', 'p5g_bl', 'p5g_report'}
+RERUN3 = P5 / 'submit_p5_item3_rerun.sh'
+RERUN3_JOBS = {'p5r_preflight', 'p5r_checks', 'p5r_bratu', 'p5r_burgers_a', 'p5r_burgers_b', 'p5r_bl_a', 'p5r_bl_b',
+               'p5r_report'}
+STAGE3 = {'p5c': (CPU3, CPU3_JOBS), 'p5g': (GPU3, GPU3_JOBS), 'p5r': (RERUN3, RERUN3_JOBS)}
+RATE3 = {'cpu': 24, 'timed-cpu': 48, 'shared-gpu': 80, 'gpu-pair': 192}    # SU per hour on Grace
+
+
+def _gen():
+    return _module('p5_generate_jobs', P5 / '_generate_jobs.py')
+
+
+def _body(name):
+    return _text(name).split('source scripts/cluster/env.sh\nset -euo pipefail\n', 1)[1]
+
+
+def _calls(name, driver):
+    """(the driver's arguments, the CUDA device or None) of each call of a driver in a job."""
+    out, device = [], None
+    for line in _body(name).replace('\\\n', ' ').splitlines():
+        m = re.search(r'CUDA_VISIBLE_DEVICES=(\d)', line)
+        if m:
+            device = int(m.group(1))
+        if f'python {driver} ' in line:
+            out.append((line.split(f'python {driver} ', 1)[1], device))
+    return out
+
+
+def _arg(args, flag):
+    """The values after ``flag`` (up to the next option or quoted word)."""
+    words = args.split()
+    if flag not in words:
+        return []
+    out = []
+    for w in words[words.index(flag) + 1:]:
+        if w.startswith(('-', '"${')):
+            break
+        out.append(w)
+    return out
+
+
+def test_the_generator_has_the_drivers_sizes_methods_and_seeds():
+    import experiments.p5_3_lil as lil
+    import experiments.p5_3_networks as net
+    gen = _gen()
+    for bench in gen.BENCHES:
+        assert tuple(net.sizes(bench)) == gen.NET_SIZES[bench]
+        assert tuple(lil.SIZES[bench]) == gen.LIL_SIZES[bench]
+        runs = [(P, m, s) for P in net.sizes(bench) for m in net.METHODS for s in net.SEEDS]
+        assert gen.net_runs(bench) == runs
+        for i, n in ((0, 1), (0, 2), (1, 2)):
+            assert gen.part(runs, i, n) == net.part_of(runs, f'{i}/{n}')
+    assert gen.NET_METHODS == net.METHODS and gen.NET_SEEDS == net.SEEDS
+
+
+@pytest.mark.parametrize('stage', ['p5c', 'p5g', 'p5r'])
+def test_every_budget_run_is_in_one_job_and_every_process_has_its_own_records(stage):
+    import experiments.p5_3_networks as net
+    gen = _gen()
+    jobs = sorted(p.stem for p in P5.glob(f'{stage}_*.slurm'))
+    assert set(jobs) == STAGE3[stage][1]
+    device = 'cuda' if stage == 'p5g' else 'cpu'
+    nets, lils = {b: [] for b in gen.BENCHES}, {b: [] for b in gen.BENCHES}
+    records = {'networks': [], 'lil': []}        # (bench, tag): one warm-up and provenance record each
+    for job in jobs:
+        loop = re.search(r'^for bench in ([a-z ]+); do$', _body(job), re.M)     # what "$bench" runs over
+        over = tuple(loop.group(1).split()) if loop else ()
+        for args, _ in _calls(job, 'experiments/p5_3_networks.py'):
+            if args.startswith(('pairing ', 'gate ')):
+                continue                                  # the comparisons: write checks/*.json only
+            bench = _arg(args, '--bench')[0]
+            assert f'--device {device}' in args or '"${NET[@]}"' in args
+            records['networks'].append((over if bench == '"$bench"' else (bench,), _arg(args, '--tag')[0]))
+            if args.startswith('run '):
+                nets[bench] += net.part_of(gen.net_runs(bench), _arg(args, '--part')[0])
+        for args, _ in _calls(job, 'experiments/p5_3_lil.py'):
+            bench = _arg(args, '--bench')[0]
+            records['lil'].append((over if bench == '"$bench"' else (bench,), _arg(args, '--tag')[0]))
+            if _arg(args, '--methods') == ['lbfgs']:
+                lils[bench] += [int(p) for p in _arg(args, '--P')]
+            else:
+                assert stage == 'p5c' and _arg(args, '--methods') == ['lilq', 'trf', 'square']
+    for bench in gen.BENCHES:
+        assert sorted(nets[bench]) == sorted(gen.net_runs(bench)), bench          # each run once
+        # p5r reruns the network runs only: the CPU set's LiL runs loaded the module's OpenMP library
+        assert sorted(lils[bench]) == ([] if stage == 'p5r' else sorted(gen.LIL_SIZES[bench])), bench
+    # the protocol and checks loops call each driver once per problem ("$bench", over the job's loop)
+    for driver, rec in records.items():
+        expanded = [(b2, t) for bs, t in rec for b2 in bs]
+        assert all(bs for bs, _ in rec) and len(expanded) == len(set(expanded)), (driver, expanded)
+    checked = {b for bs, t in records['networks'] if t == 'cpu-checks' for b in bs}
+    assert checked == (set(gen.BENCHES) if stage != 'p5g' else set()), checked     # C2/C4 on every problem
+    names = [re.search(r'provenance --out "\$PKG" --name (\S+)', _text(j)) for j in jobs]
+    names = [m.group(1) for m in names if m]
+    assert len(names) == len(set(names))
+
+
+def test_the_protocol_job_runs_the_lil_methods_and_c2_c4_on_the_three_problems():
+    lil = _calls('p5c_protocol', 'experiments/p5_3_lil.py')
+    assert len(lil) == 1 and '"$bench"' in lil[0][0] and '--device cpu' in lil[0][0]
+    checks = _calls('p5c_protocol', 'experiments/p5_3_networks.py')
+    assert len(checks) == 1 and checks[0][0].startswith('checks ') and '--device cpu' in checks[0][0]
+    assert _body('p5c_protocol').count('for bench in bratu burgers bl; do') == 2
+
+
+def test_the_rerun_checks_job_runs_c2_c4_for_the_networks_only():
+    assert _calls('p5r_checks', 'experiments/p5_3_lil.py') == []
+    checks = _calls('p5r_checks', 'experiments/p5_3_networks.py')
+    assert len(checks) == 2 and all(a.startswith('checks ') and '--device cpu' in a for a, _ in checks)
+    body = _body('p5r_checks')
+    assert body.count('for bench in bratu burgers; do') == 1
+    # Buckley-Leverett NiL-N's pair three times (the advisor's reply of 17 November 2026), and only there
+    assert '--bench bl ' in checks[1][0] and _arg(checks[1][0], '--c4-repeats') == ['nil_n=3']
+    assert '--c4-repeats' not in checks[0][0] and body.count('--c4-repeats') == 1
+
+
+@pytest.mark.parametrize('stage', ['p5g', 'p5r'])
+def test_every_job_checks_the_openmp_library_before_it_runs_anything(stage):
+    """Each driver, imported as its runs import it, must have the GCC module's OpenMP library (as Package 1);
+    every driver call stops before its first run otherwise (DECISIONS.md, 17 November 2026)."""
+    gen = _gen()
+    check = gen.OPENMP_CHECK
+    assert "require_openmp('module')" in check and 'for m in p5_3_networks p5_3_lil; do' in check
+    for job in sorted(STAGE3[stage][1] - {f'{stage}_report'}):
+        body = _body(job)
+        assert check in body, job
+        first_python = min(i for i in (body.find('python experiments/'), body.find('python -m pytest')) if i >= 0)
+        assert body.index(check) < first_python or job.endswith('preflight'), job
+        for driver in ('experiments/p5_3_networks.py', 'experiments/p5_3_lil.py'):
+            for args, _ in _calls(job, driver):
+                if args.startswith(('pairing ', 'gate ')):
+                    continue
+                assert '--require-openmp module' in args or '"${NET[@]}"' in args, (job, args)
+    if stage == 'p5g':
+        assert all('--require-openmp module)' in _body(f'p5g_{b}') for b in gen.BENCHES)   # in NET=(...)
+
+
+def test_the_cpu_set_scripts_stay_as_they_ran():
+    """p5c ran at 0f74bdf; its scripts are its record and get no library check."""
+    for job in CPU3_JOBS:
+        assert 'require_openmp' not in _text(job) and '--require-openmp' not in _text(job), job
+
+
+def test_the_pair_runs_one_process_per_gpu_and_the_solo_check_on_its_runs_gpu():
+    import experiments.p5_3_networks as net
+    gen = _gen()
+    for bench in gen.BENCHES:
+        name = f'p5g_{bench}'
+        body = _body(name)
+        assert 'export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24' in body
+        assert '[[ "$gpus" == 2 ]]' in body
+        calls = _calls(name, 'experiments/p5_3_networks.py')
+        solo = [(a, d) for a, d in calls if a.startswith('solo ') and '--gate' not in a]
+        gates = [(a, d) for a, d in calls if a.startswith('solo ') and '--gate' in a]
+        decide = [a for a, _ in calls if a.startswith('gate ')]
+        runs = [(a, d) for a, d in calls if a.startswith('run ')]
+        assert len(solo) == 1 and len(runs) == 2 and len(gates) == 2 and len(decide) == 1
+        assert body.index('solo --bench') < body.index('pids=()')                    # alone, before the pair
+        args, gpu = solo[0]
+        key = (int(_arg(args, '--P')[0]), _arg(args, '--method')[0], int(_arg(args, '--seed')[0]))
+        assert key == (gen.NET_SIZES[bench][-1], 'nil_n', 0)
+        # the pairing gate: the solo's run on both GPUs at once, judged on the solo's GPU, before the pair
+        for a, d in gates:
+            assert (int(_arg(a, '--P')[0]), _arg(a, '--method')[0], int(_arg(a, '--seed')[0])) == key
+            assert _arg(a, '--gate') == [str(d)] and _arg(a, '--tag') == [f'gpu-{bench}-gate{d}']
+        assert sorted(d for _, d in gates) == [0, 1]
+        g = decide[0]
+        assert (int(_arg(g, '--P')[0]), _arg(g, '--method')[0], int(_arg(g, '--seed')[0])) == key
+        assert _arg(g, '--gpu') == [str(gpu)] and '--device cuda' in g
+        lines = body.splitlines()
+        stop = next(i for i, l in enumerate(lines) if 'STOPPING BEFORE THE BUDGET RUNS' in l)
+        assert lines[stop].lstrip().startswith('|| {') and 'exit 1' in lines[stop]
+        assert body.index('--gate 1') < body.index(' gate --bench') < body.index('run --bench')
+        paired = [d for a, d in runs if key in net.part_of(gen.net_runs(bench), _arg(a, '--part')[0])]
+        assert paired == [gpu]
+        assert {d for _, d in runs} == {0, 1} and all(_arg(a, '--part')[0] == f'{d}/2' for a, d in runs)
+        for a, d in _calls(name, 'experiments/p5_3_lil.py'):
+            assert _arg(a, '--tag')[0] == f'gpu-{bench}-{d}'
+
+
+def test_item3_classes_walltimes_and_the_su_requested():
+    gen = _gen()
+    for jobs, stage, script in ((gen.cpu_jobs(), 'p5c', CPU3), (gen.gpu_jobs(), 'p5g', GPU3),
+                                (gen.rerun_jobs(), 'p5r', RERUN3)):
+        requested = 0
+        for name, (short, cls, wall, _, _) in jobs.items():
+            t = (P5 / name).read_text()
+            assert re.search(rf'^# lilq-resources: {cls} ', t, re.M) and f'#SBATCH --time={wall}\n' in t, name
+            assert f'#SBATCH --job-name=lilq-{stage}-{short}\n' in t
+            requested += RATE3[cls] * _hours(wall)
+        assert f'{round(requested):,} SU requested' in script.read_text(), (stage, requested)
+    # the budget jobs' walltimes cover their runs: each run's 600 s, its error log and a fixed part
+    assert gen.run_wall_s('bratu', 'lm') == 600 * 1.22 + gen.FIXED_S
+    assert gen.run_wall_s('bl', 'nil_n') == gen.run_wall_s('bl', 'lbfgs') == 600 * 1.02 + gen.FIXED_S
+    for job in gen.CPU_SPLIT:
+        wall = gen.cpu_jobs()[f'p5c_{job.replace("-", "_")}.slurm'][2]
+        nets, lil = gen.cpu_runs(job)
+        floor = sum(gen.run_wall_s(gen.CPU_SPLIT[job][0], m) for _, m, _ in nets) + len(lil) * (600 * 1.02 + gen.FIXED_S)
+        assert _hours(wall) * 3600 >= floor * gen.MARGIN
+    for job in gen.CPU_SPLIT:
+        wall = gen.rerun_jobs()[f'p5r_{job.replace("-", "_")}.slurm'][2]
+        nets, _ = gen.cpu_runs(job)
+        assert _hours(wall) * 3600 >= sum(gen.run_wall_s(gen.CPU_SPLIT[job][0], m) for _, m, _ in nets) * gen.MARGIN
+    for bench in gen.BENCHES:
+        wall = gen.gpu_jobs()[f'p5g_{bench}.slurm'][2]
+        n = max(gen.gpu_slots(bench, 0), gen.gpu_slots(bench, 1))
+        assert _hours(wall) * 3600 >= (n * (600 * 1.02 + gen.FIXED_S) + gen.SOLO_EXTRA_S + gen.GATE_EXTRA_S) * gen.MARGIN
+
+
+def test_item3_reports_guard_each_step_and_pack_the_stage():
+    for stage in ('p5c', 'p5g', 'p5r'):
+        body = _body(f'{stage}_report')
+        steps = [l for l in body.splitlines() if 'python ' in l]
+        assert steps and all(l.startswith('timeout ') for l in steps), steps
+        assert 'experiments/p5_3_table.py --out "$PKG"' in body
+        assert f'stage_report.py --stage {stage} --results "$RESULTS"' in body
+        assert ('p5_3_networks.py pairing' in body) == (stage == 'p5g')
+    cluster = REPO / 'scripts' / 'cluster'
+    env = (cluster / 'env.sh').read_text()
+    assert 'p5c)  export PKG="$RESULTS/package5_item3_cpu"' in env and 'p5g)  export PKG="$RESULTS/package5_item3_gpu"' in env
+    stages = _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES
+    assert stages['p5c'] == 'package5_item3_cpu' and stages['p5g'] == 'package5_item3_gpu'
+    assert 'p5r)  export PKG="$RESULTS/package5_item3_cpu_rerun"' in env and stages['p5r'] == 'package5_item3_cpu_rerun'
+    lib = (cluster / 'submit_lib.sh').read_text()
+    assert 'LILQ_WAVE" == p5c' in lib and 'LILQ_WAVE" == p5g' in lib and 'LILQ_WAVE" == p5r' in lib
+    assert 'GPU_PAIR_GRES=gpu:a100:2' in (cluster / 'profiles' / 'grace.sh').read_text()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+@pytest.mark.parametrize('which', ['p5c', 'p5g', 'p5r'])
+def test_item3_dry_run_checks_every_job_with_its_resources(tmp_path, which):
+    script, jobs = STAGE3[which]
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(script)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert sorted(_job(l) for l in lines) == sorted(jobs) and not any('--dependency' in l for l in lines)
+    gen = _gen()
+    classes = {Path(n).stem: c for n, (_, c, _, _, _) in {**gen.cpu_jobs(), **gen.gpu_jobs(), **gen.rerun_jobs()}.items()}
+    for l in lines:
+        cls = classes[_job(l)]
+        assert ('--exclusive' in l) == (cls == 'timed-cpu'), l
+        assert ('--gres=gpu:a100:2' in l) == (cls == 'gpu-pair'), l
+        assert ('--gres=gpu:a100:1' in l) == (cls == 'shared-gpu'), l
+        if cls == 'gpu-pair':
+            assert '--cpus-per-task=48 --mem=360G' in l
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+@pytest.mark.parametrize('which', ['p5c', 'p5g', 'p5r'])
+def test_item3_submission_chains_the_jobs(tmp_path, which):
+    script, jobs = STAGE3[which]
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(script)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    ids = {_job(l): 101 + i for i, l in enumerate(lines)}
+    assert set(ids) == jobs
+    stage = _job(lines[0]).split('_')[0]
+    pre, rep = f'{stage}_preflight', f'{stage}_report'
+    assert _job(lines[0]) == pre and '--dependency' not in lines[0] and _job(lines[-1]) == rep
+    for l in lines[1:-1]:
+        assert f'--dependency=afterok:{ids[pre]} ' in l, l
+    middle = sorted(jobs - {pre, rep}, key=ids.get)
+    assert f"--dependency=afterany:{':'.join(str(ids[j]) for j in middle)} " in lines[-1]
+
+
+# ---------------------------------------------------------------- the OpenMP library diagnostic (stage p5o)
+
+OPENMP = P5 / 'submit_p5_item3_openmp.sh'
+
+
+def test_the_openmp_job_alternates_the_two_orders_on_a_whole_node():
+    t = _text('p5o_openmp')
+    assert re.search(r'^# lilq-resources: timed-cpu ', t, re.M) and '#SBATCH --time=00:30:00\n' in t
+    assert '#SBATCH --job-name=lilq-p5o-openmp\n' in t
+    runs = [(a, d) for a, d in _calls('p5o_openmp', 'experiments/p5_3_openmp.py')]
+    order = [(int(_arg(a, '--round')[0]), _arg(a, '--first')[0]) for a, _ in runs]
+    assert order == [(0, 'numpy'), (0, 'torch'), (1, 'torch'), (1, 'numpy'), (2, 'numpy'), (2, 'torch')]
+    assert all('--require-library' in a and a.startswith('--first') for a, _ in runs)
+    body = _body('p5o_openmp')
+    assert all(l.startswith('until_end python experiments/p5_3_openmp.py') for l in body.splitlines()
+               if 'p5_3_openmp.py' in l and not l.startswith('#'))
+    assert 'stage_report.py --stage p5o --results "$RESULTS"' in body
+    assert 48 * _hours('00:30:00') == 24 and '24 SU requested' in OPENMP.read_text()
+    cluster = REPO / 'scripts' / 'cluster'
+    assert 'p5o)  export PKG="$RESULTS/package5_item3_openmp"' in (cluster / 'env.sh').read_text()
+    assert _module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5o'] == 'package5_item3_openmp'
+    assert 'LILQ_WAVE" == p5o' in (cluster / 'submit_lib.sh').read_text()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_openmp_dry_run_checks_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(OPENMP)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    assert 'results/package5_item3_openmp' in out.stdout and '24 SU requested' in out.stdout
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5o_openmp'
+    assert '--exclusive' in lines[0] and '--test-only' in lines[0] and '--dependency' not in lines[0]
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_openmp_diagnostic_submits_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(OPENMP)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5o_openmp' and '--account=000000000000' in lines[0]
+
+
+# ---------------------------------------------- the OpenMP library of Component A's baselines (stage p5k)
+
+OPENMP_K = P5 / 'submit_p5_item3_openmp_kovasznay.sh'
+
+
+def test_the_component_a_job_alternates_the_two_orders_on_a_whole_node():
+    t = _text('p5k_openmp_kovasznay')
+    assert re.search(r'^# lilq-resources: timed-cpu ', t, re.M) and '#SBATCH --time=00:40:00\n' in t
+    assert '#SBATCH --job-name=lilq-p5k-openmp-kovasznay\n' in t
+    runs = [(a, d) for a, d in _calls('p5k_openmp_kovasznay', 'experiments/p5_3_openmp_kovasznay.py')]
+    order = [(int(_arg(a, '--round')[0]), _arg(a, '--first')[0]) for a, _ in runs]
+    assert order == [(0, 'numpy'), (0, 'torch'), (1, 'torch'), (1, 'numpy'), (2, 'numpy'), (2, 'torch')]
+    assert all('--require-library' in a and a.startswith('run --first') for a, _ in runs)
+    body = _body('p5k_openmp_kovasznay')
+    assert all(l.startswith('until_end python experiments/p5_3_openmp_kovasznay.py run ') for l in body.splitlines()
+               if 'p5_3_openmp_kovasznay.py' in l and not l.startswith('#'))
+    assert 'stage_report.py --stage p5k --results "$RESULTS"' in body
+    assert 48 * _hours('00:40:00') == 32 and '32 SU requested' in OPENMP_K.read_text()
+    cluster = REPO / 'scripts' / 'cluster'
+    assert 'p5k)  export PKG="$RESULTS/package5_item3_openmp_kovasznay"' in (cluster / 'env.sh').read_text()
+    assert (_module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5k']
+            == 'package5_item3_openmp_kovasznay')
+    assert 'LILQ_WAVE" == p5k' in (cluster / 'submit_lib.sh').read_text()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_component_a_dry_run_checks_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(OPENMP_K)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    assert 'results/package5_item3_openmp_kovasznay' in out.stdout and '32 SU requested' in out.stdout
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5k_openmp_kovasznay'
+    assert '--exclusive' in lines[0] and '--test-only' in lines[0] and '--dependency' not in lines[0]
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_component_a_diagnostic_submits_its_one_job(tmp_path):
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(OPENMP_K)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert len(lines) == 1 and _job(lines[0]) == 'p5k_openmp_kovasznay' and '--account=000000000000' in lines[0]
+
+
+# ---------------------------------------------- the C4 diagnostic, Buckley-Leverett LM (stage p5e)
+
+C4D = P5 / 'submit_p5_item3_c4_diagnostic.sh'
+
+
+def test_the_c4_diagnostic_cpu_job_runs_each_kind_once_in_each_position():
+    t = _text('p5e_cpu')
+    assert re.search(r'^# lilq-resources: timed-cpu ', t, re.M) and '#SBATCH --time=01:00:00\n' in t
+    assert '#SBATCH --job-name=lilq-p5e-c4-cpu\n' in t
+    runs = [a for a, _ in _calls('p5e_cpu', 'experiments/p5_3_c4_diagnostic.py')]
+    order = [(int(_arg(a, '--round')[0]), _arg(a, '--kind')[0]) for a in runs]
+    assert order == [(0, 'numpy'), (0, 'torch'), (0, 'active'), (1, 'torch'), (1, 'active'), (1, 'numpy'),
+                     (2, 'active'), (2, 'numpy'), (2, 'torch')]
+    for k in ('numpy', 'torch', 'active'):                   # a Latin square: each kind once in each position
+        assert sorted(i % 3 for i, (_, kind) in enumerate(order) if kind == k) == [0, 1, 2]
+    assert all(_arg(a, '--device') == ['cpu'] and '--require-library' in a for a in runs)
+    body = _body('p5e_cpu')
+    lines = [l for l in body.splitlines() if 'p5_3_c4_diagnostic.py' in l and not l.startswith('#')]
+    assert all(l.startswith('until_end env OMP_WAIT_POLICY=ACTIVE python ') == ('--kind active' in l) for l in lines)
+    assert all(l.startswith('until_end ') for l in lines)
+    assert body.index('unset OMP_WAIT_POLICY\n') < body.index(lines[0])
+
+
+def test_the_c4_diagnostic_gpu_job_runs_two_processes_side_by_side_as_the_a100_set():
+    t = _text('p5e_gpu')
+    assert re.search(r'^# lilq-resources: gpu-pair ', t, re.M) and '#SBATCH --time=00:20:00\n' in t
+    calls = _calls('p5e_gpu', 'experiments/p5_3_c4_diagnostic.py')
+    assert [(int(_arg(a, '--round')[0]), d) for a, d in calls] == [(0, 0), (1, 1)]
+    assert all(_arg(a, '--kind') == ['numpy'] and _arg(a, '--device') == ['cuda'] and '--require-library' in a
+               for a, _ in calls)
+    body = _body('p5e_gpu')
+    assert 'export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24' in body
+    assert "[[ \"$gpus\" == 2 ]]" in body and body.count(') & pids+=($!)') == 2 and 'unset OMP_WAIT_POLICY\n' in body
+    g = _body('p5g_bl')
+    assert 'export OMP_NUM_THREADS=24 OPENBLAS_NUM_THREADS=24 MKL_NUM_THREADS=24' in g   # the A100 set's threads
+
+
+def test_the_c4_diagnostic_report_wiring_and_su():
+    body = _body('p5e_report')
+    assert body.index('p5_3_c4_diagnostic.py summary --out "$PKG"') < body.index('stage_report.py --stage p5e')
+    assert re.search(r'^# lilq-resources: cpu ', _text('p5e_report'), re.M)
+    su = 48 * _hours('01:00:00') + 192 * _hours('00:20:00') + 24 * _hours('00:15:00')
+    assert su == 118 and '118 SU requested' in C4D.read_text()
+    cluster = REPO / 'scripts' / 'cluster'
+    assert 'p5e)  export PKG="$RESULTS/package5_item3_c4_diagnostic"' in (cluster / 'env.sh').read_text()
+    assert (_module('stage_report', cluster / 'package2' / 'stage_report.py').STAGES['p5e']
+            == 'package5_item3_c4_diagnostic')
+    assert 'LILQ_WAVE" == p5e' in (cluster / 'submit_lib.sh').read_text()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_c4_diagnostic_dry_run_checks_its_three_jobs(tmp_path):
+    env, log = _fake_cluster(tmp_path, True)
+    out = subprocess.run(['bash', str(C4D)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
+    assert 'results/package5_item3_c4_diagnostic' in out.stdout and '118 SU requested' in out.stdout
+    lines = log.read_text().splitlines()
+    assert [_job(l) for l in lines] == ['p5e_cpu', 'p5e_gpu', 'p5e_report']
+    assert '--exclusive' in lines[0] and all('--test-only' in l and '--dependency' not in l for l in lines)
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='runs the bash submission script')
+def test_the_c4_diagnostic_report_waits_for_both_jobs(tmp_path):
+    env, log = _fake_cluster(tmp_path, False)
+    out = subprocess.run(['bash', str(C4D)], env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stdout + out.stderr
+    lines = log.read_text().splitlines()
+    assert [_job(l) for l in lines] == ['p5e_cpu', 'p5e_gpu', 'p5e_report']
+    assert '--dependency' not in lines[0] and '--dependency' not in lines[1]
+    assert '--dependency=afterany:101:102' in lines[2] and all('--account=000000000000' in l for l in lines)

@@ -57,11 +57,13 @@ to the device are built before it and timed beside it (``setup_s``).
 ``betas.npy`` (every iterate; L-BFGS ``betas_logged.npy``); ``beta.npy``;
 LiL-L-BFGS also ``metrics.csv`` (the loss at every iteration).
 ``checks/c3_burgers.json``: C3, LiL-Q on Burgers against Package 4.
+``warmup/`` and ``provenance/``: one record per process, ``<bench>_<device>[_<tag>]``
+(``--tag``: two processes of a job, or two jobs, never write the same record).
 
 Usage::
 
     python experiments/p5_3_lil.py run --bench burgers --out <root> --reference-dir <dir> \\
-        [--P 36 100] [--methods lilq trf lbfgs square] [--device cpu] [--budget 600]
+        [--P 36 100] [--methods lilq trf lbfgs square] [--device cpu] [--budget 600] [--tag cpu-bratu]
     python experiments/p5_3_lil.py c3 --out <root> --package4 <Package 4 results root>
 """
 
@@ -88,8 +90,8 @@ from experiments import p3_2_bl_certified as p32
 from experiments import p4_1_burgers_gauss as p41
 from experiments import p5_1_weights as p51
 from experiments.p4_common import N_S, REPEATS, SHORT_REPEATS, SHORT_RUN_S, iterate_to_rule, read_csv, write_csv
-from experiments.p5_3_networks import BUDGET_S, HISTORY_COLUMNS, ITEM, NO_CAP, write_history
-from lilq.provenance import capture_blas_thread_env, save_provenance
+from experiments.p5_3_networks import BUDGET_S, HISTORY_COLUMNS, ITEM, NO_CAP, finished, write_history
+from lilq.provenance import OPENMP_KINDS, capture_blas_thread_env, job_dir, require_openmp, save_provenance
 from lilq.source_lock import current_commit
 
 LAM = 1e4                                          # the advisor's reply of 15 November 2026, answer 1
@@ -276,14 +278,15 @@ def _history(betas, stamps, prob, evaluations=None):
     return rows
 
 
-def _save(d, record, rows, betas=None, beta=None):
+def _save(d, record, rows, betas=None, beta=None, tag=''):
     d.mkdir(parents=True, exist_ok=True)
     write_history(d / 'history.csv', rows)
     if betas is not None:
         np.save(d / 'betas.npy', np.array(betas))
     if beta is not None:
         np.save(d / 'beta.npy', np.asarray(beta))
-    record.update(commit=current_commit(), thread_env=capture_blas_thread_env(), scipy_version=scipy.__version__)
+    record.update(commit=current_commit(), thread_env=capture_blas_thread_env(), scipy_version=scipy.__version__,
+                  tag=tag, slurm_job_id=os.environ.get('SLURM_JOB_ID'))
     (d / 'run.json').write_text(json.dumps(record, indent=2, default=_plain))
     return record
 
@@ -299,7 +302,7 @@ def _base(prob, method, device='cpu'):
             'initial_coefficients': prob.guess, 'setup_s': prob.setup_s}
 
 
-def run_lilq(prob, out_root, timing=True):
+def run_lilq(prob, out_root, timing=True, tag=''):
     stamps, total, beta, betas, k_s = lilq_pass(prob, keep=True)          # the logged pass (and the warm-up)
     record = _base(prob, 'lilq')
     record.update(rule_step=k_s, returned_iterate=None if k_s is None else k_s + 1,
@@ -314,10 +317,10 @@ def run_lilq(prob, out_root, timing=True):
     record['timed'] = bool(timing)
     rows = _history(betas, stamps, prob)
     record.update(final_loss=rows[-1]['loss'], final_error=rows[-1]['error'])
-    return _save(run_dir_of(out_root, prob.bench, prob.P, 'lilq'), record, rows, betas, beta)
+    return _save(run_dir_of(out_root, prob.bench, prob.P, 'lilq'), record, rows, betas, beta, tag=tag)
 
 
-def run_trf(prob, out_root, timing=True):
+def run_trf(prob, out_root, timing=True, tag=''):
     stamps, total, s, betas = trf_pass(prob, keep=True)
     record = _base(prob, 'trf')
     record.update(status=int(s.status), message=s.message, nfev=int(s.nfev), njev=int(s.njev),
@@ -333,7 +336,7 @@ def run_trf(prob, out_root, timing=True):
     record['timed'] = bool(timing)
     rows = _history(betas, stamps, prob, evaluations=s.evaluations_at_iterates)
     record.update(final_loss=rows[-1]['loss'], final_error=rows[-1]['error'])
-    return _save(run_dir_of(out_root, prob.bench, prob.P, 'trf'), record, rows, betas, s.x)
+    return _save(run_dir_of(out_root, prob.bench, prob.P, 'trf'), record, rows, betas, s.x, tag=tag)
 
 
 def solve_lbfgs(prob, device='cpu', budget_s=BUDGET_S, max_iterations=None, log_error=True):
@@ -378,7 +381,7 @@ def _stopping(summary):
     return 'iteration_cap'
 
 
-def run_lbfgs(prob, out_root, device='cpu', budget_s=BUDGET_S):
+def run_lbfgs(prob, out_root, device='cpu', budget_s=BUDGET_S, tag=''):
     import torch
     beta, metrics, summary, probe, logged, setup_s = solve_lbfgs(prob, device, budget_s)
     record = _base(prob, 'lbfgs', device)
@@ -397,10 +400,10 @@ def run_lbfgs(prob, out_root, device='cpu', budget_s=BUDGET_S):
     d.mkdir(parents=True, exist_ok=True)
     metrics.to_dataframe().to_csv(d / 'metrics.csv', index=False, float_format='%.17g')
     np.save(d / 'betas_logged.npy', np.array(logged))
-    return _save(d, record, rows, beta=beta)
+    return _save(d, record, rows, beta=beta, tag=tag)
 
 
-def run_square(P, out_root, reference_dir, timing=True):
+def run_square(P, out_root, reference_dir, timing=True, tag=''):
     """SQ-CGL Newton (P2-3, settings unchanged) at (p - 2)^2 = P free coefficients: the
     error at every Newton step, the time of an iterate the median over the timed passes of
     the assembly and solve times summed over the steps before it."""
@@ -439,7 +442,7 @@ def run_square(P, out_root, reference_dir, timing=True):
             for k, (h, e) in enumerate(zip(d['history'], errors))]
     record.update(loss='||R||^2 of the square system at the iterate (the last iterate: not evaluated)',
                   final_error=errors[-1])
-    return _save(run_dir_of(out_root, 'bratu', P, 'square'), record, rows, beta=d['beta'])
+    return _save(run_dir_of(out_root, 'bratu', P, 'square'), record, rows, beta=d['beta'], tag=tag)
 
 
 # ---------------------------------------------------------------- the warm-up
@@ -504,15 +507,15 @@ def c3(out_root, package4):
 
 # ---------------------------------------------------------------- CLI
 
-def run_one(bench, P, method, out_root, reference_dir, device='cpu', budget_s=BUDGET_S, timing=True):
+def run_one(bench, P, method, out_root, reference_dir, device='cpu', budget_s=BUDGET_S, timing=True, tag=''):
     if method == 'square':
-        return run_square(P, out_root, reference_dir, timing)
+        return run_square(P, out_root, reference_dir, timing, tag)
     prob = Problem(bench, P, reference_dir)
     if method == 'lilq':
-        return run_lilq(prob, out_root, timing)
+        return run_lilq(prob, out_root, timing, tag)
     if method == 'trf':
-        return run_trf(prob, out_root, timing)
-    return run_lbfgs(prob, out_root, device, budget_s)
+        return run_trf(prob, out_root, timing, tag)
+    return run_lbfgs(prob, out_root, device, budget_s, tag)
 
 
 def methods_for(bench, device, methods=METHODS):
@@ -532,6 +535,10 @@ def main(argv=None):
     r.add_argument('--device', default='cpu')
     r.add_argument('--budget', type=float, default=BUDGET_S)
     r.add_argument('--no-timing', action='store_true', help='the logged pass only (laptop rehearsal)')
+    r.add_argument('--tag', default='', help='this process in its job (e.g. cpu-bratu): names its warm-up and '
+                   'provenance records and is kept in each run.json')
+    r.add_argument('--require-openmp', choices=OPENMP_KINDS,
+                   help="stop before any run unless the process loaded this OpenMP library ('module' on Grace)")
     c = sub.add_parser('c3')
     c.add_argument('--out', required=True)
     c.add_argument('--package4', required=True)
@@ -541,19 +548,32 @@ def main(argv=None):
         res = c3(args.out, args.package4)
         print(json.dumps(res, indent=2))
         return
+    if args.require_openmp:
+        require_openmp(args.require_openmp)       # before any run or record
     root = Path(args.out) / ITEM / 'lil'
-    save_provenance(root / 'provenance' / f'{args.bench}_{args.device}')
+    name = f'{args.bench}_{args.device}' + (f'_{args.tag}' if args.tag else '')
+    prov = job_dir(root / 'provenance' / name)      # a resubmitted job writes beside the first's
+    save_provenance(prov)
+    name = prov.name
     methods = methods_for(args.bench, args.device, args.methods)
-    w = warm_up(args.bench, args.device, args.reference_dir, methods)
+    todo = [(P, m) for P in args.P or SIZES[args.bench] for m in methods]
+    done = [(P, m) for P, m in todo if finished(
+        run_dir_of(args.out, args.bench, P, m, args.device),
+        **({'timed': True, 'budget_s': args.budget} if m == 'lbfgs' else {'timed': not args.no_timing}))]
+    if done:
+        print(f'{len(done)} of {len(todo)} runs already done here (run.json of this commit): not rerun', flush=True)
+        todo = [t for t in todo if t not in done]
+    if not todo:
+        return
+    w = warm_up(args.bench, args.device, args.reference_dir, [m for m in methods if any(m == t[1] for t in todo)])
     (root / 'warmup').mkdir(parents=True, exist_ok=True)
-    (root / 'warmup' / f'{args.bench}_{args.device}.json').write_text(json.dumps(
+    (root / 'warmup' / f'{name}.json').write_text(json.dumps(
         {'seconds': w, 'P': SIZES[args.bench][0], 'lbfgs_iterations': WARMUP_ITERATIONS}, indent=2))
-    for P in args.P or SIZES[args.bench]:
-        for method in methods:
-            rec = run_one(args.bench, P, method, args.out, args.reference_dir, args.device, args.budget,
-                          not args.no_timing)
-            print(f"{args.bench} P={P} {rec['method']} {args.device}: {rec['stopping_reason']}, "
-                  f"{rec['time_s']:.3g} s, error {rec['final_error']:.3e}", flush=True)
+    for P, method in todo:
+        rec = run_one(args.bench, P, method, args.out, args.reference_dir, args.device, args.budget,
+                      not args.no_timing, args.tag)
+        print(f"{args.bench} P={P} {rec['method']} {args.device}: {rec['stopping_reason']}, "
+              f"{rec['time_s']:.3g} s, error {rec['final_error']:.3e}", flush=True)
 
 
 if __name__ == '__main__':

@@ -39,7 +39,25 @@ fi
 # Before each wave: the balance, then an explicit go-ahead (YES=1 skips the question).
 confirm_balance() {   # confirm_balance <the advisor's SU estimate for this wave>
     local what="wave $LILQ_WAVE"
-    if [[ "$LILQ_WAVE" == p5a ]]; then   # Package 5, Addendum 2 (16 November 2026): results/package5_a2
+    if [[ "$LILQ_WAVE" == p5c ]]; then   # Package 5, item 3, the CPU set (16 November 2026): results/package5_item3_cpu
+        what="Package 5, item 3, the CPU set"
+        echo "Package 5, item 3, the CPU set (results/package5_item3_cpu), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5r ]]; then   # Package 5, item 3: the CPU network runs again, numpy first (17 November 2026)
+        what="Package 5, item 3, the CPU network runs again"
+        echo "Package 5, item 3, the CPU network runs again (results/package5_item3_cpu_rerun), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5o ]]; then   # Package 5, item 3: the OpenMP library diagnostic (17 November 2026)
+        what="Package 5, item 3, the OpenMP library diagnostic"
+        echo "Package 5, item 3, the OpenMP library diagnostic (results/package5_item3_openmp), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5k ]]; then   # Package 5, item 3: the OpenMP library of Package 1's Component A baselines (17 November 2026)
+        what="Package 5, item 3, the OpenMP library of Component A's baselines"
+        echo "Package 5, item 3, the OpenMP library of Component A's baselines (results/package5_item3_openmp_kovasznay), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5e ]]; then   # Package 5, item 3: the C4 diagnostic, Buckley-Leverett LM (17 November 2026)
+        what="Package 5, item 3, the C4 diagnostic"
+        echo "Package 5, item 3, the C4 diagnostic (results/package5_item3_c4_diagnostic), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5g ]]; then   # Package 5, item 3, the A100 set: results/package5_item3_gpu
+        what="Package 5, item 3, the A100 set"
+        echo "Package 5, item 3, the A100 set (results/package5_item3_gpu), code at $(code_commit)."
+    elif [[ "$LILQ_WAVE" == p5a ]]; then   # Package 5, Addendum 2 (16 November 2026): results/package5_a2
         what="Package 5, Addendum 2"
         echo "Package 5, Addendum 2 (results/package5_a2), code at $(code_commit)."
     elif [[ "$LILQ_WAVE" == p5t ]]; then   # Package 5, item 2: one run re-timed (14 November 2026): results/package5_retime

@@ -58,6 +58,7 @@ import csv
 import hashlib
 import io
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -68,7 +69,7 @@ if str(REPO) not in sys.path:
 
 from experiments.assemble_common import (blas_line, cell_diff, compare_tables, copy_grace,  # noqa: E402
                                          decisions, extra_rows, job_table, log_start, modules, preflight_lines,
-                                         read_json, runs_and_head, su_rows, tables, write_lf, write_provenance,
+                                         read_csv, read_json, runs_and_head, su_rows, tables, write_lf, write_provenance,
                                          write_su)
 
 GRACE_FOLDERS = ('P5_1_weights', 'P3_1_beltrami_certified', 'P5_2_nlls', 'P5_4_pb', 'provenance', 'slurm_logs')
@@ -319,12 +320,198 @@ def add_a2(out, a2, reference_dir, package2, package4, log, a2_logs=()):
     return verdict, job
 
 
+# ---------------------------------------------------------------- item 3 (16-18 November 2026)
+# Six stages, each under its own commit lock, each with its own tarball (DECISIONS.md, 16-18 November 2026):
+# p5c the CPU set (its LiL runs, protocol runs and C3 are kept; its network runs loaded the PyTorch wheel's
+# OpenMP library and are superseded), p5o the library diagnostic, p5r the CPU network runs again (numpy
+# first), p5k Component A's library check, p5e the C4 diagnostic, p5g the A100 set. The item's folder
+# (ITEM3, the advisor's Section 6) takes the runs and checks each stage gives it; the rest of each stage
+# (its records, and p5c's superseded network runs) goes to its own records folder.
+ITEM3 = 'P5_3_cost'
+ITEM3_STAGES = (   # (argument, records folder, what the stage gives ITEM3: globs under the stage's ITEM3)
+    ('cpu', 'package5_item3_cpu', ('lil/*_P*/*_cpu', 'lil/checks')),
+    ('rerun', 'package5_item3_cpu_rerun', ('networks/*_P*/*_cpu', 'networks/checks/c2_c4_*')),
+    ('gpu', 'package5_item3_gpu', ('networks/*_P*/*_cuda', 'lil/*_P*/*_cuda', 'networks/checks/solo_*',
+                                   'networks/checks/gate_*', 'networks/checks/pairing.json')),
+    ('openmp', 'package5_item3_openmp', ('openmp',)),
+    ('kovasznay', 'package5_item3_openmp_kovasznay', ('openmp_kovasznay',)),
+    ('c4', 'package5_item3_c4_diagnostic', ('c4_diagnostic',)),
+)
+# The stages whose runs are in the table, and the OpenMP library every one of their processes must have
+# loaded (the records of p5c's network processes, superseded, are in its records folder and not checked)
+ITEM3_MODULE_ONLY = {'cpu': ('P5_3_cost/lil/provenance',), 'rerun': ('P5_3_cost/networks/provenance', 'provenance'),
+                     'gpu': ('P5_3_cost/networks/provenance', 'P5_3_cost/lil/provenance', 'provenance')}
+# Grace's own tables, per stage, against the assembled one: the rows of the stage's runs
+ITEM3_TABLE_ROWS = {'cpu': lambda r: r['device'] == 'cpu' and r['method_key'] in ('lilq', 'trf', 'lbfgs', 'square'),
+                    'rerun': lambda r: r['device'] == 'cpu', 'gpu': lambda r: r['device'] == 'cuda'}
+ITEM3_TABLE_COLUMNS = ('time_s', 'P', 'seeds_reached', 'with_setup_s', 'P_with_setup', 'sizes')
+
+
+def _norm(p):
+    return os.path.normcase(os.path.abspath(p))
+
+
+def _item3_expected_runs():
+    """Every run folder the table needs, relative to ITEM3: the network runs on both devices, the LiL
+    runs of their devices."""
+    import experiments.p5_3_lil as lil
+    import experiments.p5_3_networks as n3
+    out = []
+    for device in ('cpu', 'cuda'):
+        out += [f'networks/{b}_P{P}/{m}_s{s}_{device}' for b in ('bratu', 'burgers', 'bl') for P in n3.sizes(b)
+                for m in n3.METHODS for s in n3.SEEDS]
+    for b in ('bratu', 'burgers', 'bl'):
+        for P in lil.SIZES[b]:
+            out += [f'lil/{b}_P{P}/{m}_cpu' for m in lil.METHODS if m != 'square' or b == 'bratu']
+            out.append(f'lil/{b}_P{P}/lbfgs_cuda')
+    return out
+
+
+def _openmp_kinds(folder):
+    """{kind: count} over the hardware.json files under ``folder`` (lilq.provenance's kinds)."""
+    from lilq.provenance import openmp_library_kind
+    kinds = {}
+    for h in sorted(Path(folder).rglob('hardware.json')):
+        pools = read_json(h).get('threads', {}).get('threadpools', [])
+        kind = openmp_library_kind([p['filepath'] for p in pools if p.get('internal_api') == 'openmp'])
+        kinds[str(kind)] = kinds.get(str(kind), 0) + 1
+    return kinds
+
+
+def _item3_jobs(records):
+    """One row per job of a stage, from its processes' hardware.json: node, CPU and GPU model, threads,
+    the OpenMP library."""
+    jobs = {}
+    for h in sorted(Path(records).rglob('hardware.json')):
+        c = read_json(h)
+        s = c.get('scheduler', {})
+        pools = c.get('threads', {}).get('threadpools', [])
+        key = s.get('SLURM_JOB_ID')
+        row = jobs.setdefault(key, {'job': key, 'name': s.get('SLURM_JOB_NAME'), 'node': c['cpu'].get('hostname'),
+                                    'cpu_model': c['cpu'].get('model'), 'gpu': c.get('gpu'), 'processes': 0,
+                                    'torch_threads': set(), 'openmp_libraries': set()})
+        row['processes'] += 1
+        row['torch_threads'].add(c.get('threads', {}).get('torch_num_threads'))
+        row['openmp_libraries'] |= {p['filepath'] for p in pools if p.get('internal_api') == 'openmp'}
+    return [r | {'torch_threads': sorted(r['torch_threads'], key=str),
+                 'openmp_libraries': sorted(r['openmp_libraries'])} for r in jobs.values()]
+
+
+def add_item3(out, stages, package1, log):
+    """Item 3 from its six stages' extracted tarballs (``stages``: argument -> folder, every one of
+    ITEM3_STAGES). Stops if a stage's commit is not an ancestor of HEAD, a run of the table is missing,
+    a process of the table's stages loaded another OpenMP library than the module's, or the assembled
+    table differs from a stage's own table on that stage's runs. Writes ITEM3/checks.json (C1 to C4,
+    the pairing check, the diagnostics) and returns (verdicts, the stages' su_per_job rows, the
+    stages' records for hardware.json and provenance.json)."""
+    import contextlib
+    import types
+    import experiments.p5_3_c4_diagnostic as c4d
+    import experiments.p5_3_networks as n3
+    import experiments.p5_3_openmp_kovasznay as kov
+    import experiments.p5_3_table as t3
+    out = Path(out)
+    item = out / ITEM3
+    if item.exists():
+        shutil.rmtree(item)
+    commits, su, hw = {}, [], {}
+    for arg, name, globs in ITEM3_STAGES:
+        stage = Path(stages[arg])
+        runs, _ = runs_and_head(stage)
+        commits[name] = runs['commit']
+        src = stage / ITEM3
+        moved = sorted({p for g in globs for p in src.glob(g)})
+        if not moved:
+            sys.exit(f'{stage}: nothing under {ITEM3}/ matches {globs}')
+        for p in moved:
+            target = item / p.relative_to(src)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            (shutil.copytree if p.is_dir() else shutil.copy2)(p, target)
+        skip = {_norm(p) for p in moved}
+        if (out / name).exists():
+            shutil.rmtree(out / name)
+        shutil.copytree(stage, out / name, ignore=lambda folder, names: [n for n in names
+                                                                         if _norm(Path(folder) / n) in skip])
+        log.append(f'item 3, {name}/ (commit {runs["commit"][:7]}): {len(moved)} folders or files to {ITEM3}/, '
+                   f'its records to {name}/')
+        if (stage / 'su_per_job.csv').exists():
+            su += [r | {'note': f'item 3, {name}'} for r in read_csv(stage / 'su_per_job.csv')]
+        hw[name] = {'commit': runs['commit'], 'jobs': _item3_jobs(out / name)}
+    missing = [r for r in _item3_expected_runs()
+               if not ((item / r / 'run.json').exists() and (item / r / 'history.csv').exists())]
+    if missing:
+        sys.exit(f'{ITEM3}: {len(missing)} runs missing, e.g. {missing[:3]}')
+    log.append(f'{ITEM3}: every run of the table is there ({len(_item3_expected_runs())})')
+    names = dict((a, n) for a, n, _ in ITEM3_STAGES)
+    kinds = {}
+    for arg, folders in ITEM3_MODULE_ONLY.items():
+        for f in folders:
+            k = _openmp_kinds(out / names[arg] / f)
+            kinds[f'{names[arg]}/{f}'] = k
+            if set(k) - {'module'}:
+                sys.exit(f'{names[arg]}/{f}: a process loaded another OpenMP library than the module\'s: {k}')
+    log.append(f'{ITEM3}: every process of the table\'s runs loaded the module\'s OpenMP library: {kinds}')
+    # the table, then each stage's own table on its runs
+    _, long_rows, flagged = t3.summarize(out)
+    mine = {(r['benchmark'], r['method_key'], r['device'], r['level']): r for r in read_csv(item / 'time_to_error.csv')}
+    for arg, keep in ITEM3_TABLE_ROWS.items():
+        theirs = [r for r in read_csv(Path(stages[arg]) / ITEM3 / 'time_to_error.csv') if keep(r)]
+        if not theirs:
+            sys.exit(f'{names[arg]}: its table has no rows of its runs')
+        for r in theirs:
+            m = mine.get((r['benchmark'], r['method_key'], r['device'], r['level']))
+            if m is None or any(str(m[c]) != str(r[c]) for c in ITEM3_TABLE_COLUMNS):
+                sys.exit(f"{ITEM3}/time_to_error.csv differs from {names[arg]}'s own table at "
+                         f"{r['benchmark']} {r['method_key']} {r['device']} {r['level']}")
+        log.append(f"{ITEM3}/time_to_error.csv: {len(theirs)} rows equal {names[arg]}'s own table")
+    log.append(f'{ITEM3}: {len(long_rows)} table rows, {len([f for f in flagged if f.get("run")])} runs flagged')
+    # the checks
+    c1 = n3.c1_all(out, package1)
+    diag = item / 'openmp'
+    c1_openmp = {f'{d.parent.parent.name}/{d.name}': n3.c1(d, package1)
+                 for d in sorted(diag.glob('*-first/c1/*')) if (d / 'run.json').exists()}
+    c2c4 = {d.name: read_json(d / 'result.json') for d in sorted((item / 'networks' / 'checks').glob('c2_c4_*'))}
+    c3 = read_json(item / 'lil' / 'checks' / 'c3_burgers.json')
+    pairing = read_json(item / 'networks' / 'checks' / 'pairing.json')
+    gates = {p.stem: read_json(p) for p in sorted((item / 'networks' / 'checks').glob('gate_*.json'))}
+    grace_c4 = (item / 'c4_diagnostic' / 'summary.json').read_bytes()
+    with contextlib.redirect_stdout(io.StringIO()):
+        c4_summary = c4d.summary(out)
+        kov_summary = kov.summary(types.SimpleNamespace(out=out, package1=Path(package1) / 'A_calibration'))
+    (item / 'c4_diagnostic' / 'summary.json').write_bytes(grace_c4)
+    if json.loads(grace_c4)['groups'] != json.loads(json.dumps(c4_summary['groups'])):
+        sys.exit(f"{ITEM3}/c4_diagnostic: the summary rerun here differs from Grace's")
+    keyed = lambda r: {k: r.get(k) for k in ('benchmark', 'method', 'iterations', 'time_without_s', 'time_with_s',
+                                              'time_rel_diff', 'c4_passed', 'timings', 'timings_spread')}
+    checks = {
+        'C1': {'check': c1['check'], 'passed': c1['passed'], 'runs': len(c1['rows']),
+               'worst': max((r['max_rel_diff'] for r in c1['rows']), default=None), 'record': 'networks/checks/c1.json'},
+        'C2': {'check': 'C2: the error log does not change the iterates', 'passed': all(r['c2_passed'] for r in c2c4.values())
+               and c4_summary['c2_passed'], 'pairs': len(c2c4), 'c4_diagnostic_processes': len(c4_summary['processes'])},
+        'C3': {'check': c3['check'], 'passed': c3['passed'], 'rows': len(c3['rows']), 'record': 'lil/checks/c3_burgers.json'},
+        'C4': {'check': 'C4: the clock with and without the error log within 5% (the first pair of each)',
+               'passed': all(r['c4_passed'] for r in c2c4.values()), 'pairs': {k: keyed(r) for k, r in c2c4.items()},
+               'c4_diagnostic': {k: c4_summary[k] for k in ('groups', 'findings', 'a100_set_may_go')}},
+        'pairing': {'check': pairing['check'], 'passed': pairing['passed'], 'rows': pairing.get('rows'),
+                    'gates': {k: {'paired_over_solo_minus_1': g['paired_over_solo_minus_1'], 'passed': g['passed']}
+                              for k, g in gates.items()}},
+        'openmp_diagnostic_c1': c1_openmp,
+        'component_a_library': {k: kov_summary[k] for k in ('libraries', 'threads', 'package1_threads', 'effect',
+                                                            'torch_first_reproduces_package1')},
+        'openmp_libraries': kinds,
+    }
+    write_lf(item / 'checks.json', json.dumps(checks, indent=2, default=str) + '\n')
+    verdict = {f'item 3 {k}': checks[k]['passed'] for k in ('C1', 'C2', 'C3', 'C4', 'pairing')}
+    log.append(f'{ITEM3}/checks.json: ' + ', '.join(f"{k} {'passed' if v else 'FAILED'}" for k, v in verdict.items()))
+    return verdict, su, hw, commits
+
+
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def assemble(grace, out, reference_dir, package2, package3, package4, advisor, sacct_extra=None, retime=None,
-             a2=None, a2_logs=()):
+             a2=None, a2_logs=(), item3=None, package1=None):
     grace, out = Path(grace), Path(out)
     runs, head = runs_and_head(grace)
     out.mkdir(parents=True, exist_ok=True)
@@ -348,7 +535,17 @@ def assemble(grace, out, reference_dir, package2, package3, package4, advisor, s
                 shutil.rmtree(out / name)
             elif (out / name).exists():
                 (out / name).unlink()
-    rows, total, cols = su_rows(out, sacct_extra)
+    item3_su, item3_hw, item3_commits = [], None, None
+    if item3:
+        item3_verdict, item3_su, item3_hw, item3_commits = add_item3(out, item3, package1, log)
+        summary.update(item3_verdict)
+    else:
+        for _, name, _ in ITEM3_STAGES:
+            if (out / name).exists():
+                shutil.rmtree(out / name)
+        if (out / ITEM3).exists():
+            shutil.rmtree(out / ITEM3)
+    rows, total, cols = su_rows(out, sacct_extra, item3_su)
     write_su(out, rows, cols)
     log.append(f"su.csv: {len(rows)} jobs, {total:.1f} SU charged at Grace's rates"
                + ('' if sacct_extra else "; the report job is not in it (it ran after its tarball's table: "
@@ -357,11 +554,14 @@ def assemble(grace, out, reference_dir, package2, package3, package4, advisor, s
         log.append(f"su.csv: the re-time job {retime_job['job']} is not in it (pass its sacct line with --sacct-extra)")
     if a2_job and a2_job['job'] not in {r['job_id'] for r in rows}:
         log.append(f"su.csv: the Addendum 2 job {a2_job['job']} is not in it (pass its sacct line with --sacct-extra)")
-    hw = hardware(out, extra_rows(out, rows))
+    hw = hardware(out, [r for r in extra_rows(out, rows) if not str(r.get('note', '')).startswith('item 3')])
     if retime_job:
         hw['retime'] = retime_job
     if a2_job:
         hw['addendum2'] = a2_job
+    if item3_hw:
+        hw['item3'] = {'note': ("Item 3's six stages, each under its own commit lock: per job, from its processes' "
+                                'hardware.json (in each stage records folder)'), **item3_hw}
     write_lf(out / 'hardware.json', json.dumps(hw, indent=2) + '\n')
     write_lf(out / 'environment.txt', environment(out, runs['commit']))
     write_lf(out / 'DECISIONS_package5.md', decisions(5))
@@ -378,7 +578,8 @@ def assemble(grace, out, reference_dir, package2, package3, package4, advisor, s
            "written at the assembly from the stored coefficients." if a2_job else '')), log,
         advisor_files={name: sha256(Path(advisor) / name) for name in ADVISOR_FILES},
         **({'retime': {'commit': retime_job['commit'], 'job': retime_job['job']}} if retime_job else {}),
-        **({'addendum2': {'commit': a2_job['commit'], 'job': a2_job['job']}} if a2_job else {}))
+        **({'addendum2': {'commit': a2_job['commit'], 'job': a2_job['job']}} if a2_job else {}),
+        **({'item3': item3_commits} if item3_commits else {}))
     write_lf(out / 'assembly_log.txt', '\n'.join(log) + '\n')
     print('\n'.join(log))
     return summary, total
@@ -397,9 +598,16 @@ def main(argv=None):
     ap.add_argument('--retime', default=None, help='the extracted package5_retime/ folder (stage p5t)')
     ap.add_argument('--a2', default=None, help="the extracted package5_a2/ folder (stage p5a, Addendum 2)")
     ap.add_argument('--a2-logs', nargs='*', default=(), help="Addendum 2's job logs its tarball lacks")
+    for arg, name, _ in ITEM3_STAGES:
+        ap.add_argument(f'--item3-{arg}', default=None, help=f'item 3: the extracted {name}/ folder')
+    ap.add_argument('--package1', default=None, help="Package 1's results root (item 3's C1 and Component A)")
     a = ap.parse_args(argv)
+    given = {arg: getattr(a, f'item3_{arg}') for arg, _, _ in ITEM3_STAGES}
+    if any(given.values()) and not (all(given.values()) and a.package1):
+        ap.error('item 3 needs every --item3-* folder and --package1')
     summary, _ = assemble(a.grace, a.out, a.reference_dir, a.package2, a.package3, a.package4, a.advisor,
-                          a.sacct_extra, a.retime, a.a2, a.a2_logs)
+                          a.sacct_extra, a.retime, a.a2, a.a2_logs, given if all(given.values()) else None,
+                          a.package1)
     return 0 if all(v is not False for v in summary.values()) else 1
 
 

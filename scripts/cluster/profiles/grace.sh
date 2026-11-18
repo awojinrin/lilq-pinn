@@ -3,6 +3,7 @@
 ACCOUNT="${LILQ_ACCOUNT:-}"     # your HPRC allocation (myproject -l): export LILQ_ACCOUNT=<account>
 GPU_PARTITION=gpu
 GPU_GRES=gpu:a100:1
+GPU_PAIR_GRES=gpu:a100:2      # both A100s of a node (class gpu-pair)
 NODE_CORES=48                # all cores of an A100 node: with all its memory, a timed job holds the node (one GPU charged)
 NODE_MEM=360G                # all its memory (RealMemory 368,640 MB = 360 GiB); Grace's job_submit refuses --mem=0
 CPU_NODE_MEM=360G            # the same memory as the A100 nodes (scontrol, 2026-09-29)

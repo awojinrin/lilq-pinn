@@ -113,6 +113,7 @@ def test_dry_run_checks_every_job_and_submits_nothing(tmp_path):
                     'echo "sbatch: Job 1 to start at soon" >&2; exit 0; }; done\nexit 1\n')
     fake.chmod(0o755)
     env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1', LILQ_ACCOUNT='000000000000')
+    env.pop('CLUSTER', None)            # Grace's profile, whatever a job running the tests has inherited
     out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave1.sh')], env=env,
                          capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr
@@ -180,6 +181,7 @@ def test_wave_2_dry_run_requests_one_gpu_per_timed_job(tmp_path):
                     'echo "sbatch: Job 1 to start at soon" >&2; exit 0; }; done\nexit 1\n')
     fake.chmod(0o755)
     env = dict(os.environ, PATH=f"{tmp_path}:{os.environ['PATH']}", DRY_RUN='1', LILQ_ACCOUNT='000000000000')
+    env.pop('CLUSTER', None)            # Grace's profile, whatever a job running the tests has inherited
     out = subprocess.run(['bash', str(REPO / 'scripts/cluster/submit_wave2.sh')], env=env,
                          capture_output=True, text=True)
     assert out.returncode == 0 and 'DRY RUN OK' in out.stdout, out.stdout + out.stderr

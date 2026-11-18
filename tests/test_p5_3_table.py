@@ -68,4 +68,11 @@ def test_the_markdown_table(tmp_path):
     make_run(tmp_path, 'lil', 'bratu', 25, 'lilq', 'cpu', [1, 5e-3], [0, 0.01])
     t.summarize(tmp_path)
     md = (tmp_path / t.ITEM / 'time_to_error.md').read_text(encoding='utf-8')
-    assert '## Bratu, cpu' in md and '| LILQ | 0.01 (0.51), P = 25 | - | - | - | - |' in md
+    assert '## Bratu, cpu' in md and '| LILQ | 0.51 (P = 25); optimizer only 0.01 | - | - | - | - |' in md
+
+
+def test_the_markdown_names_the_optimizers_size_when_another_gives_its_smallest():
+    long_rows = [{'benchmark': 'bratu', 'device': 'cpu', 'method_key': 'lilq', 'method': 'LiL-Q', 'level': lv,
+                  'time_s': 0.2, 'P': 225, 'with_setup_s': 0.3, 'P_with_setup': 100} for lv in t.LEVELS]
+    md = t.markdown(long_rows)
+    assert '| LiL-Q | 0.3 (P = 100); optimizer only 0.2 (P = 225) |' in md and 'starting data' in md
