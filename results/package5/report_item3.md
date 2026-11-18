@@ -3,7 +3,7 @@
 **To:** R. Younis. **From:** G. Awojinrin. **Date:** 18 November 2026.
 **Refers to:** the Package 5 instructions (13 November 2026, Section 6) and your reply to the item 3 cost check (17 November 2026).
 
-**Code:** `awojinrin/lilq-pinn`, branch `v3-dev` at 99fbd07. These are the commits after fcb9952, the code of the cost check:
+**Code:** `awojinrin/lilq-pinn`, branch `v3-dev` at 37af5a4. These are the commits after fcb9952, the code of the cost check:
 
 | commit | what | DECISIONS.md entry (Package 5, item 3, ...) |
 |---|---|---|
@@ -12,9 +12,10 @@
 | 3df7b7b | line endings of one file (the bundle of the rerun) | the same entry |
 | 1a88feb | the C4 diagnostic (stage p5e; the bundle of the A100 set) | the rerun's result, C4 on Buckley-Leverett LM, and the C4 diagnostic |
 | a61de73 | the assembly of item 3; the table leads with the time including setup and pretraining | the assembly and the table's headline |
+| 37af5a4 | C1 reads the published extract of a run's log (iterations 0 to 100) when the whole log is absent | the assembly and the table's headline |
 | 03bd5ab, b6ff9f5, 6d28d09, 0e3cb8d, 3edbd66, e99e5d3, 5adea2f, 99fbd07 | DECISIONS.md only: rehearsals, scans, results | as above |
 
-**Where each run ran:** every run under its stage's source lock. The network runs on the CPU ran at 3df7b7b. The A100 runs ran at 1a88feb. The LiL runs on the CPU ran at 0f74bdf (the CPU set of the cost check, kept as you said). From each stage's commit to 99fbd07, the code its runs used changed only by additions: the LiL driver gained the option that checks the OpenMP library, and C2/C4 gained a folder argument for the diagnostic.
+**Where each run ran:** every run under its stage's source lock. The network runs on the CPU ran at 3df7b7b. The A100 runs ran at 1a88feb. The LiL runs on the CPU ran at 0f74bdf (the CPU set of the cost check, kept as you said). From each stage's commit to 37af5a4, the code its runs used changed only by additions: the LiL driver gained the option that checks the OpenMP library, C2/C4 gained a folder argument for the diagnostic, and C1 can read the published extract of a run's log.
 
 **Results:** `package5_results/`, on the branch `package5-results` of `awojinrin/lilq-pinn`, under `results/package5/`. Item 3 is in `P5_3_cost/`.
 
@@ -236,6 +237,8 @@ Against your cap of 4,400 this leaves 461.5 SU. Every job's row is in `su.csv`, 
   - `networks/` and `lil/`: one folder per run, each with `history.csv` (iteration, time, loss, error) and `run.json`.
   - `time_to_error.md`, `time_to_error.csv` and `time_to_error_runs.csv`: the table.
   - `checks.json`: C1 to C4, the pairing, and the diagnostics. Also `networks/checks/` (C1, C2/C4, the solo and gate runs) and `lil/checks/` (C3).
+  - **For checking C1 and Section 6 from the branch alone:** `package1_reference/` holds the Package 1 files they compare against, in Package 1's own layout: the 90 histories of C1, and the Component A runs F1_18 and F2_05 (seeds 0 to 4). Each run folder of C1 holds `metrics_iterations_0_100.csv`, the first 101 rows of its per-iteration log, byte for byte (the whole logs are left out for size). C1, the diagnostic's C1 and the Component A summary, rerun on the branch alone, give exactly the values here. The Package 4 runs of C3 are on the branch `package4-results`.
   - `openmp/`, `openmp_kovasznay/` and `c4_diagnostic/`: the three diagnostics.
-- **The stages' records:** `package5_item3_cpu/`, `package5_item3_cpu_rerun/`, `package5_item3_gpu/`, `package5_item3_openmp/`, `package5_item3_openmp_kovasznay/` and `package5_item3_c4_diagnostic/`. Each holds its `COMMIT`, provenance (a `hardware.json` per process), `sacct.txt`, `slurm_logs/` and `report_log.txt`.
+- **The stages' records:** `package5_item3_cpu/`, `package5_item3_cpu_rerun/`, `package5_item3_gpu/`, `package5_item3_openmp/`, `package5_item3_openmp_kovasznay/` and `package5_item3_c4_diagnostic/`. Each holds its `COMMIT`, provenance (a `hardware.json` per process) and `report_log.txt`. The four stages with a report job also hold `sacct.txt` and `slurm_logs/`. The two single-job diagnostics (`openmp`, `openmp_kovasznay`) reported inside their job, before Slurm had their accounting: their rows in `su.csv` are from sacct afterwards.
 - **Package 5's records:** `su.csv`, `hardware.json` (item 3 per job), `provenance.json` (each stage's commit) and `assembly_log.txt`.
+- **Left out for size** (1.4 GB, kept with the cluster archives): each run's per-iteration logs (`log.csv`, `metrics.csv`), logged coefficients and saved networks. The table is rebuilt from `history.csv` and `run.json` alone, and gives exactly the table here.

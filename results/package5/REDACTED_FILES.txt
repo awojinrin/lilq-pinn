@@ -62,6 +62,11 @@ P5_3_cost/openmp_kovasznay/torch-first/process_r2.json
 P5_3_cost/openmp_kovasznay/torch-first/r0/F2/run.json
 P5_3_cost/openmp_kovasznay/torch-first/r1/F2/run.json
 P5_3_cost/openmp_kovasznay/torch-first/r2/F2/run.json
+P5_3_cost/package1_reference/A_calibration/full_cpu/F2_05_s0/run.json
+P5_3_cost/package1_reference/A_calibration/full_cpu/F2_05_s1/run.json
+P5_3_cost/package1_reference/A_calibration/full_cpu/F2_05_s2/run.json
+P5_3_cost/package1_reference/A_calibration/full_cpu/F2_05_s3/run.json
+P5_3_cost/package1_reference/A_calibration/full_cpu/F2_05_s4/run.json
 hardware.json
 package5_a2/provenance/a2/environment.txt
 package5_a2/provenance/a2/hardware.json

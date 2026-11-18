@@ -2,9 +2,9 @@
 
 This is `package5_results/`, in the Section 8 layout of Computational Package 5 (the advisor's
 instructions of 13 November 2026), for items 1 to 4, and for Addendum 2 (15 November 2026). The
-branch holds `v3-dev` at `99fbd07`, the commit item 3 was assembled at, and adds only
-`results/package5/`. Items 1, 2 and 4 and Addendum 2 were assembled at `4417866`; the assembly at
-`99fbd07` leaves every one of their files as it was (it adds item 3 and rewrites `su.csv`,
+branch holds `v3-dev` at `37af5a4` and adds only `results/package5/`. Item 3 was assembled at
+`a61de73` (`99fbd07` and `37af5a4` add a DECISIONS note, and C1's reading of the published extract
+below). Items 1, 2 and 4 and Addendum 2 were assembled at `4417866`; the assembly of item 3 leaves every one of their files as it was (it adds item 3 and rewrites `su.csv`,
 `provenance.json`, `hardware.json`, `assembly_log.txt` and `DECISIONS_package5.md`).
 
 **Start with `report.md`** (items 1, 2 and 4) **and `report_item3.md`** (item 3). Each ends with a
@@ -69,7 +69,8 @@ them:
   the diagnostics) with the check records under `networks/checks/` and `lil/checks/`; the three
   diagnostics `openmp/`, `openmp_kovasznay/` and `c4_diagnostic/`.
 - `package5_item3_<stage>/`: each Grace stage's records (`COMMIT`, provenance with a `hardware.json`
-  per process, `sacct.txt`, `slurm_logs/`, `report_log.txt`). The runs ran at the stage's `COMMIT`,
+  per process, `report_log.txt`; the four stages with a report job also `sacct.txt` and
+  `slurm_logs/`; the two single-job diagnostics' SU rows are from sacct afterwards). The runs ran at the stage's `COMMIT`,
   under the source lock: the CPU set at `0f74bdf` (its LiL runs, protocol runs and C3 are in the
   table; its network runs, superseded, stay in `package5_item3_cpu/`), the OpenMP diagnostic at
   `fcb9952`, the CPU network runs again and Component A's library check at `3df7b7b`, the C4
@@ -81,7 +82,19 @@ them:
 - **Left out here, for size** (1.4 GB, kept by the authors with the cluster tarballs): each run's
   per-iteration logs `log.csv` and `metrics.csv`, the logged coefficients `betas_logged.npy`, and
   the saved networks (`network.pt`, `model.pt`). The table needs none of them: it is rebuilt from
-  `history.csv` and `run.json` alone.
+  `history.csv` and `run.json` alone. The OpenMP diagnostic's six `metrics.csv` are here (small).
+- **To check C1 and the Component A comparison from this branch alone:**
+  - `P5_3_cost/package1_reference/` holds the Package 1 files they read, in Package 1's own layout
+    (`B_instrumentation/four_method_jobs/...`: the 90 histories of C1;
+    `A_calibration/full_cpu/{F1_18,F2_05}_s0..4/`: `log.csv`, `run.json`). In `checks.json` and
+    `networks/checks/c1.json`, the paths `..\package1_local\package1\X` are `package1_reference/X`
+    here. The rest of Package 1 is published with the release.
+  - Each C1 run folder holds `metrics_iterations_0_100.csv`: the header and rows 0 to 100 of its
+    `metrics.csv`, byte for byte, which is all C1 reads (`experiments/p5_3_networks.py`,
+    `write_c1_extract`; `c1` reads it when `metrics.csv` is absent).
+  - Rerun on this branch alone, with `package1_reference/` as Package 1: C1 (90 runs), the OpenMP
+    diagnostic's C1 (6 runs) and the Component A summary give exactly the values in `checks.json`.
+  - C3 compares against Package 4's runs, on the branch `package4-results`.
 
 **Cost:** `su.csv`, 37 jobs, 3,938.5 SU at Grace's rates (item 3: 26 jobs, 3,785.0 SU; the cap is
 4,400). Items 1, 2 and 4, the re-time and Addendum 2: 11 jobs, 153.5 SU at Grace's rates (the report job's, the re-time job's and both
@@ -96,7 +109,7 @@ the scratch filesystem during that day's outage. The second (20553982) ran the s
 - the advisor's `expected_weight_bratu.json`, `expected_weight_bl.json`,
   `expected_nlls_liln.json` and `expected_rf_pb.json`. `provenance.json` records their SHA-256.
 
-**Redactions.** Before publishing, these were replaced by placeholders in 226 text files (listed in
+**Redactions.** Before publishing, these were replaced by placeholders in 231 text files (listed in
 `REDACTED_FILES.txt`):
 - the cluster user's scratch path (`$SCRATCH`);
 - the HPRC allocation account (`<account>`);
