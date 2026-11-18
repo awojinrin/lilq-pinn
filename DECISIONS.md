@@ -74,6 +74,25 @@ NiL-N pair three times (about 3 min) and LM's 10-iteration pilot before the LM p
 from the warm-up to the LM pair. The CPU set's process (which passed) also ran NiL-N first, so that
 history is common to the pass and the fail; leaving it out saves about 22 SU.
 
+**The scan before the rehearsal** (the user's rule: before Grace, again after the rehearsals): torch's
+threads are pinned through `lilq.utils` as in the rerun's process (`pin_torch`, OMP_NUM_THREADS: 48 on
+the CPU node, 24 per process on the A100 node); `solve` sets float64; the kind's import order comes
+first (`p5_3_openmp.start_process`), and the wait policy is checked before any import (libgomp reads it
+at load). Found and changed: the summary first gated the A100 set on every group and on C2; now on the
+A100 group alone (above).
+
+**The laptop rehearsal** (code as committed in 1a88feb; BL LM at P = 1,024, the real lengths): the
+torch kind 213 iterations, pairs +0.0%, -2.0%, -0.3%; the active kind (OMP_WAIT_POLICY=ACTIVE
+recorded) -1.6%, +1.5%, +0.1%; CUDA (one GPU) 441 iterations from the pilot, -0.1%, -0.1%, +1.0%, **C2
+passed on CUDA** (the first time it ran there). About 3.5 min per process. The summary said NO, as it
+should on the laptop: Windows loads the wheel's library in either order, so the numpy kinds' library is
+not the module's, and one GPU gives 3 of the 6 A100 pairs.
+
+**The scan after the rehearsal:** a resubmitted job's process could leave an earlier attempt's
+`result.json` beside its own new records if it stopped before writing its own; each process now removes
+it first (tested). No CRLF in the changed files. Repo suite 1,058 passed; no-git bundle (1a88feb) 1,027;
+WSL bash tests 39 of 39 in each of three modes.
+
 ---
 
 ## 2026-11-17 -- Package 5, item 3: the advisor's reply to the cost check; C4's three timings; Component A's OpenMP library (stage p5k)
