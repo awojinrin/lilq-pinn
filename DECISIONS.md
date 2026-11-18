@@ -136,7 +136,9 @@ code changed since bundle 03bd5ab:
   p5k: the one its first import should give).
 
 **The p5k result** (job 20581996 on 17 November 2026, bundle 3df7b7b; tarball sha256 688e646c...,
-matches Grace). Every process loaded the library its first import should give; 48 threads in every
+matches Grace; sacct: COMPLETED, 26 min 9 s on 48 cores = 20.9 SU, expected about 22; no 'STOPPED OR
+FAILED' or 'NOT RUN' in its log. The report ran inside the job and left it out, so the row is the
+user's sacct, as for p5o). Every process loaded the library its first import should give; 48 threads in every
 run, as Package 1. Judged by the criteria fixed before the job:
 - **F1: the library changes it, and the module's library is the slower one.** Seconds per Adam
   iteration, medians over the three rounds: wheel's 0.336, module's 0.458 (wheel/module 0.73); per
