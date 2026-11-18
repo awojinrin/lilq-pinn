@@ -93,6 +93,24 @@ not the module's, and one GPU gives 3 of the 6 A100 pairs.
 it first (tested). No CRLF in the changed files. Repo suite 1,058 passed; no-git bundle (1a88feb) 1,027;
 WSL bash tests 39 of 39 in each of three modes.
 
+**The result** (jobs 20590230/31/33, 18 November 2026; sha256 66097fcc...; 66 SU: CPU 40.9, A100 25.3).
+Every process loaded its kind's library and wait policy; C2 passed in all 11, on CUDA too. As fixed
+before the job: **cpu numpy clean (median -1.9%): the rerun's +18% was not reproduced**; cpu torch
+clean (-1.4%); cpu active "faster with the log" (-6.1%); **A100 clean (-0.0%): the A100 set may go.**
+What the numbers show (read after the verdicts, which stand as fixed):
+- No leak with either library. The spread is the clock's: on the CPU node a run of the same 213
+  iterations took 29.3 to 34.7 s with the module's library in this job, so the rerun's pair (28.17 s
+  without, 33.28 s with) is one fast run and one ordinary one. A single pair on that node cannot
+  resolve 5%: for the item 3 report.
+- The wheel's library is about 65% slower on this pair (about 51 s against 31 s), as p5o found (+61%).
+- The active kind's negative median comes from its first pair: in all three active processes the first
+  run without the log took 41 to 51 s against about 31 s afterwards (only that kind shows it). Without
+  log runs always go first, so a one-time cost lands on "without". Its other six pairs have a median
+  near -1.5%. Not foreseen; reported as such.
+- A100: five of six pairs within 0.3%. The +12.3% pair is a slow stretch on GPU 1 (with the log
+  31.01 s), and the next run, without the log, was as slow (31.02 s): the node, not the log. It
+  bears on the A100 set's pairing gate (5%), not on C4.
+
 ---
 
 ## 2026-11-17 -- Package 5, item 3: the advisor's reply to the cost check; C4's three timings; Component A's OpenMP library (stage p5k)
