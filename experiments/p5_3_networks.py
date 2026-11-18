@@ -97,6 +97,7 @@ HISTORY_COLUMNS = ('iteration', 'evaluations', 'time_s', 'loss', 'error')
 WARMUP_ITERATIONS = 5                  # per method, smallest size, untimed, before a job's first run
 C1_ITERATIONS = 100                    # the instructions: "over the first 100 iterations"
 C1_RTOL = 1e-6                         # set before any comparison (DECISIONS.md, 2026-11-15)
+C1_EXTRACT = f'metrics_iterations_0_{C1_ITERATIONS}.csv'   # the rows of metrics.csv C1 reads (published copy)
 C4_RTOL = 0.05                         # the instructions: "within 5%"
 # C2 and C4: both runs have the same number of iterations, sized on the node to about C2C4_SECONDS
 # (long enough to judge 5%) from an untimed pilot of C2C4_PILOT iterations. Set before any C4
@@ -337,13 +338,31 @@ def c1(run_dir, package1):
         return None
     with open(ref) as fh:
         old = {int(r['iteration']): float(r['loss']) for r in csv.DictReader(fh)}
-    with open(Path(run_dir) / 'metrics.csv') as fh:
+    metrics = Path(run_dir) / 'metrics.csv'
+    if not metrics.exists():                     # a published copy holds only the rows C1 reads
+        metrics = Path(run_dir) / C1_EXTRACT
+    with open(metrics) as fh:
         new = {int(r['iteration']): float(r['loss']) for r in csv.DictReader(fh)}
     its = [i for i in range(C1_ITERATIONS + 1) if i in old and i in new]
     worst = max(abs(new[i] - old[i]) / abs(old[i]) for i in its)
     return {'benchmark': rec['benchmark'], 'P': rec['P'], 'method': rec['method'], 'seed': rec['seed'],
             'device': rec['device'], 'iterations_compared': len(its), 'last_iteration': max(its),
             'max_rel_diff': worst, 'rtol': C1_RTOL, 'passed': bool(worst <= C1_RTOL), 'package1_history': str(ref)}
+
+
+def write_c1_extract(run_dir):
+    """The rows of ``metrics.csv`` that C1 reads (the header and iterations 0..C1_ITERATIONS),
+    byte for byte, as ``C1_EXTRACT`` beside it: published in place of the whole file, which is
+    large. ``c1`` reads it when ``metrics.csv`` is absent."""
+    lines = (Path(run_dir) / 'metrics.csv').read_bytes().splitlines(keepends=True)
+    col = lines[0].decode().rstrip('\r\n').split(',').index('iteration')
+    keep = [lines[0]]
+    for ln in lines[1:]:
+        if int(ln.decode().split(',')[col]) > C1_ITERATIONS:
+            break
+        keep.append(ln)
+    (Path(run_dir) / C1_EXTRACT).write_bytes(b''.join(keep))
+    return len(keep) - 1
 
 
 def c1_all(out_root, package1):

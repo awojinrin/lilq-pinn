@@ -53,6 +53,18 @@ profile together (0.015 to 0.50 s); the report says so, as the reply asks.
 **SU:** item 3 3,785.0 (p5c 938.9, p5o 14.4, p5r 875.3, p5k 20.9, p5e 67.0, p5g 1,868.5); Package 5
 3,938.5 of the 4,400 cap, 37 jobs.
 
+**What is published for the checks** (the user's decisions of 18 November): the runs' histories and
+records, not their per-iteration logs (1.4 GB). So that C1 and the Component A comparison can be
+checked from the branch alone:
+- `P5_3_cost/package1_reference/` holds the Package 1 files they read, in Package 1's own layout: the
+  90 histories C1 compares against, and `A_calibration/full_cpu/{F1_18,F2_05}_s0..4/{log.csv,run.json}`
+  (the run records' scratch path redacted). The rest of Package 1 stays for the release.
+- Each C1 run folder holds `metrics_iterations_0_100.csv` (`C1_EXTRACT`): the header and rows 0 to
+  100 of its `metrics.csv`, byte for byte (`write_c1_extract`). `c1` reads it when `metrics.csv` is
+  absent; tested to give the same result.
+- Checked on the published copy: C1 (90 runs), the OpenMP diagnostic's C1 (6 runs) and the
+  Component A summary give exactly the assembled values.
+
 **The report** (`results/package5/report_item3.md`) asks the advisor one question: whether the C4
 diagnostic is enough for the two CPU pairs outside 5%, or C4 on the CPU should use the median of
 several pairs (about 50 SU, not recommended).

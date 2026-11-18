@@ -160,6 +160,14 @@ def test_c1_against_a_package1_history(ref, tmp_path):
     write(1.0)
     res = n3.c1(d, tmp_path / 'p1')
     assert res['passed'] and res['max_rel_diff'] == 0.0 and res['iterations_compared'] == 101
+    # the published copy: only the rows C1 reads, byte for byte, and the same result from them
+    full = (d / 'metrics.csv').read_bytes()
+    assert n3.write_c1_extract(d) == 101
+    assert full.startswith((d / n3.C1_EXTRACT).read_bytes())
+    (d / 'metrics.csv').unlink()
+    assert n3.c1(d, tmp_path / 'p1') == res
+    (d / 'metrics.csv').write_bytes(full)
+    (d / n3.C1_EXTRACT).unlink()
     write(1.0 + 1e-5)
     assert not n3.c1(d, tmp_path / 'p1')['passed']
     assert n3.c1(d, tmp_path / 'nowhere') is None
